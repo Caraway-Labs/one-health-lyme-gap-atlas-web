@@ -7,6 +7,7 @@
  */
 import type { KnowledgeChatResponse } from './knowledgeChatResponse';
 import type { MixedAssistantResponseActualSourcesUsedItem } from './mixedAssistantResponseActualSourcesUsedItem';
+import type { MixedAssistantResponseCrossSourceState } from './mixedAssistantResponseCrossSourceState';
 import type { MixedAssistantResponseOutcome } from './mixedAssistantResponseOutcome';
 import type { MixedAssistantResponseRequestedSourceMode } from './mixedAssistantResponseRequestedSourceMode';
 import type { StructuredAssistantResponse } from './structuredAssistantResponse';
@@ -19,7 +20,8 @@ export interface MixedAssistantResponse {
   requested_source_mode: MixedAssistantResponseRequestedSourceMode;
   outcome: MixedAssistantResponseOutcome;
   actual_sources_used: MixedAssistantResponseActualSourcesUsedItem[];
-  cross_source_state: 'insufficient_to_compare' | null;
+  /** @nullable */
+  cross_source_state: MixedAssistantResponseCrossSourceState;
   structured: StructuredAssistantResponse | null;
   literature: KnowledgeChatResponse | null;
   limitations: string[];

@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const SaveProfileV1MeProfilePutHeaders = zod.object({
-  "authorization": zod.union([zod.string(),zod.null()]).optional()
+  "authorization": zod.string().nullish()
 })
 
 export type SaveProfileV1MeProfilePutHeaders = zod.input<typeof SaveProfileV1MeProfilePutHeaders>;

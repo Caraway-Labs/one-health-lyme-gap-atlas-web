@@ -34,6 +34,21 @@ describe("Atlas Amplitude boundary", () => {
     sessionStorage.clear();
   });
 
+  it("validates smooth-k analytics without retaining the retired breakpoint control", () => {
+    expect(
+      [5, 50, 100, 200].every((value) =>
+        isValidScoreValue("score_smooth_k", value)
+      )
+    ).toBeTruthy();
+    expect(
+      [0, 4, 51, 201, Number.NaN].some((value) =>
+        isValidScoreValue("score_smooth_k", value)
+      )
+    ).toBeFalsy();
+    expect(isUiControlId("score_low_incidence_breakpoint")).toBeFalsy();
+    expect(isUiControlId("score_smooth_k")).toBeTruthy();
+  });
+
   it("does not load or emit anything until an explicit start", () => {
     const loadAmplitude = vi.fn<() => Promise<typeof amplitude>>(
       async () => amplitude

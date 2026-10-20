@@ -2880,6 +2880,7 @@ describe("Reset Review scope UI", () => {
       ...limited,
       evidence_completeness: 100,
       fips: "08005",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: "SUPPRESSED",
     };
     const partial = {
@@ -3686,6 +3687,7 @@ describe("Reset Review scope UI", () => {
           data_release_version: dataset,
           effective_observation_context: "Human snapshot 2024",
           evaluated_at: releaseEvaluatedAt,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: "2.0.0",
         };
       }
@@ -3699,6 +3701,7 @@ describe("Reset Review scope UI", () => {
           data_release_version: dataset,
           effective_observation_context: "Human snapshot 2022",
           evaluated_at: newYorkEvaluatedAt,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: "1.1.0",
         };
       }
@@ -3718,6 +3721,7 @@ describe("Reset Review scope UI", () => {
         configuration_sha256: coloradoHash,
         data_release_version: dataset,
         evaluated_at: coloradoEvaluatedAt,
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1.0.0",
       };
     };

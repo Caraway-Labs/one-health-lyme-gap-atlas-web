@@ -16,8 +16,8 @@ export const ProblemDetails = zod.object({
   "detail": zod.string(),
   "instance": zod.string(),
   "request_id": zod.string(),
-  "code": zod.union([zod.string(),zod.null()]).default(problemDetailsCodeDefault),
-  "errors": zod.union([zod.array(zod.record(zod.string(), zod.unknown())),zod.null()]).default(problemDetailsErrorsDefault)
+  "code": zod.string().nullish().default(problemDetailsCodeDefault),
+  "errors": zod.array(zod.record(zod.string(), zod.unknown())).nullish().default(problemDetailsErrorsDefault)
 }).describe('RFC 9457 error. Stable codes are included when the response contract defines one.')
 
 export type ProblemDetails = zod.input<typeof ProblemDetails>;

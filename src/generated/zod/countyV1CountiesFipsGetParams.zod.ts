@@ -12,9 +12,9 @@ export const countyV1CountiesFipsGetParamsEcologicalShareMin = 40;
 export const countyV1CountiesFipsGetParamsEcologicalShareMax = 85;
 export const countyV1CountiesFipsGetParamsEcologicalShareMultipleOf = 5;
 
-export const countyV1CountiesFipsGetParamsLowIncidenceBreakpointDefault = 10;
-export const countyV1CountiesFipsGetParamsLowIncidenceBreakpointMin = 5;
-export const countyV1CountiesFipsGetParamsLowIncidenceBreakpointMax = 25;
+export const countyV1CountiesFipsGetParamsSmoothKDefault = 50;
+export const countyV1CountiesFipsGetParamsSmoothKMin = 5;
+export const countyV1CountiesFipsGetParamsSmoothKMax = 200;
 
 export const countyV1CountiesFipsGetParamsMissingHumanWeaknessDefault = 75;
 export const countyV1CountiesFipsGetParamsMissingHumanWeaknessMin = 40;
@@ -23,10 +23,11 @@ export const countyV1CountiesFipsGetParamsMissingHumanWeaknessMultipleOf = 5;
 
 
 export const CountyV1CountiesFipsGetParams = zod.object({
-  "dataset_version": zod.union([zod.string(),zod.null()]).optional(),
+  "dataset_version": zod.string().nullish(),
   "ecological_share": zod.int().min(countyV1CountiesFipsGetParamsEcologicalShareMin).max(countyV1CountiesFipsGetParamsEcologicalShareMax).multipleOf(countyV1CountiesFipsGetParamsEcologicalShareMultipleOf).default(countyV1CountiesFipsGetParamsEcologicalShareDefault),
-  "low_incidence_breakpoint": zod.int().min(countyV1CountiesFipsGetParamsLowIncidenceBreakpointMin).max(countyV1CountiesFipsGetParamsLowIncidenceBreakpointMax).default(countyV1CountiesFipsGetParamsLowIncidenceBreakpointDefault),
-  "missing_human_weakness": zod.int().min(countyV1CountiesFipsGetParamsMissingHumanWeaknessMin).max(countyV1CountiesFipsGetParamsMissingHumanWeaknessMax).multipleOf(countyV1CountiesFipsGetParamsMissingHumanWeaknessMultipleOf).default(countyV1CountiesFipsGetParamsMissingHumanWeaknessDefault)
+  "smooth_k": zod.int().min(countyV1CountiesFipsGetParamsSmoothKMin).max(countyV1CountiesFipsGetParamsSmoothKMax).default(countyV1CountiesFipsGetParamsSmoothKDefault),
+  "missing_human_weakness": zod.int().min(countyV1CountiesFipsGetParamsMissingHumanWeaknessMin).max(countyV1CountiesFipsGetParamsMissingHumanWeaknessMax).multipleOf(countyV1CountiesFipsGetParamsMissingHumanWeaknessMultipleOf).default(countyV1CountiesFipsGetParamsMissingHumanWeaknessDefault),
+  "low_incidence_breakpoint": zod.int().nullish()
 })
 
 export type CountyV1CountiesFipsGetParams = zod.input<typeof CountyV1CountiesFipsGetParams>;

@@ -46,6 +46,7 @@ const detail: CountyDetail = {
   county: "Adams County",
   evidence_completeness: 50,
   fips: "08001",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "no_county_linked_record",
   in_contiguous_tick_scope: true,
   incidence_floor_2023: null,
@@ -58,6 +59,7 @@ const detail: CountyDetail = {
     limitations:
       "Population-level hypothesis generator; not diagnosis, exposure location, true incidence, or individual risk.",
     loaded_at: "2026-08-15T15:58:20.809-06:00",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     methodology_version: "alpha-0.2.0",
     release_id: "alpha-2026-08-06",
     schema_version: "0.2.0",
@@ -98,7 +100,7 @@ const detail: CountyDetail = {
 
 const defaultSettings: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 
@@ -143,8 +145,8 @@ describe("Collapsible scoring accordion disclosure", () => {
     const summary = within(container.querySelector("summary") as HTMLElement);
     expect(summary.getByText("Tick/pathogen share")).toBeTruthy();
     expect(summary.getByText("65%", { exact: true })).toBeTruthy();
-    expect(summary.getByText("Published-record threshold")).toBeTruthy();
-    expect(summary.getByText("10 per 100,000")).toBeTruthy();
+    expect(summary.getByText("Smooth incidence attenuation (k)")).toBeTruthy();
+    expect(summary.getByText("50 per 100,000")).toBeTruthy();
     expect(summary.getByText("Missing county-record value")).toBeTruthy();
   });
 

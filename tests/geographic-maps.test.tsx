@@ -115,6 +115,7 @@ describe("geographic map behavior", () => {
     state: "CO",
     state_name: "Colorado",
     in_contiguous_tick_scope: true,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "no_county_linked_record",
     tick_status: "No records",
     burgdorferi_status: "Present",

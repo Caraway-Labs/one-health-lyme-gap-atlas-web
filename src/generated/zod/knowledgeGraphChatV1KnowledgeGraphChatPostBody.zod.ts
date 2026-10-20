@@ -9,9 +9,9 @@ import * as zod from 'zod';
 
 export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax = 1000;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdOneMax = 100;
+export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdMax = 100;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenOneMax = 200;
+export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenMax = 200;
 
 export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryItemContentMax = 5000;
 
@@ -20,8 +20,8 @@ export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryMax = 12;
 
 export const KnowledgeGraphChatV1KnowledgeGraphChatPostBody = zod.object({
   "message": zod.string().min(1).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax),
-  "conversation_id": zod.union([zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdOneMax),zod.null()]).optional(),
-  "conversation_token": zod.union([zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenOneMax),zod.null()]).optional(),
+  "conversation_id": zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdMax).nullish(),
+  "conversation_token": zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenMax).nullish(),
   "history": zod.array(zod.object({
   "role": zod.enum(['user', 'assistant']),
   "content": zod.string().min(1).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryItemContentMax)

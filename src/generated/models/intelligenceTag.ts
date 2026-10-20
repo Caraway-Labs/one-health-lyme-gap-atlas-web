@@ -11,7 +11,20 @@ export interface IntelligenceTag {
   /** @pattern ^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$ */
   value: string;
   origin: IntelligenceTagOrigin;
+  /**
+     * @nullable
+     * @pattern ^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$
+     */
   method: string | null;
+  /**
+     * @nullable
+     * @pattern ^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$
+     */
   method_version: string | null;
+  /**
+     * @minimum 0
+     * @maximum 1
+     * @nullable
+     */
   confidence: number | null;
 }

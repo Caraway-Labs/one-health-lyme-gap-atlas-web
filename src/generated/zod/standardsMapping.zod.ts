@@ -12,7 +12,7 @@ export const StandardsMapping = zod.object({
   "version": zod.string(),
   "target": zod.string(),
   "relationship": zod.string(),
-  "mapping_reference": zod.union([zod.string(),zod.null()]).optional()
+  "mapping_reference": zod.string().nullish()
 })
 
 export type StandardsMapping = zod.input<typeof StandardsMapping>;

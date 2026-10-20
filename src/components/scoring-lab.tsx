@@ -57,15 +57,16 @@ export function ScoringLab({
             }
           />
           <ScoreControl
-            label="Published rate considered clearly above low incidence"
-            value={`${settings.low_incidence_breakpoint} per 100,000`}
+            label="Smooth incidence attenuation (k)"
+            value={`${settings.smooth_k} per 100,000`}
             min={5}
-            max={25}
-            current={settings.low_incidence_breakpoint}
-            note="At this published rate, low case data do not increase the ranking."
-            controlId="score_low_incidence_breakpoint"
+            max={200}
+            step={5}
+            current={settings.smooth_k}
+            note="H = 100 / (1 + minimum incidence / k). The published v1.1 default is k=50."
+            controlId="score_smooth_k"
             onChange={(value, change) =>
-              onChange({ ...settings, low_incidence_breakpoint: value }, change)
+              onChange({ ...settings, smooth_k: value }, change)
             }
           />
           <ScoreControl

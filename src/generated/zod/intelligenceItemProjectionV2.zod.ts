@@ -11,33 +11,33 @@ export const intelligenceItemProjectionV2ItemIdRegExp = new RegExp('^[a-f0-9]{64
 export const intelligenceItemProjectionV2RevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
 export const intelligenceItemProjectionV2SourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
 
-export const intelligenceItemProjectionV2CanonicalUrlOneMax = 4096;
+export const intelligenceItemProjectionV2CanonicalUrlMax = 4096;
 
-export const intelligenceItemProjectionV2TitleOneMax = 1000;
-
-
-export const intelligenceItemProjectionV2TitleOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const intelligenceItemProjectionV2PublishedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const intelligenceItemProjectionV2UpdatedAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const intelligenceItemProjectionV2EventAtOneRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
-export const intelligenceItemProjectionV2ExcerptOneMax = 5000;
+export const intelligenceItemProjectionV2TitleMax = 1000;
 
 
-export const intelligenceItemProjectionV2ExcerptOneRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
+export const intelligenceItemProjectionV2TitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const intelligenceItemProjectionV2PublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const intelligenceItemProjectionV2UpdatedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const intelligenceItemProjectionV2EventAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const intelligenceItemProjectionV2ExcerptMax = 5000;
+
+
+export const intelligenceItemProjectionV2ExcerptRegExp = new RegExp('^[^<>\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]*$');
 export const intelligenceItemProjectionV2FetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
 export const intelligenceItemProjectionV2GeographiesItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemProjectionV2GeographiesItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemProjectionV2GeographiesItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemProjectionV2GeographiesItemConfidenceOneMin = 0;
-export const intelligenceItemProjectionV2GeographiesItemConfidenceOneMax = 1;
+export const intelligenceItemProjectionV2GeographiesItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemProjectionV2GeographiesItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemProjectionV2GeographiesItemConfidenceMin = 0;
+export const intelligenceItemProjectionV2GeographiesItemConfidenceMax = 1;
 
 export const intelligenceItemProjectionV2GeographiesMax = 100;
 
 export const intelligenceItemProjectionV2TopicsItemValueRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemProjectionV2TopicsItemMethodOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemProjectionV2TopicsItemMethodVersionOneRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
-export const intelligenceItemProjectionV2TopicsItemConfidenceOneMin = 0;
-export const intelligenceItemProjectionV2TopicsItemConfidenceOneMax = 1;
+export const intelligenceItemProjectionV2TopicsItemMethodRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemProjectionV2TopicsItemMethodVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const intelligenceItemProjectionV2TopicsItemConfidenceMin = 0;
+export const intelligenceItemProjectionV2TopicsItemConfidenceMax = 1;
 
 export const intelligenceItemProjectionV2TopicsMax = 100;
 
@@ -54,14 +54,14 @@ export const intelligenceItemProjectionV2LimitationsItemMax = 1000;
 export const intelligenceItemProjectionV2LimitationsItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const intelligenceItemProjectionV2LimitationsMax = 100;
 
-export const intelligenceItemProjectionV2PublisherMetadataPublisherOneMax = 1000;
+export const intelligenceItemProjectionV2PublisherMetadataPublisherMax = 1000;
 
 
-export const intelligenceItemProjectionV2PublisherMetadataPublisherOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
-export const intelligenceItemProjectionV2PublisherMetadataSourceItemIdOneMax = 4096;
+export const intelligenceItemProjectionV2PublisherMetadataPublisherRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const intelligenceItemProjectionV2PublisherMetadataSourceItemIdMax = 4096;
 
 
-export const intelligenceItemProjectionV2PublisherMetadataSourceItemIdOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const intelligenceItemProjectionV2PublisherMetadataSourceItemIdRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const intelligenceItemProjectionV2PublisherMetadataAuthorsItemMax = 4096;
 
 
@@ -74,10 +74,10 @@ export const intelligenceItemProjectionV2PublisherMetadataCategoriesItemMax = 40
 export const intelligenceItemProjectionV2PublisherMetadataCategoriesItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const intelligenceItemProjectionV2PublisherMetadataCategoriesMax = 100;
 
-export const intelligenceItemProjectionV2PublisherMetadataLanguageOneMax = 64;
+export const intelligenceItemProjectionV2PublisherMetadataLanguageMax = 64;
 
 
-export const intelligenceItemProjectionV2PublisherMetadataLanguageOneRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const intelligenceItemProjectionV2PublisherMetadataLanguageRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const intelligenceItemProjectionV2PublisherMetadataMediaItemUrlMax = 4096;
 
 export const intelligenceItemProjectionV2PublisherMetadataMediaMax = 100;
@@ -89,12 +89,12 @@ export const IntelligenceItemProjectionV2 = zod.object({
   "revision_id": zod.string().regex(intelligenceItemProjectionV2RevisionIdRegExp),
   "source_id": zod.string().regex(intelligenceItemProjectionV2SourceIdRegExp),
   "registry_version": zod.int().min(1),
-  "canonical_url": zod.union([zod.string().max(intelligenceItemProjectionV2CanonicalUrlOneMax),zod.null()]),
-  "title": zod.union([zod.string().min(1).max(intelligenceItemProjectionV2TitleOneMax).regex(intelligenceItemProjectionV2TitleOneRegExp),zod.null()]),
-  "published_at": zod.union([zod.string().regex(intelligenceItemProjectionV2PublishedAtOneRegExp),zod.null()]),
-  "updated_at": zod.union([zod.string().regex(intelligenceItemProjectionV2UpdatedAtOneRegExp),zod.null()]),
-  "event_at": zod.union([zod.string().regex(intelligenceItemProjectionV2EventAtOneRegExp),zod.null()]),
-  "excerpt": zod.union([zod.string().min(1).max(intelligenceItemProjectionV2ExcerptOneMax).regex(intelligenceItemProjectionV2ExcerptOneRegExp),zod.null()]),
+  "canonical_url": zod.string().max(intelligenceItemProjectionV2CanonicalUrlMax).nullable(),
+  "title": zod.string().min(1).max(intelligenceItemProjectionV2TitleMax).regex(intelligenceItemProjectionV2TitleRegExp).nullable(),
+  "published_at": zod.string().regex(intelligenceItemProjectionV2PublishedAtRegExp).nullable(),
+  "updated_at": zod.string().regex(intelligenceItemProjectionV2UpdatedAtRegExp).nullable(),
+  "event_at": zod.string().regex(intelligenceItemProjectionV2EventAtRegExp).nullable(),
+  "excerpt": zod.string().min(1).max(intelligenceItemProjectionV2ExcerptMax).regex(intelligenceItemProjectionV2ExcerptRegExp).nullable(),
   "fetched_at": zod.string().regex(intelligenceItemProjectionV2FetchedAtRegExp),
   "field_states": zod.object({
   "canonical_url": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
@@ -107,16 +107,16 @@ export const IntelligenceItemProjectionV2 = zod.object({
   "geographies": zod.array(zod.object({
   "value": zod.string().regex(intelligenceItemProjectionV2GeographiesItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(intelligenceItemProjectionV2GeographiesItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(intelligenceItemProjectionV2GeographiesItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(intelligenceItemProjectionV2GeographiesItemConfidenceOneMin).max(intelligenceItemProjectionV2GeographiesItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(intelligenceItemProjectionV2GeographiesItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(intelligenceItemProjectionV2GeographiesItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(intelligenceItemProjectionV2GeographiesItemConfidenceMin).max(intelligenceItemProjectionV2GeographiesItemConfidenceMax).nullable()
 })).max(intelligenceItemProjectionV2GeographiesMax),
   "topics": zod.array(zod.object({
   "value": zod.string().regex(intelligenceItemProjectionV2TopicsItemValueRegExp),
   "origin": zod.enum(['publisher', 'inferred']),
-  "method": zod.union([zod.string().regex(intelligenceItemProjectionV2TopicsItemMethodOneRegExp),zod.null()]),
-  "method_version": zod.union([zod.string().regex(intelligenceItemProjectionV2TopicsItemMethodVersionOneRegExp),zod.null()]),
-  "confidence": zod.union([zod.number().min(intelligenceItemProjectionV2TopicsItemConfidenceOneMin).max(intelligenceItemProjectionV2TopicsItemConfidenceOneMax),zod.null()])
+  "method": zod.string().regex(intelligenceItemProjectionV2TopicsItemMethodRegExp).nullable(),
+  "method_version": zod.string().regex(intelligenceItemProjectionV2TopicsItemMethodVersionRegExp).nullable(),
+  "confidence": zod.number().min(intelligenceItemProjectionV2TopicsItemConfidenceMin).max(intelligenceItemProjectionV2TopicsItemConfidenceMax).nullable()
 })).max(intelligenceItemProjectionV2TopicsMax),
   "transport": zod.enum(['rss', 'atom']),
   "transport_identity_sha256": zod.string().regex(intelligenceItemProjectionV2TransportIdentitySha256RegExp),
@@ -133,12 +133,12 @@ export const IntelligenceItemProjectionV2 = zod.object({
   "limitations": zod.array(zod.string().min(1).max(intelligenceItemProjectionV2LimitationsItemMax).regex(intelligenceItemProjectionV2LimitationsItemRegExp)).max(intelligenceItemProjectionV2LimitationsMax),
   "content_is_untrusted": zod.literal(true),
   "publisher_metadata": zod.object({
-  "publisher": zod.union([zod.string().min(1).max(intelligenceItemProjectionV2PublisherMetadataPublisherOneMax).regex(intelligenceItemProjectionV2PublisherMetadataPublisherOneRegExp),zod.null()]),
+  "publisher": zod.string().min(1).max(intelligenceItemProjectionV2PublisherMetadataPublisherMax).regex(intelligenceItemProjectionV2PublisherMetadataPublisherRegExp).nullable(),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']),
-  "source_item_id": zod.union([zod.string().max(intelligenceItemProjectionV2PublisherMetadataSourceItemIdOneMax).regex(intelligenceItemProjectionV2PublisherMetadataSourceItemIdOneRegExp),zod.null()]),
+  "source_item_id": zod.string().max(intelligenceItemProjectionV2PublisherMetadataSourceItemIdMax).regex(intelligenceItemProjectionV2PublisherMetadataSourceItemIdRegExp).nullable(),
   "authors": zod.array(zod.string().max(intelligenceItemProjectionV2PublisherMetadataAuthorsItemMax).regex(intelligenceItemProjectionV2PublisherMetadataAuthorsItemRegExp)).max(intelligenceItemProjectionV2PublisherMetadataAuthorsMax),
   "categories": zod.array(zod.string().max(intelligenceItemProjectionV2PublisherMetadataCategoriesItemMax).regex(intelligenceItemProjectionV2PublisherMetadataCategoriesItemRegExp)).max(intelligenceItemProjectionV2PublisherMetadataCategoriesMax),
-  "language": zod.union([zod.string().max(intelligenceItemProjectionV2PublisherMetadataLanguageOneMax).regex(intelligenceItemProjectionV2PublisherMetadataLanguageOneRegExp),zod.null()]),
+  "language": zod.string().max(intelligenceItemProjectionV2PublisherMetadataLanguageMax).regex(intelligenceItemProjectionV2PublisherMetadataLanguageRegExp).nullable(),
   "media": zod.array(zod.object({
   "url": zod.string().min(1).max(intelligenceItemProjectionV2PublisherMetadataMediaItemUrlMax),
   "origin": zod.literal("publisher")

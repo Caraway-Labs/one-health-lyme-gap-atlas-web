@@ -71,6 +71,7 @@ function scoredCounty(input: {
     county: input.county,
     evidence_completeness: 50,
     fips: input.fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "observed",
     in_contiguous_tick_scope: true,
     priority: "Priority 3 — Review",

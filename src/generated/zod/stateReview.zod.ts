@@ -15,7 +15,7 @@ export const StateReview = zod.object({
   "configuration_sha256": zod.string(),
   "data_release_version": zod.string(),
   "evaluated_at": zod.iso.datetime({"offset":true}),
-  "requested_observation_context": zod.union([zod.string(),zod.null()]),
+  "requested_observation_context": zod.string().nullable(),
   "effective_observation_context": zod.string(),
   "result_state": zod.enum(['candidates_found', 'insufficient_evidence', 'unsupported', 'none_stand_out']),
   "review_candidates": zod.array(zod.object({

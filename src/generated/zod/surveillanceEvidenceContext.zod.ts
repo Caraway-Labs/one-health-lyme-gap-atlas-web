@@ -12,7 +12,7 @@ import * as zod from 'zod';
 
 export const SurveillanceEvidenceContext = zod.object({
   "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.enum(['established', 'detected', 'unknown']),zod.null()]).optional().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
   "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
   "reason_codes": zod.array(zod.string()).min(1),
   "evidence_tier": zod.literal("GOVERNED_MAPPING"),

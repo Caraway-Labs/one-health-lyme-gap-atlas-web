@@ -4,7 +4,7 @@ import {
 } from "@/generated/atlas";
 import {
   countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareDefault,
-  countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointDefault,
+  countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKDefault,
   countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault,
 } from "@/generated/zod/countyReportPdfV1CountiesFipsReportPdfGetParams.zod";
 import type { ScoreSettings } from "@/lib/atlas-ui";
@@ -40,8 +40,7 @@ export function governedCountyReportScoreSettings(): ScoreSettings {
   return {
     ecological_share:
       countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareDefault,
-    low_incidence_breakpoint:
-      countyReportPdfV1CountiesFipsReportPdfGetParamsLowIncidenceBreakpointDefault,
+    smooth_k: countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKDefault,
     missing_human_weakness:
       countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault,
   };
@@ -129,7 +128,7 @@ export async function downloadPdfReport(
   const params = {
     dataset_version: datasetVersion,
     ecological_share: settings.ecological_share,
-    low_incidence_breakpoint: settings.low_incidence_breakpoint,
+    smooth_k: settings.smooth_k,
     missing_human_weakness: settings.missing_human_weakness,
   };
   // The generated client provides the contract URL. This small wrapper retains

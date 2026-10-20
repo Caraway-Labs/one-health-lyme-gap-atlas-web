@@ -37,7 +37,7 @@ describe("Atlas shared controls", () => {
         onDownload={onDownload}
         settings={{
           ecological_share: 65,
-          low_incidence_breakpoint: 10,
+          smooth_k: 50,
           missing_human_weakness: 75,
         }}
       />
@@ -99,7 +99,7 @@ describe("Atlas shared controls", () => {
         onDownload={onDownload}
         settings={{
           ecological_share: 65,
-          low_incidence_breakpoint: 10,
+          smooth_k: 50,
           missing_human_weakness: 75,
         }}
       />
@@ -168,7 +168,7 @@ describe("Atlas shared controls", () => {
       (
         settings: {
           ecological_share: number;
-          low_incidence_breakpoint: number;
+          smooth_k: number;
           missing_human_weakness: number;
         },
         change: { controlId: string; value: number }
@@ -178,7 +178,7 @@ describe("Atlas shared controls", () => {
       <ScoringLab
         settings={{
           ecological_share: 65,
-          low_incidence_breakpoint: 10,
+          smooth_k: 50,
           missing_human_weakness: 75,
         }}
         onChange={onChange}
@@ -195,7 +195,7 @@ describe("Atlas shared controls", () => {
     expect(onChange).toHaveBeenCalledWith(
       {
         ecological_share: 70,
-        low_incidence_breakpoint: 10,
+        smooth_k: 50,
         missing_human_weakness: 75,
       },
       { controlId: "score_ecological_share", value: 70 }

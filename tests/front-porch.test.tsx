@@ -29,6 +29,7 @@ import {
   frontPorchExploreHrefSelectsCounty,
   frontPorchHrefSelectsUnrelatedCounty,
 } from "@/features/front-porch/front-porch-copy";
+import { FRONT_PORCH_RELEASE_DETAIL } from "@/features/front-porch/front-porch-example";
 import { FrontPorchView } from "@/features/front-porch/front-porch-view";
 import {
   ABOUT_CARAWAY_LABS_PATH,
@@ -40,6 +41,18 @@ const FORBIDDEN_PUBLIC_COPY =
   /buncombe|montgomery|alaska|hawaii|37021|51121|data pending|underreported/i;
 
 describe("front porch copy", () => {
+  it("identifies the current scoring method separately from the cited data release", () => {
+    expect(FRONT_PORCH_RELEASE_DETAIL.join(" ")).toContain(
+      "Scoring methodology is surveillance-gap-score-v1.1, Smooth k=50"
+    );
+    expect(FRONT_PORCH_RELEASE_DETAIL.join(" ")).toContain(
+      "30.4, in the Watch band"
+    );
+    expect(FRONT_PORCH_RELEASE_DETAIL.join(" ")).toContain(
+      "Data-release methodology is semantic-2.0.0"
+    );
+  });
+
   it("keeps the locked hero copy", () => {
     expect({
       audience: FRONT_PORCH_HERO_AUDIENCE,
@@ -157,7 +170,7 @@ describe("front porch copy", () => {
     }).toStrictEqual({
       environmental: false,
       fullRate: true,
-      priority: "Lower Atlas priority",
+      priority: "Watch priority",
       probableMinimum: true,
       rateOnCard: false,
       storyDash: false,

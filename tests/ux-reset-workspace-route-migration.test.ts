@@ -259,10 +259,10 @@ describe("six-page workspace route migration", () => {
       })
     );
     expect(
-      redirectView(migrate("/overview", "state=NY&county=06037&breakpoint=10"))
+      redirectView(migrate("/overview", "state=NY&county=06037&smooth=10"))
     ).toStrictEqual(
       expectedRedirect({
-        droppedKeys: ["breakpoint"],
+        droppedKeys: ["smooth"],
         mode: "browse",
         query: { county: "06037", scope: "NY" },
       })

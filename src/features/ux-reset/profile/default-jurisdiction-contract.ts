@@ -2,8 +2,8 @@ import type { UserProfile, UserProfileWrite } from "@/generated/models";
 import type { UserProfileRole } from "@/generated/models/userProfileRole";
 import type { UserProfileWriteRole } from "@/generated/models/userProfileWriteRole";
 import {
-  userProfileWriteJobTitleOneMax,
-  userProfileWriteOrganizationOneMax,
+  userProfileWriteJobTitleMax,
+  userProfileWriteOrganizationMax,
 } from "@/generated/zod/userProfileWrite.zod";
 import {
   type AtlasStateOption,
@@ -301,7 +301,7 @@ export function buildProfileWrite(
 ): ProfileWriteBuild {
   const organizationError = optionalTextWithinLimit(
     draft.organization,
-    userProfileWriteOrganizationOneMax,
+    userProfileWriteOrganizationMax,
     "Organization"
   );
   if (organizationError) {
@@ -309,7 +309,7 @@ export function buildProfileWrite(
   }
   const jobTitleError = optionalTextWithinLimit(
     draft.jobTitle,
-    userProfileWriteJobTitleOneMax,
+    userProfileWriteJobTitleMax,
     "Job title"
   );
   if (jobTitleError) {

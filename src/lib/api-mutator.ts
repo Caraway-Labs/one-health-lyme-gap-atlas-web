@@ -88,5 +88,21 @@ export async function apiMutator<T>(
     : contentType.includes("json") || contentType.includes("geo+json")
       ? await response.json()
       : await response.text();
+  const scoringResponse =
+    data &&
+    typeof data === "object" &&
+    (("score" in data && "human_status" in data) ||
+      ("counties" in data && "settings" in data));
+  if (
+    scoringResponse &&
+    data.scoring_methodology_version !== "surveillance-gap-score-v1.1"
+  ) {
+    throw new AtlasApiError(
+      "Atlas scoring versions do not match. Reload after the coordinated release.",
+      url,
+      409,
+      response.headers.get("X-Request-ID")
+    );
+  }
   return { data, headers: response.headers, status: response.status } as T;
 }

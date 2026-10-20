@@ -7,15 +7,15 @@
  */
 import * as zod from 'zod';
 
-export const measuresV1MeasuresGetParamsPageSizeOneMax = 500;
+export const measuresV1MeasuresGetParamsPageSizeMax = 500;
 
 
 export const MeasuresV1MeasuresGetParams = zod.object({
-  "measure_id": zod.union([zod.string(),zod.null()]).optional(),
-  "indicator_id": zod.union([zod.string(),zod.null()]).optional(),
-  "geography_type": zod.union([zod.string(),zod.null()]).optional(),
-  "page_size": zod.union([zod.int().min(1).max(measuresV1MeasuresGetParamsPageSizeOneMax),zod.null()]).optional().describe('Items per page; defaults to 100, configured maximum at most 500.'),
-  "page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque next_page_token; retain query filters and release.')
+  "measure_id": zod.string().nullish(),
+  "indicator_id": zod.string().nullish(),
+  "geography_type": zod.string().nullish(),
+  "page_size": zod.int().min(1).max(measuresV1MeasuresGetParamsPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
 export type MeasuresV1MeasuresGetParams = zod.input<typeof MeasuresV1MeasuresGetParams>;

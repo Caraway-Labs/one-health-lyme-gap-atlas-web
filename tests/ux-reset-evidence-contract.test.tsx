@@ -40,6 +40,7 @@ const metadata: AtlasMetadata = {
   generated_at: "2026-08-06T05:37:16Z",
   limitations: "Population-level hypothesis generator.",
   loaded_at: "2026-08-15T00:00:00Z",
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   methodology_version: "semantic-1.0.0",
   release_id: "governed-2026-09-18-unknown-coverage",
   schema_version: "0.2.0",

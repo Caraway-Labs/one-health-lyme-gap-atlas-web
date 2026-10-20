@@ -176,6 +176,7 @@ export function compareCountyDetail(fips: string): CountyDetail {
     county: suppressed ? "Boulder" : "County",
     evidence_completeness: suppressed ? 20 : 80,
     fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: suppressed ? "suppressed" : "published_count_floor",
     in_contiguous_tick_scope: true,
     incidence_floor_2023: suppressed ? 0 : 4.2,

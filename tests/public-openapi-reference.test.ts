@@ -144,7 +144,7 @@ describe("public OpenAPI reference", () => {
         `${getSiteOrigin({})}/problems/http-422`,
         getDocsUrl({}),
         "| `ecological_share` | 65 | 40–85, multiple of 5 |",
-        "| `low_incidence_breakpoint` | 10 | 5–25 |",
+        "| `smooth_k` | 50 | 5–200 |",
         "| `missing_human_weakness` | 75 | 40–90, multiple of 5 |",
       ])
     ).toStrictEqual([]);
@@ -2111,8 +2111,8 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "c0a4e2ea4f15a543c3fc1e7705e2e4691cbc7e3ace9910d159b3814d3c049d6a",
-      sourceCommit: "d0472707cfc2badae714a797ec54c83d4f7ad79b",
+        "dfa540f57f0c359f5adc0a0d8b851d964008fbea72c84f9d5f09bcdf1152fbf0",
+      sourceCommit: "e88887877440c00de0e23301f0a3eac2353134d9",
     });
   });
 });

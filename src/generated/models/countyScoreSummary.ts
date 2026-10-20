@@ -8,6 +8,19 @@
 import type { Score } from './score';
 
 export interface CountyScoreSummary {
+  scoring_methodology_version?: 'surveillance-gap-score-v1.1';
+  /**
+     * Published 2023 minimum reported incidence per 100,000; null is not zero.
+     * @minimum 0
+     * @nullable
+     */
+  incidence_floor_2023?: number | null;
+  /** @nullable */
+  svi_percentile?: number | null;
+  /** @nullable */
+  uninsured_percentile?: number | null;
+  /** @nullable */
+  rucc_2023?: number | null;
   fips: string;
   county: string;
   state: string;

@@ -8,13 +8,13 @@ import type { ScoreSettings } from "@/lib/atlas-ui";
  */
 export const SCENARIO_SCORE_DEFAULTS: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 
 export const SCENARIO_CONTROL_RANGES = {
   ecological_share: { max: 85, min: 40, step: 5 },
-  low_incidence_breakpoint: { max: 25, min: 5, step: 1 },
+  smooth_k: { max: 200, min: 5, step: 5 },
   missing_human_weakness: { max: 90, min: 40, step: 5 },
 } as const;
 
@@ -88,16 +88,23 @@ function clamp(value: number, minimum = 0, maximum = 100): number {
 
 /** Python `round(value, 1)`: half to even, so the port matches the shared scorer. */
 function round1(value: number): number {
-  const scaled = value * 10;
-  const floor = Math.floor(scaled + 1e-10);
-  const fraction = scaled - floor;
-  let rounded = floor;
-  if (fraction > 0.5 + 1e-10) {
-    rounded = floor + 1;
-  } else if (fraction >= 0.5 - 1e-10 && fraction <= 0.5 + 1e-10) {
-    rounded = floor % 2 === 0 ? floor : floor + 1;
-  }
-  return rounded / 10;
+  // Round the exact IEEE-754 value, as Python does (no epsilon tie window).
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, value);
+  const high = view.getUint32(0);
+  const exponent = Math.floor(high / 2 ** 20) - 1023 - 52;
+  const mantissa =
+    BigInt((high % 2 ** 20) * 2 ** 32 + view.getUint32(4)) + 2n ** 52n;
+  if (value === 0) return 0;
+  const numerator =
+    mantissa * 10n * (exponent > 0 ? 2n ** BigInt(exponent) : 1n);
+  const denominator = exponent < 0 ? 2n ** BigInt(-exponent) : 1n;
+  const whole = numerator / denominator;
+  const remainder = numerator % denominator;
+  const up =
+    remainder * 2n > denominator ||
+    (remainder * 2n === denominator && whole % 2n === 1n);
+  return Number(whole + (up ? 1n : 0n)) / 10;
 }
 
 function integerSetting(
@@ -130,12 +137,12 @@ export function scoreSettingsFromCollection(
       SCENARIO_CONTROL_RANGES.ecological_share.max,
       SCENARIO_CONTROL_RANGES.ecological_share.step
     ),
-    low_incidence_breakpoint: integerSetting(
-      settings?.low_incidence_breakpoint,
-      SCENARIO_SCORE_DEFAULTS.low_incidence_breakpoint,
-      SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.min,
-      SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.max,
-      SCENARIO_CONTROL_RANGES.low_incidence_breakpoint.step
+    smooth_k: integerSetting(
+      settings?.smooth_k,
+      SCENARIO_SCORE_DEFAULTS.smooth_k,
+      SCENARIO_CONTROL_RANGES.smooth_k.min,
+      SCENARIO_CONTROL_RANGES.smooth_k.max,
+      SCENARIO_CONTROL_RANGES.smooth_k.step
     ),
     missing_human_weakness: integerSetting(
       settings?.missing_human_weakness,
@@ -153,7 +160,7 @@ export function scenarioSettingsEqual(
 ): boolean {
   return (
     left.ecological_share === right.ecological_share &&
-    left.low_incidence_breakpoint === right.low_incidence_breakpoint &&
+    left.smooth_k === right.smooth_k &&
     left.missing_human_weakness === right.missing_human_weakness
   );
 }
@@ -205,12 +212,7 @@ export function scoreCounty(
   const human =
     county.humanStatus === PUBLISHED_HUMAN_STATUS &&
     county.incidenceFloor2023 !== null
-      ? 100 *
-        clamp(
-          1 - county.incidenceFloor2023 / settings.low_incidence_breakpoint,
-          0,
-          1
-        )
+      ? 100 / (1 + county.incidenceFloor2023 / settings.smooth_k)
       : settings.missing_human_weakness;
   const tickSignal = TICK_SIGNAL_BY_STATUS[county.tickStatus] ?? 0;
   const pathogenSignal = county.burgdorferiStatus === "Present" ? 100 : 0;
@@ -239,44 +241,28 @@ export function scoreCounty(
 
 /**
  * Published human signal for the scenario.
- * A caller may pass a typed incidence when the threshold moved. The scores
- * collection does not declare incidence, so the UI does not read one from
- * that payload. A governed signal of 0 hides every incidence at or above the
- * baseline threshold, and raising that threshold without a typed incidence is
- * limited rather than a new zero.
+ * Use only a typed published minimum incidence floor. Never invert an old H.
+ * Missing published inputs are limited, while absent human records retain H75.
  */
 function scenarioHuman(
   county: CountyScoreSummary,
   settings: ScoreSettings,
-  baseline: ScoreSettings,
+  _baseline: ScoreSettings,
   exactIncidence: number | undefined
 ): number | "limited" {
   if (county.human_status !== PUBLISHED_HUMAN_STATUS) {
     return settings.missing_human_weakness;
   }
-  const governedHuman = county.score.human_weakness;
-  const breakpointChanged =
-    settings.low_incidence_breakpoint !== baseline.low_incidence_breakpoint;
-  if (!breakpointChanged) {
-    return governedHuman;
-  }
-  if (typeof exactIncidence === "number") {
-    return (
-      100 * clamp(1 - exactIncidence / settings.low_incidence_breakpoint, 0, 1)
-    );
-  }
+  const incidence = exactIncidence ?? county.incidence_floor_2023;
+  if (incidence === null) return settings.missing_human_weakness;
   if (
-    governedHuman <= 0 &&
-    settings.low_incidence_breakpoint > baseline.low_incidence_breakpoint
+    typeof incidence !== "number" ||
+    !Number.isFinite(incidence) ||
+    incidence < 0
   ) {
     return "limited";
   }
-  if (governedHuman <= 0 || governedHuman >= 100) {
-    return governedHuman;
-  }
-  const incidence =
-    baseline.low_incidence_breakpoint * (1 - governedHuman / 100);
-  return 100 * clamp(1 - incidence / settings.low_incidence_breakpoint, 0, 1);
+  return 100 / (1 + incidence / settings.smooth_k);
 }
 
 function scenarioScore(
@@ -287,9 +273,9 @@ function scenarioScore(
   const ecological =
     0.6 * county.score.tick_signal + 0.4 * county.score.pathogen_signal;
   const community =
-    0.5 * county.score.svi_signal +
-    0.3 * county.score.access_signal +
-    0.2 * county.score.rural_signal;
+    0.5 * ((county.svi_percentile ?? 0) * 100) +
+    0.3 * ((county.uninsured_percentile ?? 0) * 100) +
+    0.2 * clamp((((county.rucc_2023 ?? 1) - 1) / 8) * 100);
   const share = settings.ecological_share / 100;
   return round1((human * (share * ecological + (1 - share) * community)) / 100);
 }
@@ -316,18 +302,37 @@ function scenarioDraft(
   baseline: ScoreSettings,
   exactIncidence: number | undefined
 ): ScenarioDraft {
+  const published =
+    county.human_status === PUBLISHED_HUMAN_STATUS &&
+    county.incidence_floor_2023 !== null;
+  const sameShare = settings.ecological_share === baseline.ecological_share;
+  if (
+    sameShare &&
+    (published
+      ? settings.smooth_k === baseline.smooth_k
+      : settings.missing_human_weakness === baseline.missing_human_weakness)
+  ) {
+    return { kind: "unchanged" };
+  }
+  if (
+    !(
+      "svi_percentile" in county &&
+      "uninsured_percentile" in county &&
+      "rucc_2023" in county
+    )
+  ) {
+    return { kind: "limited" };
+  }
   const rawHuman = scenarioHuman(county, settings, baseline, exactIncidence);
   if (rawHuman === "limited") {
     return { kind: "limited" };
   }
   const human = round1(rawHuman);
   const governedHuman = round1(county.score.human_weakness);
-  const shareChanged = settings.ecological_share !== baseline.ecological_share;
-  const shareAffectsScore = shareChanged && human !== 0;
-  if (!shareAffectsScore && human === governedHuman) {
+  const score = scenarioScore(county, settings, rawHuman);
+  if (score === county.score.score && human === governedHuman) {
     return { kind: "unchanged" };
   }
-  const score = scenarioScore(county, settings, rawHuman);
   return {
     colorToken: scenarioColorToken(score, county.in_contiguous_tick_scope),
     humanWeakness: human,
@@ -339,7 +344,7 @@ function scenarioDraft(
 
 /**
  * `exactIncidenceByFips` is an optional typed input for callers that already
- * hold incidence. The scores response is not one of those callers.
+ * hold published incidence. v1.1 collection rows carry that typed input.
  */
 export function adjustCountyScenarios(
   counties: readonly CountyScoreSummary[],

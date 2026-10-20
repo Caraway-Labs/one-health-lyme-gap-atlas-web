@@ -7,6 +7,9 @@
  */
 
 export type StateReportPdfV1StatesStateReportPdfGetParams = {
+/**
+ * @nullable
+ */
 dataset_version?: string | null;
 /**
  * @pattern ^[a-z]+-v\d+$
@@ -19,12 +22,17 @@ template?: string;
 ecological_share?: number;
 /**
  * @minimum 5
- * @maximum 25
+ * @maximum 200
  */
-low_incidence_breakpoint?: number;
+smooth_k?: number;
 /**
  * @minimum 40
  * @maximum 90
  */
 missing_human_weakness?: number;
+/**
+ * @deprecated
+ * @nullable
+ */
+low_incidence_breakpoint?: number | null;
 };

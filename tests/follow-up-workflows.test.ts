@@ -16,6 +16,7 @@ function county(overrides: Partial<CountyDetail> = {}): CountyDetail {
     county: "Adams",
     evidence_completeness: 100,
     fips: "08001",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     incidence_floor_2023: 4.2,
@@ -27,6 +28,7 @@ function county(overrides: Partial<CountyDetail> = {}): CountyDetail {
       generated_at: "2026-01-01",
       limitations: "test",
       loaded_at: "2026-01-01",
+      scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       methodology_version: "test",
       release_id: "test",
       schema_version: "test",
@@ -102,6 +104,7 @@ describe("five-category follow-up workflows", () => {
     const workflow = buildCountyFollowUp(
       county({
         case_count_floor_2023: null,
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "no_county_linked_record",
         incidence_floor_2023: null,
         state_unallocated_records_2023: 4,
@@ -218,6 +221,7 @@ describe("five-category follow-up workflows", () => {
         color: "#a9d2db",
         county: "Worth County",
         fips: "19195",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         human_status: "no_county_linked_record",
         incidence_floor_2023: null,
         pacificus_status: "No records",

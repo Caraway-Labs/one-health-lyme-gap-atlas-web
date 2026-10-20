@@ -13,7 +13,7 @@ import * as zod from 'zod';
 
 export const CollectionEnvelopeCountyContextObservation = zod.object({
   "data": zod.array(zod.object({
-  "metadata_revision_id": zod.union([zod.string(),zod.null()]).optional().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
+  "metadata_revision_id": zod.string().nullish().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
   "observation_id": zod.string().describe('Stable observation identity and compact provenance reference.'),
   "measure_id": zod.string(),
   "geography": zod.object({
@@ -21,49 +21,49 @@ export const CollectionEnvelopeCountyContextObservation = zod.object({
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
   "temporal_grain": zod.enum(['PERIOD', 'VINTAGE_YEAR']),
-  "value": zod.union([zod.int(),zod.string(),zod.null()]).describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.'),
+  "value": zod.union([zod.int().describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.'),zod.string().describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.')]).nullable().describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.'),
   "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
   "unit": zod.string(),
-  "denominator": zod.union([zod.string(),zod.null()]).describe('Governed denominator; null means it is not supplied and must not be inferred.'),
+  "denominator": zod.string().nullable().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
   "strata": zod.record(zod.string(), zod.string()).optional(),
   "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "lineage_source_id": zod.union([zod.string(),zod.null()]).optional(),
-  "dataset_id": zod.union([zod.string(),zod.null()]).optional(),
-  "methodology_id": zod.union([zod.string(),zod.null()]).describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.union([zod.string(),zod.null()]).optional(),
-  "release_methodology_version": zod.union([zod.string(),zod.null()]).optional(),
+  "lineage_source_id": zod.string().nullish(),
+  "dataset_id": zod.string().nullish(),
+  "methodology_id": zod.string().nullable().describe('Exact governed methodology resource ID; null when not governed.'),
+  "methodology": zod.string().nullish(),
+  "release_methodology_version": zod.string().nullish(),
   "methodology_version": zod.string().describe('Transformation version, distinct from methodology resource version.'),
   "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
   "release_id": zod.string().describe('Governed release identity for reproducibility.'),
   "provenance_ref": zod.string().describe('Structured observation provenance identity; not a literature citation.'),
-  "source_label": zod.union([zod.string(),zod.null()]).optional(),
-  "source_vintage": zod.union([zod.string(),zod.null()]).optional(),
-  "source_url": zod.union([zod.string(),zod.null()]).optional(),
-  "source_published_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Publisher timestamp when governed; null is not inferred freshness.'),
-  "atlas_acquired_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "atlas_processed_at": zod.union([zod.iso.datetime({"offset":true}),zod.null()]).optional().describe('Atlas processing time when governed; distinct from response time.'),
+  "source_label": zod.string().nullish(),
+  "source_vintage": zod.string().nullish(),
+  "source_url": zod.string().nullish(),
+  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('Publisher timestamp when governed; null is not inferred freshness.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
+  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas processing time when governed; distinct from response time.'),
   "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
   "evidence": zod.object({
   "resource_type": zod.string(),
   "resource_id": zod.string(),
-  "source_id": zod.union([zod.string(),zod.null()]).optional().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.union([zod.string(),zod.null()]).optional().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.union([zod.string(),zod.null()]).optional().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.union([zod.string(),zod.null()]).optional().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Governed release identity for reproducibility.'),
-  "uri": zod.union([zod.string(),zod.null()]).optional()
+  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
+  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
+  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
+  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
+  "uri": zod.string().nullish()
 }),
   "environmental_context": zod.union([zod.object({
   "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']),
   "source_time_present": zod.boolean(),
   "day_convention": zod.string().min(1).describe('Publisher labeled 24-hour period, not a midnight calendar day.'),
-  "expected_area_m2": zod.union([zod.number(),zod.string(),zod.null()]),
-  "intersected_area_m2": zod.union([zod.number(),zod.string(),zod.null()]),
-  "source_supported_area_m2": zod.union([zod.number(),zod.string(),zod.null()]),
-  "valid_area_m2": zod.union([zod.number(),zod.string(),zod.null()]),
-  "source_coverage_fraction": zod.union([zod.number(),zod.string(),zod.null()]).describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
-  "valid_fraction_of_supported_area": zod.union([zod.number(),zod.string(),zod.null()]).describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
-  "upstream_date_modified": zod.union([zod.string(),zod.null()]).describe('Upstream modification metadata; never original publication or first availability.'),
+  "expected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
+  "intersected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
+  "source_supported_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
+  "valid_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
+  "source_coverage_fraction": zod.union([zod.number().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),zod.string().describe('Monthly source-supported\/legal county area; separate from daily completeness.')]).nullable().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
+  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),zod.string().describe('Daily valid\/source-supported area; completeness threshold 0.95.')]).nullable().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
+  "upstream_date_modified": zod.string().nullable().describe('Upstream modification metadata; never original publication or first availability.'),
   "weight_version": zod.string(),
   "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
   "metadata_revision_id": zod.string()
@@ -71,7 +71,7 @@ export const CollectionEnvelopeCountyContextObservation = zod.object({
   "surveillance_context": zod.union([zod.object({
   "evidence": zod.union([zod.object({
   "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.enum(['established', 'detected', 'unknown']),zod.null()]).optional().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
   "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
   "reason_codes": zod.array(zod.string()).min(1),
   "evidence_tier": zod.literal("GOVERNED_MAPPING"),
@@ -86,8 +86,8 @@ export const CollectionEnvelopeCountyContextObservation = zod.object({
   "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
   "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
   "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.union([zod.string(),zod.null()])),
-  "jurisdiction_class": zod.union([zod.string(),zod.null()]),
+  "methodology_era_ids": zod.array(zod.string().nullable()),
+  "jurisdiction_class": zod.string().nullable(),
   "references": zod.array(zod.string()),
   "limitations": zod.array(zod.string()),
   "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
@@ -120,8 +120,8 @@ export const CollectionEnvelopeCountyContextObservation = zod.object({
   "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
   "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
   "offset_days": zod.int(),
-  "window_days": zod.union([zod.int(),zod.null()]).optional(),
-  "season_id": zod.union([zod.string(),zod.null()]).optional()
+  "window_days": zod.int().nullish(),
+  "season_id": zod.string().nullish()
 }),
   "coverage": zod.object({
   "expected": zod.union([zod.int(),zod.number()]),
@@ -137,29 +137,29 @@ export const CollectionEnvelopeCountyContextObservation = zod.object({
 }),zod.null()]).optional()
 }),zod.null()]).optional()
 }),zod.null()]).optional().describe('Only supplied through an admitted Data release\/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.'),
-  "period_start": zod.union([zod.iso.date(),zod.null()]).describe('ACS reference-period start; null for RUCC vintage.'),
-  "period_end": zod.union([zod.iso.date(),zod.null()]).describe('ACS reference-period end; null for RUCC vintage.'),
+  "period_start": zod.iso.date().nullable().describe('ACS reference-period start; null for RUCC vintage.'),
+  "period_end": zod.iso.date().nullable().describe('ACS reference-period end; null for RUCC vintage.'),
   "county_context": zod.object({
   "contract_version": zod.literal("atlas-county-context-consumer/1"),
   "vintage_year": zod.int().describe('Source product\/classification vintage, not an annual date.'),
   "source_field": zod.string(),
   "value_type": zod.enum(['integer', 'number']),
-  "category_label": zod.union([zod.string(),zod.null()]).describe('Authoritative category label; null for quantities.'),
+  "category_label": zod.string().nullable().describe('Authoritative category label; null for quantities.'),
   "definition": zod.string(),
   "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),
   "metadata_methodology_version": zod.string()
 })
 })),
   "meta": zod.object({
-  "next_page_token": zod.union([zod.string(),zod.null()]).optional().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
+  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
   "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.enum(['AVAILABLE', 'UNAVAILABLE']),zod.null()]).optional().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal("NO_PUBLISHED_RESULTS"),zod.null()]).optional().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.union([zod.string(),zod.null()]).optional().describe('Current governed release actually read for this query.'),
-  "limitations": zod.union([zod.array(zod.string()),zod.null()]).optional().describe('Selection availability caveats; observations only.')
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
+  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
 }),
   "links": zod.object({
-  "self": zod.union([zod.string(),zod.null()]).optional()
+  "self": zod.string().nullish()
 })
 })
 

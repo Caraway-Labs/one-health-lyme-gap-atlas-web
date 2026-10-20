@@ -7,6 +7,7 @@ export const metadata = {
   loaded_at: "2026-08-15T00:00:00Z",
   scope: "United States counties",
   bundle_sha256: "a".repeat(64),
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   methodology_version: "alpha-0.2.0",
   limitations: "Not individual risk.",
   score_defaults: {},
@@ -31,6 +32,7 @@ export const counties = Array.from({ length: 24 }, (_, index) => ({
   state: "CO",
   state_name: "Colorado",
   in_contiguous_tick_scope: true,
+  scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
   human_status: "no_county_linked_record",
   tick_status: "Established",
   burgdorferi_status: "Present",
@@ -92,6 +94,7 @@ export async function mockApi(page: Page) {
       return route.fulfill({
         json: {
           release_id: metadata.release_id,
+          scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
           methodology_version: metadata.methodology_version,
           settings: {},
           counties,

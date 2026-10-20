@@ -10,7 +10,7 @@ import type { ScoreSettings } from "@/lib/atlas-ui";
 /** Same defaults Review already uses when it requests published scores. */
 export const EXPLORER_SCORE_SETTINGS: ScoreSettings = {
   ecological_share: 65,
-  low_incidence_breakpoint: 10,
+  smooth_k: 50,
   missing_human_weakness: 75,
 };
 

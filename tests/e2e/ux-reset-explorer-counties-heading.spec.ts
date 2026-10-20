@@ -66,6 +66,7 @@ const counties = coloradoNames.map((county, index) => {
     county,
     evidence_completeness: 40 + (index % 50),
     fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "observed",
     in_contiguous_tick_scope: true,
     priority: "Priority 3 — Review",
@@ -103,6 +104,7 @@ async function installExplorer(page: Page) {
         generated_at: "2026-01-01T00:00:00.000Z",
         limitations: "Sample",
         loaded_at: "2026-01-01T00:00:00.000Z",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: releaseId,
         schema_version: "1",
@@ -118,11 +120,12 @@ async function installExplorer(page: Page) {
     await route.fulfill({
       json: {
         counties,
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: releaseId,
         settings: {
           ecological_share: 65,
-          low_incidence_breakpoint: 10,
+          smooth_k: 50,
           missing_human_weakness: 75,
         },
       },

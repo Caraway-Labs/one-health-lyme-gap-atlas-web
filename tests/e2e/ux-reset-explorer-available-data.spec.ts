@@ -26,6 +26,7 @@ type ScoreCounty = {
   county: string;
   evidence_completeness: number;
   fips: string;
+  scoring_methodology_version?: "surveillance-gap-score-v1.1";
   human_status: string;
   tick_status: string;
 };
@@ -48,6 +49,7 @@ const percentCounties = [
     county: "Autauga",
     evidence_completeness: 6,
     fips: "01001",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     tick_status: "Established",
   }),
@@ -56,6 +58,7 @@ const percentCounties = [
     county: "Baldwin",
     evidence_completeness: 80,
     fips: "01003",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "missing",
     tick_status: "No records",
   }),
@@ -64,6 +67,7 @@ const percentCounties = [
     county: "Bibb",
     evidence_completeness: 83,
     fips: "01007",
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "missing",
     tick_status: "No records",
   }),
@@ -72,11 +76,12 @@ const percentCounties = [
 function scoresBody(counties: readonly ReturnType<typeof scoreCounty>[]) {
   return {
     counties,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     methodology_version: "1",
     release_id: releaseId,
     settings: {
       ecological_share: 65,
-      low_incidence_breakpoint: 10,
+      smooth_k: 50,
       missing_human_weakness: 75,
     },
   };
@@ -121,6 +126,7 @@ async function installExplorer(
         generated_at: "2026-01-01T00:00:00.000Z",
         limitations: "Sample",
         loaded_at: "2026-01-01T00:00:00.000Z",
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: releaseId,
         schema_version: "1",

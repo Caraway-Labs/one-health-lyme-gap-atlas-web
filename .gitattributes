@@ -1,2 +1,5 @@
 # Retain the supplied approval artifact's exact bytes on every platform.
 design-references/front-porch/approved-hero.html -text
+
+# Preserve the exact API artifact bytes used by the public-schema checksum.
+contracts/public-openapi.json -text

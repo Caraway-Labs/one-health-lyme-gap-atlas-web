@@ -47,6 +47,7 @@ function previewCounty(input: { county: string; fips: string; score: number }) {
     county: input.county,
     evidence_completeness: 100,
     fips: input.fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: "published_count_floor",
     in_contiguous_tick_scope: true,
     priority: "Lower",
@@ -126,11 +127,12 @@ async function installTier1Review(
     await route.fulfill({
       json: {
         counties: reviewCounties,
+        scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
         methodology_version: "1",
         release_id: requested || E2E_RELEASE_ID,
         settings: {
           ecological_share: 65,
-          low_incidence_breakpoint: 10,
+          smooth_k: 50,
           missing_human_weakness: 75,
         },
       },

@@ -13,27 +13,49 @@ export interface Measure {
   measure_id: string;
   indicator_id: string;
   label: string;
+  /** @nullable */
   definition: string | null;
   /** Governed semantic contract version, separate from HTTP V1 and application version. */
   semantic_version: string;
-  /** Governed current-release relationship version. */
+  /**
+     * Governed current-release relationship version.
+     * @nullable
+     */
   release_version?: string | null;
+  /** @nullable */
   measure_type?: string | null;
+  /** @nullable */
   unit?: string | null;
-  /** Governed denominator; null means it is not supplied and must not be inferred. */
+  /**
+     * Governed denominator; null means it is not supplied and must not be inferred.
+     * @nullable
+     */
   denominator?: string | null;
+  /** @nullable */
   geography_types?: GeographyType[] | null;
+  /** @nullable */
   temporal_grains?: string[] | null;
+  /** @nullable */
   geography_semantics?: string | null;
+  /** @nullable */
   temporal_semantics?: string | null;
+  /** @nullable */
   allowed_value_states?: ValueState[] | null;
+  /** @nullable */
   allowed_strata?: string[] | null;
+  /** @nullable */
   missingness_semantics?: string | null;
-  /** Exact governed methodology resource ID; null when not governed. */
+  /**
+     * Exact governed methodology resource ID; null when not governed.
+     * @nullable
+     */
   methodology_id?: string | null;
+  /** @nullable */
   methodology?: string | null;
+  /** @nullable */
   source_ids?: string[] | null;
   /** Governed interpretation limitations; preserve alongside values and versions. */
   limitations?: string[];
+  /** @nullable */
   standards_mappings?: StandardsMapping[] | null;
 }

@@ -19,6 +19,7 @@ RFC 9457 error. Stable codes are included when the response contract defines one
 
 ## AtlasMetadata [#schema-atlasmetadata]
 
+- `scoring_methodology_version`
 - `release_id`
 - `schema_version`
 - `generated_at`
@@ -41,6 +42,7 @@ RFC 9457 error. Stable codes are included when the response contract defines one
 
 ## ScoreCollection [#schema-scorecollection]
 
+- `scoring_methodology_version`
 - `release_id`
 - `methodology_version`
 - `settings`
@@ -48,6 +50,13 @@ RFC 9457 error. Stable codes are included when the response contract defines one
 
 ## CountyScoreSummary [#schema-countyscoresummary]
 
+Published 2023 minimum reported incidence per 100,000; null is not zero.
+
+- `scoring_methodology_version`
+- `incidence_floor_2023`
+- `svi_percentile`
+- `uninsured_percentile`
+- `rucc_2023`
 - `fips`
 - `county`
 - `state`
@@ -75,6 +84,11 @@ RFC 9457 error. Stable codes are included when the response contract defines one
 
 ## CountyDetail [#schema-countydetail]
 
+- `scoring_methodology_version`
+- `incidence_floor_2023`
+- `svi_percentile`
+- `uninsured_percentile`
+- `rucc_2023`
 - `fips`
 - `county`
 - `state`
@@ -89,15 +103,84 @@ RFC 9457 error. Stable codes are included when the response contract defines one
 - `color`
 - `population`
 - `case_count_floor_2023`
-- `incidence_floor_2023`
 - `state_unallocated_records_2023`
 - `scapularis_status`
 - `pacificus_status`
-- `svi_percentile`
-- `uninsured_percentile`
 - `uninsured_percent`
-- `rucc_2023`
 - `release`
+
+## CountySurveillanceSituations [#schema-countysurveillancesituations]
+
+Two distinct model outputs; Unknown is a valid available classification.
+
+Active governed presentation release.
+
+Primary model, including human surveillance.
+
+Secondary model, excluding human surveillance.
+
+- `county_fips`
+- `release_id`
+- `bundle_sha256`
+- `four_state`
+- `tick_pathogen`
+
+## SituationVariant [#schema-situationvariant]
+
+- `model_id`
+- `availability`
+- `unavailable_reason`
+- `compatibility`
+- `batch_id`
+- `batch_version`
+- `input_release_id`
+- `data`
+
+## SituationClassification [#schema-situationclassification]
+
+Reviewed persisted display label, verbatim.
+
+Reviewed persisted explanation, verbatim.
+
+Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.
+
+Persisted feature/config contract.
+
+Persisted sources and source vintages.
+
+Data activation time, not source vintage or request time.
+
+- `model_id`
+- `model_version`
+- `class_id`
+- `class_name`
+- `class_description`
+- `probabilities`
+- `limitations`
+- `batch_id`
+- `batch_version`
+- `county_sha256`
+- `dictionary_sha256`
+- `input_release_id`
+- `input_bundle_sha256`
+- `fit_git_sha`
+- `feature_contract`
+- `model_provenance`
+- `source_provenance`
+- `handoff_approval`
+- `data_publication_authorization`
+- `data_authorization_id`
+- `staging_attempt`
+- `activated_at`
+
+## MembershipProbability [#schema-membershipprobability]
+
+Version-scoped persisted class identity.
+
+Latent-class membership on 0–1 scale; never disease risk.
+
+- `class_id`
+- `probability`
 
 ## Tier1CountyPriority [#schema-tier1countypriority]
 

@@ -585,8 +585,8 @@ export function GeographicExplorer() {
         <h2>How counties are prioritized</h2>
         <p>
           Scores are supplied by the Python API. Current assumptions: ecological
-          share {settings.ecological_share}; low-incidence breakpoint{" "}
-          {settings.low_incidence_breakpoint}; missing-human-data weakness{" "}
+          share {settings.ecological_share}; smooth incidence attenuation k{" "}
+          {settings.smooth_k}; missing-human-data weakness{" "}
           {settings.missing_human_weakness}. These settings and the dataset are
           preserved in the page URL.
         </p>

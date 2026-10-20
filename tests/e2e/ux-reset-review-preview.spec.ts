@@ -44,6 +44,7 @@ function previewCounty(input: PreviewCounty) {
     county: input.county,
     evidence_completeness: unavailable ? 20 : 100,
     fips: input.fips,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: unavailable ? "missing" : "published_count_floor",
     in_contiguous_tick_scope: true,
     priority: input.priority ?? (unavailable ? "Priority 1 — Review" : "Lower"),
@@ -57,11 +58,12 @@ function previewCounty(input: PreviewCounty) {
 function scoresPayload(counties: ReturnType<typeof previewCounty>[]) {
   return {
     counties,
+    scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     methodology_version: "1",
     release_id: "alpha-2026",
     settings: {
       ecological_share: 65,
-      low_incidence_breakpoint: 10,
+      smooth_k: 50,
       missing_human_weakness: 75,
     },
   };

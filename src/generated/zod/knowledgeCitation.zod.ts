@@ -19,13 +19,13 @@ export const KnowledgeCitation = zod.object({
   "claim_ids": zod.array(zod.string()).min(1),
   "passage_ids": zod.array(zod.string()).min(1),
   "source_label": zod.string().default(knowledgeCitationSourceLabelDefault),
-  "pmcid": zod.union([zod.string(),zod.null()]).optional(),
-  "corpus_unit_ids": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "section_labels": zod.union([zod.array(zod.string()),zod.null()]).optional(),
-  "corpus_rules_version": zod.union([zod.string(),zod.null()]).optional(),
-  "artifact_id": zod.union([zod.string(),zod.null()]).optional(),
-  "contribution_sha256": zod.union([zod.string(),zod.null()]).optional(),
-  "jats_sha256": zod.union([zod.string(),zod.null()]).optional()
+  "pmcid": zod.string().nullish(),
+  "corpus_unit_ids": zod.array(zod.string()).nullish(),
+  "section_labels": zod.array(zod.string()).nullish(),
+  "corpus_rules_version": zod.string().nullish(),
+  "artifact_id": zod.string().nullish(),
+  "contribution_sha256": zod.string().nullish(),
+  "jats_sha256": zod.string().nullish()
 })
 
 export type KnowledgeCitation = zod.input<typeof KnowledgeCitation>;
