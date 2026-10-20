@@ -267,8 +267,10 @@ export function ReviewNationalPicture({
   );
   const mapCounties = useMemo(() => {
     const awaitingLayer = mapPaint.kind === "loading";
+    // Gray means a governed rurality response omitted a county. A failed
+    // load stays on the boundary color so it is not read as No data.
     const missingColor =
-      mapPaint.layerId === "rurality"
+      mapPaint.layerId === "rurality" && mapPaint.kind === "categorical"
         ? RURALITY_NO_DATA_COLOR
         : noPublishedValueColor();
     return geometryFeatures.flatMap((feature) => {
