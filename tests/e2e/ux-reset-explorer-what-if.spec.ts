@@ -904,10 +904,6 @@ test.describe("Explorer what-if scenario", () => {
             fips: "08001",
             scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
             human_status: "published_count_floor",
-            incidence_floor_2023: 0,
-            svi_percentile: 0,
-            uninsured_percentile: 0,
-            rucc_2023: 1,
             in_contiguous_tick_scope: true,
             priority: lower,
             score: {

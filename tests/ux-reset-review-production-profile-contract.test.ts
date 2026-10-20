@@ -1,20 +1,27 @@
-import legacyCapture from "./fixtures/review-al-01001.json";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
 import { CountyV1CountiesFipsGetResponse } from "@/generated/zod/atlas";
 
+import legacyCapture from "./fixtures/review-al-01001.json";
 import autauga from "./fixtures/review-al-v11-01001.json";
 import baldwin from "./fixtures/review-al-v11-01003.json";
 import barbour from "./fixtures/review-al-v11-01005.json";
 
 describe("Source-backed v1.1 regression projections through the existing loader", () => {
   afterEach(() => vi.restoreAllMocks());
+
   it("rejects a captured legacy response instead of relabeling it as v1.1", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json(legacyCapture));
-    await expect(loadInvestigateCountyRecord({ fips: legacyCapture.fips,
-      releaseId: legacyCapture.release.release_id, signal: new AbortController().signal }))
-      .rejects.toThrow("Atlas scoring versions do not match");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json(legacyCapture)
+    );
+    await expect(
+      loadInvestigateCountyRecord({
+        fips: legacyCapture.fips,
+        releaseId: legacyCapture.release.release_id,
+        signal: new AbortController().signal,
+      })
+    ).rejects.toThrow("Atlas scoring versions do not match");
   });
 
   it.each([autauga, baldwin, barbour])(

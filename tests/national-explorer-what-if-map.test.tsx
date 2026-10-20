@@ -48,7 +48,9 @@ function score(
     fips,
     scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
     human_status: humanStatus,
-    svi_percentile: 0.838, uninsured_percentile: 0.848, rucc_2023: 9,
+    svi_percentile: 0.838,
+    uninsured_percentile: 0.848,
+    rucc_2023: 9,
     in_contiguous_tick_scope: true,
     priority: "Lower Atlas priority — Not a safety finding",
     score: {

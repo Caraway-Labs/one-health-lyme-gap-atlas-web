@@ -37,16 +37,31 @@ describe("Surveillance Gap Score v1.1 Python/TypeScript/research parity", () => 
   it("matches authoritative k100 scenarios and ranks for the entire in-scope snapshot", () => {
     const rows = fixtures.filter((row) => row.inputs.in_contiguous_tick_scope);
     const counties: CountyScoreSummary[] = rows.map((row) => ({
-      ...row.inputs, score: row.expected, county: row.county, state: row.state,
-      state_name: row.state, evidence_completeness: 100, priority: row.priority,
-      color: row.color, scoring_methodology_version: "surveillance-gap-score-v1.1",
+      ...row.inputs,
+      score: row.expected,
+      county: row.county,
+      state: row.state,
+      state_name: row.state,
+      evidence_completeness: 100,
+      priority: row.priority,
+      color: row.color,
+      scoring_methodology_version: "surveillance-gap-score-v1.1",
     }));
-    const scenarios = adjustCountyScenarios(counties, { ...SCENARIO_SCORE_DEFAULTS, smooth_k: 100 });
-    const ranked = rows.toSorted((left, right) => right.expected_k100.score - left.expected_k100.score || left.inputs.fips.localeCompare(right.inputs.fips));
+    const scenarios = adjustCountyScenarios(counties, {
+      ...SCENARIO_SCORE_DEFAULTS,
+      smooth_k: 100,
+    });
+    const ranked = rows.toSorted(
+      (left, right) =>
+        right.expected_k100.score - left.expected_k100.score ||
+        left.inputs.fips.localeCompare(right.inputs.fips)
+    );
     for (const [index, row] of ranked.entries()) {
       const result = scenarios?.get(row.inputs.fips);
       expect(result?.kind).not.toBe("limited");
-      expect(result && "score" in result ? result.score : null).toBe(row.expected_k100.score);
+      expect(result && "score" in result ? result.score : null).toBe(
+        row.expected_k100.score
+      );
       expect(result && "rank" in result ? result.rank : null).toBe(index + 1);
     }
   });
