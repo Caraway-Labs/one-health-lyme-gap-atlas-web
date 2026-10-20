@@ -311,12 +311,11 @@ test.describe("professional shell scroll containment", () => {
     await page.mouse.wheel(0, 120);
     await expect.poll(() => mainScrollTop(page)).toBeGreaterThan(40);
     await expectChromeParked(page, sidebarBox, headerBox);
-    // The Explorer introduction, including its h1, follows the map. The
-    // toolbar is the first block in main, so it is what a short scroll moves
-    // under the parked header.
+    // The approved Explorer introduction is the first block in main. A short
+    // scroll moves that banner under the parked header.
     expect(
       await page
-        .locator(".ux-reset-explorer-toolbar")
+        .getByTestId("page-introduction-explorer")
         .evaluate((element) => element.getBoundingClientRect().top)
     ).toBeLessThan(headerBox.bottom);
 
