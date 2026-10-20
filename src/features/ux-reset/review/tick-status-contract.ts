@@ -3,13 +3,14 @@
  * read this module. Pathogen status and the gap-score ramp stay on their own
  * scales. WEB #721 can add a sibling contract without changing this one.
  *
- * Approved Option A colors: No records #DDE4E7, Reported #35A6B8,
- * Established #174B78. Known extra statuses use fixed hues so they stay
- * distinct from those three and from each other.
+ * Approved October 19, 2026 colors: No records #D1D5DB, Reported #E9B949,
+ * Established #946200. These are categorical statuses, not a risk gradient.
+ * Known extra statuses use fixed hues so they stay distinct from those three
+ * and from each other.
  */
-export const TICK_STATUS_NO_RECORDS_COLOR = "#DDE4E7";
-export const TICK_STATUS_REPORTED_COLOR = "#35A6B8";
-export const TICK_STATUS_ESTABLISHED_COLOR = "#174B78";
+export const TICK_STATUS_NO_RECORDS_COLOR = "#D1D5DB";
+export const TICK_STATUS_REPORTED_COLOR = "#E9B949";
+export const TICK_STATUS_ESTABLISHED_COLOR = "#946200";
 
 export const TICK_STATUS_EXTRA_COLORS = {
   Missing: "hsl(24,48%,42%)",
