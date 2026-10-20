@@ -299,9 +299,7 @@ test.describe("Review national geographic navigation", () => {
     await page.setViewportSize({ height: 1100, width: 1637 });
     await page.goto("/explore?scope=ALL");
     const list = page.locator(".ux-reset-explorer-list");
-    await expect(list.getByRole("heading").first()).toHaveText(
-      "Choose a county"
-    );
+    await expect(list.getByRole("heading").first()).toHaveText("Counties");
     await expect(page.getByTestId("national-browse-state")).toHaveCount(0);
     await expect(page.getByText("Browse a state")).toHaveCount(0);
     await expect(list.locator(".ux-reset-ranked-counties-eyebrow")).toHaveCount(
