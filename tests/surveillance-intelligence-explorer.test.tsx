@@ -14,8 +14,11 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
+import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import { ExplorerSurveillanceIntelligence } from "@/features/ux-reset/surveillance-intelligence/explorer-surveillance-intelligence";
 import { SURVEILLANCE_INTELLIGENCE_GUIDE } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
+import { surveillanceSituationsQueryOptions } from "@/features/ux-reset/surveillance-intelligence/use-surveillance-situations";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { AtlasApiError } from "@/lib/api-mutator";
 
@@ -31,15 +34,35 @@ const release: Tier1ActiveRelease = {
   status: "ready",
 };
 
-const { scoresGet, situationsGet, tier1Get } = vi.hoisted(() => ({
-  scoresGet: vi.fn<typeof import("@/generated/atlas").scoresV1AtlasScoresGet>(),
-  situationsGet:
-    vi.fn<typeof import("@/generated/atlas").countySurveillanceSituationsGet>(),
-  tier1Get:
-    vi.fn<
-      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
-    >(),
-}));
+const { evidenceWorkspace, scoresGet, situationsGet, tier1Get } = vi.hoisted(
+  () => ({
+    evidenceWorkspace: {
+      current: null as InvestigateWorkspace | null,
+    },
+    scoresGet:
+      vi.fn<typeof import("@/generated/atlas").scoresV1AtlasScoresGet>(),
+    situationsGet:
+      vi.fn<
+        typeof import("@/generated/atlas").countySurveillanceSituationsGet
+      >(),
+    tier1Get:
+      vi.fn<
+        typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+      >(),
+  })
+);
+
+vi.mock(
+  import("@/features/ux-reset/investigate/use-investigate-workspace"),
+  () => ({
+    useInvestigateWorkspace: () => {
+      if (!evidenceWorkspace.current) {
+        throw new Error("Explorer evidence workspace was not set.");
+      }
+      return evidenceWorkspace.current;
+    },
+  })
+);
 
 vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
@@ -100,7 +123,8 @@ function classification(
 function situationsBody(
   fips: string,
   four: ReturnType<typeof classification> | null,
-  tick: ReturnType<typeof classification> | null
+  tick: ReturnType<typeof classification> | null,
+  releaseId = reviewScopeScoresFixture.release_id
 ) {
   const unavailable = {
     availability: "UNAVAILABLE",
@@ -127,7 +151,7 @@ function situationsBody(
           unavailable_reason: null,
         }
       : unavailable,
-    release_id: reviewScopeScoresFixture.release_id,
+    release_id: releaseId,
     tick_pathogen: tick
       ? {
           availability: "AVAILABLE",
@@ -154,27 +178,38 @@ function ok<T>(data: T) {
 function situationsResponse(
   fips: string,
   four: ReturnType<typeof classification> | null,
-  tick: ReturnType<typeof classification> | null
+  tick: ReturnType<typeof classification> | null,
+  releaseId = reviewScopeScoresFixture.release_id
 ) {
-  return ok(situationsBody(fips, four, tick)) as Awaited<
+  return ok(situationsBody(fips, four, tick, releaseId)) as Awaited<
     ReturnType<
       typeof import("@/generated/atlas").countySurveillanceSituationsGet
     >
   >;
 }
 
-function renderIntelligence(fips = "01001") {
+function renderIntelligence(
+  fips = "01001",
+  initialRelease: Tier1ActiveRelease = release
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   function Harness({ initialFips }: { initialFips: string }) {
     const [county, setCounty] = useState(initialFips);
+    const [activeRelease, setActiveRelease] = useState(initialRelease);
     return (
       <>
         <button type="button" onClick={() => setCounty("08001")}>
           Switch county
         </button>
-        <ExplorerSurveillanceIntelligence fips={county} release={release} />
+        <button type="button" onClick={() => setActiveRelease(release)}>
+          Resolve release
+        </button>
+        <ExplorerSurveillanceIntelligence
+          fips={county}
+          release={activeRelease}
+        />
       </>
     );
   }
@@ -197,6 +232,7 @@ function renderView(ui: ReactElement) {
 describe("Explorer County Surveillance Intelligence", () => {
   afterEach(() => {
     cleanup();
+    evidenceWorkspace.current = null;
     scoresGet.mockReset();
     situationsGet.mockReset();
     tier1Get.mockReset();
@@ -422,5 +458,234 @@ describe("Explorer County Surveillance Intelligence", () => {
     expect(
       screen.queryByTestId("county-surveillance-intelligence")
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps the situation query disabled until the page release is ready", () => {
+    const client = new QueryClient();
+    expect(
+      surveillanceSituationsQueryOptions("01001", null, client).enabled
+    ).toBeFalsy();
+    expect(
+      surveillanceSituationsQueryOptions("01001", release.releaseId, client)
+        .enabled
+    ).toBeTruthy();
+  });
+
+  it("requests situations once after the page release becomes ready", async () => {
+    const user = userEvent.setup();
+    scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
+    tier1Get.mockResolvedValue(
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"))
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "01001",
+        classification("class-3", "Pathogen not recorded", 0.2),
+        classification("class-0", "Established blacklegged tick", 0.2)
+      )
+    );
+    renderIntelligence("01001", { status: "pending" });
+    expect(
+      screen.getAllByText("Class membership is loading.").length
+    ).toBeGreaterThan(0);
+    expect(situationsGet).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Resolve release" }));
+    await screen.findByText("Pathogen not recorded");
+    expect(situationsGet).toHaveBeenCalledOnce();
+    expect(situationsGet).toHaveBeenCalledExactlyOnceWith(
+      "01001",
+      expect.anything()
+    );
+  });
+
+  it("withholds a situation response whose release does not match the page", async () => {
+    const user = userEvent.setup();
+    scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
+    tier1Get.mockResolvedValue(
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"))
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "01001",
+        classification("class-3", "Pathogen not recorded", 0.2),
+        classification("class-0", "Established blacklegged tick", 0.2),
+        "governed-other-release"
+      )
+    );
+    renderIntelligence("01001");
+    const card = await screen.findByTestId(
+      "surveillance-intelligence-card-surveillance-situation"
+    );
+    await within(card).findByText("Unavailable");
+    expect(card).not.toHaveTextContent("Pathogen not recorded");
+    await user.click(
+      within(card).getByRole("button", { name: /Surveillance Situation/ })
+    );
+    const disclosure = screen.getByTestId(
+      "surveillance-intelligence-disclosure"
+    );
+    expect(disclosure).toHaveTextContent("governed-other-release");
+    expect(disclosure).toHaveTextContent(release.releaseId);
+    expect(disclosure).not.toHaveTextContent("Pathogen not recorded");
+  });
+
+  it("shows governed source provenance in the situation disclosure", async () => {
+    const user = userEvent.setup();
+    scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
+    tier1Get.mockResolvedValue(
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"))
+    );
+    const four = classification("class-3", "Pathogen not recorded", 0.2);
+    four.source_provenance = {
+      human: {
+        dataset_id: "x5j9-wybp",
+        source_id: "cdc_lyme",
+        vintage: "2023",
+      },
+    };
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "01001",
+        four,
+        classification("class-0", "Established blacklegged tick", 0.2)
+      )
+    );
+    renderIntelligence("01001");
+    const card = await screen.findByTestId(
+      "surveillance-intelligence-card-surveillance-situation"
+    );
+    await user.click(
+      within(card).getByRole("button", { name: /Surveillance Situation/ })
+    );
+    expect(
+      screen.getByTestId("surveillance-intelligence-disclosure")
+    ).toHaveTextContent("cdc_lyme · x5j9-wybp · vintage 2023");
+    expect(
+      screen.getByTestId("surveillance-intelligence-disclosure")
+    ).toHaveTextContent(release.releaseId);
+  });
+});
+
+const PAGE_RELEASE = "governed-2026-10-15-january-climate-prod";
+const TIER1_MODEL_RELEASE = "governed-2026-09-18-unknown-coverage";
+
+function countyEvidenceWorkspace(releaseId: string): InvestigateWorkspace {
+  return {
+    bundle: null,
+    catalogError: null,
+    catalogRefreshError: null,
+    compare: [],
+    countyDetail: null,
+    countyRecord: null,
+    countyRecordAbsent: false,
+    countyRecordError: null,
+    countyRecordLoading: false,
+    countyRecordRefreshError: null,
+    directory: [],
+    directoryError: null,
+    directoryLoading: false,
+    directoryRefreshError: null,
+    evidenceError: null,
+    evidenceFetching: false,
+    evidenceLoading: false,
+    identity: {
+      fips: "01001",
+      label: "Autauga County",
+      stateCode: "AL",
+    },
+    indicatorError: null,
+    indicatorRefreshError: null,
+    measures: [],
+    metadata: null,
+    metadataError: null,
+    metadataLoading: false,
+    metadataRefreshError: null,
+    observationOutcome: "settled-absent",
+    period: null,
+    recovery: null,
+    releaseId,
+    requestedDataset: null,
+    requestedFips: "01001",
+    retryDirectory: vi.fn<() => void>(),
+    retryEvidence: vi.fn<() => void>(),
+    scope: "AL",
+    scopeLabel: "Alabama",
+    selection: { kind: "missing" },
+    setCounty: vi.fn<(fips: string) => void>(),
+    stateLabel: "Alabama (AL)",
+    suggestedFollowUpEvidence: null,
+  };
+}
+
+function renderCountyEvidence(releaseId: string) {
+  evidenceWorkspace.current = countyEvidenceWorkspace(releaseId);
+  renderView(
+    <ExplorerCountyEvidence
+      followUp={{ status: "factual" }}
+      methodologyLabel={null}
+      mode="evidence"
+      onBackToMap={vi.fn<() => void>()}
+    />
+  );
+}
+
+describe("Explorer county evidence owns one Tier 1 presentation", () => {
+  afterEach(() => {
+    cleanup();
+    evidenceWorkspace.current = null;
+    scoresGet.mockReset();
+    situationsGet.mockReset();
+    tier1Get.mockReset();
+  });
+
+  async function showPriority(tier1ReleaseId: string) {
+    scoresGet.mockResolvedValue(
+      ok({ ...reviewScopeScoresFixture, release_id: PAGE_RELEASE })
+    );
+    tier1Get.mockResolvedValue(
+      ok(
+        tier1PriorityForRelease(
+          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
+          tier1ReleaseId
+        )
+      )
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "01001",
+        classification("class-3", "Pathogen not recorded", 0.2),
+        classification("class-0", "Established blacklegged tick", 0.2),
+        PAGE_RELEASE
+      )
+    );
+    renderCountyEvidence(PAGE_RELEASE);
+    const priority = await screen.findByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
+    await within(priority).findByText("LOW");
+    return priority;
+  }
+
+  it("shows LOW and Insufficient once when the model release differs", async () => {
+    const priority = await showPriority(TIER1_MODEL_RELEASE);
+    expect(priority).toHaveTextContent("Evidence sufficiency Insufficient");
+    expect(
+      screen.queryByTestId("tier1-surveillance-priority")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/different release than the evidence on screen/)
+    ).not.toBeInTheDocument();
+    expect(tier1Get).toHaveBeenCalledOnce();
+  });
+
+  it("shows LOW and Insufficient once when the model release matches", async () => {
+    const priority = await showPriority(PAGE_RELEASE);
+    expect(priority).toHaveTextContent("LOW");
+    expect(priority).toHaveTextContent("Evidence sufficiency Insufficient");
+    expect(screen.getAllByText("LOW")).toHaveLength(1);
+    expect(
+      screen.queryByTestId("tier1-surveillance-priority")
+    ).not.toBeInTheDocument();
+    expect(tier1Get).toHaveBeenCalledOnce();
   });
 });

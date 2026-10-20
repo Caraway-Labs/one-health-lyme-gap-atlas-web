@@ -45,6 +45,31 @@ function errorStatus(error: unknown): number | null {
   return error instanceof AtlasApiError ? error.status : null;
 }
 
+function situationsPhase(
+  release: Tier1ActiveRelease,
+  fips: string,
+  query: UseQueryResult<unknown, Error>
+): IntelligenceQueryPhase {
+  if (!/^\d{5}$/.test(fips)) {
+    return "idle";
+  }
+  switch (release.status) {
+    case "pending": {
+      return "loading";
+    }
+    case "unknown": {
+      return "idle";
+    }
+    case "ready": {
+      return phaseOf(true, query);
+    }
+    default: {
+      const exhaustive: never = release;
+      return exhaustive;
+    }
+  }
+}
+
 function tier1Phase(
   release: Tier1ActiveRelease,
   query: UseQueryResult<Tier1CountyPriority, Error>
@@ -79,7 +104,7 @@ export function useCountySurveillanceIntelligence(input: {
     input.release.status === "ready" ? input.release.releaseId : null;
   const scoresQuery = useExplorerMapScores(releaseId);
   const tier1Query = useTier1SurveillancePriority(input.fips, input.release);
-  const situationsEnabled = /^\d{5}$/.test(input.fips);
+  const situationsEnabled = releaseId !== null && /^\d{5}$/.test(input.fips);
   const situationsQuery = useSurveillanceSituations(
     input.fips,
     releaseId,
@@ -97,7 +122,8 @@ export function useCountySurveillanceIntelligence(input: {
     },
     situations: {
       errorStatus: errorStatus(situationsQuery.error),
-      phase: phaseOf(situationsEnabled, situationsQuery),
+      phase: situationsPhase(input.release, input.fips, situationsQuery),
+      release: input.release,
       result: situationsQuery.isSuccess ? situationsQuery.data : null,
     },
     tier1: {

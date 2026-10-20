@@ -54,7 +54,7 @@ export function surveillanceSituationsQueryOptions(
   enabled = true
 ): UseQueryOptions<CountySurveillanceSituations, Error> {
   return {
-    enabled: enabled && COUNTY_FIPS.test(fips),
+    enabled: enabled && COUNTY_FIPS.test(fips) && releaseId !== null,
     queryFn: async ({
       signal,
     }: {

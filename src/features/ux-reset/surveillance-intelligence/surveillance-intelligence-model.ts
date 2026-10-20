@@ -102,6 +102,8 @@ export type Tier1QueryState = {
 export type SituationsQueryState = {
   errorStatus: number | null;
   phase: IntelligenceQueryPhase;
+  /** Governed page release the situation response must match before a class is shown. */
+  release: Tier1ActiveRelease;
   result: CountySurveillanceSituations | null;
 };
 
@@ -561,8 +563,101 @@ function membershipFields(
   return fields;
 }
 
+function readProvenanceString(
+  record: Record<string, unknown>,
+  key: string
+): string | null {
+  const value = record[key];
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function formatProvenanceValue(value: unknown): string {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
+  }
+  if (!isPlainRecord(value)) {
+    return NOT_RETURNED;
+  }
+  const source =
+    readProvenanceString(value, "source_id") ??
+    readProvenanceString(value, "source");
+  const dataset = readProvenanceString(value, "dataset_id");
+  const vintage =
+    readProvenanceString(value, "vintage") ??
+    readProvenanceString(value, "source_vintage");
+  const parts = [
+    source,
+    dataset,
+    vintage === null ? null : `vintage ${vintage}`,
+  ].filter((part): part is string => part !== null);
+  if (parts.length > 0) {
+    return parts.join(" · ");
+  }
+  const primitives = Object.entries(value)
+    .filter(
+      (entry): entry is [string, boolean | number | string] =>
+        typeof entry[1] === "string" ||
+        typeof entry[1] === "number" ||
+        typeof entry[1] === "boolean"
+    )
+    .map(([field, fieldValue]) => `${field} ${String(fieldValue)}`);
+  return primitives.length > 0 ? primitives.join(" · ") : NOT_RETURNED;
+}
+
+function sourceProvenanceDisclosure(
+  provenance: SituationClassification["source_provenance"]
+): IntelligenceField[] {
+  const entries = Object.entries(provenance);
+  if (entries.length === 0) {
+    return [{ label: "Source provenance", value: NOT_RETURNED }];
+  }
+  return entries.map(([key, value]) => ({
+    label: `Source ${key}`,
+    value: formatProvenanceValue(value),
+  }));
+}
+
+function situationLineageDisclosure(
+  presentationReleaseId: string,
+  variant: SituationVariant,
+  classification: SituationClassification | null
+): IntelligenceField[] {
+  const fields: IntelligenceField[] = [
+    { label: "Presentation release", value: presentationReleaseId },
+    {
+      label: "Compatibility with presentation release",
+      value: compatibilityLabel(variant.compatibility),
+    },
+    {
+      label: "Input release",
+      value:
+        variant.input_release_id ??
+        classification?.input_release_id ??
+        NOT_RETURNED,
+    },
+  ];
+  if (!classification) {
+    return fields;
+  }
+  fields.push(
+    { label: "Model version", value: classification.model_version },
+    { label: "Batch", value: classification.batch_version },
+    ...sourceProvenanceDisclosure(classification.source_provenance)
+  );
+  return fields;
+}
+
 function mapAvailableSituation(
   id: SurveillanceIntelligencePerspectiveId,
+  presentationReleaseId: string,
   variant: SituationVariant,
   classification: SituationClassification
 ): IntelligencePerspectiveView {
@@ -572,18 +667,11 @@ function mapAvailableSituation(
   );
   return {
     description: classification.class_description,
-    disclosure: [
-      { label: "Model version", value: classification.model_version },
-      {
-        label: "Input release",
-        value: variant.input_release_id ?? classification.input_release_id,
-      },
-      {
-        label: "Compatibility",
-        value: compatibilityLabel(variant.compatibility),
-      },
-      { label: "Batch", value: classification.batch_version },
-    ],
+    disclosure: situationLineageDisclosure(
+      presentationReleaseId,
+      variant,
+      classification
+    ),
     fields: membershipFields(classification),
     fullValue: membership === null ? null : formatFullProbability(membership),
     id,
@@ -604,6 +692,7 @@ function mapAvailableSituation(
 
 function mapSituationVariant(
   id: SurveillanceIntelligencePerspectiveId,
+  presentationReleaseId: string,
   variant: SituationVariant,
   countyMatched: boolean
 ): IntelligencePerspectiveView {
@@ -632,16 +721,11 @@ function mapSituationVariant(
         "Compatibility is unavailable or the release is incompatible. No class is shown.",
         false
       ),
-      disclosure: [
-        {
-          label: "Compatibility",
-          value: compatibilityLabel(variant.compatibility),
-        },
-        {
-          label: "Input release",
-          value: variant.input_release_id ?? NOT_RETURNED,
-        },
-      ],
+      disclosure: situationLineageDisclosure(
+        presentationReleaseId,
+        variant,
+        null
+      ),
     };
   }
   if (variant.availability === SituationVariantAvailability.UNAVAILABLE) {
@@ -655,16 +739,11 @@ function mapSituationVariant(
         `${reason}. No class was published for this model. Unavailable is not a class name and is not zero.`,
         false
       ),
-      disclosure: [
-        {
-          label: "Compatibility",
-          value: compatibilityLabel(variant.compatibility),
-        },
-        {
-          label: "Input release",
-          value: variant.input_release_id ?? NOT_RETURNED,
-        },
-      ],
+      disclosure: situationLineageDisclosure(
+        presentationReleaseId,
+        variant,
+        null
+      ),
     };
   }
   if (!variant.data) {
@@ -677,7 +756,46 @@ function mapSituationVariant(
       false
     );
   }
-  return mapAvailableSituation(id, variant, variant.data);
+  return mapAvailableSituation(
+    id,
+    presentationReleaseId,
+    variant,
+    variant.data
+  );
+}
+
+function releaseMismatchPerspective(
+  id: SurveillanceIntelligencePerspectiveId,
+  responseReleaseId: string,
+  pageReleaseId: string
+): IntelligencePerspectiveView {
+  return {
+    ...emptyPerspective(
+      id,
+      "unavailable",
+      UNAVAILABLE_PRIMARY,
+      "Not shown for this page release",
+      "The surveillance situation response did not match this page release, so no classification is shown.",
+      false
+    ),
+    disclosure: [
+      { label: "Response release", value: responseReleaseId },
+      { label: "Page release", value: pageReleaseId },
+    ],
+  };
+}
+
+function releaseUnknownPerspective(
+  id: SurveillanceIntelligencePerspectiveId
+): IntelligencePerspectiveView {
+  return emptyPerspective(
+    id,
+    "unavailable",
+    UNAVAILABLE_PRIMARY,
+    MEMBERSHIP_NOT_RETURNED,
+    "Surveillance situation is not shown because the governed release for this page is not known.",
+    false
+  );
 }
 
 function mapSituations(
@@ -686,10 +804,16 @@ function mapSituations(
 ): [IntelligencePerspectiveView, IntelligencePerspectiveView] {
   const fourId = "surveillance-situation" as const;
   const tickId = "ecological-situation" as const;
-  if (state.phase === "loading") {
+  if (state.release.status === "pending" || state.phase === "loading") {
     return [
       loadingPerspective(fourId, "Class membership is loading."),
       loadingPerspective(tickId, "Class membership is loading."),
+    ];
+  }
+  if (state.release.status === "unknown") {
+    return [
+      releaseUnknownPerspective(fourId),
+      releaseUnknownPerspective(tickId),
     ];
   }
   if (state.phase === "idle") {
@@ -739,15 +863,32 @@ function mapSituations(
     ];
   }
   const result = state.result;
+  const pageReleaseId = state.release.releaseId;
   if (!result || result.county_fips !== fips) {
     return [
-      mapSituationVariant(fourId, unavailableVariant("four-state"), false),
-      mapSituationVariant(tickId, unavailableVariant("tick-pathogen"), false),
+      mapSituationVariant(
+        fourId,
+        pageReleaseId,
+        unavailableVariant("four-state"),
+        false
+      ),
+      mapSituationVariant(
+        tickId,
+        pageReleaseId,
+        unavailableVariant("tick-pathogen"),
+        false
+      ),
+    ];
+  }
+  if (result.release_id !== pageReleaseId) {
+    return [
+      releaseMismatchPerspective(fourId, result.release_id, pageReleaseId),
+      releaseMismatchPerspective(tickId, result.release_id, pageReleaseId),
     ];
   }
   return [
-    mapSituationVariant(fourId, result.four_state, true),
-    mapSituationVariant(tickId, result.tick_pathogen, true),
+    mapSituationVariant(fourId, result.release_id, result.four_state, true),
+    mapSituationVariant(tickId, result.release_id, result.tick_pathogen, true),
   ];
 }
 

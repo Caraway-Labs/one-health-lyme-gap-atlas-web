@@ -121,9 +121,15 @@ function readyTier(result: Tier1CountyPriority | null): Tier1QueryState {
 }
 
 function readySituations(
-  result: CountySurveillanceSituations | null
+  result: CountySurveillanceSituations | null,
+  releaseId = PAGE_RELEASE
 ): SituationsQueryState {
-  return { errorStatus: null, phase: "success", result };
+  return {
+    errorStatus: null,
+    phase: "success",
+    release: { releaseId, status: "ready" },
+    result,
+  };
 }
 
 function mapped(input?: {
@@ -389,6 +395,97 @@ describe("County Surveillance Intelligence mapping", () => {
     expect(formatPercentileOneDecimal(0)).toBe("0.0");
   });
 
+  it("withholds situation classes when the response release differs from the page release", () => {
+    const responseRelease = "governed-2026-10-16-next";
+    const body = situations(
+      variant("AVAILABLE", fourClass),
+      variant("AVAILABLE", tickClass)
+    );
+    body.release_id = responseRelease;
+    const views = mapped({
+      situations: readySituations(body, PAGE_RELEASE),
+    });
+
+    expect(views[2]).toMatchObject({
+      disclosure: [
+        { label: "Response release", value: responseRelease },
+        { label: "Page release", value: PAGE_RELEASE },
+      ],
+      kind: "unavailable",
+      primary: "Unavailable",
+    });
+    expect(views[3]).toMatchObject({
+      kind: "unavailable",
+      primary: "Unavailable",
+    });
+    expect(JSON.stringify([views[2], views[3]])).not.toContain(
+      "Pathogen not recorded"
+    );
+    expect(JSON.stringify([views[2], views[3]])).not.toContain(
+      "Established blacklegged tick"
+    );
+  });
+
+  it("keeps presentation release, admitted input release, and source provenance distinct", () => {
+    const inputRelease = "governed-2026-09-18-unknown-coverage";
+    const classified = {
+      ...fourClass,
+      input_release_id: inputRelease,
+      source_provenance: {
+        human: {
+          dataset_id: "x5j9-wybp",
+          source_id: "cdc_lyme",
+          vintage: "2023",
+        },
+        tick: {
+          source_id: "cdc_arbonet_tick_module",
+          vintage: "through 2025-12-31",
+        },
+      },
+    };
+    const admitted = variant(
+      "AVAILABLE",
+      classified,
+      null,
+      "ADMITTED_CARRY_FORWARD"
+    );
+    admitted.input_release_id = inputRelease;
+    const views = mapped({
+      situations: readySituations(
+        situations(admitted, variant("AVAILABLE", tickClass)),
+        PAGE_RELEASE
+      ),
+    });
+    const disclosure = views[2]?.disclosure ?? [];
+
+    expect(views[2]).toMatchObject({
+      kind: "ready",
+      primary: "Pathogen not recorded",
+    });
+    expect(disclosure).toStrictEqual(
+      expect.arrayContaining([
+        { label: "Presentation release", value: PAGE_RELEASE },
+        {
+          label: "Compatibility with presentation release",
+          value: "Admitted carry forward",
+        },
+        { label: "Input release", value: inputRelease },
+        {
+          label: "Source human",
+          value: "cdc_lyme · x5j9-wybp · vintage 2023",
+        },
+        {
+          label: "Source tick",
+          value: "cdc_arbonet_tick_module · vintage through 2025-12-31",
+        },
+      ])
+    );
+    expect(
+      disclosure.find((field) => field.label === "Presentation release")?.value
+    ).not.toBe(inputRelease);
+    expect(views[2]?.overview).not.toContain("did not match this page release");
+  });
+
   it("does not invent a score when a model request fails", () => {
     const views = mapped({
       gap: {
@@ -396,7 +493,12 @@ describe("County Surveillance Intelligence mapping", () => {
         release: { releaseId: PAGE_RELEASE, status: "ready" },
         result: null,
       },
-      situations: { errorStatus: 503, phase: "error", result: null },
+      situations: {
+        errorStatus: 503,
+        phase: "error",
+        release: { releaseId: PAGE_RELEASE, status: "ready" },
+        result: null,
+      },
       tier1: { errorStatus: 404, phase: "error", result: null },
     });
     expect(views[0]).toMatchObject({ kind: "error", retryable: true });

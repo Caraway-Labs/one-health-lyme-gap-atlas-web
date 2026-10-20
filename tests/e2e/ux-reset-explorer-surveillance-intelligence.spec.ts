@@ -41,7 +41,17 @@ function situationData(classId: string, className: string) {
       { class_id: "other-a", probability: 0 },
       { class_id: "other-b", probability: 0 },
     ],
-    source_provenance: {},
+    source_provenance: {
+      human: {
+        dataset_id: "x5j9-wybp",
+        source_id: "cdc_lyme",
+        vintage: "2023",
+      },
+      tick: {
+        source_id: "cdc_arbonet_tick_module",
+        vintage: "through 2025-12-31",
+      },
+    },
     staging_attempt: "1",
   };
 }
@@ -161,6 +171,12 @@ test.describe("Explorer county surveillance intelligence", () => {
     const section = page.getByTestId("county-surveillance-intelligence");
     await expect(section).toBeVisible();
     await expect(section.getByRole("heading", { level: 3 })).toHaveCount(4);
+    await expect(
+      page
+        .getByTestId("explorer-county-evidence")
+        .getByTestId("tier1-surveillance-priority")
+    ).toHaveCount(0);
+    await expect(section.getByText("LOW", { exact: true })).toBeVisible();
     await expect(section.getByText("Pathogen not recorded")).toBeVisible();
     await expect(
       section.getByText("Class membership 20.0%").first()

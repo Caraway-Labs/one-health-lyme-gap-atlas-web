@@ -45,7 +45,6 @@ import { selectSuggestedFollowUp } from "@/features/ux-reset/review/suggested-fo
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { ExplorerSurveillanceIntelligence } from "@/features/ux-reset/surveillance-intelligence/explorer-surveillance-intelligence";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
 import type { FollowUpReviewContext } from "@/lib/follow-up-workflows";
 import { cn } from "@/lib/utils";
@@ -405,14 +404,6 @@ export function ExplorerCountyEvidence({
           <p className="type-body" data-testid="explorer-summary-reason">
             {followUp.rationale}
           </p>
-        ) : null}
-        {workspace.requestedFips ? (
-          <Tier1SurveillancePriority
-            fips={workspace.requestedFips}
-            headingLevel="h3"
-            showInterpretiveNotes={false}
-            release={tier1Release}
-          />
         ) : null}
         {workspace.requestedFips ? (
           <ExplorerSurveillanceIntelligence
