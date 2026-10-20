@@ -304,7 +304,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     const getsBeforeReview = api.completedProfileGets();
     api.holdProfileGets();
     await page.goto(reviewUrl);
-    await expect(page.getByText("Checking your starting view…")).toBeVisible();
+    await expect(page.getByText("Connecting the data.")).toBeVisible();
     await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
     await expect(page).toHaveURL(/county=08001/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);

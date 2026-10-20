@@ -372,7 +372,7 @@ test.describe("Starting view onboarding", () => {
     await expect(
       page.getByRole("radio", { name: "United States" })
     ).toHaveCount(0);
-    await expect(page.getByText("Checking your starting view…")).toHaveCount(0);
+    await expect(page.getByText("Connecting the data.")).toHaveCount(0);
   });
 
   test("Settings save keeps completion and optional profile fields", async ({

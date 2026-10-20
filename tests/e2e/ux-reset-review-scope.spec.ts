@@ -312,7 +312,7 @@ test.describe("Review national and state scope controls", () => {
     });
 
     await page.goto("/explore");
-    await expect(page.getByText("Checking your starting view…")).toBeVisible();
+    await expect(page.getByText("Connecting the data.")).toBeVisible();
     await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
     await expect(page).toHaveURL(/\/explore\/?$/);
 
@@ -352,7 +352,7 @@ test.describe("Review national and state scope controls", () => {
     });
 
     await page.goto("/explore?scope=ALL");
-    await expect(page.getByText("Checking your starting view…")).toBeVisible();
+    await expect(page.getByText("Connecting the data.")).toBeVisible();
     await expect(page.getByTestId("review-scope-select")).toHaveCount(0);
     await expect(page).toHaveURL(/scope=ALL/);
 
