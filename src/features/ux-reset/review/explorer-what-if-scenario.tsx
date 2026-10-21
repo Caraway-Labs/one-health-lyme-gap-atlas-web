@@ -1,7 +1,23 @@
 "use client";
 
+import { ChevronDown, RotateCcw, SlidersHorizontal } from "lucide-react";
+
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import {
   adjustCountyScenarios,
@@ -18,6 +34,8 @@ import {
 import type { CountyScoreSummary } from "@/generated/models";
 import { countyScoreSummaryScoringMethodologyVersionDefault } from "@/generated/zod/countyScoreSummary.zod";
 import type { ScoreSettings } from "@/lib/atlas-ui";
+
+import "./explorer-visual-first.css";
 
 const LIMITED_SCENARIO_REASON =
   "This county has no published rate on this collection, so the score with your changes is unavailable. The published Atlas score stays in place.";
@@ -751,24 +769,16 @@ function ScenarioImpactDetails({
 
 function ScenarioExplanation() {
   return (
-    <details
-      className="ux-reset-explorer-scenario-disclosure"
-      data-testid="explorer-scenario-methods"
-      open
-    >
-      <summary>How these scenarios work</summary>
-      <div className="ux-reset-explorer-scenario-topics">
-        {SCENARIO_TOPICS.map((topic) => (
-          <section key={topic.title}>
-            <h4>{topic.title}</h4>
-            <p>{topic.body}</p>
-          </section>
-        ))}
-      </div>
-    </details>
+    <div className="ux-reset-explorer-scenario-topics">
+      {SCENARIO_TOPICS.map((topic) => (
+        <section key={topic.title}>
+          <h4>{topic.title}</h4>
+          <p>{topic.body}</p>
+        </section>
+      ))}
+    </div>
   );
 }
-
 function ScenarioEquation() {
   const defaults = SCENARIO_SCORE_DEFAULTS;
   return (
@@ -848,9 +858,10 @@ function ScenarioEquation() {
 }
 
 /**
- * Collapsed what-if assumptions for Atlas Explorer.
- * The governed score stays on the county row; these controls only change the
- * browser scenario.
+ * What-if assumptions for Atlas Explorer. The governed score stays on the
+ * county row; these controls only change the browser scenario. They open in a
+ * non-modal side sheet so the map stays visible and live while sliders move,
+ * and a persistent badge marks any non-default scenario (UX audit B5, C6).
  */
 export function ExplorerWhatIfScenario({
   impact,
@@ -894,117 +905,165 @@ export function ExplorerWhatIfScenario({
           ) : null}
         </AtlasStatusMessage>
       ) : null}
-      <details
-        className="ux-reset-explorer-scenario"
-        data-testid="explorer-what-if-scenario"
+      <div
+        className="ux-reset-explorer-scenario-control-group"
+        data-active={atDefaults ? "false" : "true"}
+        data-testid="explorer-scenario-trigger-group"
       >
-        <summary data-testid="explorer-what-if-summary">
-          <h2 className="ux-reset-explorer-scenario-heading">
-            {EXPLORER_SCENARIO_HEADING}
-          </h2>
-          <span className="ux-reset-explorer-scenario-affordance">
-            <span className="ux-reset-explorer-scenario-affordance-closed">
-              Show assumptions
-            </span>
-            <span className="ux-reset-explorer-scenario-affordance-open">
-              Hide assumptions
-            </span>
-            <span
-              aria-hidden="true"
-              className="ux-reset-explorer-scenario-chevron"
-            />
-          </span>
-        </summary>
-        <div className="ux-reset-explorer-scenario-body">
-          <p className="ux-reset-explorer-scenario-intro">
-            {EXPLORER_SCENARIO_INTRO}
-          </p>
-          <div className="ux-reset-explorer-scenario-settings">
-            <p data-testid="explorer-scenario-settings">
-              {settingsStatus(settings)}
-            </p>
+        <Sheet modal={false}>
+          <SheetTrigger
+            render={
+              <Button
+                data-testid="explorer-what-if-summary"
+                size="sm"
+                type="button"
+                variant={atDefaults ? "outline" : "secondary"}
+              />
+            }
+          >
+            <SlidersHorizontal aria-hidden="true" data-icon="inline-start" />
+            <span className="max-sm:sr-only">Scenarios</span>
+            {atDefaults ? null : (
+              <Badge
+                className="ux-reset-explorer-scenario-active"
+                data-testid="explorer-scenario-active"
+                variant="outline"
+              >
+                Scenario active
+              </Badge>
+            )}
+          </SheetTrigger>
+          {atDefaults ? null : (
             <Button
-              data-testid="explorer-scenario-reset"
-              disabled={atDefaults}
+              aria-label="Reset scenario to published defaults"
+              data-testid="explorer-scenario-quick-reset"
+              size="icon-sm"
               type="button"
-              variant="secondary"
+              variant="ghost"
               onClick={() => {
                 onChange(SCENARIO_SCORE_DEFAULTS);
               }}
             >
-              Reset defaults
+              <RotateCcw aria-hidden="true" />
             </Button>
-          </div>
-          <ScenarioImpactDetails countyState={countyState} view={impactView} />
-          <div className="ux-reset-explorer-scenario-controls">
-            <ScenarioSlider
-              description={EXPLORER_SCENARIO_WEIGHT_DESCRIPTION}
-              endLabels={[
-                "More community weight",
-                "More tick / pathogen weight",
-              ]}
-              label={EXPLORER_SCENARIO_WEIGHT_LABEL}
-              max={SCENARIO_CONTROL_RANGES.ecological_share.max}
-              min={SCENARIO_CONTROL_RANGES.ecological_share.min}
-              step={SCENARIO_CONTROL_RANGES.ecological_share.step}
-              value={settings.ecological_share}
-              valueAnnouncement={`${settings.ecological_share}% tick / pathogen, ${communityShare}% community`}
-              valueDetail={`${communityShare}% community`}
-              valueText={`${settings.ecological_share}% tick / pathogen`}
-              onChange={(value) => {
-                onChange({ ...settings, ecological_share: value });
-              }}
-            />
-            <ScenarioSlider
-              description={EXPLORER_SCENARIO_INCIDENCE_DESCRIPTION}
-              endLabels={["Stronger reduction", "Gentler reduction"]}
-              label={EXPLORER_SCENARIO_INCIDENCE_LABEL}
-              max={SCENARIO_CONTROL_RANGES.smooth_k.max}
-              min={SCENARIO_CONTROL_RANGES.smooth_k.min}
-              step={SCENARIO_CONTROL_RANGES.smooth_k.step}
-              value={settings.smooth_k}
-              valueAnnouncement={`${settings.smooth_k} per 100,000`}
-              valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.smooth_k}`}
-              valueText={`${settings.smooth_k} per 100,000`}
-              onChange={(value) => {
-                onChange({ ...settings, smooth_k: value });
-              }}
-            />
-            <ScenarioSlider
-              description={EXPLORER_SCENARIO_MISSING_DESCRIPTION}
-              endLabels={[
-                "Lower assumed component",
-                "Higher assumed component",
-              ]}
-              label={EXPLORER_SCENARIO_MISSING_LABEL}
-              max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
-              min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
-              quietNote={missingQuietNote}
-              step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
-              supporting={EXPLORER_SCENARIO_MISSING_SUPPORT}
-              value={settings.missing_human_weakness}
-              valueAnnouncement={`${settings.missing_human_weakness} out of 100`}
-              valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.missing_human_weakness}`}
-              valueText={`${settings.missing_human_weakness} out of 100`}
-              onChange={(value) => {
-                onChange({ ...settings, missing_human_weakness: value });
-              }}
-            />
-          </div>
-          <ScenarioExplanation />
-          <ScenarioEquation />
-          <p
-            className="ux-reset-explorer-scenario-footer"
-            data-testid="explorer-scenario-footer"
+          )}
+          <SheetContent
+            className="ux-reset-explorer-scenario ux-reset-explorer-scenario-sheet"
+            data-testid="explorer-what-if-scenario"
+            overlay={false}
+            side="right"
           >
-            {EXPLORER_SCENARIO_FOOTER}
-          </p>
-        </div>
-      </details>
+            <SheetHeader className="ux-reset-explorer-scenario-sheet-header">
+              <SheetTitle className="ux-reset-explorer-scenario-heading">
+                {EXPLORER_SCENARIO_HEADING}
+              </SheetTitle>
+              <SheetDescription className="ux-reset-explorer-scenario-intro">
+                {EXPLORER_SCENARIO_INTRO}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="ux-reset-explorer-scenario-body">
+              <div className="ux-reset-explorer-scenario-settings">
+                <p data-testid="explorer-scenario-settings">
+                  {settingsStatus(settings)}
+                </p>
+                <Button
+                  data-testid="explorer-scenario-reset"
+                  disabled={atDefaults}
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    onChange(SCENARIO_SCORE_DEFAULTS);
+                  }}
+                >
+                  <RotateCcw aria-hidden="true" data-icon="inline-start" />
+                  Reset defaults
+                </Button>
+              </div>
+              <ScenarioImpactDetails
+                countyState={countyState}
+                view={impactView}
+              />
+              <div className="ux-reset-explorer-scenario-controls">
+                <ScenarioSlider
+                  description={EXPLORER_SCENARIO_WEIGHT_DESCRIPTION}
+                  endLabels={[
+                    "More community weight",
+                    "More tick / pathogen weight",
+                  ]}
+                  label={EXPLORER_SCENARIO_WEIGHT_LABEL}
+                  max={SCENARIO_CONTROL_RANGES.ecological_share.max}
+                  min={SCENARIO_CONTROL_RANGES.ecological_share.min}
+                  step={SCENARIO_CONTROL_RANGES.ecological_share.step}
+                  value={settings.ecological_share}
+                  valueAnnouncement={`${settings.ecological_share}% tick / pathogen, ${communityShare}% community`}
+                  valueDetail={`${communityShare}% community`}
+                  valueText={`${settings.ecological_share}% tick / pathogen`}
+                  onChange={(value) => {
+                    onChange({ ...settings, ecological_share: value });
+                  }}
+                />
+                <ScenarioSlider
+                  description={EXPLORER_SCENARIO_INCIDENCE_DESCRIPTION}
+                  endLabels={["Stronger reduction", "Gentler reduction"]}
+                  label={EXPLORER_SCENARIO_INCIDENCE_LABEL}
+                  max={SCENARIO_CONTROL_RANGES.smooth_k.max}
+                  min={SCENARIO_CONTROL_RANGES.smooth_k.min}
+                  step={SCENARIO_CONTROL_RANGES.smooth_k.step}
+                  value={settings.smooth_k}
+                  valueAnnouncement={`${settings.smooth_k} per 100,000`}
+                  valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.smooth_k}`}
+                  valueText={`${settings.smooth_k} per 100,000`}
+                  onChange={(value) => {
+                    onChange({ ...settings, smooth_k: value });
+                  }}
+                />
+                <ScenarioSlider
+                  description={EXPLORER_SCENARIO_MISSING_DESCRIPTION}
+                  endLabels={[
+                    "Lower assumed component",
+                    "Higher assumed component",
+                  ]}
+                  label={EXPLORER_SCENARIO_MISSING_LABEL}
+                  max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
+                  min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
+                  quietNote={missingQuietNote}
+                  step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
+                  supporting={EXPLORER_SCENARIO_MISSING_SUPPORT}
+                  value={settings.missing_human_weakness}
+                  valueAnnouncement={`${settings.missing_human_weakness} out of 100`}
+                  valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.missing_human_weakness}`}
+                  valueText={`${settings.missing_human_weakness} out of 100`}
+                  onChange={(value) => {
+                    onChange({ ...settings, missing_human_weakness: value });
+                  }}
+                />
+              </div>
+              <Collapsible
+                className="ux-reset-explorer-scenario-disclosure"
+                data-testid="explorer-scenario-methods"
+              >
+                <CollapsibleTrigger className="ux-reset-explorer-scenario-methods-trigger">
+                  <span>How these scenarios work</span>
+                  <ChevronDown aria-hidden="true" />
+                </CollapsibleTrigger>
+                <CollapsibleContent keepMounted>
+                  <ScenarioExplanation />
+                  <ScenarioEquation />
+                </CollapsibleContent>
+              </Collapsible>
+              <p
+                className="ux-reset-explorer-scenario-footer"
+                data-testid="explorer-scenario-footer"
+              >
+                {EXPLORER_SCENARIO_FOOTER}
+              </p>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
     </>
   );
 }
-
 export function explorerScenarioSelectionText(
   scenario: AdjustedCountyScenario
 ): string {
