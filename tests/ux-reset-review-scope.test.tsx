@@ -4110,7 +4110,7 @@ describe("Reset Review scope UI", () => {
       expect(
         screen.getByRole("dialog", { name: "About Gap review score" })
           .textContent
-      ).toContain("published score colors");
+      ).toContain("closer surveillance review");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
       expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
       fireEvent.click(screen.getByTestId("mock-map-select-ny"));

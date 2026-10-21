@@ -160,7 +160,7 @@ describe("Uninsured population palette", () => {
       distinct: 10,
       missingLabel: true,
       note: expect.stringMatching(
-        /civilian noninstitutionalized population[\s\S]*not the uninsured percentile[\s\S]*does not establish healthcare access/
+        /civilian, noninstitutionalized population[\s\S]*does not show whether residents can obtain care/
       ),
       ramp: UNINSURED_POPULATION_RAMP,
       unit: "percent",

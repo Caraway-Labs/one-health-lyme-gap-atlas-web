@@ -209,9 +209,7 @@ describe("Explorer map observations", () => {
       "9. completely rural or less than 2,500 urban population, not adjacent to a metro area",
     ]);
     expect(paint.period).toMatch(/No observation dates/);
-    expect(paint.note).toMatch(
-      /not a proportional increase[\s\S]*not a risk gradient/
-    );
+    expect(paint.note).toMatch(/equal step in rurality/);
   });
 
   it("does not manufacture a date for county context passed to a dated consumer", () => {
@@ -313,7 +311,9 @@ describe("Explorer map observations", () => {
     });
     render(createElement(ExplorerMapLegend, { paint }));
     await userEvent.click(
-      screen.getByRole("button", { name: "About Minimum reported incidence" })
+      screen.getByRole("button", {
+        name: "About Minimum reported Lyme incidence",
+      })
     );
     const suppressedPaint = paintReadyObservationLayer({
       layerId: "incidence_floor",

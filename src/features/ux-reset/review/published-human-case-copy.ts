@@ -5,6 +5,9 @@ export const PUBLISHED_LYME_CASE_YEAR = "2023";
 
 export const MINIMUM_REPORTED_CASES_LABEL = "Minimum reported cases";
 export const MINIMUM_REPORTED_INCIDENCE_LABEL = "Minimum reported incidence";
+/** Explorer layer and legend title. Evidence claims keep the shorter incidence label. */
+export const MINIMUM_REPORTED_LYME_INCIDENCE_LAYER_LABEL =
+  "Minimum reported Lyme incidence";
 export const REPORTED_CASES_LABEL = "Reported cases";
 export const REPORTED_INCIDENCE_LABEL = "Reported incidence";
 

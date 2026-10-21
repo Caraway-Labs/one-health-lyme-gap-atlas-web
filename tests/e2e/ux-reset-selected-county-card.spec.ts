@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
+import { gapLegendCopyForMinimum } from "@/features/ux-reset/review/explorer-legend-info-copy";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { responseTierPresentationForColor } from "@/lib/response-tier";
 
@@ -223,12 +224,16 @@ async function expectCard(
     band.maxExclusive === null
       ? `${band.minInclusive} or higher`
       : `${band.minInclusive} to <${band.maxExclusive}`;
+  const legendCopy = gapLegendCopyForMinimum(band.minInclusive);
+  if (!legendCopy) {
+    throw new Error(`Missing legend copy for ${band.minInclusive}`);
+  }
   const legendButton = page
     .getByTestId("explorer-map-legend")
     .getByRole("button", { name: new RegExp(range.replaceAll("<", "\\<")) });
   await expect(legendButton).toHaveAttribute(
     "aria-label",
-    `Gap review score: ${range}. ${presentation.title}. ${presentation.detail}`
+    `Gap review score: ${range}. ${legendCopy.category}. ${legendCopy.action}`
   );
   const colors = await page.evaluate(
     ({ detail, title }) => {
@@ -334,11 +339,11 @@ async function expectCard(
         swatchColor: getComputedStyle(swatch).backgroundColor,
       };
     },
-    { detail: presentation.detail, title: presentation.title }
+    { detail: legendCopy.action, title: legendCopy.category }
   );
   expect(colors?.pillColor).toBe(colors?.swatchColor);
-  expect(colors?.legendLabel).toContain(presentation.title);
-  expect(colors?.legendLabel).toContain(presentation.detail);
+  expect(colors?.legendLabel).toContain(legendCopy.category);
+  expect(colors?.legendLabel).toContain(legendCopy.action);
   expect(colors?.overflow).toBe(false);
   expect(colors?.headingClipped).toBe(false);
   expect(colors?.sameRow).toBe(true);

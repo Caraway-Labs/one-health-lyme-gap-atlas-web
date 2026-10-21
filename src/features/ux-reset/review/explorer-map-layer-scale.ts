@@ -18,7 +18,7 @@ import {
   type ExplorerMapNumericRow,
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
-import { MINIMUM_REPORTED_INCIDENCE_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
+import { MINIMUM_REPORTED_LYME_INCIDENCE_LAYER_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
 import {
   RURALITY_LEGEND_EXPLANATION,
@@ -67,7 +67,7 @@ const COMPLETENESS_COLORS: Readonly<Record<number, string>> = {
 };
 
 export const EVIDENCE_COMPLETENESS_EXPLANATION =
-  "Published evidence completeness is the rounded share of six release conditions: a published minimum reported cases value; blacklegged tick status Established or Reported; B. burgdorferi Present; a non-null social-vulnerability percentile; a non-null uninsured percentile; and a non-null rural-urban code. It is not surveillance sampling completeness, not evidence of disease absence, and not a confidence score. The map uses the published integer and does not recompute it. The county list stays the review ranking.";
+  "Shows how many of six conditions are met in the county\u2019s published data. This measure combines data availability with positive tick and pathogen findings. A lower percentage can therefore reflect missing data, undocumented tick or pathogen presence, or both. A value of 100% does not mean surveillance is comprehensive.";
 
 const STATE_COLOR: Partial<Record<ValueState, string>> = {
   [ValueState.MISSING]: "var(--mint)",
@@ -145,24 +145,6 @@ function noPublishedValueEntry(): ExplorerMapLegendEntry {
   };
 }
 
-function countStates(
-  rows: readonly ExplorerMapNumericRow[]
-): Map<ValueState, number> {
-  const counts = new Map<ValueState, number>();
-  for (const row of rows) {
-    counts.set(row.valueState, (counts.get(row.valueState) ?? 0) + 1);
-  }
-  return counts;
-}
-
-function coverageSentence(
-  rows: readonly ExplorerMapNumericRow[],
-  omitted: number
-): string {
-  const counts = countStates(rows);
-  return `This load: ${counts.get(ValueState.OBSERVED) ?? 0} observed, ${counts.get(ValueState.ZERO) ?? 0} observed zero, ${counts.get(ValueState.MISSING) ?? 0} missing, ${omitted} omitted.`;
-}
-
 function selectionSentence(
   rows: readonly ExplorerMapNumericRow[],
   selectedFips: string | null | undefined,
@@ -173,17 +155,46 @@ function selectionSentence(
   }
   const row = rows.find((entry) => entry.fips === selectedFips);
   if (!row) {
-    return `Selected county ${selectedFips}: no published row. Not zero.`;
+    return `Selected county ${selectedFips}: No published value available.`;
   }
   if (row.valueState === ValueState.ZERO) {
-    return `Selected county ${selectedFips}: 0 ${unit}, observed zero. Not a missing value.`;
+    return `Selected county ${selectedFips}: Reported value: 0 ${unit}.`;
   }
   if (row.valueState === ValueState.OBSERVED && row.raw) {
     const label = row.categoryLabel ? `, ${row.categoryLabel}` : "";
     return `Selected county ${selectedFips}: ${row.raw} ${unit}${label}.`;
   }
-  const label = STATE_LABEL[row.valueState] ?? row.valueState;
-  return `Selected county ${selectedFips}: ${label}.`;
+  return `Selected county ${selectedFips}: ${plainValueStateLabel(row.valueState)}.`;
+}
+
+function plainValueStateLabel(state: ValueState): string {
+  switch (state) {
+    case ValueState.MISSING: {
+      return "Data missing";
+    }
+    case ValueState.NO_COUNTY_LINKED_RECORD: {
+      return "No record linked to this county";
+    }
+    case ValueState.NO_RECORDS: {
+      return "No records";
+    }
+    case ValueState.OBSERVED: {
+      return "Data unavailable";
+    }
+    case ValueState.SUPPRESSED: {
+      return "Value withheld in the published data";
+    }
+    case ValueState.UNAVAILABLE: {
+      return "Data unavailable";
+    }
+    case ValueState.ZERO: {
+      return "Reported value: 0";
+    }
+    default: {
+      const exhaustive: never = state;
+      return exhaustive;
+    }
+  }
 }
 
 function scaleRatio(value: number, minimum: number, maximum: number): number {
@@ -454,23 +465,23 @@ function paintQuantity(input: {
     }
   }
   const title = {
-    incidence_floor: MINIMUM_REPORTED_INCIDENCE_LABEL,
+    incidence_floor: MINIMUM_REPORTED_LYME_INCIDENCE_LAYER_LABEL,
     svi: "Social vulnerability",
     uninsured: "Uninsured population",
   }[input.layerId];
   const note = {
     incidence_floor:
-      "2023 published values are minimums per 100,000 residents, not all infections and not an exact total incidence. Color runs from pale green at the lowest published value to deep green at the highest. The green anchors are a continuous ramp, not new epidemiologic cutoffs. Missing is not drawn as zero. A wide published range keeps most counties near the low end. The county list stays the review ranking.",
-    svi: "2022 CDC/ATSDR Social Vulnerability Index overall percentile (RPL_THEMES). It ranks this county among U.S. counties in that product on a fixed 0 to 1 scale. It is not a percent of residents who are vulnerable, and it is not individual vulnerability or Lyme disease risk. Color runs from pale peach at the low end to burnt orange at the high end. The anchors are a continuous ramp, not new percentile cutoffs. Observed zero stays on that scale. Missing is gray, not zero. The county list stays the review ranking.",
+      "Shows the minimum number of reported Lyme disease cases per 100,000 residents in the published county data. Darker green means higher reported incidence. The published values are lower bounds; the reported totals may be higher. Cases are assigned by county of residence, which may differ from where exposure occurred.",
+    svi: "Shows each county\u2019s ranking in the CDC/ATSDR Social Vulnerability Index, which combines social and economic factors that can affect a community\u2019s ability to respond to public-health challenges. Higher values and darker orange indicate greater social vulnerability relative to other U.S. counties. The value is a county ranking, not the percentage of residents who are vulnerable. Gray indicates unavailable data.",
     uninsured:
-      "Percent of the civilian noninstitutionalized population on a 0 to 100 scale. This is the uninsured percentage, not the uninsured percentile. Observed zero is 0 percent, not a missing value. Color runs from pale rose at 0 percent to deep burgundy at 100 percent. The rose anchors are a continuous ramp, not new percentage cutoffs. This percentage does not establish healthcare access, reporting completeness, or Lyme risk. Missing is not drawn as zero. The county list stays the review ranking.",
+      "Shows the percentage of the civilian, noninstitutionalized population without health insurance. Darker burgundy means a higher uninsured percentage. This provides context for potential financial barriers to seeking care. It does not show whether residents can obtain care or whether Lyme disease cases are being missed.",
   }[input.layerId];
   return paintBase({
     colorsByFips,
     entries,
     kind: "choropleth",
     layerId: input.layerId,
-    note: `${note} ${coverageSentence(input.rows, input.omitted)}`,
+    note,
     ramp: quantityRamp(input.layerId),
     scale: "gradient",
     period: input.period,
@@ -564,7 +575,7 @@ function paintRurality(input: {
     entries,
     kind: "categorical",
     layerId: "rurality",
-    note: `${RURALITY_LEGEND_EXPLANATION} Nine 2023 USDA ERS source categories keep their published labels. Darker purple marks a higher code. That order is not a proportional increase in rurality, Lyme risk, or review priority, and the colors are not a risk gradient. This vintage has no observation dates. The county list stays the review ranking. ${coverageSentence(input.rows, input.omitted)}`,
+    note: `${RURALITY_LEGEND_EXPLANATION} Lighter purple represents metropolitan categories. Darker purple represents increasingly rural categories. Each color corresponds to a category, rather than an equal step in rurality. Gray means a classification is unavailable.`,
     period: input.period,
     scale: "segments",
     selection: input.selection,
@@ -600,7 +611,7 @@ export function paintReadyCompletenessLayer(input: {
     .toSorted((left, right) => left[0] - right[0])
     .map(([score, color]) => ({
       color,
-      detail: "Published integer. Not recomputed in the browser.",
+      detail: null,
       label: `${score}`,
       role: "class",
     }));
@@ -614,8 +625,8 @@ export function paintReadyCompletenessLayer(input: {
   if (input.selectedFips) {
     selection =
       selected && completenessColor(selected.evidence_completeness)
-        ? `Selected county ${input.selectedFips}: published evidence completeness ${selected.evidence_completeness}.`
-        : `Selected county ${input.selectedFips}: no published evidence-completeness value in range. Not zero.`;
+        ? `Selected county ${input.selectedFips}: ${selected.evidence_completeness}%.`
+        : `Selected county ${input.selectedFips}: No published value available.`;
   }
   return paintBase({
     colorsByFips,

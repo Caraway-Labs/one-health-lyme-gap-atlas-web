@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { gapLegendCopyForMinimum } from "@/features/ux-reset/review/explorer-legend-info-copy";
 import {
   PATHOGEN_STATUS_EXTRA_COLORS,
   PATHOGEN_STATUS_NO_RECORDS_COLOR,
@@ -20,7 +21,6 @@ import {
   TICK_STATUS_REPORTED_COLOR,
 } from "@/features/ux-reset/review/tick-status-contract";
 import { ValueState } from "@/generated/models";
-import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 import { populationRuralityObservation } from "../fixtures/population-rurality-context";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
@@ -34,13 +34,13 @@ function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
-  const presentation = responseTierPresentationForColor(band.color);
-  if (!presentation) {
-    throw new Error(`Missing response tier for ${band.color}`);
+  const copy = gapLegendCopyForMinimum(band.minInclusive);
+  if (!copy) {
+    throw new Error(`Missing legend copy for ${band.minInclusive}`);
   }
   return {
-    action: presentation.detail,
-    category: presentation.title,
+    action: copy.action,
+    category: copy.category,
     title: gapScoreRangeTitle(band),
   };
 }
@@ -591,7 +591,7 @@ test.describe("Atlas Explorer layer legends", () => {
       legend.getByRole("button", { name: /Gap score unavailable/ })
     ).toHaveAttribute(
       "aria-label",
-      "Gap score unavailable. Insufficient data to calculate a score"
+      "Gap score unavailable. No score available. Insufficient data to calculate a score."
     );
     await expect(
       legend.getByRole("button", { name: /0 to <20/ })
@@ -615,12 +615,19 @@ test.describe("Atlas Explorer layer legends", () => {
       .getByRole("button", { name: "About Gap review score" })
       .click();
     const about = page.getByRole("dialog", { name: "About Gap review score" });
-    await expect(about).toContainText("Gap review score");
+    await expect(about).toContainText("closer surveillance review");
     await expect(about).not.toContainText(/atlas gap score/i);
+    await expect(about).toContainText("What this map shows");
+    await expect(about).toContainText("Data sources and years");
+    await expect(about).toContainText("What the colors mean");
     await expect(about).toContainText("CDC Lyme surveillance 2023");
+    await expect(about).toContainText("Data release:");
+    await expect(about).toContainText("Elevated");
+    await expect(about).toContainText("Monitor the pattern.");
     await expect(about).not.toContainText("not personal disease risk");
-    await expect(about).toContainText("Not zero");
-    await expect(about).toContainText("Priority 1 — Investigate");
+    await expect(about).not.toContainText("Priority 1");
+    await expect(about).not.toContainText("This load");
+    await expect(about).not.toContainText("Palette anchors");
     await page.keyboard.press("Escape");
     await expect(about).toBeHidden();
     await expect
@@ -729,7 +736,7 @@ test.describe("Atlas Explorer layer legends", () => {
       .click();
     await expect(
       page.getByRole("dialog", { name: "About County boundaries" })
-    ).toContainText("not an evidence layer");
+    ).toContainText("without displaying a data measure");
     await expect(legend.getByRole("button", { name: "Present" })).toHaveCount(
       0
     );
@@ -763,7 +770,7 @@ test.describe("Atlas Explorer layer legends", () => {
         swatchOpacity: "0",
       });
 
-    await chooseLayer(page, "Minimum reported incidence");
+    await chooseLayer(page, "Minimum reported Lyme incidence");
     const ramp = legend.getByRole("button", {
       name: /Lower published incidence/,
     });
@@ -812,8 +819,8 @@ test.describe("Atlas Explorer layer legends", () => {
       0
     );
 
-    await chooseLayer(page, "Minimum reported incidence");
-    await expect(legend).toContainText("Minimum reported incidence");
+    await chooseLayer(page, "Minimum reported Lyme incidence");
+    await expect(legend).toContainText("Minimum reported Lyme incidence");
     await expect(legend).toContainText("per 100,000 residents");
     await expect(legend).toContainText("Lower published incidence");
     await expect(legend).toContainText("Higher published incidence");
@@ -912,7 +919,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-rucc.png"),
     });
-    await chooseLayer(page, "Minimum reported incidence");
+    await chooseLayer(page, "Minimum reported Lyme incidence");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-incidence.png"),
@@ -937,8 +944,8 @@ test.describe("Atlas Explorer layer legends", () => {
 
     const disclosures = [
       {
-        action: "Insufficient data to calculate a score",
-        category: null as string | null,
+        action: "Insufficient data to calculate a score.",
+        category: "No score available",
         name: /Gap score unavailable/,
         shot: null as string | null,
         title: "Gap score unavailable",

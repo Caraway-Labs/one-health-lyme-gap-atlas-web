@@ -9,7 +9,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
+import type {
+  ExplorerLegendAboutBlock,
+  ExplorerLegendAboutText,
+} from "@/features/ux-reset/review/explorer-legend-info-copy";
 import {
   buildExplorerLegendModel,
   type ExplorerLegendDisclosure,
@@ -390,6 +402,134 @@ function LegendScale({
   );
 }
 
+function aboutTextKey(parts: readonly ExplorerLegendAboutText[]): string {
+  return parts
+    .map((part) => (typeof part === "string" ? part : part.text))
+    .join("");
+}
+
+function aboutBlockKey(
+  heading: string,
+  block: ExplorerLegendAboutBlock
+): string {
+  switch (block.kind) {
+    case "bullets": {
+      return `${heading}:bullets:${block.items.map((item) => item.lead).join(",")}`;
+    }
+    case "numbered": {
+      return `${heading}:numbered:${block.items.map((item) => aboutTextKey(item)).join("|")}`;
+    }
+    case "paragraphs": {
+      return `${heading}:paragraphs:${block.paragraphs.map((item) => aboutTextKey(item)).join("|")}`;
+    }
+    case "table": {
+      return `${heading}:table:${block.headers.join(",")}`;
+    }
+    default: {
+      const exhaustive: never = block;
+      return exhaustive;
+    }
+  }
+}
+
+function AboutText({ parts }: { parts: readonly ExplorerLegendAboutText[] }) {
+  return parts.map((part) => {
+    if (typeof part === "string") {
+      return part;
+    }
+    if (part.emphasis === "em") {
+      return <em key={part.text}>{part.text}</em>;
+    }
+    return <strong key={part.text}>{part.text}</strong>;
+  });
+}
+
+function AboutBlock({ block }: { block: ExplorerLegendAboutBlock }) {
+  switch (block.kind) {
+    case "bullets": {
+      return (
+        <ul>
+          {block.items.map((item) => (
+            <li key={item.lead}>
+              <strong>{item.lead}: </strong>
+              <AboutText parts={item.text} />
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    case "numbered": {
+      return (
+        <ol>
+          {block.items.map((item) => (
+            <li key={aboutTextKey(item)}>
+              <AboutText parts={item} />
+            </li>
+          ))}
+        </ol>
+      );
+    }
+    case "paragraphs": {
+      return block.paragraphs.map((paragraph) => (
+        <p key={aboutTextKey(paragraph)}>
+          <AboutText parts={paragraph} />
+        </p>
+      ));
+    }
+    case "table": {
+      return (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {block.headers.map((header) => (
+                <TableHead
+                  className="h-auto px-2 py-1.5 text-xs whitespace-normal"
+                  key={header}
+                >
+                  {header}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {block.rows.map((row) => (
+              <TableRow key={row.join("|")}>
+                {row.map((cell, index) => (
+                  <TableCell
+                    className="p-2 align-top text-xs whitespace-normal"
+                    key={`${row[0]}-${block.headers[index] ?? index}`}
+                  >
+                    {cell}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      );
+    }
+    default: {
+      const exhaustive: never = block;
+      return exhaustive;
+    }
+  }
+}
+
+function LegendTitle({ title }: { title: string }) {
+  const scientific = "B. burgdorferi";
+  if (!title.includes(scientific)) {
+    return <strong>{title}</strong>;
+  }
+  const [before, after] = title.split(scientific);
+  return (
+    <strong>
+      {before}
+      <em>{scientific}</em>
+      {after}
+    </strong>
+  );
+}
+
 function legendIdentity(paint: ExplorerMapPaint): string {
   return `${paint.layerId}:${paint.kind}:${paint.period ?? ""}:${paint.title}`;
 }
@@ -418,7 +558,7 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
     >
       <div className="ux-reset-explorer-legend-head">
         <p className="ux-reset-explorer-legend-title">
-          <strong>{model.title}</strong>
+          <LegendTitle title={model.title} />
           {model.unitLabel ? <span> · {model.unitLabel}</span> : null}
         </p>
         <Popover open={aboutOpen} onOpenChange={setAboutOpen}>
@@ -434,6 +574,7 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
           <PopoverContent
             align="end"
             aria-label={model.aboutLabel}
+            className="ux-reset-explorer-legend-about-popup w-[min(40rem,calc(100vw-1.5rem))] max-w-[min(40rem,calc(100vw-1.5rem))]"
             initialFocus
             side="top"
           >
@@ -441,8 +582,11 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
               {model.aboutSections.map((section) => (
                 <section key={section.heading}>
                   <h3>{section.heading}</h3>
-                  {section.paragraphs.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
+                  {section.blocks.map((block) => (
+                    <AboutBlock
+                      block={block}
+                      key={aboutBlockKey(section.heading, block)}
+                    />
                   ))}
                 </section>
               ))}
