@@ -141,13 +141,16 @@ async function captureTierShots(
     publishedColor = shot.color;
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
     const preview = page.getByTestId("review-published-county-preview");
-    const pill = preview.getByTestId("selected-county-response-tier");
-    await expect(pill).toContainText(shot.title);
-    if (shot.detail) {
-      await expect(pill.locator(".response-tier-pill-detail")).toHaveText(
-        shot.detail
-      );
-    }
+    const scoreButton = preview.getByRole("button", {
+      name: /Surveillance Gap Score/,
+    });
+    await expect(
+      preview.getByTestId("selected-county-response-tier")
+    ).toHaveCount(0);
+    await expect(scoreButton).toHaveAttribute(
+      "data-tooltip",
+      shot.detail ? shot.title : "Published score"
+    );
     await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
       shot.followUp
     );
@@ -161,7 +164,7 @@ async function captureTierShots(
 }
 
 test.describe("selected county response tier", () => {
-  test("shows the Action Center tier beside the gap score", async ({
+  test("shows the review category on the score mark", async ({
     page,
   }, testInfo) => {
     publishedColor = null;
@@ -169,27 +172,22 @@ test.describe("selected county response tier", () => {
     await page.setViewportSize({ height: 900, width: 1280 });
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
     const preview = page.getByTestId("review-published-county-preview");
-    const pill = preview.getByTestId("selected-county-response-tier");
+    const scoreButton = preview.getByRole("button", {
+      name: /Surveillance Gap Score/,
+    });
     const followUp = page.getByTestId("explorer-follow-up-response");
-    await expect(pill).toBeVisible();
+    await expect(
+      preview.getByTestId("selected-county-response-tier")
+    ).toHaveCount(0);
     await expect(followUp).toHaveText("Conduct targeted follow-up");
-    await expect(pill.locator(".response-tier-pill-title")).toHaveText(
+    await expect(scoreButton).toHaveAttribute(
+      "data-tooltip",
       "Moderate review priority"
     );
-    await expect(pill.locator(".response-tier-pill-detail")).toHaveText(
-      "Conduct targeted follow-up"
-    );
-    await expect(pill).toHaveAttribute("data-ramp", "map-ramp-4");
     await expect(preview.locator(".priority-pill")).toHaveCount(0);
-    await expect(
-      preview.getByTestId("selected-county-gap-score")
-    ).toContainText("50.7");
-    await expect(
-      preview.getByTestId("selected-county-gap-score")
-    ).toContainText("/100");
-    await expect(
-      preview.getByTestId("selected-county-response-tier-help")
-    ).toHaveCount(0);
+    await expect(preview.getByTestId("selected-county-gap-score")).toHaveText(
+      "50.7"
+    );
     await expect(preview).not.toContainText("Priority 1");
     await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
     await expect(
@@ -201,7 +199,7 @@ test.describe("selected county response tier", () => {
         "[data-testid='review-published-county-preview']"
       );
       const tier = card?.querySelector(
-        "[data-testid='selected-county-response-tier']"
+        "[data-testid='selected-county-gap-score']"
       );
       const heading = card?.querySelector("h2");
       if (!(tier instanceof HTMLElement) || !(heading instanceof HTMLElement)) {
@@ -218,12 +216,10 @@ test.describe("selected county response tier", () => {
       return {
         clipped: tier.scrollWidth > tier.clientWidth + 1,
         overlaps,
-        text: tier.textContent,
       };
     });
     expect(placed?.clipped).toBe(false);
     expect(placed?.overlaps).toBe(false);
-    expect(placed?.text).toContain("Conduct targeted follow-up");
     const result = await new AxeBuilder({ page })
       .include(".ux-reset-explorer-preview")
       .analyze();
@@ -240,7 +236,7 @@ test.describe("selected county response tier", () => {
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
     const preview = page.getByTestId("review-published-county-preview");
     await expect(
-      preview.getByTestId("selected-county-response-tier")
+      preview.getByTestId("selected-county-gap-score")
     ).toBeVisible();
     const layout = await preview.evaluate((card) => {
       if (!(card instanceof HTMLElement)) {
@@ -250,12 +246,10 @@ test.describe("selected county response tier", () => {
       card.style.width = "300px";
       card.style.maxWidth = "300px";
       const heading = card.querySelector("h2");
-      const lockup = card.querySelector(
-        "[data-testid='selected-county-score-lockup']"
-      );
+      const rationale = card.querySelector("[data-testid='review-rationale']");
       if (
         !(heading instanceof HTMLElement) ||
-        !(lockup instanceof HTMLElement)
+        !(rationale instanceof HTMLElement)
       ) {
         return null;
       }
@@ -286,28 +280,13 @@ test.describe("selected county response tier", () => {
             (box) => box.right > column.start + 1 && box.left < column.end - 1
           )
       );
-      const rationale = card.querySelector("[data-testid='review-rationale']");
-      const pill = card.querySelector(
-        "[data-testid='selected-county-response-tier']"
-      );
-      if (
-        !(rationale instanceof HTMLElement) ||
-        !(pill instanceof HTMLElement)
-      ) {
-        return null;
-      }
-      const headingBox = heading.getBoundingClientRect();
-      const lockupBox = lockup.getBoundingClientRect();
       const rationaleBox = rationale.getBoundingClientRect();
-      const pillBox = pill.getBoundingClientRect();
       return {
         contentWidth,
         display: style.display,
         emptyTracks: emptyTracks.length,
         headingClipped: heading.scrollWidth > heading.clientWidth + 1,
-        lockupBesideEvidence: lockupBox.bottom > rationaleBox.top + 1,
         overflow: card.scrollWidth > card.clientWidth + 1,
-        pillWidth: pillBox.width,
         rationaleWidth: rationaleBox.width,
         tracks: tracks.length,
       };
@@ -318,12 +297,8 @@ test.describe("selected county response tier", () => {
     expect(layout?.contentWidth ?? 0).toBeGreaterThan(200);
     expect(layout?.overflow).toBe(false);
     expect(layout?.headingClipped).toBe(false);
-    expect(layout?.lockupBesideEvidence).toBe(false);
     expect(layout?.rationaleWidth ?? 0).toBeGreaterThan(
       (layout?.contentWidth ?? 0) * 0.9
-    );
-    expect(layout?.pillWidth ?? 0).toBeLessThan(
-      (layout?.contentWidth ?? 0) * 0.95
     );
   });
 
@@ -335,27 +310,26 @@ test.describe("selected county response tier", () => {
     await page.setViewportSize({ height: 900, width: 1280 });
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
     const preview = page.getByTestId("review-published-county-preview");
-    const pill = preview.getByTestId("selected-county-response-tier");
+    const scoreButton = preview.getByRole("button", {
+      name: /Surveillance Gap Score/,
+    });
     await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
       "Gap score unavailable"
     );
-    await expect(pill).toHaveText("Gap score unavailable");
-    await expect(pill).toHaveAttribute("data-status", "unavailable");
-    await expect(pill).not.toContainText("Elevated review priority");
-    await expect(pill).not.toContainText("Priority 1");
     await expect(
-      preview.getByTestId("selected-county-response-tier-help")
+      preview.getByTestId("selected-county-response-tier")
     ).toHaveCount(0);
+    await expect(scoreButton).toHaveAttribute(
+      "data-tooltip",
+      "Published score"
+    );
+    await expect(preview).not.toContainText("Elevated review priority");
+    await expect(preview).not.toContainText("Priority 1");
     await expect(preview.locator(".priority-pill")).toHaveCount(0);
-    const placed = await page.evaluate(() => {
-      const tier = document.querySelector(
-        "[data-testid='selected-county-response-tier']"
-      );
-      if (!(tier instanceof HTMLElement)) {
-        return null;
-      }
-      return tier.scrollWidth <= tier.clientWidth + 1;
-    });
+    const placed = await scoreButton.evaluate(
+      (mark) =>
+        mark instanceof HTMLElement && mark.scrollWidth <= mark.clientWidth + 1
+    );
     expect(placed).toBe(true);
   });
 
@@ -372,7 +346,7 @@ test.describe("selected county response tier", () => {
     await captureTierShots(page, testInfo, "mobile");
     const tier = page
       .getByTestId("review-published-county-preview")
-      .getByTestId("selected-county-response-tier");
+      .getByTestId("selected-county-gap-score");
     const readable = await tier.evaluate((element) => {
       if (!(element instanceof HTMLElement)) {
         return false;
