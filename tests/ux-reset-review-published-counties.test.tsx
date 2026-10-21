@@ -233,10 +233,9 @@ describe("Published Review county exploration", () => {
       screen.getByText("A floor, not an exact case total.")
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Pathogen “No records” is not evidence of pathogen absence/
-      )
+      screen.getByText(/does not establish pathogen absence/)
     ).toBeInTheDocument();
+    expect(screen.getByTestId("review-rationale")).toBeInTheDocument();
     for (const detail of [autauga, barbour]) {
       const evidence = reviewHumanFloorEvidence(
         CountyV1CountiesFipsGetResponse.parse(detail)

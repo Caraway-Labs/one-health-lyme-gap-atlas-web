@@ -20,6 +20,7 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import type { CountyDetail } from "@/generated/models";
 import { cn } from "@/lib/utils";
@@ -144,6 +145,8 @@ export function ReviewPublishedCountyPreview({
       <h2 className="type-card">
         {county.county}, {county.stateName}
       </h2>
+      {detail ? <ReviewRationalePanel detail={detail} /> : null}
+      <div className="ux-reset-review-preview-support">
       <p className="type-body">Review category unavailable</p>
       <p className="type-small">
         FIPS {county.fips} · Release {releaseId}
@@ -204,6 +207,7 @@ export function ReviewPublishedCountyPreview({
           Ask Atlas
         </Link>
       </div>
+      </div>
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
           Loading published county evidence…
@@ -222,14 +226,10 @@ export function ReviewPublishedCountyPreview({
       ) : null}
       {detail && floor ? (
         <>
-          <p className="type-body">{floor.displayValue}</p>
-          <p className="type-small">{floor.valueNote}</p>
-          <p className="type-small">
-            Pathogen “No records” is not evidence of pathogen absence. Tick
-            establishment does not measure abundance.
-          </p>
           <details className="ux-reset-explorer-score">
             <summary>Score and methodology</summary>
+            <p className="type-body">{floor.displayValue}</p>
+            <p className="type-small">{floor.valueNote}</p>
             {rows.map((row) => (
               <EvidenceObject
                 key={row.measureId}
