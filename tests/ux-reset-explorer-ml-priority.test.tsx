@@ -282,7 +282,7 @@ describe("Explorer county rows show ML surveillance priority", () => {
         boulder: "2",
         clearCreek: "Not ranked",
         denver: "Not ranked",
-        score: "Published score 75. Atlas gap score 75.0",
+        score: "Atlas gap score 75.0",
       });
     });
     expect(screen.queryByTestId("explorer-ml-priority-legend")).toBeNull();
@@ -291,6 +291,7 @@ describe("Explorer county rows show ML surveillance priority", () => {
     ).toBeNull();
     expect(rowRank("08019")).toBe("Not ranked");
 
+    fireEvent.click(screen.getByRole("tab", { name: /List/ }));
     fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
     expect(onCountyChange).toHaveBeenCalledWith("08013", "push");
   });

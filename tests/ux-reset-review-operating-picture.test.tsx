@@ -242,7 +242,7 @@ describe("Review operating picture state", () => {
     });
   });
 
-  it("keeps Arizona map chrome compact and moves provenance below the map", () => {
+  it("keeps Arizona map chrome compact and moves release provenance to the context bar", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -275,15 +275,14 @@ describe("Review operating picture state", () => {
     const layer = screen.getByTestId("explorer-map-layer");
     const map = screen.getByTestId("review-state-map-region");
     const availability = screen.getByTestId("explorer-layer-availability");
-    const provenance = screen.getByTestId("explorer-map-provenance");
     const visibleLabel = "Fit AZ";
     const fit = screen.getByRole("button", { name: "Fit AZ (Arizona)" });
-    const order = [heading, layer, map, availability, provenance].map((node) =>
+    const order = [heading, layer, map, availability].map((node) =>
       node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
     );
-    fireEvent.click(screen.getByText("Layer availability"));
+    fireEvent.click(availability);
     expect({
-      availabilityNote: availability.textContent?.includes(
+      availabilityNote: document.body.textContent?.includes(
         "Changing the layer does not rank counties by this measure."
       ),
       fitLabel: fit.textContent?.includes(visibleLabel),
@@ -291,9 +290,12 @@ describe("Review operating picture state", () => {
         heading.parentElement?.textContent?.includes("Release"),
       headingOmitsSource:
         heading.parentElement?.textContent?.includes("Source periods"),
-      labelFor: screen.getByText("Map layer").getAttribute("for"),
+      labelFor: screen
+        .getByText("Map layer")
+        .closest("label")
+        ?.getAttribute("for"),
       order,
-      provenance: provenance.textContent,
+      provenance: screen.queryByTestId("explorer-map-provenance"),
     }).toStrictEqual({
       availabilityNote: true,
       fitLabel: true,
@@ -301,7 +303,7 @@ describe("Review operating picture state", () => {
       headingOmitsSource: false,
       labelFor: "explorer-map-layer",
       order: [...order].toSorted((left, right) => left - right),
-      provenance: "Release alpha-2026",
+      provenance: null,
     });
     expect(fit).toHaveAccessibleName("Fit AZ (Arizona)");
     expect(fit).toHaveAccessibleName(expect.stringContaining(visibleLabel));
@@ -358,7 +360,9 @@ describe("Review operating picture state", () => {
         }
       });
       const investigate =
-        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+        screen
+          .getByTestId("review-view-county-evidence")
+          .getAttribute("href") ?? "";
       expect({
         candidate: screen.getByTestId("review-candidate").textContent,
         county: new URL(investigate, "http://localhost").searchParams.get(
@@ -416,7 +420,8 @@ describe("Review operating picture state", () => {
       "surveillance-intelligence-card-ml-review-priority"
     );
     const investigate =
-      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      screen.getByTestId("review-view-county-evidence").getAttribute("href") ??
+      "";
     expect({
       county: download.dataset.county,
       disabled: download.hasAttribute("disabled"),
@@ -1125,8 +1130,9 @@ describe("Review operating picture state", () => {
         candidate: screen.queryByTestId("review-candidate"),
         compare: screen.queryByTestId("review-compare"),
         investigate:
-          screen.queryByTestId("review-investigate")?.getAttribute("href") ??
-          null,
+          screen
+            .queryByTestId("review-view-county-evidence")
+            ?.getAttribute("href") ?? null,
         published: publishedCall ? publishedCall[0] : "missing",
         resultState:
           screen.getByTestId("review-state-panel").dataset.resultState,
@@ -1167,7 +1173,7 @@ describe("Review operating picture state", () => {
     const kept = {
       candidate: screen.getByTestId("review-candidate").textContent,
       investigate: screen
-        .getByTestId("review-investigate")
+        .getByTestId("review-view-county-evidence")
         .getAttribute("href"),
       published: onCountyChange.mock.calls.length,
       resultState: screen.getByTestId("review-state-panel").dataset.resultState,
@@ -1177,7 +1183,7 @@ describe("Review operating picture state", () => {
       backendClaimsFinding: false,
       candidate: null,
       compare: expect.any(HTMLAnchorElement),
-      investigate: null,
+      investigate: "/explore?county=08001&mode=evidence",
       published: "missing",
       resultState: "unavailable",
       summary: "Unavailable",
@@ -1239,7 +1245,9 @@ describe("Review operating picture state", () => {
       .getAllByTestId("review-candidate")
       .map((entry) => entry.dataset.fips);
     const investigate =
-      screen.queryByTestId("review-investigate")?.getAttribute("href") ?? "";
+      screen
+        .queryByTestId("review-view-county-evidence")
+        ?.getAttribute("href") ?? "";
     const compare =
       screen.queryByTestId("review-compare")?.getAttribute("href") ?? "";
     const note =
@@ -1289,7 +1297,9 @@ describe("Review operating picture state", () => {
     };
     const read = () => {
       const investigate =
-        screen.queryByTestId("review-investigate")?.getAttribute("href") ?? "";
+        screen
+          .queryByTestId("review-view-county-evidence")
+          ?.getAttribute("href") ?? "";
       const compare =
         screen.queryByTestId("review-compare")?.getAttribute("href") ?? "";
       const regionText = (
@@ -1410,7 +1420,8 @@ describe("Review operating picture state", () => {
           : "other",
     }));
     const investigate =
-      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      screen.getByTestId("review-view-county-evidence").getAttribute("href") ??
+      "";
     const snapshot = {
       county: new URL(investigate, "http://localhost").searchParams.get(
         "county"
@@ -1617,7 +1628,7 @@ describe("Review operating picture state", () => {
     const note =
       screen.getByTestId("review-omitted-candidates").textContent ?? "";
     const listed = screen.queryByTestId("review-candidate");
-    const investigate = screen.queryByTestId("review-investigate");
+    const investigate = screen.queryByTestId("review-view-county-evidence");
     view.unmount();
     expect({
       investigate,
@@ -1916,7 +1927,9 @@ describe("Review operating picture state", () => {
     const backend =
       screen.getByTestId("review-backend-result").textContent ?? "";
     const investigate =
-      screen.queryByTestId("review-investigate")?.getAttribute("href") ?? "";
+      screen
+        .queryByTestId("review-view-county-evidence")
+        ?.getAttribute("href") ?? "";
     const compare =
       screen.queryByTestId("review-compare")?.getAttribute("href") ?? "";
     const gap = screen.queryByTestId("review-data-gap");
@@ -2664,7 +2677,8 @@ describe("Review operating picture state", () => {
       fips: row.dataset.fips ?? "",
     }));
     const investigate =
-      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      screen.getByTestId("review-view-county-evidence").getAttribute("href") ??
+      "";
     const basis = screen.getByTestId("review-observed-basis").textContent ?? "";
     const mixedSnapshot = {
       basisBlank: basis.includes("FIPS Unavailable"),

@@ -1482,7 +1482,8 @@ describe("Reset Review scope UI", () => {
           .querySelector(`a[aria-label="${label}"]`)
           ?.getAttribute("href") ?? "";
       const investigate =
-        screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+        screen
+          .getByTestId("review-county-preview").dataset.target ?? "";
       const compare =
         screen.getByTestId("review-compare").getAttribute("href") ?? "";
       const ask = shellHref("Ask Atlas");
@@ -1618,7 +1619,7 @@ describe("Reset Review scope UI", () => {
         compareCounty: shellHref("Compare").includes("county=08001"),
         failure: screen.getByRole("alert").textContent,
         headerAskLink: document.querySelector(".app-header a"),
-        investigateAction: screen.queryByTestId("review-investigate"),
+        investigateAction: screen.queryByTestId("review-view-county-evidence"),
         pageReference: screen.queryByTestId("review-ask-atlas"),
         picture: screen.queryByTestId("review-state-panel"),
         shellCounty: new URL(ask, "http://localhost").searchParams.get(
@@ -2242,7 +2243,8 @@ describe("Reset Review scope UI", () => {
       );
       expect({
         albany: screen.queryByText("Albany"),
-        handoff: screen.getByTestId("review-investigate").getAttribute("href"),
+        handoff: screen
+          .getByTestId("review-county-preview").dataset.target,
         list: candidateText(),
         loading: screen.queryByText("Loading review scope…"),
         rendered: screen.getByTestId("review-scope-results").dataset
@@ -2391,12 +2393,14 @@ describe("Reset Review scope UI", () => {
       pending.find((entry) => entry.state === "CO")?.resolve();
       await waitFor(() =>
         expect(
-          screen.getByTestId("review-investigate").getAttribute("href")
+          screen
+            .getByTestId("review-county-preview").dataset.target
         ).toContain("scope=NY")
       );
       expect({
         denver: screen.queryByText("Denver"),
-        handoff: screen.getByTestId("review-investigate").getAttribute("href"),
+        handoff: screen
+          .getByTestId("review-county-preview").dataset.target,
         list: screen.getByTestId("review-candidate").textContent,
         map: screen.getByTestId("mock-atlas-map").dataset.mapScoreFips,
         rendered: screen.getByTestId("review-scope-results").dataset
@@ -2413,7 +2417,7 @@ describe("Reset Review scope UI", () => {
         url: expect.stringContaining("scope=NY"),
       });
       expect(
-        screen.getByTestId("review-investigate").getAttribute("href")
+        screen.getByTestId("review-county-preview").dataset.target
       ).toContain("county=36001");
       expect(
         screen.getByTestId("mock-atlas-map").dataset.mapScoreFips
@@ -2468,26 +2472,27 @@ describe("Reset Review scope UI", () => {
     );
     const view = render(panel("08001"));
     await waitFor(() =>
-      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
-        "08001"
-      )
+      expect(
+        screen.getByTestId("review-view-county-evidence").dataset.county
+      ).toBe("08001")
     );
     fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
     view.rerender(panel("08013"));
     await waitFor(() =>
-      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
-        "08013"
-      )
+      expect(
+        screen.getByTestId("review-view-county-evidence").dataset.county
+      ).toBe("08013")
     );
     const beforeRestore = updates.length;
     view.rerender(panel("08001"));
     await waitFor(() =>
-      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
-        "08001"
-      )
+      expect(
+        screen.getByTestId("review-view-county-evidence").dataset.county
+      ).toBe("08001")
     );
     expect({
-      restored: screen.getByTestId("review-investigate").dataset.county,
+      restored: screen.getByTestId("review-view-county-evidence").dataset
+        .county,
       selection: updates[0],
       updatesAfterRestore: updates.slice(beforeRestore),
     }).toStrictEqual({
@@ -2500,12 +2505,12 @@ describe("Reset Review scope UI", () => {
   it("keeps the URL county as the Investigate handoff", async () => {
     renderReview("?scope=CO&county=08013");
     await waitFor(() =>
-      expect(screen.getByTestId("review-investigate").dataset.county).toBe(
-        "08013"
-      )
+      expect(
+        screen.getByTestId("review-view-county-evidence").dataset.county
+      ).toBe("08013")
     );
     expect(
-      screen.getByTestId("review-investigate").getAttribute("href")
+      screen.getByTestId("review-county-preview").dataset.target
     ).toContain("county=08013");
   });
 
@@ -2816,7 +2821,8 @@ describe("Reset Review scope UI", () => {
       )
     );
     const preview = screen.getByTestId("review-county-preview");
-    const href = screen.getByTestId("review-investigate").getAttribute("href");
+    const href = screen
+      .getByTestId("review-county-preview").dataset.target;
     expect({
       caveat: preview.dataset.caveat ?? "",
       dossier:
@@ -2825,7 +2831,7 @@ describe("Reset Review scope UI", () => {
       heading: screen.getByRole("heading", { name: "Boulder, Colorado" })
         .textContent,
       href,
-      label: screen.getByTestId("review-investigate").textContent,
+      label: screen.getByTestId("review-view-county-evidence").textContent,
       panel: Boolean(screen.getByTestId("review-state-panel")),
       target: preview.dataset.target,
       why: preview.dataset.why,
@@ -2836,7 +2842,7 @@ describe("Reset Review scope UI", () => {
       href: expect.stringMatching(
         /\/explore\?.*county=08013.*mode=evidence.*period=2023-01-01.*scope=CO|scope=CO.*county=08013.*period=2023-01-01.*mode=evidence/
       ),
-      label: "County evidence",
+      label: "View Full County Evidence",
       panel: true,
       target: href,
       why: "Boulder is included because the review method returned it.",
@@ -3007,7 +3013,8 @@ describe("Reset Review scope UI", () => {
       )
     );
     const href =
-      screen.getByTestId("review-investigate").getAttribute("href") ?? "";
+      screen.getByTestId("review-county-preview").dataset.target ??
+      "";
     const url = new URL(href, "http://localhost");
     expect({
       compare: url.searchParams.get("compare"),

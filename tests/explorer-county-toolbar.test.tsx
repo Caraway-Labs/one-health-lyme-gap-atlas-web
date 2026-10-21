@@ -1,11 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  type ExplorerCountyReference,
-  EXPLORER_COUNTY_EXPORT_NOTE,
-} from "@/features/ux-reset/review/explorer-county-reference";
+import type { ExplorerCountyReference } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerCountyToolbar } from "@/features/ux-reset/review/explorer-county-toolbar";
 import type { EvidenceView } from "@/lib/atlas-ui";
 
@@ -45,11 +48,9 @@ const counties: ExplorerCountyReference[] = [
 function ToolbarHarness({
   onClearSelection,
   onCountySelect,
-  onDownload,
 }: {
   onClearSelection: () => void;
   onCountySelect: (county: ExplorerCountyReference) => void;
-  onDownload: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
@@ -59,8 +60,8 @@ function ToolbarHarness({
       availableData={availableData}
       counties={counties}
       countyQuery={query}
-      downloadDisabled={false}
       scope="AL"
+      scopeLabel="Alabama"
       selectedFips={selectedFips}
       stateOptions={[{ code: "AL", name: "Alabama" }]}
       onAvailableDataChange={setAvailableData}
@@ -75,7 +76,6 @@ function ToolbarHarness({
         setSelectedFips(county.fips);
         onCountySelect(county);
       }}
-      onDownload={onDownload}
       onScopeChange={vi.fn<() => void>()}
     />
   );
@@ -86,12 +86,11 @@ describe("explorer county toolbar", () => {
     cleanup();
   });
 
-  it("names the four controls and keeps the export note out of the row", () => {
+  it("names the controls and shows geography and the filtered count", () => {
     render(
       <ToolbarHarness
         onClearSelection={vi.fn<() => void>()}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
       />
     );
     expect(screen.getByRole("combobox", { name: "State" })).toBeTruthy();
@@ -101,14 +100,48 @@ describe("explorer county toolbar", () => {
     expect(
       screen.getByRole("combobox", { name: "Available data" })
     ).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Download county list as CSV" })
-    ).toBeTruthy();
-    const note = screen.getByTestId("explorer-county-export-note");
+    expect(screen.getByTestId("explorer-filter-count").textContent).toBe(
+      "3 counties"
+    );
+    const geography = screen.getByRole("navigation", { name: "Geography" });
     expect({
-      hidden: note.className.includes("sr-only"),
-      note: note.textContent,
-    }).toStrictEqual({ hidden: true, note: EXPLORER_COUNTY_EXPORT_NOTE });
+      current: geography.querySelector("[aria-current='page']")?.textContent,
+      home: within(geography).getByRole("button", { name: "United States" })
+        .textContent,
+    }).toStrictEqual({ current: "Alabama", home: "United States" });
+  });
+
+  it("renders trailing controls and offers no inline download button", () => {
+    render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips="01001"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        trailing={<button type="button">Trailing control</button>}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    expect(
+      screen.getByRole("button", { name: "Trailing control" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Download county list as CSV" })
+    ).toBeNull();
+    const geography = screen.getByRole("navigation", { name: "Geography" });
+    expect(
+      within(geography).getByRole("button", { name: "Alabama" })
+    ).toBeTruthy();
+    expect(geography.querySelector("[aria-current='page']")?.textContent).toBe(
+      "Autauga"
+    );
   });
 
   it("selects an exact FIPS and shows the county name", () => {
@@ -117,7 +150,6 @@ describe("explorer county toolbar", () => {
       <ToolbarHarness
         onClearSelection={vi.fn<() => void>()}
         onCountySelect={onCountySelect}
-        onDownload={vi.fn<() => void>()}
       />
     );
     const search = screen.getByTestId("explorer-county-search");
@@ -139,7 +171,6 @@ describe("explorer county toolbar", () => {
       <ToolbarHarness
         onClearSelection={vi.fn<() => void>()}
         onCountySelect={onCountySelect}
-        onDownload={vi.fn<() => void>()}
       />
     );
     const search = screen.getByTestId("explorer-county-search");
@@ -158,7 +189,6 @@ describe("explorer county toolbar", () => {
       <ToolbarHarness
         onClearSelection={onClearSelection}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
       />
     );
     const search = screen.getByTestId("explorer-county-search");
@@ -182,15 +212,14 @@ describe("explorer county toolbar", () => {
         availableData="all"
         counties={counties}
         countyQuery=""
-        downloadDisabled={false}
         scope="AL"
+        scopeLabel="Alabama"
         selectedFips="01001"
         stateOptions={[{ code: "AL", name: "Alabama" }]}
         onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
         onClearSelection={vi.fn<() => void>()}
         onCountyQueryChange={vi.fn<(value: string) => void>()}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
         onScopeChange={vi.fn<() => void>()}
       />
     );
@@ -207,15 +236,14 @@ describe("explorer county toolbar", () => {
         availableData="all"
         counties={counties}
         countyQuery="auta"
-        downloadDisabled={false}
         scope="AL"
+        scopeLabel="Alabama"
         selectedFips="01011"
         stateOptions={[{ code: "AL", name: "Alabama" }]}
         onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
         onClearSelection={vi.fn<() => void>()}
         onCountyQueryChange={vi.fn<(value: string) => void>()}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
         onScopeChange={vi.fn<() => void>()}
       />
     );

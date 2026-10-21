@@ -16,14 +16,12 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const fixtures = path.join(here, "..", "tests", "fixtures");
+const fixtures = path.join(import.meta.dirname, "..", "tests", "fixtures");
 const readJson = (name) =>
-  JSON.parse(readFileSync(path.join(fixtures, name), "utf8"));
+  JSON.parse(readFileSync(path.join(fixtures, name), "utf-8"));
 
 const args = process.argv.slice(2);
 const arg = (name, fallback) => {
@@ -33,25 +31,19 @@ const arg = (name, fallback) => {
 const base = arg("base", "http://127.0.0.1:3788");
 const outDir = path.resolve(arg("out", "docs/evidence/web-788/after"));
 const only = arg("only", "");
+const probe = arg("probe", "");
 mkdirSync(outDir, { recursive: true });
 
 const identities = readJson("review-al-published-identities.json");
 const baldwin = readJson("review-al-v11-01003.json");
 const RELEASE = baldwin.release.release_id;
-const RAMP = [
-  "#a9d2db",
-  "#55a8a3",
-  "#87b982",
-  "#efc64a",
-  "#f49a32",
-  "#e9602b",
-];
+const RAMP = ["#a9d2db", "#55a8a3", "#87b982", "#efc64a", "#f49a32", "#e9602b"];
 const UNSCORED = new Set(["01007", "01033", "01049", "01075", "01133"]);
 
 function hash(fips) {
   let value = 17;
   for (const char of fips) {
-    value = (value * 31 + char.charCodeAt(0)) % 9973;
+    value = (value * 31 + (char.codePointAt(0) ?? 0)) % 9973;
   }
   return value;
 }
@@ -59,7 +51,9 @@ function scoreFor(fips) {
   return 8 + (hash(fips) % 880) / 10;
 }
 function colorFor(score) {
-  return RAMP[Math.min(RAMP.length - 1, Math.floor((score / 100) * RAMP.length))];
+  return RAMP[
+    Math.min(RAMP.length - 1, Math.floor((score / 100) * RAMP.length))
+  ];
 }
 const STATUS = ["observed", "missing", "published_count_floor"];
 
@@ -72,7 +66,7 @@ function scoreCounty(entry) {
     county: entry.county,
     evidence_completeness: 20 + (hash(entry.fips) % 75),
     fips: entry.fips,
-    human_status: STATUS[(hash(entry.fips) >> 1) % 3],
+    human_status: STATUS[Math.floor(hash(entry.fips) / 2) % 3],
     in_contiguous_tick_scope: scored,
     priority: "Priority 3 — Review",
     score: {
@@ -89,7 +83,7 @@ function scoreCounty(entry) {
     scoring_methodology_version: "surveillance-gap-score-v1.1",
     state: entry.state,
     state_name: entry.stateName,
-    tick_status: STATUS[(hash(entry.fips) >> 2) % 3],
+    tick_status: STATUS[Math.floor(hash(entry.fips) / 4) % 3],
   };
 }
 
@@ -182,9 +176,9 @@ async function install(page) {
     if (/^\/v1\/states\/[A-Z]{2}\/review$/.test(p)) {
       return json(review);
     }
-    const county = /^\/v1\/counties\/(\d{5})$/.exec(p);
+    const county = /^\/v1\/counties\/(?<fips>\d{5})$/.exec(p);
     if (county) {
-      const entry = identities.find((item) => item.fips === county[1]);
+      const entry = identities.find((item) => item.fips === county.groups.fips);
       if (!entry) {
         return json({ detail: "No published record" }, 404);
       }
@@ -216,21 +210,30 @@ const VIEWS = [
   { name: "follow-up", url: `${stateUrl}&mode=follow-up` },
 ];
 
-const WORDS = /\S+/g;
 async function measure(page) {
   return page.evaluate(() => {
     const main = document.querySelector("main");
+    // innerText counts rendered text only, which is what a reader sees.
+    // oxlint-disable-next-line unicorn/prefer-dom-node-text-content
     const words = (node) => (node?.innerText ?? "").match(/\S+/g)?.length ?? 0;
+    // County list rows are data, not prose. Count them only when rendered.
     const listRows = [
       ...document.querySelectorAll(
-        ".ux-reset-ranked-counties, [data-explorer-shortlist], [data-testid='explorer-shortlist-table']"
+        ".ux-reset-ranked-counties, [data-testid='explorer-shortlist-table']"
       ),
-    ].reduce((total, node) => total + words(node), 0);
-    const map = document.querySelector(".map-wrap, [data-testid*='map-region']");
+    ]
+      .filter((node) => node.offsetParent !== null)
+      .reduce((total, node) => total + words(node), 0);
+    const map = document.querySelector(
+      ".map-wrap, [data-testid*='map-region']"
+    );
     const fontSizes = new Set();
     for (const node of main?.querySelectorAll("*") ?? []) {
       if (node.children.length === 0 && node.textContent?.trim()) {
-        fontSizes.add(Math.round(Number.parseFloat(getComputedStyle(node).fontSize) * 10) / 10);
+        fontSizes.add(
+          Math.round(Number.parseFloat(getComputedStyle(node).fontSize) * 10) /
+            10
+        );
       }
     }
     return {
@@ -262,12 +265,23 @@ try {
       await install(page);
       await page.goto(base + view.url, { waitUntil: "domcontentloaded" });
       await page
-        .locator("[data-testid='review-scope-results'], [data-testid='explorer-county-evidence']")
+        .locator(
+          "[data-testid='review-scope-results'], [data-testid='explorer-county-evidence']"
+        )
         .first()
         .waitFor({ timeout: 45_000 })
-        .catch(() => undefined);
+        .catch(() => null);
       await page.waitForTimeout(2500);
       await page.screenshot({ path: path.join(outDir, `${label}.png`) });
+      if (probe) {
+        console.log(
+          `PROBE ${label}:`,
+          await page.evaluate(
+            (selector) => document.querySelector(selector)?.outerHTML ?? "none",
+            probe
+          )
+        );
+      }
       const metrics = await measure(page);
       report.push({ label, ...metrics });
       if (viewport.name === "1440x900") {
@@ -278,6 +292,19 @@ try {
         });
         if (view.name === "state-county") {
           await page.setViewportSize({ height: 900, width: 1440 });
+          const panel = page.getByTestId("explorer-rail-panel-county");
+          if (await panel.count()) {
+            await panel.evaluate((node) => {
+              node.scrollTop = node.scrollHeight;
+            });
+            await page.waitForTimeout(300);
+            await page.screenshot({
+              path: path.join(outDir, "rail-county-scrolled-1440x900.png"),
+            });
+            await panel.evaluate((node) => {
+              node.scrollTop = 0;
+            });
+          }
           const trigger = page
             .getByRole("button", { name: /scenario/i })
             .first();
@@ -306,4 +333,3 @@ writeFileSync(
   `${JSON.stringify(report, null, 2)}\n`
 );
 console.log(JSON.stringify(report, null, 2));
-void WORDS;

@@ -97,6 +97,9 @@ describe("selected county preview", () => {
     await expect(
       screen.findByText(/At least 5 Lyme disease cases were reported in 2023/)
     ).resolves.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Evidence behind this review" })
+    );
     const labels = [1, 2, 3, 4, 5, 6].map(
       (number) =>
         screen.getByTestId(`review-rationale-${number}`).querySelector("h4")
@@ -113,8 +116,9 @@ describe("selected county preview", () => {
         .dataset.variant,
       evidence: screen.getByTestId("review-view-county-evidence").textContent,
       fips,
-      followUp: screen.getByRole("button", { name: "View County Follow-Up" })
-        .textContent,
+      followUp: screen
+        .getByRole("button", { name: "View County Follow-Up" })
+        .getAttribute("aria-label"),
       influenceAfterEvidence:
         screen.getByTestId("ranking-influence").previousElementSibling ===
         screen.getByTestId("review-rationale"),
