@@ -19,6 +19,7 @@ import {
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import { showSelectedCounty } from "./explorer-rail";
 
 const reviewedRelease = "alpha-2026";
 const publishedRelease = baldwin.release.release_id;
@@ -190,7 +191,7 @@ test.describe("Explorer Download PDF", () => {
       .getByTestId("review-county-preview")
       .getByTestId("explore-download-pdf");
     await expect(button).toBeEnabled();
-    await expect(button).toHaveText("Download PDF");
+    await expect(button).toHaveAccessibleName("Download PDF");
     const evidence = page.getByTestId("review-view-county-evidence");
     const order = await evidence.evaluate((element) => {
       const download = element.parentElement?.querySelector(
@@ -288,18 +289,16 @@ test.describe("Explorer Download PDF", () => {
     await shootButton(page, testInfo, "national-scope");
   });
 
-  test("keeps Download PDF disabled when no county is selected", async ({
+  test("offers no Download PDF button when no county is selected", async ({
     page,
-  }, testInfo) => {
+  }) => {
     await installPublishedCounties(page);
     await page.goto(
       `/explore?scope=AL&dataset=${publishedRelease}&selection=required`
     );
-    const button = page.getByTestId("explore-download-pdf");
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
-    await expect(button).toBeDisabled();
-    await expect(button).toHaveText("Download PDF");
-    await shootButton(page, testInfo, "no-county");
+    await expect(page.getByTestId("explore-download-pdf")).toHaveCount(0);
   });
 
   test("shows a recoverable error and does not keep a failed download", async ({

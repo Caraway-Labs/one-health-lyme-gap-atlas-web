@@ -8,6 +8,7 @@ import barbour from "../fixtures/review-al-v11-01005.json" with { type: "json" }
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import { openEvidenceDisclosure } from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const release = baldwin.release.release_id;
@@ -243,6 +244,7 @@ test.describe("selected county response tier", () => {
     await expect(
       preview.getByTestId("selected-county-gap-score")
     ).toBeVisible();
+    await openEvidenceDisclosure(page);
     const layout = await preview.evaluate((card) => {
       if (!(card instanceof HTMLElement)) {
         return null;

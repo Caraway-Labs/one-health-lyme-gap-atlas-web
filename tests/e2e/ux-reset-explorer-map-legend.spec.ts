@@ -484,7 +484,9 @@ async function legendSwatchesFit(
           box.width > 1 && box.height > 1 && box.right <= cardBox.right + 1
         );
       });
-    return { clipped, tall: legendBox.height > 96, visible };
+    // The legend is a map overlay. It carries the review-priority qualifier, so
+    // it may be a little taller than the former inline strip.
+    return { clipped, tall: legendBox.height > 124, visible };
   });
 }
 

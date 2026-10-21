@@ -207,6 +207,14 @@
   overflow: hidden;
 }
 
+.ux-reset-explorer-map-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .ux-reset-explorer-page .ux-reset-explorer-map .map-wrap {
   flex: 1 1 auto;
   height: min(30rem, 62dvh);
@@ -236,7 +244,7 @@
 
 .ux-reset-explorer-page .ux-reset-explorer-map-layer {
   position: absolute;
-  top: 3.25rem;
+  top: 0.5rem;
   left: 0.75rem;
   z-index: 6;
   width: min(17rem, calc(100% - 4.5rem));
@@ -274,7 +282,7 @@
 
 .ux-reset-explorer-page .ux-reset-explorer-map-availability {
   position: absolute;
-  top: 3.25rem;
+  top: 0.5rem;
   left: min(17.75rem, calc(100% - 3.75rem));
   z-index: 6;
   padding: 0;
@@ -303,8 +311,7 @@
   bottom: 0.75rem;
   left: 0.75rem;
   z-index: 6;
-  width: max-content;
-  max-width: min(26rem, calc(100% - 1.5rem));
+  width: min(26rem, calc(100% - 1.5rem));
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -1061,13 +1068,6 @@ div.action-checklist-row {
     height: min(26rem, 56dvh);
   }
 
-  .ux-reset-explorer-page .ux-reset-explorer-map-layer {
-    top: 3.75rem;
-  }
-
-  .ux-reset-explorer-page .ux-reset-explorer-map-availability {
-    top: 3.75rem;
-  }
 }
 
 .atlas-status-spinner {
@@ -1172,4 +1172,10 @@ div.action-checklist-row {
   .ux-reset-explorer-page .ux-reset-explorer-map-availability {
     padding-top: 0;
   }
+}
+
+.ux-reset-explorer-page .county-summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
 }

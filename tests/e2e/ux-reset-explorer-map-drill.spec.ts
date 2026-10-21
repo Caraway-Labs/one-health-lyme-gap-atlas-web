@@ -6,6 +6,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showCountyList, showSelectedCounty } from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 function box(
@@ -315,6 +316,7 @@ test.describe("Explorer two-stage map drill", () => {
         outline: "black",
         stage: "state",
       });
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
     const idaho = await readCamera(page);
 
@@ -379,7 +381,9 @@ test.describe("Explorer two-stage map drill", () => {
       });
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/focus=ID/);
+    await showSelectedCounty(page);
     await expect(page).not.toHaveURL(/county=/);
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
     await expect.poll(async () => (await readCamera(page)).stage).toBe("state");
     await page.goBack({ waitUntil: "commit" });
@@ -406,11 +410,13 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(page).toHaveURL(/focus=WY/);
     await expect(page).not.toHaveURL(/county=/);
     await expect.poll(async () => (await readCamera(page)).frame).toBe("WY");
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
 
     await page.getByTestId("explorer-fit-national").click();
     await expect(page).not.toHaveURL(/focus=/);
     const beforeList = await readCamera(page);
+    await showCountyList(page);
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
     await expect(page).toHaveURL(/scope=ALL/);
@@ -437,6 +443,7 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
 
     await page.goto("/explore?scope=ALL&focus=ID");
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
     const reloadedState = await settledCamera(page, "state");
     await page.goto("/explore?scope=ALL&focus=ID&county=16001");

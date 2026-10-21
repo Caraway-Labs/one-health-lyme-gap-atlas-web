@@ -18,6 +18,7 @@ import {
   tier1PriorityForCounty,
   tier1PriorityForRelease,
 } from "../fixtures/tier1-surveillance-priority";
+import { showCountyList } from "./explorer-rail";
 
 const RELEASE_ID = reviewScopeMetadataFixture.release_id;
 
@@ -143,6 +144,7 @@ test("desktop county rows show labeled ML surveillance priority", async ({
   await installClassifiedCounties(page);
   await page.setViewportSize({ height: 900, width: 1440 });
   await page.goto("/app/review?scope=CO&county=08031");
+  await showCountyList(page);
   const list = page.getByRole("list", { name: "Ranked counties" });
   await expect(list.getByTestId("review-candidate")).toHaveCount(4);
   await expect(page.getByTestId("explorer-ml-priority-legend")).toHaveCount(0);

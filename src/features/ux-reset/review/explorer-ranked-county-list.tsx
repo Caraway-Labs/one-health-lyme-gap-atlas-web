@@ -292,9 +292,7 @@ function RankedCountyButton({
       ) : (
         <span className="ux-reset-ranked-score">
           <span className="sr-only">
-            {adjusted
-              ? `Published score ${row.score}. Atlas gap score `
-              : "Atlas gap score "}
+            {`Published score ${row.score}. Atlas gap score `}
           </span>
           <span className="ux-reset-ranked-score-value">
             {adjusted ? (

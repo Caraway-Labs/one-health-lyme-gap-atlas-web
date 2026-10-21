@@ -10,6 +10,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showCountyList } from "./explorer-rail";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/v1/atlas/scores**", (route) => {
@@ -262,7 +263,7 @@ test.describe("Review national geographic navigation", () => {
       page.getByRole("heading", { name: "State orientation" })
     ).toHaveCount(0);
     const mapBox = await page.locator(".ux-reset-explorer-map").boundingBox();
-    const listBox = await page.locator(".ux-reset-explorer-list").boundingBox();
+    const listBox = await page.getByTestId("explorer-rail").boundingBox();
     expect(mapBox).not.toBeNull();
     expect(listBox).not.toBeNull();
     if (mapBox && listBox) {
@@ -303,9 +304,11 @@ test.describe("Review national geographic navigation", () => {
       return row.getBoundingClientRect().y - card.getBoundingClientRect().y;
     });
     expect(firstRowOffset).not.toBeNull();
+    // The list header now carries sort controls and column labels.
     expect(firstRowOffset ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(
-      163 - 70
+      163 - 25
     );
+    await showCountyList(page);
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page).toHaveURL(/county=08001/);
@@ -324,9 +327,11 @@ test.describe("Review national geographic navigation", () => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
+    await showCountyList(page);
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
+    await showCountyList(page);
     await page.getByRole("button", { name: /Boulder, CO/ }).click();
     await expect(page).toHaveURL(/county=08013/);
     await expectPublishedNationalCounty(page, "08013");
@@ -345,6 +350,7 @@ test.describe("Review national geographic navigation", () => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
+    await showCountyList(page);
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
@@ -368,6 +374,7 @@ test.describe("Review national geographic navigation", () => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
     await page.goto("/explore?scope=ALL");
+    await showCountyList(page);
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
@@ -437,6 +444,7 @@ test.describe("Review national geographic navigation", () => {
     await expect(page.getByTestId("review-national-map-region")).toContainText(
       "temporarily unavailable"
     );
+    await showCountyList(page);
     await page.getByRole("button", { name: /Albany, NY/ }).click();
     await expect(page).toHaveURL(/county=36001/);
     await expect(page).toHaveURL(/scope=ALL/);

@@ -135,11 +135,11 @@ test.describe("Explorer what-if scenario", () => {
     await page.goto("/explore?scope=CO");
 
     const panel = page.getByTestId("explorer-what-if-scenario");
-    await expect(panel).toBeVisible();
-    await expect(panel).not.toHaveAttribute("open", "");
-    await expect(panel).toContainText("Explore scoring assumptions");
-    await expect(panel).not.toContainText("What-if scenario");
-    await expect(panel).toContainText("Show assumptions");
+    const trigger = page.getByTestId("explorer-what-if-summary");
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toHaveText("Scenarios");
+    await expect(page.getByTestId("explorer-scenario-active")).toHaveCount(0);
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
     await expect(page.getByRole("slider")).toHaveCount(0);
     await expect(page.getByTestId("review-candidate")).toContainText(
       "Published score 22.9"
@@ -183,6 +183,10 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("dialog", { name: "About Adjusted scenario" })
     ).not.toContainText("not personal disease risk");
     await page.keyboard.press("Escape");
+    if (!(await page.getByTestId("explorer-what-if-scenario").isVisible())) {
+      // Escape closes the legend popover and the non-modal scenario sheet.
+      await page.getByTestId("explorer-what-if-summary").click();
+    }
     const impactSummary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(
       page.getByTestId("explorer-scenario-impact-description")
@@ -218,7 +222,7 @@ test.describe("Explorer what-if scenario", () => {
 
     await page.reload();
     await expect(candidate).toContainText("Adjusted scenario 12.2");
-    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(panel).toHaveCount(0);
     await summary.click();
     await expect(missing).toHaveValue("40");
 
@@ -248,10 +252,10 @@ test.describe("Explorer what-if scenario", () => {
   }) => {
     await installExplorer(page);
     await page.goto("/explore?scope=DC");
-    await expect(page.getByTestId("explorer-what-if-scenario")).toBeVisible();
+    await expect(page.getByTestId("explorer-what-if-summary")).toBeVisible();
 
     await page.goto("/explore?scope=AK");
-    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
+    await expect(page.getByTestId("explorer-what-if-summary")).toHaveCount(0);
     await expect(page.getByTestId("review-scope-unsupported")).toBeVisible();
   });
 
@@ -379,7 +383,8 @@ test.describe("Explorer what-if scenario", () => {
       page.getByTestId("explorer-scenario-impact-summary")
     ).not.toContainText("→");
 
-    await thirty.click();
+    // The scenario sheet covers the rail, so dispatch the row click.
+    await thirty.dispatchEvent("click");
     await expect(impact).toContainText("Thirty County");
     await expect(impact).not.toContainText("Twelve County");
     await expect(impact).toContainText("Unavailable");
@@ -387,7 +392,8 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
       "Adjusted scenario unavailable"
     );
-    await clamped.click();
+    // The scenario sheet covers the rail, so dispatch the row click.
+    await clamped.dispatchEvent("click");
     await expect(page.getByTestId("explorer-scenario-selected")).toContainText(
       "Adjusted scenario unavailable"
     );
@@ -412,7 +418,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(map).toHaveAttribute("data-map-colors", /08001:#a9d2db/i);
 
     await page.reload();
-    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(panel).toHaveCount(0);
     await expect(page.getByRole("slider")).toHaveCount(0);
     await expect(twelve).toContainText("Adjusted scenario unavailable");
     await expect(thirty).not.toContainText("Scenario rank");
@@ -574,9 +580,7 @@ test.describe("Explorer what-if scenario", () => {
 
     await page.setViewportSize({ width: 1711, height: 900 });
     await page.goto("/explore?scope=CO&county=08013&eco=85");
-    await expect(
-      page.getByTestId("explorer-what-if-scenario")
-    ).not.toHaveAttribute("open", "");
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
     await page.getByTestId("explorer-what-if-summary").click();
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(
@@ -605,7 +609,8 @@ test.describe("Explorer what-if scenario", () => {
     const lake = page.locator(
       "[data-testid='review-candidate'][data-fips='08065']"
     );
-    await lake.click();
+    // The scenario sheet covers the rail, so dispatch the row click.
+    await lake.dispatchEvent("click");
     await expect(page).toHaveURL(/county=08065/);
     await expect(summary).toContainText(
       "No score change for this county · Scenario settings"
@@ -677,9 +682,7 @@ test.describe("Explorer what-if scenario", () => {
     });
 
     await page.goto("/explore?scope=CO&county=08065&eco=85");
-    await expect(
-      page.getByTestId("explorer-what-if-scenario")
-    ).not.toHaveAttribute("open", "");
+    await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(0);
     await page.getByTestId("explorer-what-if-summary").click();
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(summary).toContainText(
@@ -771,16 +774,13 @@ test.describe("Explorer what-if scenario", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/explore?scope=ALL");
     const panel = page.getByTestId("explorer-what-if-scenario");
-    await expect(panel).toBeVisible();
-    await expect(panel).not.toHaveAttribute("open", "");
-    await expect(panel).toContainText("Explore scoring assumptions");
-    await expect(page.getByTestId("explorer-what-if-summary")).toContainText(
-      "Show assumptions"
+    await expect(page.getByTestId("explorer-what-if-summary")).toHaveText(
+      "Scenarios"
     );
+    await expect(panel).toHaveCount(0);
     await expect(
       page.getByTestId("explorer-what-if-summary")
     ).not.toContainText("65%");
-    await expect(panel).not.toContainText("points");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.getByTestId("explorer-map-legend")).not.toContainText(
       "national average"
@@ -850,7 +850,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(missing).toHaveValue("75");
 
     await page.goto("/explore?scope=ALL&county=08013&eco=85");
-    await expect(panel).not.toHaveAttribute("open", "");
+    await expect(panel).toHaveCount(0);
     await summary.click();
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
@@ -885,10 +885,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("review-national-orientation")).toHaveCount(
       0
     );
-    const assumptions = page.getByTestId("explorer-what-if-scenario");
-    if ((await assumptions.getAttribute("open")) === null) {
-      await page.getByTestId("explorer-what-if-summary").click();
-    }
+    await page.getByTestId("explorer-what-if-summary").click();
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
     ).toContainText("+20.0 points from published score");
@@ -946,9 +943,7 @@ test.describe("Explorer what-if scenario", () => {
     });
 
     await page.goto("/explore?scope=ALL&county=08001&smooth=20");
-    await expect(
-      page.getByTestId("explorer-what-if-scenario")
-    ).not.toHaveAttribute("open", "");
+    await expect(page.getByTestId("explorer-what-if-summary")).toBeVisible();
     await page.getByTestId("explorer-what-if-summary").click();
     const summary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(summary).toContainText("Score with your changes unavailable");

@@ -20,6 +20,11 @@ import {
 } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import {
+  showCountyList,
+  showSelectedCounty,
+  openEvidenceDisclosure,
+} from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const RELEASE_ID = "alpha-2026";
@@ -601,12 +606,15 @@ test.describe("Explorer same-route history during hydration", () => {
       fips: DENVER,
       scope: "CO",
     });
+    await showCountyList(page);
     await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    await showCountyList(page);
     await expect(
       page.getByRole("heading", { exact: true, name: "Counties" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-county-evidence")).toHaveCount(0);
 
+    await showCountyList(page);
     await page.locator(`button[data-fips="${BOULDER}"]`).click();
     await expectBrowseCounty(page, {
       county: "Boulder",
@@ -728,6 +736,7 @@ test.describe("Explorer same-route history during hydration", () => {
         scope: "CO",
       })
     );
+    await showCountyList(page);
     await page.locator(`button[data-fips="${BOULDER}"]`).click();
     await expectBrowseCounty(page, {
       county: "Boulder",
@@ -836,6 +845,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
       })
     );
     await expect(page.getByTestId("review-scope-results")).toBeVisible();
+    await showCountyList(page);
     const row = page.locator('button[data-rank="41"]');
     await expect(row).toHaveAttribute("data-fips", rank41.fips);
     await row.click();
@@ -983,6 +993,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
     await search.fill(rank41.fips);
     await search.press("Enter");
     await expect(page).toHaveURL(new RegExp(`county=${rank41.fips}`));
+    await showCountyList(page);
     const selected = page.locator(`button[data-fips="${rank41.fips}"]`);
     await expect(selected).toHaveAttribute("aria-current", "true");
     await expect(selected).toHaveAttribute("data-rank", "41");
@@ -1000,6 +1011,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
     await expect(
       page.locator(`button[data-fips="${rank41.fips}"]`)
     ).toHaveCount(0);
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
   });
 });
@@ -1098,6 +1110,14 @@ function evidenceObservations(fips: string, measureId: string): Observation[] {
 }
 
 async function openProvenance(page: Page, name: RegExp | string) {
+  // On the browse view the claim provenance sits in the county summary
+  // disclosure. The evidence view has no such disclosure.
+  if (
+    (await page.getByTestId("explorer-county-evidence").count()) === 0 &&
+    (await page.getByTestId("county-summary-disclosure").count()) > 0
+  ) {
+    await openEvidenceDisclosure(page);
+  }
   const summary = page
     .getByRole("group")
     .locator("summary", { hasText: name })
@@ -1429,6 +1449,7 @@ test.describe("Explorer evidence-state accessibility", () => {
         scope: "GA",
       })
     );
+    await showCountyList(page);
     await page.locator(`button[data-fips="${rank41.fips}"]`).click();
     await page.reload();
     await expect(

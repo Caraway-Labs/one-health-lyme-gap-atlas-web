@@ -438,7 +438,11 @@ export function ReviewNationalPicture({
   const identityFor = (fips: string): ExploreCountyIdentity | null =>
     identityByFips.get(fips) ?? null;
   const selectedIdentity = selectedFips ? identityFor(selectedFips) : null;
-  const rail = useExplorerRailTab({ returnFocus: false, selectedFips });
+  const rail = useExplorerRailTab({
+    explicit: true,
+    returnFocus: false,
+    selectedFips,
+  });
   usePublishExploreCommittedNavigation({
     county: selectedFips || null,
     dataset: releaseId,
@@ -605,143 +609,147 @@ export function ReviewNationalPicture({
           onFit={returnToNationalExtent}
           onUsView={returnToUsView}
         />
-        <div className="ux-reset-explorer-map-layer">
-          <ExplorerMapLayerControl
-            gates={layerGates}
-            layerId={mapLayer}
-            onLayerChange={onMapLayerChange}
-          />
-        </div>
-        {knownEmptySelection ? (
-          <KnownEmptySelectionNotice
-            omitCaveats
-            selections={[knownEmptySelection]}
-            testId="national-map-known-empty"
-          />
-        ) : null}
-        <div
-          aria-busy={
-            mapLoading.busy ||
-            geometryPending ||
-            valuesPending ||
-            mapPaint.kind === "loading"
-          }
-          className="map-wrap"
-          data-map-colors={mapCounties
-            .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
-            .join(" ")}
-          data-map-fips={mapCounties.map((entry) => entry.fips).join(" ")}
-          data-map-focus={mapFocus ?? ""}
-          data-map-stage={
-            mapFocus ? (selectedFips ? "county" : "state") : "national"
-          }
-          data-testid="review-national-map-region"
-        >
-          {availableDataGate.kind === "loading" ? (
-            <AtlasStatusMessage className="map-loading" tone="loading">
-              <p>{EXPLORER_AVAILABLE_DATA_LOADING}</p>
-            </AtlasStatusMessage>
-          ) : availableDataGate.kind === "error" ? (
-            <AtlasStatusMessage className="map-loading" tone="error">
-              <p>{EXPLORER_AVAILABLE_DATA_ERROR}</p>
-            </AtlasStatusMessage>
-          ) : showMap && geometryQuery.data ? (
-            <ExplorerMapSurface
-              blockMap={mapLoading.blockMap}
-              onPaintSettled={onPaintSettled}
-              revision={publishedMap.revision}
-            >
-              <AtlasMap
-                ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the State filter and the county list."
-                cameraFrameState={mapFocus}
-                doubleClickZoom={false}
-                fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
-                fitSignal={fitSignal}
-                geographicStateOutline={mapFocus !== null}
-                geometry={{
-                  ...geometryQuery.data,
-                  features: geometryFeatures,
-                }}
-                includeUnscoredCounties={availableDataGate.kind === "open"}
-                neutralCountyBoundaries={mapLayer === "boundaries"}
-                paintRevision={publishedMap.revision ?? undefined}
-                resetNationalView
-                scores={publishedMap.frame}
-                selectedFips={selectedFips}
-                selectedState={browseState ?? "ALL"}
-                onCountyPointer={(click) => {
-                  const action = explorerMapDrillAction({
-                    clickDetail: click.clickDetail,
-                    fips: click.fips,
-                    focusedState: mapFocus,
-                  });
-                  switch (action.type) {
-                    case "ignore": {
-                      return;
-                    }
-                    case "focus-state": {
-                      chooseState(action.state);
-                      return;
-                    }
-                    case "select-county": {
-                      chooseCounty(action.fips);
-                      return;
-                    }
-                    default: {
-                      const exhaustive: never = action;
-                      return exhaustive;
-                    }
-                  }
-                }}
-                onError={() => {
-                  setMapFailed(true);
-                }}
+        <div className="ux-reset-explorer-map-stage">
+          <div className="ux-reset-explorer-map-layer">
+            <ExplorerMapLayerControl
+              gates={layerGates}
+              layerId={mapLayer}
+              onLayerChange={onMapLayerChange}
+            />
+          </div>
+          {knownEmptySelection ? (
+            <KnownEmptySelectionNotice
+              omitCaveats
+              selections={[knownEmptySelection]}
+              testId="national-map-known-empty"
+            />
+          ) : null}
+          <div
+            aria-busy={
+              mapLoading.busy ||
+              geometryPending ||
+              valuesPending ||
+              mapPaint.kind === "loading"
+            }
+            className="map-wrap"
+            data-map-colors={mapCounties
+              .map((entry) => `${entry.fips}:${entry.color ?? ""}`)
+              .join(" ")}
+            data-map-fips={mapCounties.map((entry) => entry.fips).join(" ")}
+            data-map-focus={mapFocus ?? ""}
+            data-map-stage={
+              mapFocus ? (selectedFips ? "county" : "state") : "national"
+            }
+            data-testid="review-national-map-region"
+          >
+            {availableDataGate.kind === "loading" ? (
+              <AtlasStatusMessage className="map-loading" tone="loading">
+                <p>{EXPLORER_AVAILABLE_DATA_LOADING}</p>
+              </AtlasStatusMessage>
+            ) : availableDataGate.kind === "error" ? (
+              <AtlasStatusMessage className="map-loading" tone="error">
+                <p>{EXPLORER_AVAILABLE_DATA_ERROR}</p>
+              </AtlasStatusMessage>
+            ) : showMap && geometryQuery.data ? (
+              <ExplorerMapSurface
+                blockMap={mapLoading.blockMap}
                 onPaintSettled={onPaintSettled}
-                onSelect={() => {
-                  // County clicks are handled by the two-stage pointer above.
-                }}
-              />
-            </ExplorerMapSurface>
-          ) : mapFailed || geometryError ? (
-            <AtlasStatusMessage className="map-loading" tone="error">
-              <p>
-                The map is temporarily unavailable. Choose a state and county
-                from the list.
-              </p>
-              {mapFailed ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setMapFailed(false);
+                revision={publishedMap.revision}
+              >
+                <AtlasMap
+                  ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the State filter and the county list."
+                  cameraFrameState={mapFocus}
+                  doubleClickZoom={false}
+                  fitSelectedCounty={
+                    mapFocus !== null && selectedFips.length > 0
+                  }
+                  fitSignal={fitSignal}
+                  geographicStateOutline={mapFocus !== null}
+                  geometry={{
+                    ...geometryQuery.data,
+                    features: geometryFeatures,
                   }}
-                >
-                  Retry map
-                </Button>
-              ) : null}
-            </AtlasStatusMessage>
-          ) : valuesPending ||
-            geometryPending ? null : availableDataGate.kind === "ready" &&
-            geometryFeatures.length > 0 ? (
-            <AtlasStatusMessage className="map-loading" tone="empty">
-              <p>{EXPLORER_AVAILABLE_DATA_EMPTY}</p>
-            </AtlasStatusMessage>
-          ) : (
-            <AtlasStatusMessage className="map-loading" tone="empty">
-              <p>No county shapes were returned for this release.</p>
-            </AtlasStatusMessage>
-          )}
-          <ExplorerMapLoadingOverlay
-            view={mapLoading.overlay}
-            onRetry={retryMapLayer}
+                  includeUnscoredCounties={availableDataGate.kind === "open"}
+                  neutralCountyBoundaries={mapLayer === "boundaries"}
+                  paintRevision={publishedMap.revision ?? undefined}
+                  resetNationalView
+                  scores={publishedMap.frame}
+                  selectedFips={selectedFips}
+                  selectedState={browseState ?? "ALL"}
+                  onCountyPointer={(click) => {
+                    const action = explorerMapDrillAction({
+                      clickDetail: click.clickDetail,
+                      fips: click.fips,
+                      focusedState: mapFocus,
+                    });
+                    switch (action.type) {
+                      case "ignore": {
+                        return;
+                      }
+                      case "focus-state": {
+                        chooseState(action.state);
+                        return;
+                      }
+                      case "select-county": {
+                        chooseCounty(action.fips);
+                        return;
+                      }
+                      default: {
+                        const exhaustive: never = action;
+                        return exhaustive;
+                      }
+                    }
+                  }}
+                  onError={() => {
+                    setMapFailed(true);
+                  }}
+                  onPaintSettled={onPaintSettled}
+                  onSelect={() => {
+                    // County clicks are handled by the two-stage pointer above.
+                  }}
+                />
+              </ExplorerMapSurface>
+            ) : mapFailed || geometryError ? (
+              <AtlasStatusMessage className="map-loading" tone="error">
+                <p>
+                  The map is temporarily unavailable. Choose a state and county
+                  from the list.
+                </p>
+                {mapFailed ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setMapFailed(false);
+                    }}
+                  >
+                    Retry map
+                  </Button>
+                ) : null}
+              </AtlasStatusMessage>
+            ) : valuesPending ||
+              geometryPending ? null : availableDataGate.kind === "ready" &&
+              geometryFeatures.length > 0 ? (
+              <AtlasStatusMessage className="map-loading" tone="empty">
+                <p>{EXPLORER_AVAILABLE_DATA_EMPTY}</p>
+              </AtlasStatusMessage>
+            ) : (
+              <AtlasStatusMessage className="map-loading" tone="empty">
+                <p>No county shapes were returned for this release.</p>
+              </AtlasStatusMessage>
+            )}
+            <ExplorerMapLoadingOverlay
+              view={mapLoading.overlay}
+              onRetry={retryMapLayer}
+            />
+          </div>
+          <ExplorerMapLegend
+            key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+            paint={mapPaint}
           />
-        </div>
-        <ExplorerMapLegend
-          key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
-          paint={mapPaint}
-        />
-        <div className="ux-reset-explorer-map-availability">
-          <ExplorerMapLayerAvailability gates={layerGates} />
+          <div className="ux-reset-explorer-map-availability">
+            <ExplorerMapLayerAvailability gates={layerGates} />
+          </div>
         </div>
       </Card>
       <ExplorerBrowseRail

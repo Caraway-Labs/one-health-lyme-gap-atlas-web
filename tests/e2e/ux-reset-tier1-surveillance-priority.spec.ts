@@ -357,7 +357,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
       .analyze();
     expect(regionResults.violations).toEqual([]);
 
-    await page.getByTestId("review-investigate").click();
+    await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36001/);
     const investigate = investigatePriority(page);

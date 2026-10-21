@@ -761,6 +761,7 @@ export function ReviewOperatingPicture({
   }
   const focusReturnedCounty = returnFocus.focus;
   const rail = useExplorerRailTab({
+    explicit: Boolean(county),
     returnFocus: focusReturnedCounty,
     selectedFips,
   });
@@ -1036,132 +1037,134 @@ export function ReviewOperatingPicture({
               onReturnToUsView?.();
             }}
           />
-          {onMapLayerChange ? (
-            <div className="ux-reset-explorer-map-layer">
-              <ExplorerMapLayerControl
-                gates={layerGates}
-                layerId={mapLayer}
-                onLayerChange={onMapLayerChange}
+          <div className="ux-reset-explorer-map-stage">
+            {onMapLayerChange ? (
+              <div className="ux-reset-explorer-map-layer">
+                <ExplorerMapLayerControl
+                  gates={layerGates}
+                  layerId={mapLayer}
+                  onLayerChange={onMapLayerChange}
+                />
+              </div>
+            ) : null}
+            {knownEmptySelection ? (
+              <KnownEmptySelectionNotice
+                omitCaveats
+                selections={[knownEmptySelection]}
+                testId="explorer-map-known-empty"
+              />
+            ) : null}
+            <div
+              className="map-wrap"
+              data-include-unscored={
+                availableDataGate.kind === "open" ? "true" : "false"
+              }
+              data-map-colors={mapCounties
+                .map((county) => `${county.fips}:${county.color ?? ""}`)
+                .join(" ")}
+              data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
+              data-selected-fips={selectedFips}
+              data-testid="review-state-map-region"
+              aria-busy={
+                mapLoading.busy ||
+                availableDataGate.kind === "loading" ||
+                geometryPending ||
+                (geometryReady &&
+                  hasMapCounties &&
+                  !mapFailed &&
+                  settledMapContext !== mapContext)
+              }
+            >
+              {availableDataGate.kind === "loading" ? (
+                <AtlasStatusMessage className="map-loading" tone="loading">
+                  <p data-testid="explorer-map-available-data-loading">
+                    {EXPLORER_AVAILABLE_DATA_LOADING}
+                  </p>
+                </AtlasStatusMessage>
+              ) : availableDataGate.kind === "error" ? (
+                <AtlasStatusMessage className="map-loading" tone="error">
+                  <p data-testid="explorer-map-available-data-error">
+                    {EXPLORER_AVAILABLE_DATA_ERROR}
+                  </p>
+                </AtlasStatusMessage>
+              ) : geometryReady && hasMapCounties && !mapFailed ? (
+                <ExplorerMapSurface
+                  blockMap={mapLoading.blockMap}
+                  onPaintSettled={onPaintSettled}
+                  revision={publishedMap.revision}
+                >
+                  <AtlasMap
+                    key={mapContext}
+                    ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
+                    cameraFrameState={scopeCode}
+                    fitSignal={fitSignal}
+                    geometry={geometryQuery.data as never}
+                    includeUnscoredCounties={availableDataGate.kind === "open"}
+                    neutralCountyBoundaries={mapLayer === "boundaries"}
+                    paintRevision={publishedMap.revision ?? undefined}
+                    scores={publishedMap.frame}
+                    selectedFips={selectedFips}
+                    selectedState={scopeCode}
+                    onError={() => {
+                      setFailedMapRequest(mapRequestKey);
+                    }}
+                    onIdle={() => setSettledMapContext(mapContext)}
+                    onPaintSettled={onPaintSettled}
+                    onSelect={selectCounty}
+                  />
+                </ExplorerMapSurface>
+              ) : geometryError ? (
+                <AtlasStatusMessage
+                  className="map-loading"
+                  data-testid="review-state-map-error"
+                  tone="error"
+                >
+                  <p>
+                    The map is temporarily unavailable. Use the county list to
+                    inspect the same review result.
+                  </p>
+                </AtlasStatusMessage>
+              ) : geometryUnavailable ? (
+                <AtlasStatusMessage
+                  className="map-loading"
+                  data-testid="review-state-map-unavailable"
+                  tone="empty"
+                >
+                  <p data-testid="review-state-map-unavailable">
+                    The map is unavailable. This result did not include a
+                    release Atlas can request.
+                  </p>
+                </AtlasStatusMessage>
+              ) : availableDataGate.kind === "ready" &&
+                geometryReady &&
+                inStateMapCounties.length > 0 ? (
+                <AtlasStatusMessage className="map-loading" tone="empty">
+                  <p data-testid="explorer-map-available-data-empty">
+                    {EXPLORER_AVAILABLE_DATA_EMPTY}
+                  </p>
+                </AtlasStatusMessage>
+              ) : !hasMapCounties && !geometryPending ? (
+                <AtlasStatusMessage className="map-loading" tone="empty">
+                  <p data-testid="review-state-map-empty">
+                    No county shapes were returned to draw for this result.
+                  </p>
+                </AtlasStatusMessage>
+              ) : null}
+              <ExplorerMapLoadingOverlay
+                view={mapLoading.overlay}
+                onRetry={retryMapLayer}
               />
             </div>
-          ) : null}
-          {knownEmptySelection ? (
-            <KnownEmptySelectionNotice
-              omitCaveats
-              selections={[knownEmptySelection]}
-              testId="explorer-map-known-empty"
+            <ExplorerMapLegend
+              key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+              paint={mapPaint}
             />
-          ) : null}
-          <div
-            className="map-wrap"
-            data-include-unscored={
-              availableDataGate.kind === "open" ? "true" : "false"
-            }
-            data-map-colors={mapCounties
-              .map((county) => `${county.fips}:${county.color ?? ""}`)
-              .join(" ")}
-            data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
-            data-selected-fips={selectedFips}
-            data-testid="review-state-map-region"
-            aria-busy={
-              mapLoading.busy ||
-              availableDataGate.kind === "loading" ||
-              geometryPending ||
-              (geometryReady &&
-                hasMapCounties &&
-                !mapFailed &&
-                settledMapContext !== mapContext)
-            }
-          >
-            {availableDataGate.kind === "loading" ? (
-              <AtlasStatusMessage className="map-loading" tone="loading">
-                <p data-testid="explorer-map-available-data-loading">
-                  {EXPLORER_AVAILABLE_DATA_LOADING}
-                </p>
-              </AtlasStatusMessage>
-            ) : availableDataGate.kind === "error" ? (
-              <AtlasStatusMessage className="map-loading" tone="error">
-                <p data-testid="explorer-map-available-data-error">
-                  {EXPLORER_AVAILABLE_DATA_ERROR}
-                </p>
-              </AtlasStatusMessage>
-            ) : geometryReady && hasMapCounties && !mapFailed ? (
-              <ExplorerMapSurface
-                blockMap={mapLoading.blockMap}
-                onPaintSettled={onPaintSettled}
-                revision={publishedMap.revision}
-              >
-                <AtlasMap
-                  key={mapContext}
-                  ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
-                  cameraFrameState={scopeCode}
-                  fitSignal={fitSignal}
-                  geometry={geometryQuery.data as never}
-                  includeUnscoredCounties={availableDataGate.kind === "open"}
-                  neutralCountyBoundaries={mapLayer === "boundaries"}
-                  paintRevision={publishedMap.revision ?? undefined}
-                  scores={publishedMap.frame}
-                  selectedFips={selectedFips}
-                  selectedState={scopeCode}
-                  onError={() => {
-                    setFailedMapRequest(mapRequestKey);
-                  }}
-                  onIdle={() => setSettledMapContext(mapContext)}
-                  onPaintSettled={onPaintSettled}
-                  onSelect={selectCounty}
-                />
-              </ExplorerMapSurface>
-            ) : geometryError ? (
-              <AtlasStatusMessage
-                className="map-loading"
-                data-testid="review-state-map-error"
-                tone="error"
-              >
-                <p>
-                  The map is temporarily unavailable. Use the county list to
-                  inspect the same review result.
-                </p>
-              </AtlasStatusMessage>
-            ) : geometryUnavailable ? (
-              <AtlasStatusMessage
-                className="map-loading"
-                data-testid="review-state-map-unavailable"
-                tone="empty"
-              >
-                <p data-testid="review-state-map-unavailable">
-                  The map is unavailable. This result did not include a release
-                  Atlas can request.
-                </p>
-              </AtlasStatusMessage>
-            ) : availableDataGate.kind === "ready" &&
-              geometryReady &&
-              inStateMapCounties.length > 0 ? (
-              <AtlasStatusMessage className="map-loading" tone="empty">
-                <p data-testid="explorer-map-available-data-empty">
-                  {EXPLORER_AVAILABLE_DATA_EMPTY}
-                </p>
-              </AtlasStatusMessage>
-            ) : !hasMapCounties && !geometryPending ? (
-              <AtlasStatusMessage className="map-loading" tone="empty">
-                <p data-testid="review-state-map-empty">
-                  No county shapes were returned to draw for this result.
-                </p>
-              </AtlasStatusMessage>
+            {onMapLayerChange ? (
+              <div className="ux-reset-explorer-map-availability">
+                <ExplorerMapLayerAvailability gates={layerGates} />
+              </div>
             ) : null}
-            <ExplorerMapLoadingOverlay
-              view={mapLoading.overlay}
-              onRetry={retryMapLayer}
-            />
           </div>
-          <ExplorerMapLegend
-            key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
-            paint={mapPaint}
-          />
-          {onMapLayerChange ? (
-            <div className="ux-reset-explorer-map-availability">
-              <ExplorerMapLayerAvailability gates={layerGates} />
-            </div>
-          ) : null}
         </Card>
         <ExplorerBrowseRail
           county={

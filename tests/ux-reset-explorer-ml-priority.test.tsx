@@ -282,7 +282,7 @@ describe("Explorer county rows show ML surveillance priority", () => {
         boulder: "2",
         clearCreek: "Not ranked",
         denver: "Not ranked",
-        score: "Atlas gap score 75.0",
+        score: "Published score 75. Atlas gap score 75.0",
       });
     });
     expect(screen.queryByTestId("explorer-ml-priority-legend")).toBeNull();

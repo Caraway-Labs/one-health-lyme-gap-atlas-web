@@ -5,6 +5,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showCountyList } from "./explorer-rail";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/v1/atlas/scores**", (route) => {
@@ -227,8 +228,9 @@ test.describe("Review national and state scope controls", () => {
   }, testInfo) => {
     await installReviewApiMocks(page, { profileState: "CO" });
     await page.goto("/explore?scope=CO&county=08001");
-    const handoff = page.getByTestId("review-investigate");
+    const handoff = page.getByTestId("review-view-county-evidence");
     await expect(handoff).toHaveAttribute("data-county", "08001");
+    await showCountyList(page);
     await page.getByRole("button", { name: /Boulder, CO/ }).click();
     await expect(page).toHaveURL(/county=08013/);
     await expect(handoff).toHaveAttribute("data-county", "08013");
@@ -502,8 +504,8 @@ test.describe("Review national and state scope controls", () => {
       "New York"
     );
     await expect(page).toHaveURL(/scope=NY/);
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "href",
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
       /scope=NY/
     );
   });

@@ -164,31 +164,24 @@ async function installExplorer(page: Page) {
 }
 
 async function expectDesktopColumns(page: Page) {
-  const listBox = await page.locator(".ux-reset-explorer-list").boundingBox();
   const mapBox = await page.locator(".ux-reset-explorer-map").boundingBox();
-  const previewBox = await page
-    .locator(".ux-reset-explorer-preview")
-    .boundingBox();
-  expect(listBox).not.toBeNull();
+  const railBox = await page.getByTestId("explorer-rail").boundingBox();
   expect(mapBox).not.toBeNull();
-  expect(previewBox).not.toBeNull();
-  if (!(listBox && mapBox && previewBox)) {
+  expect(railBox).not.toBeNull();
+  if (!(mapBox && railBox)) {
     return;
   }
-  const total = listBox.width + mapBox.width + previewBox.width;
-  expect(Math.abs(listBox.y - mapBox.y)).toBeLessThan(8);
-  expect(listBox.x).toBeLessThan(mapBox.x);
-  expect(mapBox.x).toBeLessThan(previewBox.x);
-  expect(listBox.width / total).toBeGreaterThan(0.14);
-  expect(listBox.width / total).toBeLessThan(0.24);
-  expect(mapBox.width / total).toBeGreaterThan(0.45);
-  expect(mapBox.width / total).toBeLessThan(0.6);
-  expect(previewBox.width / total).toBeGreaterThan(0.24);
-  expect(previewBox.width / total).toBeLessThan(0.36);
-  expect(mapBox.y).toBeLessThan(900);
-  expect(mapBox.y + 120).toBeLessThan(900);
+  // The map leads; the rail (List and County tabs) sits beside it.
+  const total = mapBox.width + railBox.width;
+  expect(Math.abs(mapBox.y - railBox.y)).toBeLessThan(8);
+  expect(mapBox.x).toBeLessThan(railBox.x);
+  expect(mapBox.width / total).toBeGreaterThan(0.6);
+  expect(mapBox.width / total).toBeLessThan(0.78);
+  expect(railBox.width / total).toBeGreaterThan(0.22);
+  expect(railBox.width / total).toBeLessThan(0.4);
+  expect(mapBox.y).toBeLessThan(450);
+  expect(mapBox.y + 240).toBeLessThan(900);
 }
-
 async function expectStickyCountiesHeading(page: Page) {
   const list = page.locator(".ux-reset-explorer-list");
   const heading = list.getByRole("heading", { exact: true, name: "Counties" });

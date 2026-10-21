@@ -222,6 +222,7 @@ test.describe("Explorer and Compare introductions", () => {
     // summary: the mark heading and its spoken result. Those are the only
     // matches. The retired menu label must not appear anywhere else, including
     // the introduction.
+    await page.getByTestId("explorer-what-if-summary").click();
     const equationVersion = page
       .getByTestId("explorer-scenario-equation")
       .getByText(/^Surveillance Gap Score v\d+(?:\.\d+)*$/);

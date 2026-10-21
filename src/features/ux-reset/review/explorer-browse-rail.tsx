@@ -20,23 +20,34 @@ export function isExplorerRailTab(value: unknown): value is ExplorerRailTab {
  * list so the focused row is on screen. The user can switch at any time.
  */
 export function useExplorerRailTab({
+  explicit,
   returnFocus,
   selectedFips,
 }: {
+  /**
+   * True when the selection comes from the URL or a user choice. A county the
+   * review picks on its own does not take the user off the list.
+   */
+  explicit: boolean;
   /** True while focus is being returned to a list row. */
   returnFocus: boolean;
   selectedFips: string;
 }) {
   const [tab, setTab] = useState<ExplorerRailTab>(
-    selectedFips ? "county" : "list"
+    selectedFips && explicit ? "county" : "list"
   );
   const [trackedFips, setTrackedFips] = useState(selectedFips);
   const [trackedReturn, setTrackedReturn] = useState(returnFocus);
   let current = tab;
   if (trackedFips !== selectedFips) {
     setTrackedFips(selectedFips);
-    current = selectedFips ? "county" : "list";
-    setTab(current);
+    if (!selectedFips) {
+      current = "list";
+      setTab(current);
+    } else if (explicit) {
+      current = "county";
+      setTab(current);
+    }
   }
   if (trackedReturn !== returnFocus) {
     setTrackedReturn(returnFocus);

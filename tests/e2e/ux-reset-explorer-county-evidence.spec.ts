@@ -10,6 +10,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showSelectedCounty } from "./explorer-rail";
 
 async function installExplorerMocks(page: Page) {
   await page.route("**/v1/**", async (route) => {
@@ -79,8 +80,8 @@ test.describe("Atlas Explorer county evidence", () => {
     await installExplorerMocks(page);
     await page.goto("/explore?scope=CO&county=08001");
     await expect(page.getByTestId("review-view-county-evidence")).toBeVisible();
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "href",
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
       /\/explore\?.*mode=evidence/
     );
 
@@ -99,13 +100,14 @@ test.describe("Atlas Explorer county evidence", () => {
       "Highest review priority"
     );
     const resource = page
-      .locator("summary", {
-        hasText: "Questions, partner roles, and official resources",
+      .getByRole("button", {
+        name: "Questions, partner roles, and official resources",
       })
       .first();
     await resource.focus();
     await page.keyboard.press("Enter");
     await expect(resource).toBeFocused();
+    await expect(resource).toHaveAttribute("aria-expanded", "true");
     await expect(
       page.getByRole("link", { name: "Lyme surveillance case definition" })
     ).toBeVisible();
@@ -143,6 +145,7 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page).toHaveURL(/county=08001/);
 
     if (!testInfo.project.name.includes("mobile")) {
+      await showSelectedCounty(page);
       await page.getByTestId("review-view-county-evidence").click();
       const results = await new AxeBuilder({ page })
         .exclude(".maplibregl-canvas")

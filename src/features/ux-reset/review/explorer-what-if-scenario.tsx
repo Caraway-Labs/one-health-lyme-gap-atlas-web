@@ -910,7 +910,7 @@ export function ExplorerWhatIfScenario({
         data-active={atDefaults ? "false" : "true"}
         data-testid="explorer-scenario-trigger-group"
       >
-        <Sheet modal={false}>
+        <Sheet disablePointerDismissal modal={false}>
           <SheetTrigger
             render={
               <Button
