@@ -241,7 +241,7 @@ export function scoreCounty(
 
 /**
  * Published human signal for the scenario.
- * Use only a typed published minimum incidence floor. Never invert an old H.
+ * Use only a typed published minimum reported incidence. Never invert an old H.
  * Missing published inputs are limited, while absent human records retain H75.
  */
 function scenarioHuman(

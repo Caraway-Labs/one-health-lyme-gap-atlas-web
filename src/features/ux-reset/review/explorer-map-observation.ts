@@ -2,6 +2,7 @@ import { evidenceObjectFromObservation } from "@/features/ux-reset/evidence/from
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
 import { DatedObservationContractError } from "@/features/ux-reset/review/dated-observation-envelope";
+import { MINIMUM_REPORTED_INCIDENCE_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
 import type {
   CountyContextObservation,
   EvidenceReference,
@@ -62,7 +63,7 @@ export type ExplorerMapNumericRow = {
 };
 
 const LAYER_CLAIM_LABEL = {
-  incidence_floor: "Lyme incidence floor",
+  incidence_floor: MINIMUM_REPORTED_INCIDENCE_LABEL,
   rurality: "Rurality",
   svi: "Social vulnerability",
   uninsured: "Uninsured population",

@@ -36,11 +36,11 @@ const stories: { id: string; text: string }[] = [
   },
   {
     id: "county-evidence-panel--published",
-    text: "12 published county-linked cases",
+    text: "Reported cases: 12 or more",
   },
   {
     id: "county-evidence-panel--published-zero",
-    text: "0 published county-linked cases",
+    text: "Reported cases: 0 or more",
   },
   {
     id: "county-evidence-panel--missing",

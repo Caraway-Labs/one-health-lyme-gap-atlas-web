@@ -522,7 +522,7 @@ describe("Explorer map legend", () => {
     await user.click(screen.getByRole("button", { name: /4\.2 per 100,000/ }));
     expect(
       screen.getByRole("dialog", {
-        name: "Lyme incidence floor: Lower published incidence 4.2 per 100,000 residents. Every published number in this load is this value.",
+        name: "Minimum reported incidence: Lower published incidence 4.2 per 100,000 residents. Every published number in this load is this value.",
       })
     ).toBeTruthy();
   });

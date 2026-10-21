@@ -1,3 +1,12 @@
+import {
+  formatPublishedIncidenceRate,
+  MINIMUM_REPORTED_CASES_TOOLTIP,
+  MINIMUM_REPORTED_INCIDENCE_TOOLTIP,
+  publishedCaseCountExplanation,
+  publishedHumanFloorValue,
+  publishedIncidenceExplanation,
+  PUBLISHED_CASE_VALUES_UNAVAILABLE,
+} from "@/features/ux-reset/review/published-human-case-copy";
 import type { CountyDetail, CountyScoreSummary } from "@/generated/models";
 
 export const EVIDENCE_VIEWS = new Set([
@@ -153,10 +162,27 @@ export function matchesEvidence(
 }
 
 export function reviewReasonsFor(county: CountyDetail): CountyReviewReason[] {
+  const reportedCases = publishedHumanFloorValue(
+    county.human_status,
+    county.case_count_floor_2023
+  );
+  const reportedIncidence = publishedHumanFloorValue(
+    county.human_status,
+    county.incidence_floor_2023
+  );
+  let humanReason =
+    "No county-level 2023 Lyme case count was published. This may reflect zero cases, privacy suppression, or other reporting limitations; the score treats missing data not as zero cases.";
+  if (reportedIncidence !== null) {
+    humanReason = publishedIncidenceExplanation(
+      formatPublishedIncidenceRate(reportedIncidence)
+    );
+  } else if (reportedCases !== null) {
+    humanReason = publishedCaseCountExplanation(reportedCases);
+  } else if (county.human_status === "published_count_floor") {
+    humanReason = PUBLISHED_CASE_VALUES_UNAVAILABLE;
+  }
   const reasons = [
-    county.human_status === "published_count_floor"
-      ? `The minimum rate supported by the published 2023 county data was ${county.incidence_floor_2023?.toFixed(1) ?? "unavailable"} cases per 100,000.`
-      : "No county-level 2023 Lyme case count was published. This may reflect zero cases, privacy suppression, or other reporting limitations; the score treats missing data not as zero cases.",
+    humanReason,
     county.tick_status === "No records"
       ? "The published tick table has no county record; this does not establish tick absence."
       : `Ixodes evidence is classified as ${county.tick_status.toLowerCase()} in the published county table.`,
@@ -177,16 +203,24 @@ export function reasonsFor(county: CountyDetail): string[] {
 export function uncertaintyCuesFor(county: CountyDetail): string[] {
   const cues: string[] = [];
 
-  if (county.human_status === "published_count_floor") {
-    if (county.case_count_floor_2023 === 0) {
-      cues.push(
-        "The published county-linked case count is zero for this release. That observed zero is different from an unavailable or suppressed record."
-      );
-    } else {
-      cues.push(
-        "The human surveillance value is a privacy-protected published floor, not an official complete county incidence estimate."
-      );
-    }
+  const reportedCases = publishedHumanFloorValue(
+    county.human_status,
+    county.case_count_floor_2023
+  );
+  const reportedIncidence = publishedHumanFloorValue(
+    county.human_status,
+    county.incidence_floor_2023
+  );
+  if (reportedCases === 0) {
+    cues.push(
+      "The published county-linked case count is zero for this release. That observed zero is different from an unavailable or suppressed record."
+    );
+  } else if (reportedCases !== null) {
+    cues.push(MINIMUM_REPORTED_CASES_TOOLTIP);
+  } else if (reportedIncidence !== null) {
+    cues.push(MINIMUM_REPORTED_INCIDENCE_TOOLTIP);
+  } else if (county.human_status === "published_count_floor") {
+    cues.push(PUBLISHED_CASE_VALUES_UNAVAILABLE);
   } else {
     cues.push(
       "A county-level published Lyme case count is unavailable. This may reflect zero cases, suppression, unallocated records, or reporting and publication limits; it is not treated as zero by default."

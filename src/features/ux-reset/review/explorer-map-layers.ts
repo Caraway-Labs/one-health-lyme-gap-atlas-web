@@ -20,6 +20,7 @@ import {
   buildPathogenStatusLegend,
   pathogenStatusClassId,
 } from "@/features/ux-reset/review/pathogen-status-contract";
+import { MINIMUM_REPORTED_INCIDENCE_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   buildTickStatusLegend,
@@ -42,7 +43,7 @@ export const EXPLORER_MAP_LAYERS = [
   },
   {
     id: "incidence_floor",
-    label: "Lyme incidence floor",
+    label: MINIMUM_REPORTED_INCIDENCE_LABEL,
     needsScores: false,
     selectable: true,
     unavailableReason: null,

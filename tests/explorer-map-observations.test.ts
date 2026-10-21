@@ -118,7 +118,7 @@ describe("Explorer map observations", () => {
     vi.unstubAllGlobals();
   });
 
-  it("accepts an incidence floor and keeps a missing row null", () => {
+  it("accepts a minimum reported incidence and keeps a missing row null", () => {
     const ready = acceptExplorerMapObservations({
       releaseId: "release-1",
       requestedFips: ["06037", "01001", "08005"],
@@ -313,7 +313,7 @@ describe("Explorer map observations", () => {
     });
     render(createElement(ExplorerMapLegend, { paint }));
     await userEvent.click(
-      screen.getByRole("button", { name: "About Lyme incidence floor" })
+      screen.getByRole("button", { name: "About Minimum reported incidence" })
     );
     const suppressedPaint = paintReadyObservationLayer({
       layerId: "incidence_floor",

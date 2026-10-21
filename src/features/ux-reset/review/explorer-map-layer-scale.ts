@@ -18,6 +18,7 @@ import {
   type ExplorerMapNumericRow,
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
+import { MINIMUM_REPORTED_INCIDENCE_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
 import {
   RURALITY_LEGEND_EXPLANATION,
@@ -66,7 +67,7 @@ const COMPLETENESS_COLORS: Readonly<Record<number, string>> = {
 };
 
 export const EVIDENCE_COMPLETENESS_EXPLANATION =
-  "Published evidence completeness is the rounded share of six release conditions: a human published count floor; blacklegged tick status Established or Reported; B. burgdorferi Present; a non-null social-vulnerability percentile; a non-null uninsured percentile; and a non-null rural-urban code. It is not surveillance sampling completeness, not evidence of disease absence, and not a confidence score. The map uses the published integer and does not recompute it. The county list stays the review ranking.";
+  "Published evidence completeness is the rounded share of six release conditions: a published minimum reported cases value; blacklegged tick status Established or Reported; B. burgdorferi Present; a non-null social-vulnerability percentile; a non-null uninsured percentile; and a non-null rural-urban code. It is not surveillance sampling completeness, not evidence of disease absence, and not a confidence score. The map uses the published integer and does not recompute it. The county list stays the review ranking.";
 
 const STATE_COLOR: Partial<Record<ValueState, string>> = {
   [ValueState.MISSING]: "var(--mint)",
@@ -453,7 +454,7 @@ function paintQuantity(input: {
     }
   }
   const title = {
-    incidence_floor: "Lyme incidence floor",
+    incidence_floor: MINIMUM_REPORTED_INCIDENCE_LABEL,
     svi: "Social vulnerability",
     uninsured: "Uninsured population",
   }[input.layerId];

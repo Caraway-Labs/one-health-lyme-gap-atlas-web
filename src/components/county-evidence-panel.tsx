@@ -1,5 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import {
+  compactPublishedCaseCount,
+  formatPublishedIncidenceRate,
+  publishedHumanFloorValue,
+  publishedIncidenceExplanation,
+} from "@/features/ux-reset/review/published-human-case-copy";
 import type { CountyDetail } from "@/generated/models";
 import { uncertaintyCuesFor } from "@/lib/atlas-ui";
 
@@ -10,21 +16,29 @@ function statusText(value: string | null | undefined) {
 }
 
 function humanValue(detail: CountyDetail) {
-  if (detail.human_status !== "published_count_floor") {
-    return "No county-linked published record";
+  const count = publishedHumanFloorValue(
+    detail.human_status,
+    detail.case_count_floor_2023
+  );
+  if (count !== null) {
+    return compactPublishedCaseCount(count);
   }
-  if (detail.case_count_floor_2023 === 0) {
-    return "0 published county-linked cases";
+  if (detail.human_status === "published_count_floor") {
+    return "Minimum reported cases are unavailable.";
   }
-  if (detail.case_count_floor_2023 != null) {
-    return `${detail.case_count_floor_2023.toLocaleString()} published county-linked cases`;
-  }
-  return "Published count floor unavailable";
+  return "No county-linked published record";
 }
 
 function humanNote(detail: CountyDetail) {
+  const rate = publishedHumanFloorValue(
+    detail.human_status,
+    detail.incidence_floor_2023
+  );
+  if (rate !== null) {
+    return publishedIncidenceExplanation(formatPublishedIncidenceRate(rate));
+  }
   if (detail.human_status === "published_count_floor") {
-    return `${detail.incidence_floor_2023?.toFixed(1) ?? "Unavailable"} cases per 100,000 minimum rate in the 2023 published data.`;
+    return "A minimum reported incidence was not published.";
   }
   return "Missing, suppressed, or unallocated records are not converted to zero.";
 }

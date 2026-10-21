@@ -95,9 +95,9 @@ function humanNote(
   }
   if (status === "published_count_floor") {
     if (score === 0 && ecologicalEvidencePublished(detail)) {
-      return "A published case-count floor is a human input. The published gap score is zero while tick or pathogen evidence is still on the record. That zero is not a finding of no ecological hazard, and no domain split is shown.";
+      return "Minimum reported cases are a human input. The published gap score is zero while tick or pathogen data are still on the record. That zero is not a finding of no ecological hazard, and no domain split is shown.";
     }
-    return "A published case-count floor is a human input to the score. The floor is a minimum, and this section does not show how many points it added.";
+    return "Minimum reported cases are a human input to the score. The published count is a minimum, and this section does not show how many points it added.";
   }
   return "No county-level 2023 Lyme case count is available for the score. That is not zero cases, and no contribution is shown.";
 }
