@@ -45,9 +45,18 @@ function isTimestamp(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+/**
+ * Getting `localStorage` itself can throw a SecurityError in browsers that
+ * deny storage. That access stays inside this try/catch so Settings can still
+ * render when the challenge cannot be read.
+ */
 function storage(): Storage | null {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage;
+  try {
+    if (typeof localStorage === "undefined") return null;
+    return localStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function accessTokenIssuedAtMs(accessToken: string): number | null {
@@ -105,9 +114,12 @@ export function privacyReauthSatisfied(
 }
 
 export function readPrivacyReauthChallenge(): PrivacyReauthChallenge | null {
-  const store = storage();
-  if (!store) return null;
-  const raw = store.getItem(PRIVACY_REAUTH_STORAGE_KEY);
+  let raw: string | null;
+  try {
+    raw = storage()?.getItem(PRIVACY_REAUTH_STORAGE_KEY) ?? null;
+  } catch {
+    return null;
+  }
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
@@ -139,11 +151,19 @@ export function savePrivacyReauthChallenge(
   if (!store) {
     throw new Error("Privacy reauthentication could not be saved.");
   }
-  store.setItem(PRIVACY_REAUTH_STORAGE_KEY, JSON.stringify(challenge));
+  try {
+    store.setItem(PRIVACY_REAUTH_STORAGE_KEY, JSON.stringify(challenge));
+  } catch {
+    throw new Error("Privacy reauthentication could not be saved.");
+  }
 }
 
 export function clearPrivacyReauthChallenge(): void {
-  storage()?.removeItem(PRIVACY_REAUTH_STORAGE_KEY);
+  try {
+    storage()?.removeItem(PRIVACY_REAUTH_STORAGE_KEY);
+  } catch {
+    // A later denial cannot be cleared, and it also cannot keep the challenge.
+  }
 }
 
 /** Removes the stored challenge only when it is still this sign-in attempt. */

@@ -242,8 +242,6 @@ export function AccountDataRights({
     };
   }, []);
 
-  const copy = pending ? confirmationCopy[pending] : null;
-
   return (
     <section className="mt-10 space-y-4" aria-labelledby="data-rights-heading">
       <h2 id="data-rights-heading" className="text-xl font-semibold">
@@ -281,13 +279,15 @@ export function AccountDataRights({
         }}
       >
         <DialogContent aria-labelledby="data-rights-confirm-title">
-          {copy ? (
+          {pending === null ? null : (
             <>
               <DialogHeader>
                 <DialogTitle id="data-rights-confirm-title">
-                  {copy.title}
+                  {confirmationCopy[pending].title}
                 </DialogTitle>
-                <DialogDescription>{copy.body}</DialogDescription>
+                <DialogDescription>
+                  {confirmationCopy[pending].body}
+                </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button
@@ -303,14 +303,14 @@ export function AccountDataRights({
                   variant={pending === "deletion" ? "destructive" : "default"}
                   disabled={busy}
                   onClick={() => {
-                    if (pending) void requireFreshSignIn(pending);
+                    void requireFreshSignIn(pending);
                   }}
                 >
-                  {busy ? "Working…" : copy.confirm}
+                  {busy ? "Working…" : confirmationCopy[pending].confirm}
                 </Button>
               </DialogFooter>
             </>
-          ) : null}
+          )}
         </DialogContent>
       </Dialog>
     </section>
