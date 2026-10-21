@@ -13,9 +13,12 @@ import { cn } from "@/lib/utils";
 
 export function ViewFullCountyEvidence({
   fips,
+  href,
   onViewCountyEvidence,
 }: {
   fips: string;
+  /** Overrides the derived evidence URL when the caller owns the handoff. */
+  href?: string;
   onViewCountyEvidence?: (fips: string) => void;
 }) {
   const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
@@ -43,7 +46,7 @@ export function ViewFullCountyEvidence({
       data-county={fips}
       data-testid="review-view-county-evidence"
       data-variant="primary"
-      href={`${pathname}?${params.toString()}`}
+      href={href ?? `${pathname}?${params.toString()}`}
     >
       View Full County Evidence
     </Link>

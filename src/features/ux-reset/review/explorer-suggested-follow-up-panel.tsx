@@ -2,7 +2,7 @@ import { Zap } from "lucide-react";
 import type { RefObject } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { CountyActionPlan } from "@/components/county-action-plan";
+import { CountyActionChecklist } from "@/components/county-action-checklist";
 import { ExplorerLoadingStatus } from "@/features/ux-reset/review/explorer-loading-status";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import type { SuggestedFollowUpSelection } from "@/features/ux-reset/review/suggested-follow-up-content";
@@ -109,13 +109,12 @@ export function ExplorerSuggestedFollowUpPanel({
         </AtlasStatusMessage>
       ) : null}
       {workflowReady ? (
-        <CountyActionPlan
+        <CountyActionChecklist
           detail={detail}
           headingLevel="h3"
           idPrefix="evidence-"
           omitDisclaimers
           reviewContext={reviewContext}
-          showEyebrow={false}
         />
       ) : null}
     </section>

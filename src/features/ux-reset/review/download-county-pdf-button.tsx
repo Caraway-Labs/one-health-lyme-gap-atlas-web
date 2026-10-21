@@ -1,8 +1,19 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   atlasBriefFilename,
   downloadPdfReport,
@@ -31,11 +42,14 @@ function unavailableReason(
 export function DownloadCountyPdfButton({
   countyName,
   fips,
+  icon,
   releaseId,
   stateCode,
 }: {
   countyName: string;
   fips: string;
+  /** Renders an icon-only button. The accessible name stays "Download PDF". */
+  icon?: ReactNode;
   releaseId: string;
   stateCode: string;
 }) {
@@ -44,18 +58,26 @@ export function DownloadCountyPdfButton({
       key={`${fips}\u0000${releaseId}\u0000${countyName}\u0000${stateCode}`}
       countyName={countyName}
       fips={fips}
+      icon={icon}
       releaseId={releaseId}
       stateCode={stateCode}
     />
   );
 }
 
+export type CountyPdfDownload = {
+  canDownload: boolean;
+  download: () => Promise<void>;
+  phase: DownloadPhase;
+  reason: string | null;
+};
+
 /**
- * Published county report for one selected FIPS and release.
- * A new selection remounts this control and cancels the previous file.
- * What-if display settings are not sent. The server renders the PDF.
+ * Published county report for one selected FIPS and release. The owner must be
+ * keyed by the selection so a new county cancels the previous file. What-if
+ * display settings are not sent. The server renders the PDF.
  */
-function DownloadCountyPdfForSelection({
+export function useCountyPdfDownload({
   countyName,
   fips,
   releaseId,
@@ -65,9 +87,7 @@ function DownloadCountyPdfForSelection({
   fips: string;
   releaseId: string;
   stateCode: string;
-}) {
-  const hintId = useId();
-  const errorId = useId();
+}): CountyPdfDownload {
   const abortRef = useRef<AbortController | null>(null);
   const [phase, setPhase] = useState<DownloadPhase>("idle");
   const filename = atlasBriefFilename(countyName, stateCode);
@@ -111,6 +131,30 @@ function DownloadCountyPdfForSelection({
     }
   }
 
+  return { canDownload, download, phase, reason };
+}
+
+function DownloadCountyPdfForSelection({
+  countyName,
+  fips,
+  icon,
+  releaseId,
+  stateCode,
+}: {
+  countyName: string;
+  fips: string;
+  icon?: ReactNode;
+  releaseId: string;
+  stateCode: string;
+}) {
+  const hintId = useId();
+  const errorId = useId();
+  const { canDownload, download, phase, reason } = useCountyPdfDownload({
+    countyName,
+    fips,
+    releaseId,
+    stateCode,
+  });
   const describedBy = [
     reason ? hintId : null,
     phase === "error" ? errorId : null,
@@ -118,25 +162,46 @@ function DownloadCountyPdfForSelection({
     .filter((id): id is string => id !== null)
     .join(" ");
 
+  const label = phase === "downloading" ? "Downloading PDF…" : "Download PDF";
+  const buttonProps = {
+    "aria-busy": phase === "downloading",
+    "aria-describedby": describedBy || undefined,
+    "data-county": /^\d{5}$/.test(fips) ? fips : undefined,
+    "data-release": releaseId.trim() || undefined,
+    "data-state": canDownload ? phase : "disabled",
+    "data-testid": "explore-download-pdf",
+    disabled: !(canDownload && phase !== "downloading"),
+    type: "button",
+    variant: "outline",
+  } as const;
+  const onClick = () => {
+    void download();
+  };
+
   return (
     <>
-      <Button
-        aria-busy={phase === "downloading"}
-        aria-describedby={describedBy || undefined}
-        data-county={/^\d{5}$/.test(fips) ? fips : undefined}
-        data-release={releaseId.trim() || undefined}
-        data-state={canDownload ? phase : "disabled"}
-        data-testid="explore-download-pdf"
-        disabled={!canDownload || phase === "downloading"}
-        type="button"
-        variant="outline"
-        onClick={() => {
-          void download();
-        }}
-      >
-        {phase === "downloading" ? "Downloading PDF…" : "Download PDF"}
-      </Button>
-      {reason ? (
+      {icon ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                {...buttonProps}
+                aria-label={label}
+                size="icon"
+                onClick={onClick}
+              />
+            }
+          >
+            {icon}
+          </TooltipTrigger>
+          <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <Button {...buttonProps} onClick={onClick}>
+          {label}
+        </Button>
+      )}
+      {reason && !icon ? (
         <p className="type-small" id={hintId}>
           {reason}
         </p>

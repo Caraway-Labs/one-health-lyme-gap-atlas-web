@@ -3,6 +3,7 @@
 import { Info } from "lucide-react";
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -29,6 +30,7 @@ import {
   type ExplorerLegendSegment,
 } from "@/features/ux-reset/review/explorer-legend-model";
 import type { ExplorerMapPaint } from "@/features/ux-reset/review/explorer-map-layers";
+import { REVIEW_PRIORITY_QUALIFIER } from "@/features/ux-reset/review/review-priority-copy";
 import { RURALITY_LEGEND_EXPLANATION } from "@/features/ux-reset/review/rurality-palette";
 
 function LegendDisclosure({
@@ -561,6 +563,15 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
           <LegendTitle title={model.title} />
           {model.unitLabel ? <span> · {model.unitLabel}</span> : null}
         </p>
+        {paint.layerId === "gap_score" ? (
+          <Badge
+            className="ux-reset-explorer-legend-qualifier"
+            data-testid="explorer-legend-qualifier"
+            variant="outline"
+          >
+            {REVIEW_PRIORITY_QUALIFIER}
+          </Badge>
+        ) : null}
         <Popover open={aboutOpen} onOpenChange={setAboutOpen}>
           <PopoverTrigger
             aria-label={model.aboutLabel}

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { CountyActionPlan } from "@/components/county-action-plan";
+import { CountyActionChecklist } from "@/components/county-action-checklist";
 import { Card } from "@/components/ui/card";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
 import { EXPLORER_MAP_FOLLOW_UP_ID } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
@@ -36,6 +36,10 @@ export function ExplorerMapFollowUp({
     queryKey: ["ux-reset-review-published-county", releaseId, countyFips],
     retry: false,
   });
+  if (countyFips.length === 0) {
+    // Follow-up belongs to a chosen county. Atlas does not pick one.
+    return null;
+  }
   const nextCheck =
     governedNextCheck && governedNextCheck !== ABSENT_NEXT_CHECK
       ? governedNextCheck
@@ -52,12 +56,6 @@ export function ExplorerMapFollowUp({
       <h2 className="eyebrow" id={`${EXPLORER_MAP_FOLLOW_UP_ID}-heading`}>
         Suggested follow-up
       </h2>
-      {countyFips.length === 0 ? (
-        <p className="type-body">
-          Choose a county on the map or in the list before reading suggested
-          follow-up. Atlas will not pick one.
-        </p>
-      ) : null}
       {countyFips && !releaseId ? (
         <AtlasStatusMessage tone="empty">
           Suggested follow-up waits until the governed release for this map is
@@ -83,7 +81,7 @@ export function ExplorerMapFollowUp({
         </AtlasStatusMessage>
       ) : null}
       {query.data ? (
-        <CountyActionPlan
+        <CountyActionChecklist
           detail={query.data}
           headingLevel="h3"
           idPrefix="map-"
@@ -92,7 +90,6 @@ export function ExplorerMapFollowUp({
             governedNextCheck: nextCheck,
             reviewResultState,
           }}
-          showEyebrow={false}
           whatIfActive={whatIfActive}
         />
       ) : null}

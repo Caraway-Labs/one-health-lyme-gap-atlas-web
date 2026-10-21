@@ -7,6 +7,8 @@ import { countyReferenceMatchesQuery } from "@/features/ux-reset/review/explorer
  */
 export type ExplorerRankedCounty = {
   color: string | null;
+  /** Published evidence_completeness, a whole percent of six scored inputs. */
+  completeness: number | null;
   county: string;
   fips: string;
   rank: number | null;
@@ -16,6 +18,7 @@ export type ExplorerRankedCounty = {
 
 export type ExplorerRankSource = {
   color?: string | null;
+  completeness?: number | null;
   county: string;
   fips: string;
   score: number | null;
@@ -34,6 +37,16 @@ export function publishedGapScore(
     return null;
   }
   return score;
+}
+
+/** A published completeness percent, or null. Absent is never zero. */
+export function publishedCompleteness(
+  value: number | null | undefined
+): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  return Math.min(100, Math.max(0, value));
 }
 
 export function formatGapScore(score: number): string {
@@ -98,6 +111,7 @@ export function rankExplorerCounties(
   const ranked: ExplorerRankedCounty[] = [
     ...scored.map((county, index) => ({
       color: county.color?.trim() || null,
+      completeness: publishedCompleteness(county.completeness),
       county: county.county,
       fips: county.fips,
       rank: index + 1,
@@ -106,6 +120,7 @@ export function rankExplorerCounties(
     })),
     ...unscored.map((county) => ({
       color: null,
+      completeness: publishedCompleteness(county.completeness),
       county: county.county,
       fips: county.fips,
       rank: null,

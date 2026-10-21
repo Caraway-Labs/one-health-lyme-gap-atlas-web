@@ -1,7 +1,8 @@
 "use client";
 
-import { Scan } from "lucide-react";
+import { Scan, SlidersHorizontal } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -21,6 +22,10 @@ type ExplorerMapSectionHeaderProps = {
   fitTestId?: string;
   onFit: () => void;
   onUsView: () => void;
+  /** True when the map colors are browser scenario values, not published. */
+  scenarioActive?: boolean;
+  /** Short feedback on what the next map click does (national map). */
+  stageHint?: string | null;
   usViewTestId?: string;
 };
 
@@ -37,11 +42,32 @@ export function ExplorerMapSectionHeader({
   fitTestId,
   onFit,
   onUsView,
+  scenarioActive = false,
+  stageHint = null,
   usViewTestId = "explorer-us-view",
 }: ExplorerMapSectionHeaderProps) {
   return (
     <div className="ux-reset-explorer-map-heading">
       <h2>{EXPLORER_MAP_SECTION_HEADING}</h2>
+      {scenarioActive ? (
+        <Badge
+          className="ux-reset-explorer-map-scenario"
+          data-testid="explorer-map-scenario-badge"
+          variant="outline"
+        >
+          <SlidersHorizontal aria-hidden="true" data-icon="inline-start" />
+          Scenario colors, not published
+        </Badge>
+      ) : null}
+      {stageHint ? (
+        <Badge
+          className="ux-reset-explorer-map-stage-chip"
+          data-testid="explorer-map-stage-chip"
+          variant="secondary"
+        >
+          {stageHint}
+        </Badge>
+      ) : null}
       <div className="ux-reset-explorer-map-actions">
         <TooltipProvider>
           <Tooltip>

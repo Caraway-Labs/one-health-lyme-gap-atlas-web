@@ -29,6 +29,17 @@ function Meter({
   );
 }
 
+/** Bare root for compositions that place the track themselves. */
+function MeterRoot({ className, ...props }: MeterPrimitive.Root.Props) {
+  return (
+    <MeterPrimitive.Root
+      className={cn("flex flex-wrap items-center gap-x-2 gap-y-1", className)}
+      data-slot="meter"
+      {...props}
+    />
+  );
+}
+
 function MeterTrack({ className, ...props }: MeterPrimitive.Track.Props) {
   return (
     <MeterPrimitive.Track
@@ -78,4 +89,4 @@ function MeterValue({ className, ...props }: MeterPrimitive.Value.Props) {
   );
 }
 
-export { Meter, MeterTrack, MeterIndicator, MeterLabel, MeterValue };
+export { Meter, MeterRoot, MeterTrack, MeterIndicator, MeterLabel, MeterValue };
