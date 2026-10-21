@@ -33,12 +33,12 @@ import {
   endPrivacyReauthResume,
   previousIssuedAtForReauth,
   PRIVACY_REAUTH_CONTINUE_NOTICE,
-  privacyReauthChallengeExpired,
-  privacyReauthSatisfied,
+  privacyReauthResumeDisposition,
+  privacyReauthSubjectId,
   readPrivacyReauthChallenge,
   savePrivacyReauthChallenge,
   type PrivacyReauthChallenge,
-  type PrivacySessionStamp,
+  type PrivacySessionSnapshot,
 } from "@/lib/auth/privacy-reauth";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
@@ -64,6 +64,12 @@ const confirmationCopy: Record<
   },
 };
 
+function privacyRequestHeaders(accessToken: string): {
+  headers: { Authorization: string };
+} {
+  return { headers: { Authorization: `Bearer ${accessToken}` } };
+}
+
 function downloadJson(payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
     type: "application/json",
@@ -88,37 +94,68 @@ export function AccountDataRights({
   const [notice, setNotice] = useState<string | null>(null);
 
   const readSessionStamp =
-    useCallback(async (): Promise<PrivacySessionStamp> => {
+    useCallback(async (): Promise<PrivacySessionSnapshot> => {
       try {
         const { data, error } = await createClient().auth.getSession();
         if (error || !data.session) {
-          return { issuedAtMs: null, present: false };
+          return {
+            accessToken: null,
+            issuedAtMs: null,
+            present: false,
+            userId: null,
+          };
         }
         const accessToken = data.session.access_token;
+        const boundToken =
+          typeof accessToken === "string" && accessToken.length > 0
+            ? accessToken
+            : null;
         return {
-          issuedAtMs: accessToken ? accessTokenIssuedAtMs(accessToken) : null,
+          accessToken: boundToken,
+          issuedAtMs: boundToken ? accessTokenIssuedAtMs(boundToken) : null,
           present: true,
+          userId: privacyReauthSubjectId(data.session.user?.id),
         };
       } catch {
-        return { issuedAtMs: null, present: false };
+        return {
+          accessToken: null,
+          issuedAtMs: null,
+          present: false,
+          userId: null,
+        };
       }
     }, []);
 
+  const accessTokenForSubject = useCallback(
+    async (subjectId: string): Promise<string | null> => {
+      const stamp = await readSessionStamp();
+      if (stamp.userId !== subjectId) return null;
+      return stamp.accessToken;
+    },
+    [readSessionStamp]
+  );
+
   const executeRequest = useCallback(
-    async (action: PrivacyAction) => {
+    async (action: PrivacyAction, subjectId: string) => {
+      const createToken = await accessTokenForSubject(subjectId);
+      if (!createToken) return;
       setBusy(true);
       setNotice(null);
       try {
-        const created = await createPrivacyRequestV1MePrivacyRequestsPost({
-          action,
-        });
+        const created = await createPrivacyRequestV1MePrivacyRequestsPost(
+          { action },
+          privacyRequestHeaders(createToken)
+        );
         if (created.status !== 200) {
           throw new Error("Privacy request was not accepted.");
         }
+        const confirmToken = await accessTokenForSubject(subjectId);
+        if (!confirmToken) return;
         const confirmed =
           await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
             created.data.request_id,
-            { nonce: created.data.confirmation_nonce }
+            { nonce: created.data.confirmation_nonce },
+            privacyRequestHeaders(confirmToken)
           );
         if (confirmed.status !== 200) {
           throw new Error("Privacy request confirmation failed.");
@@ -130,9 +167,12 @@ export function AccountDataRights({
           return;
         }
         if (action === "export") {
+          const downloadToken = await accessTokenForSubject(subjectId);
+          if (!downloadToken) return;
           const file =
             await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
-              created.data.request_id
+              created.data.request_id,
+              privacyRequestHeaders(downloadToken)
             );
           if (file.status !== 200) {
             throw new Error("Export download failed.");
@@ -167,7 +207,7 @@ export function AccountDataRights({
         setPending(null);
       }
     },
-    [queryClient, returnPath, router]
+    [accessTokenForSubject, queryClient, returnPath, router]
   );
 
   const requireFreshSignIn = useCallback(
@@ -178,20 +218,28 @@ export function AccountDataRights({
       let challenge: PrivacyReauthChallenge | null = null;
       try {
         const stamp = await readSessionStamp();
+        if (stamp.userId === null) {
+          if (stamp.present) {
+            setNotice(PRIVACY_REQUEST_FAILURE);
+            return;
+          }
+          setNotice(PRIVACY_REAUTH_CONTINUE_NOTICE);
+          router.push(signInHrefForReturnPath(returnPath));
+          return;
+        }
         challenge = {
           action,
           challengedAtMs: nowMs,
           nonce: crypto.randomUUID(),
           previousIssuedAtMs: previousIssuedAtForReauth(stamp, nowMs),
+          subjectId: stamp.userId,
         };
         savePrivacyReauthChallenge(challenge);
-        if (stamp.present) {
-          const signedOut = await endLocalAtlasSession(queryClient);
-          if (!signedOut.ok) {
-            clearPrivacyReauthChallenge();
-            setNotice(signedOut.notice);
-            return;
-          }
+        const signedOut = await endLocalAtlasSession(queryClient);
+        if (!signedOut.ok) {
+          clearPrivacyReauthChallenge();
+          setNotice(signedOut.notice);
+          return;
         }
         setNotice(PRIVACY_REAUTH_CONTINUE_NOTICE);
         router.push(signInHrefForReturnPath(returnPath));
@@ -221,17 +269,30 @@ export function AccountDataRights({
       try {
         const stamp = await readSessionStampRef.current();
         if (ignore) return;
-        const nowMs = Date.now();
-        if (privacyReauthChallengeExpired(challenge, nowMs)) {
-          clearPrivacyReauthChallenge();
-          return;
-        }
-        if (!privacyReauthSatisfied(challenge, stamp.issuedAtMs, nowMs)) {
-          return;
+        const disposition = privacyReauthResumeDisposition(
+          challenge,
+          stamp,
+          Date.now()
+        );
+        switch (disposition) {
+          case "clear": {
+            clearPrivacyReauthChallenge();
+            return;
+          }
+          case "wait": {
+            return;
+          }
+          case "run": {
+            break;
+          }
+          default: {
+            const exhaustive: never = disposition;
+            return exhaustive;
+          }
         }
         const claimed = claimPrivacyReauthChallenge(challenge.nonce);
-        if (!claimed) return;
-        await executeRequestRef.current(claimed.action);
+        if (!claimed || ignore) return;
+        await executeRequestRef.current(claimed.action, claimed.subjectId);
       } finally {
         endPrivacyReauthResume(challenge.nonce);
       }

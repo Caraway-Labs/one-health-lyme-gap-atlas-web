@@ -11,11 +11,15 @@ import {
   PRIVACY_REAUTH_MAX_AGE_MS,
   PRIVACY_REAUTH_STORAGE_KEY,
   privacyReauthChallengeExpired,
+  privacyReauthResumeDisposition,
   privacyReauthSatisfied,
+  privacyReauthSubjectDecision,
+  privacyReauthSubjectId,
   readPrivacyReauthChallenge,
   resetPrivacyReauthResumeForTests,
   savePrivacyReauthChallenge,
   type PrivacyReauthChallenge,
+  type PrivacySessionSnapshot,
 } from "../src/lib/auth/privacy-reauth";
 
 const NOW = 1_800_000_000_000;
@@ -28,6 +32,19 @@ function challenge(
     challengedAtMs: NOW - 60_000,
     nonce: "11111111-1111-4111-8111-111111111111",
     previousIssuedAtMs: NOW - 120_000,
+    subjectId: "user-a",
+    ...overrides,
+  };
+}
+
+function snapshot(
+  overrides: Partial<PrivacySessionSnapshot> = {}
+): PrivacySessionSnapshot {
+  return {
+    accessToken: "token-a",
+    issuedAtMs: NOW - 5000,
+    present: true,
+    userId: "user-a",
     ...overrides,
   };
 }
@@ -154,6 +171,68 @@ describe("privacy reauthentication", () => {
     ).toBe(NOW);
   });
 
+  it("binds a challenge to an account id and ignores any other id", () => {
+    expect({
+      empty: privacyReauthSubjectId(""),
+      missing: privacyReauthSubjectId(null),
+      spaced: privacyReauthSubjectId("user a"),
+      valid: privacyReauthSubjectId("user-a"),
+    }).toStrictEqual({
+      empty: null,
+      missing: null,
+      spaced: null,
+      valid: "user-a",
+    });
+    const current = challenge();
+    expect({
+      absent: privacyReauthSubjectDecision(current, null),
+      match: privacyReauthSubjectDecision(current, "user-a"),
+      mismatch: privacyReauthSubjectDecision(current, "user-b"),
+    }).toStrictEqual({
+      absent: "absent",
+      match: "match",
+      mismatch: "mismatch",
+    });
+  });
+
+  it("runs only for the confirming account and clears every other account", () => {
+    const current = challenge();
+    expect({
+      absent: privacyReauthResumeDisposition(
+        current,
+        snapshot({
+          accessToken: null,
+          issuedAtMs: null,
+          present: false,
+          userId: null,
+        }),
+        NOW
+      ),
+      expiredMismatch: privacyReauthResumeDisposition(
+        challenge({ challengedAtMs: NOW - PRIVACY_REAUTH_MAX_AGE_MS - 1 }),
+        snapshot({ userId: "user-b" }),
+        NOW
+      ),
+      match: privacyReauthResumeDisposition(current, snapshot(), NOW),
+      mismatch: privacyReauthResumeDisposition(
+        current,
+        snapshot({ accessToken: "token-b", userId: "user-b" }),
+        NOW
+      ),
+      staleMatch: privacyReauthResumeDisposition(
+        current,
+        snapshot({ issuedAtMs: current.previousIssuedAtMs }),
+        NOW
+      ),
+    }).toStrictEqual({
+      absent: "wait",
+      expiredMismatch: "clear",
+      match: "run",
+      mismatch: "clear",
+      staleMatch: "wait",
+    });
+  });
+
   it("claims only the stored challenge for this attempt", () => {
     const current = challenge();
     savePrivacyReauthChallenge(current);
@@ -201,6 +280,27 @@ describe("privacy reauthentication", () => {
         challengedAtMs: NOW,
         nonce: "not a nonce",
         previousIssuedAtMs: NOW,
+        subjectId: "user-a",
+      }),
+      JSON.stringify({
+        action: "deletion",
+        challengedAtMs: NOW,
+        nonce: "11111111-1111-4111-8111-111111111111",
+        previousIssuedAtMs: NOW,
+      }),
+      JSON.stringify({
+        action: "deletion",
+        challengedAtMs: NOW,
+        nonce: "11111111-1111-4111-8111-111111111111",
+        previousIssuedAtMs: NOW,
+        subjectId: "user a",
+      }),
+      JSON.stringify({
+        action: "deletion",
+        challengedAtMs: NOW,
+        nonce: "11111111-1111-4111-8111-111111111111",
+        previousIssuedAtMs: NOW,
+        subjectId: 12,
       }),
     ]) {
       localStorage.setItem(PRIVACY_REAUTH_STORAGE_KEY, raw);

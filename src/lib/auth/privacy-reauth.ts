@@ -2,7 +2,8 @@
  * Export and deletion require a new sign-in before the request is created.
  * ADR 0016 accepts a confirm only when the access token `iat` is within 15
  * minutes, so a still-valid session would otherwise run immediately. The
- * challenge records that token. A later session must be newer than it.
+ * challenge records the account that confirmed and that token. A later
+ * session must be the same account and newer than that token.
  */
 
 export const PRIVACY_REAUTH_STORAGE_KEY = "atlas.privacy-reauth.v1";
@@ -26,6 +27,8 @@ export type PrivacyReauthChallenge = {
   challengedAtMs: number;
   nonce: string;
   previousIssuedAtMs: number;
+  /** Account that confirmed the action. A different sign-in must not resume it. */
+  subjectId: string;
 };
 
 export type PrivacySessionStamp = {
@@ -33,7 +36,19 @@ export type PrivacySessionStamp = {
   present: boolean;
 };
 
+export type PrivacySessionSnapshot = PrivacySessionStamp & {
+  accessToken: string | null;
+  userId: string | null;
+};
+
+export type PrivacyReauthSubjectDecision = "absent" | "match" | "mismatch";
+
+export type PrivacyReauthResumeDisposition = "clear" | "run" | "wait";
+
 const NONCE_PATTERN = /^[0-9a-f-]{16,80}$/i;
+
+/** Supabase user ids are UUIDs. Tests and local fixtures also use short ids. */
+const SUBJECT_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 let activeResumeNonce: string | null = null;
 
@@ -43,6 +58,57 @@ function isPrivacyReauthAction(value: unknown): value is PrivacyReauthAction {
 
 function isTimestamp(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+/** Accepts only a bounded account id. Anything else is not a bindable subject. */
+export function privacyReauthSubjectId(value: unknown): string | null {
+  return typeof value === "string" && SUBJECT_ID_PATTERN.test(value)
+    ? value
+    : null;
+}
+
+/**
+ * `null` means nobody is signed in yet, so the challenge can wait.
+ * Any other account is a mismatch and must not resume the stored action.
+ */
+export function privacyReauthSubjectDecision(
+  challenge: PrivacyReauthChallenge,
+  userId: string | null
+): PrivacyReauthSubjectDecision {
+  if (userId === null) return "absent";
+  if (userId === challenge.subjectId) return "match";
+  return "mismatch";
+}
+
+/**
+ * Whether a saved export or deletion may run for this session.
+ * A different account clears the challenge. No session waits. Only the
+ * confirming account with a newer token inside the API window may run.
+ */
+export function privacyReauthResumeDisposition(
+  challenge: PrivacyReauthChallenge,
+  snapshot: PrivacySessionSnapshot,
+  nowMs: number
+): PrivacyReauthResumeDisposition {
+  if (privacyReauthChallengeExpired(challenge, nowMs)) return "clear";
+  const decision = privacyReauthSubjectDecision(challenge, snapshot.userId);
+  switch (decision) {
+    case "absent": {
+      return "wait";
+    }
+    case "mismatch": {
+      return "clear";
+    }
+    case "match": {
+      return privacyReauthSatisfied(challenge, snapshot.issuedAtMs, nowMs)
+        ? "run"
+        : "wait";
+    }
+    default: {
+      const exhaustive: never = decision;
+      return exhaustive;
+    }
+  }
 }
 
 /**
@@ -128,17 +194,27 @@ export function readPrivacyReauthChallenge(): PrivacyReauthChallenge | null {
       !("action" in parsed) ||
       !("challengedAtMs" in parsed) ||
       !("nonce" in parsed) ||
-      !("previousIssuedAtMs" in parsed)
+      !("previousIssuedAtMs" in parsed) ||
+      !("subjectId" in parsed)
     ) {
       return null;
     }
-    const { action, challengedAtMs, nonce, previousIssuedAtMs } = parsed;
+    const { action, challengedAtMs, nonce, previousIssuedAtMs, subjectId } =
+      parsed;
     if (!isPrivacyReauthAction(action)) return null;
     if (!isTimestamp(challengedAtMs) || !isTimestamp(previousIssuedAtMs)) {
       return null;
     }
     if (typeof nonce !== "string" || !NONCE_PATTERN.test(nonce)) return null;
-    return { action, challengedAtMs, nonce, previousIssuedAtMs };
+    const boundSubjectId = privacyReauthSubjectId(subjectId);
+    if (boundSubjectId === null) return null;
+    return {
+      action,
+      challengedAtMs,
+      nonce,
+      previousIssuedAtMs,
+      subjectId: boundSubjectId,
+    };
   } catch {
     return null;
   }

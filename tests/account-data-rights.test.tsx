@@ -110,6 +110,10 @@ function sessionWithToken(issuedAtMs: number) {
   };
 }
 
+function bearer(token: string) {
+  return { headers: { Authorization: `Bearer ${token}` } };
+}
+
 function seedSatisfiedChallenge(
   action: "export" | "deletion",
   now = Date.now()
@@ -123,9 +127,11 @@ function seedSatisfiedChallenge(
       challengedAtMs: now - 10_000,
       nonce: "11111111-1111-4111-8111-111111111111",
       previousIssuedAtMs,
+      subjectId: "user-a",
     })
   );
   getSession.mockResolvedValue(sessionWithToken(issuedAtMs));
+  return accessTokenIssuedAt(issuedAtMs);
 }
 
 describe("account data rights", () => {
@@ -214,7 +220,7 @@ describe("account data rights", () => {
       revokeObjectURL: revoke,
     });
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    seedSatisfiedChallenge("export");
+    const token = seedSatisfiedChallenge("export");
 
     render(<AccountDataRights />);
 
@@ -232,10 +238,14 @@ describe("account data rights", () => {
       urls: objectUrl.mock.calls.length,
     }).toStrictEqual({
       confirm: [
-        ["req-export-1", { nonce: "nonce-abcdefghijklmnopqrstuvwxyz" }],
+        [
+          "req-export-1",
+          { nonce: "nonce-abcdefghijklmnopqrstuvwxyz" },
+          bearer(token),
+        ],
       ],
-      create: [[{ action: "export" }]],
-      download: [["req-export-1"]],
+      create: [[{ action: "export" }, bearer(token)]],
+      download: [["req-export-1", bearer(token)]],
       remainingChallenge: null,
       signOut: [],
       urls: 1,
@@ -300,6 +310,7 @@ describe("account data rights", () => {
         challengedAtMs: Date.now() - 10_000,
         nonce: "11111111-1111-4111-8111-111111111111",
         previousIssuedAtMs: issuedAtMs,
+        subjectId: "user-a",
       })
     );
     getSession.mockResolvedValue(sessionWithToken(issuedAtMs));

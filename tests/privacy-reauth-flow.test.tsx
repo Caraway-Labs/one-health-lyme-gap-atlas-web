@@ -100,16 +100,20 @@ function accessTokenIssuedAt(issuedAtMs: number): string {
   return `eyJhbGciOiJub25lIn0.${payload}.sig`;
 }
 
-function sessionWithToken(issuedAtMs: number) {
+function sessionWithToken(issuedAtMs: number, userId = "user-a") {
   return {
     data: {
       session: {
         access_token: accessTokenIssuedAt(issuedAtMs),
-        user: { id: "user-a" },
+        user: { id: userId },
       },
     },
     error: null,
   };
+}
+
+function bearer(token: string) {
+  return { headers: { Authorization: `Bearer ${token}` } };
 }
 
 function seedChallenge(options: {
@@ -117,6 +121,7 @@ function seedChallenge(options: {
   challengedAtMs: number;
   nonce?: string;
   previousIssuedAtMs: number;
+  subjectId?: string;
 }) {
   localStorage.setItem(
     PRIVACY_REAUTH_STORAGE_KEY,
@@ -125,6 +130,7 @@ function seedChallenge(options: {
       challengedAtMs: options.challengedAtMs,
       nonce: options.nonce ?? "11111111-1111-4111-8111-111111111111",
       previousIssuedAtMs: options.previousIssuedAtMs,
+      subjectId: options.subjectId ?? "user-a",
     })
   );
 }
@@ -217,14 +223,12 @@ describe("privacy reauth flow", () => {
     expect({
       created: createPrivacyRequest.mock.calls.length,
       notice: screen.getByRole("status").textContent,
-      previousIssuedAtMs: JSON.parse(
-        localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY) ?? "{}"
-      ).previousIssuedAtMs,
+      savedChallenge: localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY),
       signedOut: signOut.mock.calls.length,
     }).toStrictEqual({
       created: 0,
       notice: PRIVACY_REAUTH_CONTINUE_NOTICE,
-      previousIssuedAtMs: 0,
+      savedChallenge: null,
       signedOut: 0,
     });
   });
@@ -246,7 +250,7 @@ describe("privacy reauth flow", () => {
     });
     expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Faccount");
     expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toContain(
-      "deletion"
+      `"subjectId":"user-a"`
     );
 
     cleanup();
@@ -410,7 +414,7 @@ describe("privacy reauth flow", () => {
       expect(createPrivacyRequest).toHaveBeenCalledOnce();
     });
     expect(createPrivacyRequest.mock.calls).toStrictEqual([
-      [{ action: "export" }],
+      [{ action: "export" }, bearer(accessTokenIssuedAt(issuedAtMs))],
     ]);
   });
 
@@ -605,7 +609,9 @@ describe("privacy reauth flow", () => {
     vi.spyOn(crypto, "randomUUID").mockImplementationOnce(() => {
       throw new Error("uuid unavailable");
     });
-    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    getSession.mockResolvedValue(
+      sessionWithToken(secondAligned(Date.now() - 60_000))
+    );
     render(<AccountDataRights />);
     await confirm("Export my data");
     await waitFor(() => {
@@ -624,9 +630,233 @@ describe("privacy reauth flow", () => {
       expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Faccount");
     });
     expect(signOut).not.toHaveBeenCalled();
-    expect(
-      JSON.parse(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY) ?? "{}")
-        .previousIssuedAtMs
-    ).toBe(0);
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toBeNull();
+  });
+
+  it("does not export or delete when a different account returns", async () => {
+    for (const action of ["export", "deletion"] as const) {
+      cleanup();
+      resetPrivacyReauthResumeForTests();
+      createPrivacyRequest.mockClear();
+      confirmPrivacyRequest.mockClear();
+      downloadPrivacyExport.mockClear();
+      const now = Date.now();
+      seedChallenge({
+        action,
+        challengedAtMs: now - 10_000,
+        previousIssuedAtMs: secondAligned(now - 60_000),
+        subjectId: "user-a",
+      });
+      getSession.mockResolvedValue(
+        sessionWithToken(secondAligned(now - 5000), "user-b")
+      );
+      render(<AccountDataRights />);
+      await waitFor(() => {
+        expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toBeNull();
+      });
+      expect({
+        confirm: confirmPrivacyRequest.mock.calls.length,
+        create: createPrivacyRequest.mock.calls.length,
+        download: downloadPrivacyExport.mock.calls.length,
+      }).toStrictEqual({ confirm: 0, create: 0, download: 0 });
+    }
+  });
+
+  it("keeps an abandoned sign-in and drops it when an unrelated account signs in", async () => {
+    const now = Date.now();
+    seedChallenge({
+      action: "deletion",
+      challengedAtMs: now - 10_000,
+      previousIssuedAtMs: secondAligned(now - 60_000),
+      subjectId: "user-a",
+    });
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    render(<AccountDataRights />);
+    await waitFor(() => {
+      expect(getSession).toHaveBeenCalledWith();
+    });
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toContain(
+      "user-a"
+    );
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+
+    cleanup();
+    resetPrivacyReauthResumeForTests();
+    getSession.mockResolvedValue(
+      sessionWithToken(secondAligned(now - 5000), "user-b")
+    );
+    render(<AccountDataRights />);
+    await waitFor(() => {
+      expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toBeNull();
+    });
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+    expect(confirmPrivacyRequest).not.toHaveBeenCalled();
+    expect(downloadPrivacyExport).not.toHaveBeenCalled();
+  });
+
+  it("does not resume a signed-out start after an unrelated login", async () => {
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    render(<AccountDataRights />);
+    await confirm("Export my data");
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toBeNull();
+
+    cleanup();
+    resetPrivacyReauthResumeForTests();
+    createPrivacyRequest.mockClear();
+    downloadPrivacyExport.mockClear();
+    getSession.mockClear();
+    getSession.mockResolvedValue(
+      sessionWithToken(secondAligned(Date.now() - 5000), "user-b")
+    );
+    render(<AccountDataRights />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+    expect(downloadPrivacyExport).not.toHaveBeenCalled();
+  });
+
+  it("stops before the request when the account changes after validation", async () => {
+    const now = Date.now();
+    const issuedAtMs = secondAligned(now - 5000);
+    const cases = [
+      { action: "export" as const, switchOnRead: 2 },
+      { action: "deletion" as const, switchOnRead: 3 },
+      { action: "export" as const, switchOnRead: 4 },
+    ];
+    for (const [index, current] of cases.entries()) {
+      cleanup();
+      resetPrivacyReauthResumeForTests();
+      createPrivacyRequest.mockClear();
+      confirmPrivacyRequest.mockClear();
+      downloadPrivacyExport.mockClear();
+      seedChallenge({
+        action: current.action,
+        challengedAtMs: now - 10_000,
+        nonce: `1111111${index}-1111-4111-8111-111111111111`,
+        previousIssuedAtMs: secondAligned(now - 60_000),
+        subjectId: "user-a",
+      });
+      let reads = 0;
+      getSession.mockImplementation(async () => {
+        reads += 1;
+        const userId = reads >= current.switchOnRead ? "user-b" : "user-a";
+        return sessionWithToken(issuedAtMs, userId);
+      });
+      render(<AccountDataRights />);
+      await waitFor(() => {
+        expect(reads).toBeGreaterThanOrEqual(current.switchOnRead);
+      });
+      const token = accessTokenIssuedAt(issuedAtMs);
+      const created = current.switchOnRead > 2 ? 1 : 0;
+      const confirmed = current.switchOnRead > 3 ? 1 : 0;
+      expect(createPrivacyRequest.mock.calls).toStrictEqual(
+        Array.from({ length: created }, () => [
+          { action: current.action },
+          bearer(token),
+        ])
+      );
+      expect(confirmPrivacyRequest.mock.calls).toStrictEqual(
+        Array.from({ length: confirmed }, () => [
+          "req-export-1",
+          { nonce: "nonce-abcdefghijklmnopqrstuvwxyz" },
+          bearer(token),
+        ])
+      );
+      expect(downloadPrivacyExport).not.toHaveBeenCalled();
+      expect(signOut).not.toHaveBeenCalled();
+      expect(followWorkspaceHref).not.toHaveBeenCalled();
+    }
+  });
+
+  it("runs a returned export or deletion for the same account at most once", async () => {
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn<() => string>(() => "blob:export"),
+      revokeObjectURL: vi.fn<(url: string) => void>(),
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const now = Date.now();
+    const issuedAtMs = secondAligned(now - 5000);
+    const pending = deferredSession();
+    seedChallenge({
+      action: "export",
+      challengedAtMs: now - 10_000,
+      previousIssuedAtMs: secondAligned(now - 60_000),
+      subjectId: "user-a",
+    });
+    render(<AccountDataRights />);
+    render(<AccountDataRights />);
+    await act(async () => {
+      pending.resolve(sessionWithToken(issuedAtMs, "user-a"));
+    });
+    const token = bearer(accessTokenIssuedAt(issuedAtMs));
+    await waitFor(() => {
+      expect(createPrivacyRequest).toHaveBeenCalledOnce();
+    });
+    expect({
+      confirm: confirmPrivacyRequest.mock.calls.length,
+      create: createPrivacyRequest.mock.calls,
+      download: downloadPrivacyExport.mock.calls.length,
+    }).toStrictEqual({
+      confirm: 1,
+      create: [[{ action: "export" }, token]],
+      download: 1,
+    });
+
+    cleanup();
+    resetPrivacyReauthResumeForTests();
+    getSession.mockClear();
+    getSession.mockResolvedValue(sessionWithToken(issuedAtMs, "user-a"));
+    render(<AccountDataRights />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect({
+      create: createPrivacyRequest.mock.calls.length,
+      download: downloadPrivacyExport.mock.calls.length,
+      sessionReads: getSession.mock.calls.length,
+    }).toStrictEqual({
+      create: 1,
+      download: 1,
+      sessionReads: 0,
+    });
+  });
+
+  it("does not resume a challenge that names no account", async () => {
+    const now = Date.now();
+    localStorage.setItem(
+      PRIVACY_REAUTH_STORAGE_KEY,
+      JSON.stringify({
+        action: "deletion",
+        challengedAtMs: now - 10_000,
+        nonce: "11111111-1111-4111-8111-111111111111",
+        previousIssuedAtMs: secondAligned(now - 60_000),
+      })
+    );
+    getSession.mockResolvedValue(
+      sessionWithToken(secondAligned(now - 5000), "user-b")
+    );
+    render(<AccountDataRights />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+    expect(confirmPrivacyRequest).not.toHaveBeenCalled();
+  });
+
+  it("refuses to record a challenge when the signed-in account has no id", async () => {
+    getSession.mockResolvedValue({
+      data: { session: { access_token: "token", user: { id: "user a" } } },
+      error: null,
+    });
+    render(<AccountDataRights />);
+    await confirm("Remove all data");
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toBe(FAILURE);
+    });
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toBeNull();
+    expect(signOut).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
   });
 });
