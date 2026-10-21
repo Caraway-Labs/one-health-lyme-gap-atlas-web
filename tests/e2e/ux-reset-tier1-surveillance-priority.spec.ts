@@ -418,17 +418,18 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
 
     await page.goto("/explore?scope=NY&county=36003&dataset=alpha-2026");
     await openReviewScore(page);
-    await expect(
-      reviewPriority(page)
-    ).toHaveAttribute("data-state", "unavailable");
+    await expect(reviewPriority(page)).toHaveAttribute(
+      "data-state",
+      "unavailable"
+    );
     await expectNoLowTier(reviewPriority(page));
     await shot(page, testInfo, "tier1-review-unavailable");
 
     await page.goto("/explore?scope=NY&county=36005&dataset=alpha-2026");
     await openReviewScore(page);
-    await expect(
-      reviewPriority(page)
-    ).toHaveAttribute("data-state", "error", { timeout: 15_000 });
+    await expect(reviewPriority(page)).toHaveAttribute("data-state", "error", {
+      timeout: 15_000,
+    });
     await expectNoLowTier(reviewPriority(page));
   });
 
@@ -496,9 +497,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
-    await expect(
-      reviewPriority(page)
-    ).toHaveAttribute("data-tier", "HIGH");
+    await expect(reviewPriority(page)).toHaveAttribute("data-tier", "HIGH");
     await page.evaluate(() => {
       const link = document.createElement("a");
       link.href = "/explore?scope=NY&county=36001&dataset=historical-2024";
