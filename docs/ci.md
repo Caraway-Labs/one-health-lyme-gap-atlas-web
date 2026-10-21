@@ -58,7 +58,7 @@ Desktop Chromium still runs the rest of each spec, including desktop axe and the
 | Assistant axe, keyboard, and 200% text | 375 | 768, 1280, 1600, and the 1280 drawer landmark |
 | Developer quickstart and support | 375 | The other developer-doc cases |
 | Evidence chat composer | 375 | 1600 composer, transcript, and measure assertions |
-| Ask Atlas narrow page | 390 | Context, launcher, and page-reference cases |
+| Ask Atlas narrow page | 390 | Context, launcher, and search cases |
 | Compare direct link | 390 | Invalid, partial, duplicate, and return=review URL checks |
 | Review state list without WebGL | 390 | The same fallback and list selection at 1440 |
 | Review coastal map | 390 refit | 1440 framing and map clicks |

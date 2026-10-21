@@ -1535,7 +1535,6 @@
   scroll-margin-bottom: 1.5rem;
 }
 
-.ux-reset-ask-atlas-reference,
 .ux-reset-ask-atlas-storage,
 .ux-reset-ask-atlas-heading {
   display: grid;
@@ -1553,7 +1552,6 @@
   margin: 0;
 }
 
-.ux-reset-ask-atlas-reference,
 .ux-reset-ask-atlas-storage {
   padding: var(--space-3);
   border: 1px solid var(--border);
@@ -1562,45 +1560,13 @@
   color: var(--foreground);
 }
 
-.ux-reset-ask-atlas-reference h2,
-.ux-reset-ask-atlas-reference p,
 .ux-reset-ask-atlas-storage p {
   margin: 0;
 }
 
-.ux-reset-ask-atlas-reference h2,
 .ux-reset-ask-atlas-storage summary {
   font-size: var(--type-small-size);
   font-weight: 700;
-}
-
-.ux-reset-ask-atlas-reference-list {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.ux-reset-ask-atlas-reference-list div {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.ux-reset-ask-atlas-reference-list dt {
-  color: var(--muted-foreground);
-  font-size: var(--type-small-size);
-}
-
-.ux-reset-ask-atlas-reference-list dd {
-  display: grid;
-  gap: var(--space-2);
-  justify-items: start;
-  margin: 0;
-}
-
-.ux-reset-ask-atlas-reference-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .ux-reset-ask-atlas-more-topics {
@@ -1777,10 +1743,6 @@
   padding: 0;
   border: 0;
   background: transparent;
-}
-
-.ux-reset-ask-atlas-workspace .ux-reset-ask-atlas-reference {
-  width: 100%;
 }
 
 .ux-reset-ask-atlas-workspace .chat-transcript {

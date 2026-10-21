@@ -66,7 +66,7 @@ export const UX_RESET_HANDOFF_EXPORT: Record<
 /** Page-local URL keys — never copied across UX Reset routes. */
 export const UX_RESET_PAGE_LOCAL_PARAM_KEYS = {
   action: ["plan", "role"] as const,
-  assistant: ["conversation", "page_ref"] as const,
+  assistant: ["conversation"] as const,
   compare: ["metric", "mode", "return"] as const,
   explore: ["view", "metric", "page", "selected", "map_scope"] as const,
   feed: ["tab"] as const,

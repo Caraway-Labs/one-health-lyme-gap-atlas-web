@@ -250,6 +250,10 @@ test.describe("two-county Compare", () => {
     ).not.toContainText("differ by");
     await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
       "href",
+      /\/askatlas/
+    );
+    await expect(page.getByTestId("compare-ask-atlas")).not.toHaveAttribute(
+      "href",
       /page_ref=/
     );
     await expect(page.getByTestId("compare-return")).toHaveCount(0);

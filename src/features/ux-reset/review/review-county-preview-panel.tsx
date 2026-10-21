@@ -6,8 +6,7 @@ import type { Ref } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
-import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
+import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
@@ -50,12 +49,7 @@ export function ReviewCountyPreviewPanel({
   const title = `${countyName}, ${stateName}`;
   const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
   const searchParams = useSearchParams() ?? new URLSearchParams();
-  const askContext = useAskAtlasInheritedContext();
-  const askHref = askAtlasEntryHref({
-    context: askContext,
-    pathname,
-    searchParams,
-  });
+  const askHref = resetAskAtlasWorkspaceHref(pathname, searchParams);
   return (
     <Card
       aria-label={`County preview for ${title}`}
