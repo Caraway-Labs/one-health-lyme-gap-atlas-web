@@ -105,9 +105,11 @@ import {
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewPublishedCountyPreview } from "@/features/ux-reset/review/review-published-county-preview";
 import {
+  captureReviewReturnFocusMount,
   consumeReviewReturnFocus,
   markReviewReturnFocus,
-  reviewReturnFocusMatches,
+  resolveReviewReturnFocus,
+  reviewReturnFocusTokenForMount,
 } from "@/features/ux-reset/review/review-return-focus";
 import {
   isLower48CountyFips,
@@ -377,6 +379,8 @@ export function ReviewOperatingPicture({
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
+  const [returnFocusMount] = useState(captureReviewReturnFocusMount);
+  const mountedReturnToken = reviewReturnFocusTokenForMount(returnFocusMount);
 
   usePublishExploreCommittedNavigation({
     county: selectedFips || null,
@@ -723,19 +727,16 @@ export function ReviewOperatingPicture({
       ...buildReviewInvestigateHandoff(source),
     };
   }, [period, releaseId, scopeCode, searchKey, selectedFips]);
-  const returnFocusMatches =
-    /^\d{5}$/.test(selectedFips) && reviewReturnFocusMatches(selectedFips);
-  if (returnFocusMatches && latchedReturnFips !== selectedFips) {
-    setLatchedReturnFips(selectedFips);
-  } else if (
-    !returnFocusMatches &&
-    latchedReturnFips !== null &&
-    latchedReturnFips !== selectedFips
-  ) {
-    setLatchedReturnFips(null);
+  const returnFocus = resolveReviewReturnFocus({
+    latchedFips: latchedReturnFips,
+    mountedToken: mountedReturnToken,
+    selectedFips,
+    urlCounty: county ?? "",
+  });
+  if (returnFocus.latch !== latchedReturnFips) {
+    setLatchedReturnFips(returnFocus.latch);
   }
-  const focusReturnedCounty =
-    returnFocusMatches || latchedReturnFips === selectedFips;
+  const focusReturnedCounty = returnFocus.focus;
 
   const geometryError = Boolean(geometryQuery.isError);
   const countyQueryText = countyQuery.trim().toLowerCase();
@@ -811,38 +812,57 @@ export function ReviewOperatingPicture({
     if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
       return;
     }
+    const root = layoutRef.current;
+    if (!root) {
+      return;
+    }
+    const fips = selectedFips;
     const rowSelector =
       selectedReturnRank === null
-        ? `button[data-fips="${selectedFips}"]:not([data-rank])`
-        : `button[data-fips="${selectedFips}"][data-rank="${selectedReturnRank}"]`;
-    const row =
-      layoutRef.current?.querySelector<HTMLButtonElement>(rowSelector);
-    if (row) {
+        ? `button[data-fips="${fips}"]:not([data-rank])`
+        : `button[data-fips="${fips}"][data-rank="${selectedReturnRank}"]`;
+    let focusedNode: HTMLButtonElement | null = null;
+    const findRow = () => root.querySelector<HTMLButtonElement>(rowSelector);
+    const alignRow = (row: HTMLButtonElement) => {
       const list = row.closest(".ux-reset-review-candidate-list");
-      const alignRow = () => {
-        if (!(list instanceof HTMLElement) || !row.isConnected) {
-          return;
-        }
-        alignCandidateRow(list, row);
-      };
-      alignRow();
-      row.focus({ preventScroll: true });
-      const fips = selectedFips;
-      requestAnimationFrame(() => {
-        const current = layoutRef.current?.querySelector<HTMLButtonElement>(
-          `button[data-fips="${fips}"]`
-        );
-        const currentList = current?.closest(".ux-reset-review-candidate-list");
-        if (
-          !(current instanceof HTMLButtonElement) ||
-          !(currentList instanceof HTMLElement)
-        ) {
-          return;
-        }
-        alignCandidateRow(currentList, current);
-      });
-    }
-    consumeReviewReturnFocus(selectedFips);
+      if (!(list instanceof HTMLElement) || !row.isConnected) {
+        return;
+      }
+      alignCandidateRow(list, row);
+    };
+    // The published directory can drop for a render and replace this button
+    // without changing the URL county. Reclaim focus only when that node is
+    // gone, so a later Tab away from the row still sticks.
+    const focusReturnedRow = () => {
+      const row = findRow();
+      if (!row) {
+        return;
+      }
+      const previousGone = focusedNode !== null && !focusedNode.isConnected;
+      if (
+        document.activeElement !== row &&
+        (focusedNode === null || previousGone || focusedNode !== row)
+      ) {
+        alignRow(row);
+        row.focus({ preventScroll: true });
+        focusedNode = row;
+      }
+    };
+    focusReturnedRow();
+    const consumeFrame = requestAnimationFrame(() => {
+      const row = findRow();
+      if (!(row && document.activeElement === row)) {
+        return;
+      }
+      alignRow(row);
+      consumeReviewReturnFocus(fips);
+    });
+    const observer = new MutationObserver(focusReturnedRow);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => {
+      cancelAnimationFrame(consumeFrame);
+      observer.disconnect();
+    };
   }, [
     focusReturnedCounty,
     freezeCountySelection,
