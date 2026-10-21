@@ -71,7 +71,7 @@
     "@types/node": "^22.19.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "braces": "file:vendor/braces",
     "jsdom": "^26.0.0",
     "orval": "^8.2.0",
@@ -82,7 +82,7 @@
     "typescript": "^5.9.0",
     "ultracite": "7.10.7",
     "vite": "7.3.7",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "overrides": {
     "braces": "$braces",
