@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render as renderView,
@@ -36,6 +37,7 @@ import {
 import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import type { ExplorerFollowUpState } from "@/features/ux-reset/review/explorer-follow-up";
+import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import type { SuggestedFollowUpEvidence } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyDetail } from "@/generated/models";
 
@@ -67,8 +69,18 @@ vi.mock(
 vi.mock(
   import("@/features/ux-reset/investigate/investigate-hierarchy"),
   () => ({
-    InvestigateEvidenceHierarchy: () => (
-      <div data-testid="investigate-evidence">Observed evidence</div>
+    InvestigateEvidenceHierarchy: ({
+      region = "all",
+    }: {
+      region?: "all" | "context" | "evidence";
+    }) => (
+      <div
+        data-testid={
+          region === "context" ? "investigate-context" : "investigate-evidence"
+        }
+      >
+        {region === "context" ? "Context region" : "Observed evidence"}
+      </div>
     ),
   })
 );
@@ -107,6 +119,14 @@ vi.mock(
     ),
   })
 );
+
+function sectionById(id: string): HTMLElement | null {
+  return document.querySelector<HTMLElement>(`#${id}`);
+}
+
+function openTab(name: string) {
+  fireEvent.click(screen.getByRole("tab", { name }));
+}
 
 function baseWorkspace(
   overrides: Partial<InvestigateWorkspace> = {}
@@ -285,7 +305,9 @@ describe("Explorer county evidence", () => {
         onBackToMap={onBackToMap}
       />
     );
+    openTab("Sources");
     expect(screen.getByTestId("explorer-export-unavailable")).toBeVisible();
+    openTab("Context");
     expect(
       screen.getByRole("heading", { name: "Context and gaps" })
     ).toBeVisible();
@@ -529,6 +551,7 @@ describe("Explorer county evidence", () => {
     expect(
       screen.getByText("County evidence is temporarily unavailable.")
     ).toBeVisible();
+    openTab("Overview");
     expect(screen.getByTestId("explorer-review-category")).toHaveTextContent(
       "Review category is not shown because the review result did not load."
     );
@@ -707,5 +730,198 @@ describe("Explorer county evidence", () => {
       "error",
       "absent",
     ]);
+  });
+
+  it("opens Evidence for mode=evidence and Follow-up for mode=follow-up", () => {
+    workspace.current = baseWorkspace();
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const nav = screen.getByTestId("explorer-section-nav");
+    expect(nav).toHaveAttribute("role", "tablist");
+    expect(
+      screen.getAllByRole("tab").map((tab) => tab.textContent?.trim())
+    ).toStrictEqual([
+      "Overview",
+      "Evidence",
+      "Context",
+      "Follow-up",
+      "Sources",
+    ]);
+    expect(screen.getByRole("tab", { name: "Evidence" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="follow-up"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.getByRole("tab", { name: "Follow-up" })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    expect(
+      screen.getByRole("heading", { name: "Suggested follow-up" })
+    ).toHaveFocus();
+  });
+
+  it("keeps every governed section id in the DOM with inactive panels hidden", () => {
+    workspace.current = baseWorkspace();
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    for (const id of Object.values(EXPLORER_SECTION_IDS)) {
+      expect(document.querySelector(`#${id}`)).not.toBeNull();
+    }
+    expect(sectionById(EXPLORER_SECTION_IDS.evidence)).toBeVisible();
+    expect(sectionById(EXPLORER_SECTION_IDS.summary)).not.toBeVisible();
+    expect(sectionById(EXPLORER_SECTION_IDS.sources)).not.toBeVisible();
+    openTab("Sources");
+    expect(sectionById(EXPLORER_SECTION_IDS.sources)).toBeVisible();
+    expect(sectionById(EXPLORER_SECTION_IDS.evidence)).not.toBeVisible();
+  });
+
+  it("activates the tab that owns a #section hash", () => {
+    window.location.hash = `#${EXPLORER_SECTION_IDS.environmental}`;
+    try {
+      workspace.current = baseWorkspace();
+      render(
+        <ExplorerCountyEvidence
+          followUp={{ status: "factual" }}
+          methodologyLabel={null}
+          mode="evidence"
+          onBackToMap={vi.fn<() => void>()}
+        />
+      );
+      expect(screen.getByRole("tab", { name: "Context" })).toHaveAttribute(
+        "aria-selected",
+        "true"
+      );
+      act(() => {
+        window.location.hash = `#${EXPLORER_SECTION_IDS.sources}`;
+        window.dispatchEvent(new HashChangeEvent("hashchange"));
+      });
+      expect(screen.getByRole("tab", { name: "Sources" })).toHaveAttribute(
+        "aria-selected",
+        "true"
+      );
+    } finally {
+      window.location.hash = "";
+    }
+  });
+
+  it("shows the published score and completeness only when the county record carries them", () => {
+    const identity = { fips: "08001", label: "Denver", stateCode: "CO" };
+    const detail = countyDetailFor(publishedFollowUp(), "08001");
+    workspace.current = baseWorkspace({
+      countyDetail: {
+        ...detail,
+        evidence_completeness: 40,
+        score: { ...detail.score, score: 15 },
+      },
+      identity,
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+    });
+    const view = render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.getByTestId("explorer-county-score")).toHaveTextContent(
+      "Gap score 15.0"
+    );
+    expect(screen.getByTestId("explorer-county-completeness")).toHaveAttribute(
+      "aria-valuenow",
+      "40"
+    );
+    workspace.current = baseWorkspace({
+      countyDetail: {
+        ...detail,
+        evidence_completeness: Number.NaN,
+        in_contiguous_tick_scope: false,
+      },
+      identity,
+      recovery: null,
+      releaseId: "alpha-2026",
+      requestedFips: "08001",
+    });
+    view.rerender(
+      <ExplorerCountyEvidence
+        followUp={{ status: "factual" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.queryByTestId("explorer-county-score")).toBeNull();
+    expect(screen.queryByTestId("explorer-county-completeness")).toBeNull();
+    expect(screen.queryByTestId("explorer-county-header-summary")).toBeNull();
+  });
+
+  it("shows request loading as a neutral spinner with words, never a value", () => {
+    workspace.current = baseWorkspace({
+      evidenceLoading: true,
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      requestedFips: "08001",
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "loading" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    const status = screen
+      .getByText("Loading county evidence…")
+      .closest("[data-atlas-status='loading']");
+    expect(status).toHaveAttribute("aria-busy", "true");
+    expect(status).toHaveAttribute("role", "status");
+    expect(status?.querySelector("svg.animate-spin")).not.toBeNull();
+    expect(
+      status?.querySelector("svg.motion-reduce\\:animate-none")
+    ).not.toBeNull();
+    expect(status?.textContent).not.toMatch(/Unavailable/);
+  });
+
+  it("keeps the evidence retry as a button with the same test id", () => {
+    const retryEvidence = vi.fn<() => Promise<void>>(() => Promise.resolve());
+    workspace.current = baseWorkspace({
+      evidenceError: "County evidence is temporarily unavailable.",
+      identity: { fips: "08001", label: "Denver", stateCode: "CO" },
+      recovery: null,
+      requestedFips: "08001",
+      retryEvidence,
+    });
+    render(
+      <ExplorerCountyEvidence
+        followUp={{ status: "request-failed" }}
+        methodologyLabel={null}
+        mode="evidence"
+        onBackToMap={vi.fn<() => void>()}
+      />
+    );
+    fireEvent.click(screen.getByTestId("explorer-retry-evidence"));
+    expect(retryEvidence).toHaveBeenCalledOnce();
   });
 });

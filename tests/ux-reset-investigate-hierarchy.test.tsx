@@ -2790,6 +2790,85 @@ describe("County Investigate evidence hierarchy", () => {
       ),
     });
   });
+
+  it("renders Explorer presentation with compact cards and icon section labels", () => {
+    const bundle = casesBundle([
+      caseObservation("jan", 1, "2023-01-01", "2023-01-31"),
+    ]);
+    render(
+      <InvestigateEvidenceHierarchy
+        bundle={bundle}
+        omitDisclaimers
+        presentation="explorer"
+      />
+    );
+    const card = screen.getAllByTestId("ux-reset-evidence-object")[0];
+    const heading = screen.getByRole("heading", {
+      name: "Human surveillance",
+    });
+    expect({
+      compact: card?.dataset.presentation,
+      iconInHeading: heading.querySelector("svg[aria-hidden='true']") !== null,
+      sectionLabelSize: heading.className.includes("text-sm"),
+      serifHeadings: document.querySelectorAll(".section-heading h2").length,
+    }).toStrictEqual({
+      compact: "compact",
+      iconInHeading: true,
+      sectionLabelSize: true,
+      serifHeadings: 0,
+    });
+  });
+
+  it("splits evidence and context into regions that share one hierarchy", () => {
+    const bundle = casesBundle([
+      caseObservation("jan", 1, "2023-01-01", "2023-01-31"),
+    ]);
+    const { rerender } = render(
+      <InvestigateEvidenceHierarchy
+        bundle={bundle}
+        omitDisclaimers
+        presentation="explorer"
+        region="evidence"
+      />
+    );
+    const evidenceOnly = {
+      context: screen.queryByTestId("investigate-gaps") !== null,
+      evidence: screen.queryByTestId("investigate-family-human") !== null,
+      testId: screen.queryByTestId("investigate-evidence") !== null,
+    };
+    rerender(
+      <InvestigateEvidenceHierarchy
+        bundle={bundle}
+        omitDisclaimers
+        presentation="explorer"
+        region="context"
+      />
+    );
+    expect({
+      contextOnly: {
+        context: screen.queryByTestId("investigate-gaps") !== null,
+        evidence: screen.queryByTestId("investigate-family-human") !== null,
+        testId: screen.queryByTestId("investigate-context") !== null,
+      },
+      evidenceOnly,
+    }).toStrictEqual({
+      contextOnly: { context: true, evidence: false, testId: true },
+      evidenceOnly: { context: false, evidence: true, testId: true },
+    });
+  });
+
+  it("keeps the standard presentation as Investigate renders it", () => {
+    const bundle = casesBundle([
+      caseObservation("jan", 1, "2023-01-01", "2023-01-31"),
+    ]);
+    render(<InvestigateEvidenceHierarchy bundle={bundle} />);
+    const card = screen.getAllByTestId("ux-reset-evidence-object")[0];
+    expect({
+      compact: card?.dataset.presentation,
+      gaps: screen.queryByTestId("investigate-gaps") !== null,
+      testId: screen.queryByTestId("investigate-evidence") !== null,
+    }).toStrictEqual({ compact: undefined, gaps: true, testId: true });
+  });
 });
 
 const SETTLED_COUNTY_ERROR =

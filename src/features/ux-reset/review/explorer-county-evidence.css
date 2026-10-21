@@ -1,0 +1,60 @@
+/*
+ * County evidence view (`mode=evidence`, `mode=follow-up`): sticky county
+ * header, county display heading, pointer-safe focus, and a 0.75rem text
+ * floor. Evidence-state treatments live in
+ * `../evidence/evidence-state.css`.
+ */
+
+.ux-reset-explorer-evidence .atlas-county-header {
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-3) 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* The county name is the one serif display heading in this view. */
+.ux-reset-explorer-evidence
+  .atlas-county-header
+  [data-testid="explorer-county-heading"] {
+  color: var(--navy);
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+/*
+ * Programmatic focus (county heading, follow-up heading) must not draw a
+ * heavy box after pointer navigation. Keyboard and direct-load focus still
+ * get a thin visible ring through :focus-visible.
+ */
+.ux-reset-explorer-evidence [tabindex="-1"]:focus {
+  outline: none;
+}
+
+.ux-reset-explorer-evidence [tabindex="-1"]:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Section targets clear the sticky header (header plus tab list). */
+.ux-reset-explorer-evidence [data-explorer-tab] [id] {
+  scroll-margin-top: 9rem;
+}
+
+/* No body text below 0.75rem inside this view. */
+.ux-reset-explorer-evidence .eyebrow {
+  font-size: 0.75rem;
+}
+
+.ux-reset-explorer-evidence [data-slot="tabs-list"] {
+  max-width: 100%;
+  overflow-x: auto;
+}

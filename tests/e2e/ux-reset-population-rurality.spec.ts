@@ -104,6 +104,7 @@ test.describe("Atlas Explorer population and rurality context", () => {
   }, testInfo) => {
     await installPopulationRuralityMocks(page);
     await page.goto(`/explore?scope=CO&county=${SAMPLE_FIPS}&mode=evidence`);
+    await page.getByRole("tab", { name: "Context" }).click();
     const section = page.getByTestId("explorer-population-rurality");
     await expect(section).toBeVisible();
     await expect(section).toHaveAttribute("data-county", SAMPLE_FIPS);
@@ -144,6 +145,7 @@ test.describe("Atlas Explorer population and rurality context", () => {
     ).toBeVisible();
 
     await page.reload();
+    await page.getByRole("tab", { name: "Context" }).click();
     await expect(
       page.getByTestId("explorer-population-rurality")
     ).toBeVisible();
@@ -159,6 +161,7 @@ test.describe("Atlas Explorer population and rurality context", () => {
     );
 
     await page.goto(`/explore?scope=CO&county=${SAMPLE_FIPS}&mode=evidence`);
+    await page.getByRole("tab", { name: "Context" }).click();
     await expect(page.getByText("10.8 percent")).toBeVisible();
 
     if (!testInfo.project.name.includes("mobile")) {

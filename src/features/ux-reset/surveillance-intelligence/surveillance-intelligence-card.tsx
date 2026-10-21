@@ -1,6 +1,9 @@
 "use client";
 
+import { RotateCcw } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import type { IntelligencePerspectiveView } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-model";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +42,16 @@ export function SurveillanceIntelligenceCard({
           onClick={onToggle}
         >
           <span className="type-small">{perspective.label}</span>
-          <span className="type-card break-words">{perspective.primary}</span>
+          {perspective.kind === "loading" ? (
+            <span className="flex items-center gap-2" data-slot="loading">
+              <Spinner aria-hidden="true" role="presentation" />
+              <span className="type-small font-normal">
+                {perspective.primary}
+              </span>
+            </span>
+          ) : (
+            <span className="type-card break-words">{perspective.primary}</span>
+          )}
           <span className="type-small font-normal break-words">
             {perspective.supporting}
           </span>
@@ -53,6 +65,7 @@ export function SurveillanceIntelligenceCard({
           variant="secondary"
           onClick={onRetry}
         >
+          <RotateCcw aria-hidden="true" data-icon="inline-start" />
           {`Retry ${perspective.label}`}
         </Button>
       ) : null}

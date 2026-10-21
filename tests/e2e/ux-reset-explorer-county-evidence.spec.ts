@@ -112,6 +112,10 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-summary-limitation")).toHaveCount(
       0
     );
+    await expect(
+      page.getByRole("tab", { name: "Evidence", selected: true })
+    ).toBeVisible();
+    await page.getByRole("tab", { name: "Overview" }).click();
     await expect(page.getByText("Why review this county?")).toBeVisible();
     await expect(page.getByTestId("explorer-review-category")).toContainText(
       "Review category PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW."
@@ -120,7 +124,8 @@ test.describe("Atlas Explorer county evidence", () => {
       "Denver is included because the review method returned it."
     );
     await expect(page.getByText("Review limitations")).toHaveCount(0);
-    await page.getByRole("link", { name: "Suggested follow-up" }).click();
+    await page.getByRole("tab", { name: "Follow-up" }).click();
+    await expect(page.locator("#explorer-follow-up")).toBeVisible();
     await expect(page.locator("#explorer-follow-up")).toBeInViewport();
 
     const compareHref =
@@ -217,12 +222,13 @@ test.describe("Atlas Explorer county evidence", () => {
       "Denver"
     );
     await expect(
-      page.locator("[data-atlas-status='error']").first()
+      page.getByRole("tabpanel").locator("[data-atlas-status='error']").first()
     ).toBeVisible();
     const text =
       (await page.getByTestId("explorer-county-evidence").textContent()) ?? "";
     expect(text).not.toMatch(/\b0 cases\b/);
     expect(text.toLowerCase()).not.toContain("pathogen is absent");
+    await page.getByRole("tab", { name: "Sources" }).click();
     await expect(page.getByTestId("explorer-export-unavailable")).toBeVisible();
   });
 });

@@ -1222,10 +1222,16 @@ test.describe("Explorer evidence-state accessibility", () => {
     const pathogen = unavailable
       .getByTestId("ux-reset-evidence-object")
       .filter({ hasText: "Borrelia burgdorferi status" });
+    // An Unavailable measure states Unavailable once, as its value, and does
+    // not repeat labelled provenance fields whose value is Unavailable.
     await expect(pathogen).toContainText("Source family");
-    await expect(pathogen).toContainText("Unavailable");
-    await expect(pathogen).toContainText("Observation period");
-    await expect(pathogen).toContainText("Evidence type");
+    await expect(pathogen.getByTestId("evidence-display-value")).toHaveText(
+      "Unavailable"
+    );
+    await expect(
+      pathogen.getByTestId("evidence-provenance-chips")
+    ).not.toContainText("Unavailable");
+    await expect(pathogen).not.toContainText("Observation period");
     await expect(unavailable.getByText("Limited", { exact: true })).toHaveCount(
       0
     );

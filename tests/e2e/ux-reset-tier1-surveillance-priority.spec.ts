@@ -272,6 +272,8 @@ function investigatePriority(page: Page): Locator {
 }
 
 async function openInvestigatePriority(page: Page): Promise<Locator> {
+  // County evidence opens on the Evidence tab; surveillance intelligence is on Overview.
+  await page.getByRole("tab", { name: "Overview" }).click();
   const card = investigatePriority(page);
   const toggle = card.getByRole("button", { name: /ML Review Priority/ });
   await expect(toggle).toBeVisible();
@@ -369,6 +371,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await expect(investigateDetails).not.toContainText(
       "does not replace governed evidence"
     );
+    await page.getByRole("tab", { name: "Evidence" }).click();
     await expect(page.getByTestId("investigate-evidence")).toBeVisible();
     await shot(page, testInfo, "tier1-investigate-high");
   });

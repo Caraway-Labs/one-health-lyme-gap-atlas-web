@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { CountyActionPlan } from "@/components/county-action-plan";
+import { ExplorerLoadingStatus } from "@/features/ux-reset/review/explorer-loading-status";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
 import type { SuggestedFollowUpSelection } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyDetail } from "@/generated/models";
@@ -76,13 +77,18 @@ export function ExplorerSuggestedFollowUpPanel({
       data-testid="explorer-follow-up"
       id={EXPLORER_SECTION_IDS.followUp}
     >
-      <h2 ref={headingRef} tabIndex={-1}>
-        <Zap aria-hidden="true" /> Suggested follow-up
+      <h2
+        className="m-0 flex items-center gap-2 font-sans text-sm font-semibold"
+        ref={headingRef}
+        tabIndex={-1}
+      >
+        <Zap aria-hidden="true" className="text-muted-foreground size-4" />{" "}
+        Suggested follow-up
       </h2>
       {status === "loading" ? (
-        <AtlasStatusMessage tone="loading">
+        <ExplorerLoadingStatus>
           Loading suggested follow-up for this county…
-        </AtlasStatusMessage>
+        </ExplorerLoadingStatus>
       ) : null}
       {status === "error" ? (
         <AtlasStatusMessage tone="error">

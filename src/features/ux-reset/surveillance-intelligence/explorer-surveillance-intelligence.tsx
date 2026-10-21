@@ -1,8 +1,9 @@
 "use client";
 
+import { Gauge } from "lucide-react";
 import { useId, useState } from "react";
 
-import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import { ExplorerSectionHeading } from "@/features/ux-reset/review/explorer-section-heading";
 import { SurveillanceIntelligenceCard } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-card";
 import type { SurveillanceIntelligencePerspectiveId } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import { SurveillanceIntelligenceDetails } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-details";
@@ -55,8 +56,9 @@ export function ExplorerSurveillanceIntelligence({
       data-fips={fips}
       data-testid="county-surveillance-intelligence"
     >
-      <AtlasSectionHeader
-        headingLevel="h2"
+      <ExplorerSectionHeading
+        icon={Gauge}
+        level="h2"
         title="County Surveillance Intelligence"
         titleId={titleId}
       />

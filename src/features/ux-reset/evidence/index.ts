@@ -1,5 +1,10 @@
 export { EvidenceObject } from "./evidence-object";
+export { EvidenceProvenanceChips } from "./evidence-provenance-chips";
 export { EvidenceProvenanceInspect } from "./evidence-provenance-inspect";
+export {
+  EvidenceStateGlyph,
+  evidenceStateClassName,
+} from "./evidence-state-glyph";
 export {
   EvidenceStateStrip,
   ReleaseEvidenceStateStrip,
