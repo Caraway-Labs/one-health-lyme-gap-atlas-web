@@ -763,7 +763,7 @@ test.describe("Atlas Explorer layer legends", () => {
         swatchOpacity: "0",
       });
 
-    await chooseLayer(page, "Lyme incidence floor");
+    await chooseLayer(page, "Minimum reported incidence");
     const ramp = legend.getByRole("button", {
       name: /Lower published incidence/,
     });

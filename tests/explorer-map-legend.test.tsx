@@ -731,7 +731,7 @@ describe("Explorer map legend", () => {
     };
     expect({
       gap: shape("Gap review score map legend"),
-      incidence: shape("Lyme incidence floor map legend"),
+      incidence: shape("Minimum reported incidence map legend"),
       pathogen: shape("B. burgdorferi status map legend"),
       tick: shape("Blacklegged tick status map legend"),
     }).toStrictEqual({
