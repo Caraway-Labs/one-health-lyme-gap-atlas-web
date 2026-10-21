@@ -4,18 +4,18 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Ref } from "react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
-import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
+import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
 import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
+import { ViewFullCountyEvidence } from "@/features/ux-reset/review/view-full-county-evidence";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
+import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 import { cn } from "@/lib/utils";
 
 type ReviewCountyPreviewPanelProps = {
@@ -50,12 +50,7 @@ export function ReviewCountyPreviewPanel({
   const title = `${countyName}, ${stateName}`;
   const pathname = usePathname() ?? ATLAS_EXPLORER_PATH;
   const searchParams = useSearchParams() ?? new URLSearchParams();
-  const askContext = useAskAtlasInheritedContext();
-  const askHref = askAtlasEntryHref({
-    context: askContext,
-    pathname,
-    searchParams,
-  });
+  const askHref = resetAskAtlasWorkspaceHref(pathname, searchParams);
   return (
     <Card
       aria-label={`County preview for ${title}`}
@@ -77,6 +72,9 @@ export function ReviewCountyPreviewPanel({
       <p className="type-body" data-testid="review-preview-identity">
         FIPS {fipsLabel} · {stateCode}
       </p>
+      {/^\d{5}$/.test(preview.fips) ? (
+        <CountySummarySurveillance fips={preview.fips} release={release} />
+      ) : null}
       <p className="type-body" data-testid="review-preview-why">
         {preview.why}
       </p>
@@ -122,12 +120,6 @@ export function ReviewCountyPreviewPanel({
             )}
           </div>
         ) : null}
-        <Tier1SurveillancePriority
-          fips={preview.fips}
-          headingLevel="h3"
-          release={release}
-          showInterpretiveNotes={false}
-        />
         <p className="type-body" data-testid="review-preview-follow-up">
           <span className="eyebrow">
             {preview.followUpLabel ?? "Suggested follow-up"}
@@ -143,18 +135,10 @@ export function ReviewCountyPreviewPanel({
         </ul>
       ) : null}
       <div className="ux-reset-review-preview-actions">
-        {onViewCountyEvidence ? (
-          <Button
-            data-county={preview.fips}
-            data-testid="review-view-county-evidence"
-            type="button"
-            onClick={() => {
-              onViewCountyEvidence(preview.fips);
-            }}
-          >
-            View county evidence
-          </Button>
-        ) : null}
+        <ViewFullCountyEvidence
+          fips={preview.fips}
+          onViewCountyEvidence={onViewCountyEvidence}
+        />
         <DownloadCountyPdfButton
           countyName={preview.countyName}
           fips={preview.fips}

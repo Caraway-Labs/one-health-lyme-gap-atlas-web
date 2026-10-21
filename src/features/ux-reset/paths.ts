@@ -128,7 +128,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     match: "prefix",
     navGroup: "workspace",
     pageDescription:
-      "Dedicated answer-only workspace for reviewed-literature questions. Explorer and Compare can hand a validated page reference here and return to that page.",
+      "Dedicated answer-only workspace for reviewed-literature questions. Explorer and Compare open this page. The question does not include the county or comparison.",
     pageTitle: "Ask Atlas | One Health Lyme Gap Atlas",
     tooltipDetail:
       "Turn scientific questions into evidence-backed insights with an AI research assistant.",

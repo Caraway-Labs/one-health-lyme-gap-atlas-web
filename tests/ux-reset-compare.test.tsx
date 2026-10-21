@@ -1232,7 +1232,10 @@ describe("two-county aligned comparison", () => {
     );
     const ask = await screen.findByTestId("compare-ask-atlas");
     expect({
-      ask: ask.getAttribute("href")?.includes("page_ref="),
+      ask: Boolean(
+        ask.getAttribute("href")?.includes("/askatlas") &&
+        !ask.getAttribute("href")?.includes("page_ref=")
+      ),
       first: screen.getByTestId("compare-investigate-08001").textContent,
       floor: floor.textContent?.includes("12"),
       missing: missing.dataset.observation,
