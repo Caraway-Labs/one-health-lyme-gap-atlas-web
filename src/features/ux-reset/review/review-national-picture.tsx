@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { AtlasMap } from "@/components/atlas-map";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
@@ -45,6 +45,17 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
+  explorerMapFrameReady,
+  explorerMapLoadingMode,
+  explorerMapPaintRevision,
+  explorerMapRenderedFrameSignature,
+  explorerScoresLoadStatus,
+} from "@/features/ux-reset/review/explorer-map-loading";
+import {
+  ExplorerMapLoadingOverlay,
+  ExplorerMapSurface,
+} from "@/features/ux-reset/review/explorer-map-loading-overlay";
+import {
   boundExplorerNationalCounties,
   EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH,
   rankExplorerCounties,
@@ -72,6 +83,11 @@ import {
   postalCodeForStateFips,
 } from "@/features/ux-reset/review/review-state-fips";
 import { RURALITY_NO_DATA_COLOR } from "@/features/ux-reset/review/rurality-palette";
+import {
+  useExplorerMapLoadingPresentation,
+  useExplorerMapPaintSettlement,
+  usePublishedExplorerMapFrame,
+} from "@/features/ux-reset/review/use-explorer-map-loading";
 import {
   knownEmptyMapSelection,
   observationGate,
@@ -193,23 +209,31 @@ export function ReviewNationalPicture({
     [scenarioBaseline, scenarioSettings, scoreCounties]
   );
   const scoresStatus = layer.needsScores
-    ? scoresQuery.isError
-      ? "error"
-      : scoresQuery.isPending
-        ? "loading"
-        : "ready"
+    ? explorerScoresLoadStatus({
+        data: scoresQuery.data,
+        isError: scoresQuery.isError,
+        isFetching: scoresQuery.isFetching,
+        isPending: scoresQuery.isPending,
+      })
     : "ready";
   const completenessGate = useMemo(
     () =>
       completenessLayerGate({
         counties: scoreCounties,
-        scoresStatus: scoresQuery.isError
-          ? "error"
-          : scoresQuery.isPending
-            ? "loading"
-            : "ready",
+        scoresStatus: explorerScoresLoadStatus({
+          data: scoresQuery.data,
+          isError: scoresQuery.isError,
+          isFetching: scoresQuery.isFetching,
+          isPending: scoresQuery.isPending,
+        }),
       }),
-    [scoreCounties, scoresQuery.isError, scoresQuery.isPending]
+    [
+      scoreCounties,
+      scoresQuery.data,
+      scoresQuery.isError,
+      scoresQuery.isFetching,
+      scoresQuery.isPending,
+    ]
   );
   const layerGates = useMemo(
     () =>
@@ -464,11 +488,74 @@ export function ReviewNationalPicture({
   const geometryError = geometryQuery.isError;
   const geometryPending = geometryQuery.isPending;
   const valuesPending = layer.needsScores && scoresStatus === "loading";
+  const paintRevision = explorerMapPaintRevision({
+    frameReady: explorerMapFrameReady({
+      availableDataKind: availableDataGate.kind,
+      geometryFailed: geometryError,
+      geometryPending,
+      geometryPresent: Boolean(geometryQuery.data),
+    }),
+    frameSignature: explorerMapRenderedFrameSignature(mapCounties),
+    layerId: mapPaint.layerId,
+    paintKind: mapPaint.kind,
+    releaseId,
+    scope: "US",
+  });
+  const publishedMap = usePublishedExplorerMapFrame(paintRevision, mapCounties);
+  const { onPaintSettled, settledRevision } = useExplorerMapPaintSettlement(
+    publishedMap.revision
+  );
+  const queryClient = useQueryClient();
+  const activeObservation = isExplorerObservationLayer(mapLayer)
+    ? observations[mapLayer]
+    : null;
+  const layerFailed =
+    activeObservation?.status === "error" ||
+    (layer.needsScores && scoresQuery.isError && !scoresQuery.isFetching);
+  const mapLoading = useExplorerMapLoadingPresentation({
+    mode: explorerMapLoadingMode({
+      confirmedEmptyFrame: paintRevision !== null && mapCounties.length === 0,
+      deferToOtherLoader:
+        availableDataGate.kind === "loading" ||
+        availableDataGate.kind === "error",
+      geometryFailed: geometryError,
+      geometryPending,
+      layerFailed,
+      mapFailed,
+      paintKind: mapPaint.kind,
+      publishedRevision: publishedMap.revision,
+      settledRevision,
+    }),
+    requestKey: `US:${releaseId}:${mapLayer}`,
+  });
+  const retryMapLayer = useCallback(() => {
+    if (mapFailed) {
+      setMapFailed(false);
+      return;
+    }
+    if (isExplorerObservationLayer(mapLayer)) {
+      void queryClient.refetchQueries({
+        queryKey: ["ux-reset-explorer-map-observations", releaseId, mapLayer],
+      });
+      return;
+    }
+    if (layer.needsScores) {
+      void scoresQuery.refetch();
+    }
+  }, [
+    layer.needsScores,
+    mapFailed,
+    mapLayer,
+    queryClient,
+    releaseId,
+    scoresQuery,
+  ]);
+  const preserveRenderedMap = publishedMap.revision !== null;
   const showMap =
     !mapFailed &&
     !geometryError &&
-    !geometryPending &&
-    !valuesPending &&
+    (!geometryPending || preserveRenderedMap) &&
+    (!valuesPending || preserveRenderedMap) &&
     geometryQuery.data &&
     mapCounties.length > 0 &&
     (availableDataGate.kind === "open" || availableDataGate.kind === "ready");
@@ -500,7 +587,10 @@ export function ReviewNationalPicture({
         ) : null}
         <div
           aria-busy={
-            geometryPending || valuesPending || mapPaint.kind === "loading"
+            mapLoading.busy ||
+            geometryPending ||
+            valuesPending ||
+            mapPaint.kind === "loading"
           }
           className="map-wrap"
           data-map-colors={mapCounties
@@ -522,54 +612,62 @@ export function ReviewNationalPicture({
               <p>{EXPLORER_AVAILABLE_DATA_ERROR}</p>
             </AtlasStatusMessage>
           ) : showMap && geometryQuery.data ? (
-            <AtlasMap
-              ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the State filter and the county list."
-              cameraFrameState={mapFocus}
-              doubleClickZoom={false}
-              fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
-              fitSignal={fitSignal}
-              geographicStateOutline={mapFocus !== null}
-              neutralCountyBoundaries={mapLayer === "boundaries"}
-              geometry={{
-                ...geometryQuery.data,
-                features: geometryFeatures,
-              }}
-              includeUnscoredCounties={availableDataGate.kind === "open"}
-              resetNationalView
-              scores={mapCounties}
-              selectedFips={selectedFips}
-              selectedState={browseState ?? "ALL"}
-              onCountyPointer={(click) => {
-                const action = explorerMapDrillAction({
-                  clickDetail: click.clickDetail,
-                  fips: click.fips,
-                  focusedState: mapFocus,
-                });
-                switch (action.type) {
-                  case "ignore": {
-                    return;
+            <ExplorerMapSurface
+              blockMap={mapLoading.blockMap}
+              onPaintSettled={onPaintSettled}
+              revision={publishedMap.revision}
+            >
+              <AtlasMap
+                ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the State filter and the county list."
+                cameraFrameState={mapFocus}
+                doubleClickZoom={false}
+                fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
+                fitSignal={fitSignal}
+                geographicStateOutline={mapFocus !== null}
+                geometry={{
+                  ...geometryQuery.data,
+                  features: geometryFeatures,
+                }}
+                includeUnscoredCounties={availableDataGate.kind === "open"}
+                neutralCountyBoundaries={mapLayer === "boundaries"}
+                paintRevision={publishedMap.revision ?? undefined}
+                resetNationalView
+                scores={publishedMap.frame}
+                selectedFips={selectedFips}
+                selectedState={browseState ?? "ALL"}
+                onCountyPointer={(click) => {
+                  const action = explorerMapDrillAction({
+                    clickDetail: click.clickDetail,
+                    fips: click.fips,
+                    focusedState: mapFocus,
+                  });
+                  switch (action.type) {
+                    case "ignore": {
+                      return;
+                    }
+                    case "focus-state": {
+                      chooseState(action.state);
+                      return;
+                    }
+                    case "select-county": {
+                      chooseCounty(action.fips);
+                      return;
+                    }
+                    default: {
+                      const exhaustive: never = action;
+                      return exhaustive;
+                    }
                   }
-                  case "focus-state": {
-                    chooseState(action.state);
-                    return;
-                  }
-                  case "select-county": {
-                    chooseCounty(action.fips);
-                    return;
-                  }
-                  default: {
-                    const exhaustive: never = action;
-                    return exhaustive;
-                  }
-                }
-              }}
-              onError={() => {
-                setMapFailed(true);
-              }}
-              onSelect={() => {
-                // County clicks are handled by the two-stage pointer above.
-              }}
-            />
+                }}
+                onError={() => {
+                  setMapFailed(true);
+                }}
+                onPaintSettled={onPaintSettled}
+                onSelect={() => {
+                  // County clicks are handled by the two-stage pointer above.
+                }}
+              />
+            </ExplorerMapSurface>
           ) : mapFailed || geometryError ? (
             <AtlasStatusMessage className="map-loading" tone="error">
               <p>
@@ -588,11 +686,8 @@ export function ReviewNationalPicture({
                 </Button>
               ) : null}
             </AtlasStatusMessage>
-          ) : valuesPending || geometryPending ? (
-            <AtlasStatusMessage className="map-loading" tone="loading">
-              <p>{`Loading ${layer.label}…`}</p>
-            </AtlasStatusMessage>
-          ) : availableDataGate.kind === "ready" &&
+          ) : valuesPending ||
+            geometryPending ? null : availableDataGate.kind === "ready" &&
             geometryFeatures.length > 0 ? (
             <AtlasStatusMessage className="map-loading" tone="empty">
               <p>{EXPLORER_AVAILABLE_DATA_EMPTY}</p>
@@ -602,6 +697,10 @@ export function ReviewNationalPicture({
               <p>No county shapes were returned for this release.</p>
             </AtlasStatusMessage>
           )}
+          <ExplorerMapLoadingOverlay
+            view={mapLoading.overlay}
+            onRetry={retryMapLayer}
+          />
         </div>
         <ExplorerMapLegend
           key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}

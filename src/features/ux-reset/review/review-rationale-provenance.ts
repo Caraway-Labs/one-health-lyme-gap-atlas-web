@@ -3,7 +3,10 @@ import {
   publishedCountyHierarchy,
   publishedCountyRecordFromDetail,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
-import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-human-floor-evidence";
+import {
+  reviewHumanFloorEvidence,
+  reviewHumanIncidenceEvidence,
+} from "@/features/ux-reset/review/review-human-floor-evidence";
 import type { CountyDetail } from "@/generated/models";
 
 const TICK_MEASURES = [
@@ -36,9 +39,12 @@ export function reviewRationaleEvidence(
   const byMeasure = new Map(
     hierarchy.rows.map((row) => [row.measureId, row.evidence])
   );
-  const evidence = new Map<number, EvidenceObjectModel[]>([
-    [1, [reviewHumanFloorEvidence(detail)]],
-  ]);
+  const humanEvidence = [reviewHumanFloorEvidence(detail)];
+  const incidenceEvidence = reviewHumanIncidenceEvidence(detail);
+  if (incidenceEvidence) {
+    humanEvidence.push(incidenceEvidence);
+  }
+  const evidence = new Map<number, EvidenceObjectModel[]>([[1, humanEvidence]]);
   for (const [number, measureIds] of Object.entries(RATIONALE_MEASURES)) {
     const models = measureIds.flatMap((measureId) => {
       const model = byMeasure.get(measureId);

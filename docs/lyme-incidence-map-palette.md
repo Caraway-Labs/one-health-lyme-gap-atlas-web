@@ -6,7 +6,7 @@ Spec for GitHub #745. Recorded from `origin/main` at `450aad7` before the palett
 
 | Concern | Path |
 | --- | --- |
-| Layer id and label | `src/features/ux-reset/review/explorer-map-layers.ts` (`incidence_floor`, "Lyme incidence floor") |
+| Layer id and label | `src/features/ux-reset/review/explorer-map-layers.ts` (`incidence_floor`, "Minimum reported incidence") |
 | Measure, year, unit | `src/features/ux-reset/review/explorer-map-observation.ts` (`incidence_floor_2023`, year 2023, unit `per 100,000`, minimum 0, no fixed maximum) |
 | Paint and legend entries | `paintReadyObservationLayer` → `paintQuantity` in `src/features/ux-reset/review/explorer-map-layer-scale.ts` |
 | Shared per-layer colors | `src/features/ux-reset/review/explorer-layer-palettes.ts` (incidence anchors only; other layers keep their existing contracts) |

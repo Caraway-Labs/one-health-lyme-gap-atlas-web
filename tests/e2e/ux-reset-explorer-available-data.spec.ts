@@ -245,6 +245,11 @@ test.describe("Explorer available data", () => {
       "data-map-fips",
       ""
     );
+    await expect(page.getByTestId("explorer-map-loading")).toHaveCount(0);
+    await expect(page.getByTestId("review-state-map-region")).toHaveAttribute(
+      "aria-busy",
+      "false"
+    );
   });
 
   test("hides counties while a restrictive filter is still loading", async ({
