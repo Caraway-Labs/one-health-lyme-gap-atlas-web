@@ -184,6 +184,8 @@ type ReviewOperatingPictureProps = {
    */
   availableDataGate?: ExplorerAvailableDataGate;
   onMapLayerChange?: (layerId: ExplorerMapLayerId) => void;
+  /** Returns Explorer to national scope. Fit geography stays on this state. */
+  onReturnToUsView?: () => void;
 };
 
 function visibleLines(values: readonly string[]): string[] {
@@ -327,6 +329,7 @@ export function ReviewOperatingPicture({
   countyQuery = "",
   availableDataGate = EXPLORER_AVAILABLE_DATA_OPEN,
   onMapLayerChange,
+  onReturnToUsView,
 }: ReviewOperatingPictureProps) {
   const scopedCandidates = useMemo(
     () => scopedReviewCandidates(review.review_candidates, scopeCode),
@@ -1022,6 +1025,9 @@ export function ReviewOperatingPicture({
             onFit={() => {
               setFitSignal((value) => value + 1);
             }}
+            onUsView={() => {
+              onReturnToUsView?.();
+            }}
           />
           {onMapLayerChange ? (
             <div className="ux-reset-explorer-map-layer">
@@ -1249,7 +1255,9 @@ export function ReviewOperatingPicture({
               compareHref={handoff.compareHref}
               county={selectedPublished}
               onOpen={markReviewReturnFocus}
+              onViewCountyEvidence={onViewCountyEvidence}
               openRef={openRef}
+              release={tierRelease}
               releaseId={releaseId}
               reviewResultState={authoritativeResultState}
             />

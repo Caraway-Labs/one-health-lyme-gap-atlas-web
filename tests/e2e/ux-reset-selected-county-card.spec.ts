@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
+import { gapLegendCopyForMinimum } from "@/features/ux-reset/review/explorer-legend-info-copy";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import { responseTierPresentationForColor } from "@/lib/response-tier";
 
@@ -181,26 +182,13 @@ async function expectCard(
   }
   const preview = page.getByTestId("review-published-county-preview");
   await expect(preview).toHaveAttribute("data-fips", fips);
-  const pills = preview.getByTestId("selected-county-response-tier");
-  await expect(pills).toHaveCount(1);
+  await expect(
+    preview.getByTestId("selected-county-response-tier")
+  ).toHaveCount(0);
   await expect(preview.locator(".priority-pill")).toHaveCount(0);
-  await expect(pills.locator(".response-tier-pill-title")).toHaveText(
-    presentation.title
-  );
-  await expect(pills.locator(".response-tier-pill-detail")).toHaveText(
-    presentation.detail
-  );
-  await expect(pills).toHaveAttribute("data-ramp", band.id);
-  await expect(preview.getByTestId("selected-county-gap-score")).toHaveCount(1);
-  await expect(preview.getByTestId("selected-county-gap-score")).toContainText(
-    score
-  );
-  await expect(preview.getByTestId("selected-county-gap-score")).toContainText(
-    "/100"
-  );
-  await expect(preview.getByTestId("selected-county-gap-score")).toContainText(
-    "Atlas gap score"
-  );
+  const scoreChip = preview.getByTestId("selected-county-gap-score");
+  await expect(scoreChip).toHaveCount(1);
+  await expect(scoreChip).toHaveText(score);
   await expect(
     preview.getByRole("heading", { name: "Surveillance evidence" })
   ).toBeVisible();
@@ -223,17 +211,21 @@ async function expectCard(
     band.maxExclusive === null
       ? `${band.minInclusive} or higher`
       : `${band.minInclusive} to <${band.maxExclusive}`;
+  const legendCopy = gapLegendCopyForMinimum(band.minInclusive);
+  if (!legendCopy) {
+    throw new Error(`Missing legend copy for ${band.minInclusive}`);
+  }
   const legendButton = page
     .getByTestId("explorer-map-legend")
     .getByRole("button", { name: new RegExp(range.replaceAll("<", "\\<")) });
   await expect(legendButton).toHaveAttribute(
     "aria-label",
-    `Gap review score: ${range}. ${presentation.title}. ${presentation.detail}`
+    `Gap review score: ${range}. ${legendCopy.category}. ${legendCopy.action}`
   );
   const colors = await page.evaluate(
     ({ detail, title }) => {
       const pill = document.querySelector(
-        "[data-testid='review-published-county-preview'] [data-testid='selected-county-response-tier']"
+        "[data-testid='review-published-county-preview'] [data-testid='selected-county-gap-score']"
       );
       const button = [
         ...document.querySelectorAll(
@@ -251,9 +243,6 @@ async function expectCard(
         "[data-testid='review-published-county-preview']"
       );
       const rationale = card?.querySelector("[data-testid='review-rationale']");
-      const scoreLockup = card?.querySelector(
-        "[data-testid='selected-county-score-lockup']"
-      );
       const heading = card?.querySelector("h2");
       const score = card?.querySelector(
         "[data-testid='selected-county-gap-score']"
@@ -261,7 +250,6 @@ async function expectCard(
       if (
         !(card instanceof HTMLElement) ||
         !(rationale instanceof HTMLElement) ||
-        !(scoreLockup instanceof HTMLElement) ||
         !(heading instanceof HTMLElement) ||
         !(score instanceof HTMLElement)
       ) {
@@ -286,12 +274,9 @@ async function expectCard(
         return null;
       }
       const rationaleBox = rationale.getBoundingClientRect();
-      const lockupBox = scoreLockup.getBoundingClientRect();
-      const pillBox = pill.getBoundingClientRect();
       const scoreBox = score.getBoundingClientRect();
       const headingBox = heading.getBoundingClientRect();
       const headerBox = header.getBoundingClientRect();
-      const surveillanceBox = surveillance.getBoundingClientRect();
       const summaryStyles = summaries.map((node) => {
         const summaryStyle = getComputedStyle(node);
         return {
@@ -300,29 +285,16 @@ async function expectCard(
           whiteSpace: summaryStyle.whiteSpace,
         };
       });
-      const overlapsHeading = !(
-        pillBox.right <= headingBox.left ||
-        pillBox.left >= headingBox.right ||
-        pillBox.bottom <= headingBox.top ||
-        pillBox.top >= headingBox.bottom
-      );
-      const sameRow =
-        lockupBox.top <= headingBox.top + 2 &&
-        lockupBox.left >= headingBox.right - 1 &&
-        scoreBox.left >= headingBox.right - 1;
       return {
         contentWidth,
         headingClipped: heading.scrollWidth > heading.clientWidth + 1,
         legendLabel: button?.getAttribute("aria-label") ?? "",
-        lockupBesideEvidence: lockupBox.bottom > rationaleBox.top + 1,
+        marksBelowHeading: scoreBox.top >= headingBox.bottom - 1,
         overflow: card.scrollWidth > card.clientWidth + 1,
-        overlapsHeading,
-        evidenceGap: Math.round(surveillanceBox.top - headerBox.bottom),
+        evidenceBelowHeader:
+          surveillance.getBoundingClientRect().top >= headerBox.bottom,
         indicatorWeight: getComputedStyle(indicatorName).fontWeight,
-        pillAboveScore: pillBox.bottom <= scoreBox.top + 2,
-        sameRow,
-        pillColor: getComputedStyle(pill).backgroundColor,
-        pillWidth: pillBox.width,
+        scoreColor: getComputedStyle(score).backgroundColor,
         rationaleWidth: rationaleBox.width,
         summaryStyles,
         provenanceRows: [1, 2, 3, 4, 5, 6].map(
@@ -334,25 +306,18 @@ async function expectCard(
         swatchColor: getComputedStyle(swatch).backgroundColor,
       };
     },
-    { detail: presentation.detail, title: presentation.title }
+    { detail: legendCopy.action, title: legendCopy.category }
   );
-  expect(colors?.pillColor).toBe(colors?.swatchColor);
-  expect(colors?.legendLabel).toContain(presentation.title);
-  expect(colors?.legendLabel).toContain(presentation.detail);
+  expect(colors?.scoreColor).toBe(colors?.swatchColor);
+  expect(colors?.legendLabel).toContain(legendCopy.category);
+  expect(colors?.legendLabel).toContain(legendCopy.action);
   expect(colors?.overflow).toBe(false);
   expect(colors?.headingClipped).toBe(false);
-  expect(colors?.sameRow).toBe(true);
-  expect(colors?.overlapsHeading).toBe(false);
-  expect(colors?.lockupBesideEvidence).toBe(false);
-  expect(colors?.pillAboveScore).toBe(true);
+  expect(colors?.marksBelowHeading).toBe(true);
+  expect(colors?.evidenceBelowHeader).toBe(true);
   expect(colors?.rationaleWidth ?? 0).toBeGreaterThan(
     (colors?.contentWidth ?? 0) * 0.9
   );
-  expect(colors?.pillWidth ?? 0).toBeLessThan(
-    (colors?.contentWidth ?? 1) * 0.95
-  );
-  expect(colors?.evidenceGap ?? 0).toBeGreaterThanOrEqual(12);
-  expect(colors?.evidenceGap ?? 99).toBeLessThanOrEqual(16);
   expect(Number(colors?.indicatorWeight)).toBeGreaterThan(400);
   expect(colors?.summaryStyles?.length ?? 0).toBeGreaterThanOrEqual(6);
   expect(colors?.provenanceRows?.every((count) => count > 0)).toBe(true);
@@ -394,7 +359,7 @@ async function capture(page: Page, testInfo: TestInfo, name: string) {
 }
 
 test.describe("selected county summary card", () => {
-  test("shows Hamilton and Marion with one legend-matched pill", async ({
+  test("shows Hamilton and Marion with a legend-matched score chip", async ({
     page,
   }, testInfo) => {
     await installIndiana(page);
@@ -451,11 +416,11 @@ test.describe("selected county summary card", () => {
     );
     await expectCard(page, "24033", "49.8", "#87b982");
     const readable = await preview
-      .getByTestId("selected-county-response-tier")
+      .getByTestId("selected-county-gap-score")
       .evaluate(
-        (pill) =>
-          pill instanceof HTMLElement &&
-          pill.scrollWidth <= pill.clientWidth + 1
+        (chip) =>
+          chip instanceof HTMLElement &&
+          chip.scrollWidth <= chip.clientWidth + 1
       );
     expect(readable).toBe(true);
   });

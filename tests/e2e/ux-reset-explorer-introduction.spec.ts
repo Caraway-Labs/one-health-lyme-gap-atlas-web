@@ -217,7 +217,26 @@ test.describe("Explorer and Compare introductions", () => {
     await expect(
       page.getByText("Explore potential Lyme surveillance gaps")
     ).toHaveCount(0);
-    await expect(page.getByText("Surveillance gap score")).toHaveCount(0);
+    // #794 names the method "Surveillance Gap Score v…" inside the collapsed
+    // equation disclosure. #783 also speaks that name on the selected county
+    // summary: the mark heading and its spoken result. Those are the only
+    // matches. The retired menu label must not appear anywhere else, including
+    // the introduction.
+    const equationVersion = page
+      .getByTestId("explorer-scenario-equation")
+      .getByText(/^Surveillance Gap Score v\d+(?:\.\d+)*$/);
+    await expect(equationVersion).toHaveCount(1);
+    await expect(
+      page
+        .getByTestId("county-surveillance-intelligence")
+        .getByText("Surveillance gap score")
+    ).toHaveCount(2);
+    await expect(page.getByText("Surveillance gap score")).toHaveCount(3);
+    await expect(
+      page
+        .getByTestId("page-introduction-explorer")
+        .getByText("Surveillance gap score")
+    ).toHaveCount(0);
     await expect(
       page.getByRole("heading", { level: 2, name: "Explore county patterns" })
     ).toBeVisible();

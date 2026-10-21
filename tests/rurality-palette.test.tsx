@@ -126,7 +126,7 @@ describe("rurality sequential palette", () => {
       segments: RUCC_FILLS,
       uniqueFills: 9,
     });
-    expect(paint.note).toMatch(/not a proportional increase/);
+    expect(paint.note).toMatch(/equal step in rurality/);
   });
 
   it("keeps the catalog description when a code is absent from the load", () => {

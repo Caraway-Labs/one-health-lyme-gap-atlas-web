@@ -39,6 +39,7 @@ import {
   Tier1CountyPriorityPriorityTier,
   type Tier1CountyPriorityPriorityTier as PriorityTier,
 } from "@/generated/models/tier1CountyPriorityPriorityTier";
+import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 export type IntelligenceField = {
   label: string;
@@ -57,6 +58,21 @@ export type IntelligenceKind =
   | "ready"
   | "unavailable";
 
+/** A bounded 0–100 track. Null value means the bar must not render. */
+export type IntelligenceTrack = {
+  label: string;
+  value: number | null;
+  valueText: string;
+};
+
+/** One returned class probability. Percent is null when a bar would misstate it. */
+export type IntelligenceMembership = {
+  classId: string;
+  percent: number | null;
+  selected: boolean;
+  text: string;
+};
+
 export type IntelligencePerspectiveView = {
   description: string | null;
   disclosure: readonly IntelligenceField[];
@@ -66,15 +82,25 @@ export type IntelligencePerspectiveView = {
   kind: IntelligenceKind;
   label: string;
   limitations: readonly string[];
+  memberships: readonly IntelligenceMembership[];
   overview: string;
   primary: string;
   qualifier: string | null;
   reasons: readonly IntelligenceReason[];
+  releaseReason: "mismatch" | "unknown" | null;
+  /** Published review-category title for the gap score. Not an ML tier. */
+  reviewCategory: string | null;
+  /** Map-ramp color for the published gap score chip. */
+  swatch?: string | null;
   retryable: boolean;
+  sufficiency: EvidenceSufficiency | null;
   supporting: string;
+  tier: string | null;
+  track: IntelligenceTrack | null;
 };
 
 export type PublishedGapScoreCounty = {
+  color?: string;
   fips: string;
   in_contiguous_tick_scope: boolean;
   score: { score: number };
@@ -116,6 +142,69 @@ const UNAVAILABLE_PRIMARY = "Unavailable";
 const INCOMPATIBLE_PRIMARY = "Incompatible";
 const ERROR_PRIMARY = "Could not be loaded";
 const MEMBERSHIP_NOT_RETURNED = "Class membership not returned";
+const SCORE_MAX = 100;
+const PERCENT_SCALE = 100;
+
+function boundedTrack(
+  value: number | null,
+  label: string,
+  valueText: string
+): IntelligenceTrack | null {
+  if (
+    value === null ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    value > SCORE_MAX
+  ) {
+    return null;
+  }
+  return { label, value, valueText };
+}
+
+function reviewCategoryTitle(color: string | undefined): string | null {
+  if (!color) {
+    return null;
+  }
+  return responseTierPresentationForColor(color)?.title ?? null;
+}
+
+function membershipTrack(probability: number | null): IntelligenceTrack | null {
+  if (probability === null || !Number.isFinite(probability)) {
+    return null;
+  }
+  const text = formatClassMembership(probability);
+  if (!text.endsWith("%")) {
+    return null;
+  }
+  return boundedTrack(
+    probability * PERCENT_SCALE,
+    `Class membership ${text}. Not pathogen presence, disease risk, or the probability that the model is correct.`,
+    text
+  );
+}
+
+function membershipBars(
+  classification: SituationClassification
+): IntelligenceMembership[] {
+  const selectedId = classification.class_id;
+  const selectedCount = classification.probabilities.filter(
+    (entry) => entry.class_id === selectedId
+  ).length;
+  return classification.probabilities.map((entry) => {
+    const text = Number.isFinite(entry.probability)
+      ? formatClassMembership(entry.probability)
+      : MEMBERSHIP_NOT_RETURNED;
+    const track = membershipTrack(
+      Number.isFinite(entry.probability) ? entry.probability : null
+    );
+    return {
+      classId: entry.class_id,
+      percent: track?.value ?? null,
+      selected: selectedCount === 1 && entry.class_id === selectedId,
+      text,
+    };
+  });
+}
 
 function emptyPerspective(
   id: SurveillanceIntelligencePerspectiveId,
@@ -134,12 +223,18 @@ function emptyPerspective(
     kind,
     label: SURVEILLANCE_INTELLIGENCE_LABELS[id],
     limitations: [],
+    memberships: [],
     overview,
     primary,
     qualifier: null,
     reasons: [],
+    releaseReason: null,
+    reviewCategory: null,
     retryable,
+    sufficiency: null,
     supporting,
+    tier: null,
+    track: null,
   };
 }
 
@@ -368,13 +463,24 @@ function mapGapScore(
     kind: "ready",
     label: SURVEILLANCE_INTELLIGENCE_LABELS[id],
     limitations: [],
+    memberships: [],
     overview:
       "This is the published Surveillance Gap Score used by the map and county ranking.",
     primary: formatted,
     qualifier: null,
     reasons: [],
+    releaseReason: null,
+    reviewCategory: reviewCategoryTitle(county.color),
     retryable: false,
+    swatch: county.color ?? null,
+    sufficiency: null,
     supporting: GAP_SCORE_DESCRIPTOR,
+    tier: null,
+    track: boundedTrack(
+      score,
+      `Published Surveillance Gap Score ${formatted} out of 100`,
+      formatted
+    ),
   };
 }
 
@@ -395,6 +501,7 @@ function tier1ReleaseMismatch(
       { label: "Response release", value: result.release_id },
       { label: "Page release", value: pageReleaseId },
     ],
+    releaseReason: "mismatch",
   };
 }
 
@@ -409,14 +516,17 @@ function mapTier1(
     return loadingPerspective(id, supportingLoading);
   }
   if (release.status === "unknown" || state.phase === "idle") {
-    return emptyPerspective(
-      id,
-      "unavailable",
-      UNAVAILABLE_PRIMARY,
-      `${percentileFact(null)} · ${sufficiencyFact(null)}`,
-      "ML review priority was not requested because the governed release for this page is not known.",
-      false
-    );
+    return {
+      ...emptyPerspective(
+        id,
+        "unavailable",
+        UNAVAILABLE_PRIMARY,
+        `${percentileFact(null)} · ${sufficiencyFact(null)}`,
+        "ML review priority was not requested because the governed release for this page is not known.",
+        false
+      ),
+      releaseReason: "unknown",
+    };
   }
   if (state.phase === "error") {
     if (state.errorStatus === 404) {
@@ -486,13 +596,19 @@ function mapTier1(
       kind: "ready",
       label: SURVEILLANCE_INTELLIGENCE_LABELS[id],
       limitations: [],
+      memberships: [],
       overview:
         "This model abstained. Not estimable is not a low tier and is not a score of zero.",
       primary: "Not estimable",
       qualifier: `${PERCENTILE_QUALIFIER} ${SUFFICIENCY_QUALIFIER}`,
       reasons,
+      releaseReason: null,
+      reviewCategory: null,
       retryable: false,
+      sufficiency: result.evidence_sufficiency,
       supporting,
+      tier: null,
+      track: null,
     };
   }
   if (!isScoredTier(result.priority_tier)) {
@@ -530,13 +646,27 @@ function mapTier1(
     kind: "ready",
     label: SURVEILLANCE_INTELLIGENCE_LABELS[id],
     limitations: [],
+    memberships: [],
     overview:
       "ML Review Priority is a model-assisted review tier. It is not disease risk.",
     primary: result.priority_tier,
     qualifier: `${PERCENTILE_QUALIFIER} ${SUFFICIENCY_QUALIFIER}`,
     reasons,
+    releaseReason: null,
+    reviewCategory: null,
     retryable: false,
+    sufficiency: result.evidence_sufficiency,
     supporting,
+    tier: result.priority_tier,
+    track: boundedTrack(
+      result.priority_percentile,
+      result.priority_percentile === null
+        ? "Within-batch percentile was not returned. Not a disease risk probability."
+        : `Within-batch percentile ${formatPercentileOneDecimal(result.priority_percentile)} out of 100. Not a disease risk probability.`,
+      result.priority_percentile === null
+        ? NOT_RETURNED
+        : formatPercentileOneDecimal(result.priority_percentile)
+    ),
   };
 }
 
@@ -705,15 +835,21 @@ function mapAvailableSituation(
     kind: "ready",
     label: SURVEILLANCE_INTELLIGENCE_LABELS[id],
     limitations: classification.limitations,
+    memberships: membershipBars(classification),
     overview: situationOverview(id),
     primary: classification.class_name,
     qualifier: CLASS_MEMBERSHIP_QUALIFIER,
     reasons: [],
+    releaseReason: null,
+    reviewCategory: null,
     retryable: false,
+    sufficiency: null,
     supporting:
       membership === null
         ? MEMBERSHIP_NOT_RETURNED
         : `Class membership ${formatClassMembership(membership)}`,
+    tier: null,
+    track: membershipTrack(membership),
   };
 }
 

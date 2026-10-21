@@ -118,10 +118,12 @@ vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
 
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
+    fitSignal = 0,
     onCountyPointer,
     onSelect,
     scores,
   }: {
+    fitSignal?: number;
     onCountyPointer?: (click: { clickDetail: number; fips: string }) => void;
     onSelect: (fips: string, surface: "map") => void;
     scores: { fips: string }[];
@@ -135,7 +137,11 @@ vi.mock(import("@/components/atlas-map"), () => ({
       onSelect(fips, "map");
     };
     return (
-      <div data-map-score-fips={lastMapScoreFips} data-testid="mock-atlas-map">
+      <div
+        data-fit-signal={String(fitSignal)}
+        data-map-score-fips={lastMapScoreFips}
+        data-testid="mock-atlas-map"
+      >
         <button
           data-testid="mock-map-select-ny"
           type="button"
@@ -226,6 +232,42 @@ function stubDesktopMatchMedia() {
         removeEventListener: () => {},
       }) as unknown as MediaQueryList
   );
+}
+
+async function installNationalGeometry() {
+  const { fetchCountyDisplayGeometry } = await import("@/lib/county-geography");
+  const polygon = (fips: string, west: number) => ({
+    geometry: {
+      coordinates: [
+        [
+          [west, 39],
+          [west + 1, 39],
+          [west + 1, 40],
+          [west, 40],
+          [west, 39],
+        ],
+      ],
+      type: "Polygon" as const,
+    },
+    properties: { fips },
+    type: "Feature" as const,
+  });
+  vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+    features: [
+      polygon("08001", -105),
+      polygon("08013", -107),
+      polygon("36001", -74),
+    ],
+    type: "FeatureCollection",
+  });
+}
+
+async function clearNationalGeometry() {
+  const { fetchCountyDisplayGeometry } = await import("@/lib/county-geography");
+  vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
+    features: [],
+    type: "FeatureCollection",
+  });
 }
 
 function renderReview(
@@ -3528,11 +3570,13 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=alpha-2026");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
       ).toBe("HIGH")
     );
     expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.sufficiency
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .dataset.sufficiency
     ).toBe("SUFFICIENT");
   });
 
@@ -3545,10 +3589,13 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=historical-2024");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.state
       ).toBe("release-unaligned")
     );
-    const region = screen.getByTestId("tier1-surveillance-priority");
+    const region = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
       reason: region.dataset.releaseReason,
@@ -3573,13 +3620,16 @@ describe("Reset Review scope UI", () => {
     });
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
       ).toBe("HIGH")
     );
     reviewReleaseControls.metadataReleaseId = "historical-2024";
     view.rerenderSearch("?scope=NY&county=36001&dataset=historical-2024");
     await waitFor(() => {
-      const region = screen.getByTestId("tier1-surveillance-priority");
+      const region = screen.getByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      );
       if (
         region.dataset.state !== "release-unaligned" ||
         region.dataset.tier === "HIGH"
@@ -3588,10 +3638,12 @@ describe("Reset Review scope UI", () => {
       }
     });
     expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .dataset.releaseReason
     ).toBe("mismatch");
     expect(
-      screen.getByTestId("tier1-surveillance-priority").textContent
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .textContent
     ).not.toMatch(/\bLOW\b|\bHIGH\b/);
   });
 
@@ -3629,7 +3681,10 @@ describe("Reset Review scope UI", () => {
     });
     renderReview("?scope=NY&county=36001&dataset=alpha-2026", { client });
     await waitFor(() =>
-      expect(screen.getByTestId("tier1-priority-tier").textContent).toBe("HIGH")
+      expect(
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
+      ).toBe("HIGH")
     );
 
     reviewReleaseControls.metadataStatus = 503;
@@ -3639,7 +3694,8 @@ describe("Reset Review scope UI", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.state
       ).toBe("release-unaligned")
     );
     const legend =
@@ -3650,9 +3706,12 @@ describe("Reset Review scope UI", () => {
       insufficient: /\bINSUFFICIENT\b/.test(pageText),
       low: /\bLOW\b/.test(pageText),
       medium: /\bMEDIUM\b/.test(pageText),
-      panels: screen.getAllByTestId("tier1-surveillance-priority").length,
-      reason: screen.getByTestId("tier1-surveillance-priority").dataset
-        .releaseReason,
+      panels: screen.getAllByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      ).length,
+      reason: screen.getByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      ).dataset.releaseReason,
       sufficiency: screen.queryByTestId("tier1-evidence-sufficiency"),
       tier: screen.queryByTestId("tier1-priority-tier"),
     }).toStrictEqual({
@@ -4068,7 +4127,7 @@ describe("Reset Review scope UI", () => {
       expect(
         screen.getByRole("dialog", { name: "About Gap review score" })
           .textContent
-      ).toContain("published score colors");
+      ).toContain("closer surveillance review");
       expect(screen.getByTestId("explorer-fit-national")).toBeTruthy();
       expect(screen.getByTestId("explorer-preview-empty")).toBeTruthy();
       fireEvent.click(screen.getByTestId("mock-map-select-ny"));
@@ -4100,6 +4159,146 @@ describe("Reset Review scope UI", () => {
         features: [],
         type: "FeatureCollection",
       });
+    }
+  });
+
+  it("returns a state county to national scope without saving the starting view", async () => {
+    const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
+    const updates: string[] = [];
+    renderReview("?scope=CO&county=08013&layer=boundaries&eco=55", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    const usView = await screen.findByRole("button", { name: "US view" });
+    const fit = screen.getByRole("button", { name: "Fit CO (Colorado)" });
+    expect({
+      fill: usView.querySelector("svg")?.getAttribute("fill"),
+      following:
+        usView.compareDocumentPosition(fit) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      paths: usView.querySelectorAll("svg path").length,
+      stroke: usView.querySelector("svg")?.getAttribute("stroke") ?? null,
+    }).toStrictEqual({
+      fill: "currentColor",
+      following: true,
+      paths: 1,
+      stroke: null,
+    });
+    fireEvent.click(usView);
+    await waitFor(() => {
+      if (!screen.queryByTestId("review-national-orientation")) {
+        throw new Error("national scope is not showing");
+      }
+    });
+    const latest = updates.at(-1) ?? "";
+    expect({
+      county: latest.includes("county="),
+      eco: latest.includes("eco=55"),
+      focus: latest.includes("focus="),
+      layer: latest.includes("layer=boundaries"),
+      preview: screen.queryByTestId("review-published-county-preview"),
+      profileWrites: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      rankings: screen
+        .getAllByTestId("national-published-county")
+        .map((row) => row.dataset.fips)
+        .toSorted(),
+      scope: latest.includes("scope=ALL"),
+      scopeLabel: screen.getByTestId("review-scope-select").textContent,
+    }).toStrictEqual({
+      county: false,
+      eco: true,
+      focus: false,
+      layer: true,
+      preview: null,
+      profileWrites: 0,
+      rankings: ["08001", "08013", "36001"],
+      scope: true,
+      scopeLabel: expect.stringContaining("United States"),
+    });
+  });
+
+  it("refits the national map from a zoomed country view and keeps the layer", async () => {
+    const updates: string[] = [];
+    await installNationalGeometry();
+    try {
+      renderReview("?scope=ALL&layer=boundaries", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      const map = await screen.findByTestId("mock-atlas-map");
+      expect(map.dataset.fitSignal).toBe("0");
+      fireEvent.click(screen.getByRole("button", { name: "US view" }));
+      await waitFor(() => {
+        if (screen.getByTestId("mock-atlas-map").dataset.fitSignal !== "1") {
+          throw new Error("US view did not request a national fit");
+        }
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Fit geography (United States)" })
+      );
+      await waitFor(() => {
+        if (screen.getByTestId("mock-atlas-map").dataset.fitSignal !== "2") {
+          throw new Error("Fit geography did not request another fit");
+        }
+      });
+      expect({
+        layer: screen.getByTestId("explorer-map-layer").textContent,
+        scopeWrites: updates.some((query) => query.includes("scope=")),
+      }).toStrictEqual({
+        layer: expect.stringContaining("County boundaries"),
+        scopeWrites: false,
+      });
+    } finally {
+      await clearNationalGeometry();
+    }
+  });
+
+  it("clears a focused state and county and restores national rankings", async () => {
+    const updates: string[] = [];
+    await installNationalGeometry();
+    try {
+      renderReview("?scope=ALL&focus=CO&county=08013&layer=boundaries", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      await screen.findByTestId("mock-atlas-map");
+      expect(
+        screen
+          .getAllByTestId("national-published-county")
+          .map((row) => row.dataset.fips)
+          .toSorted()
+      ).toStrictEqual(["08001", "08013"]);
+      fireEvent.click(screen.getByRole("button", { name: "US view" }));
+      await waitFor(() => {
+        const ranked = screen
+          .queryAllByTestId("national-published-county")
+          .map((row) => row.dataset.fips);
+        if (!ranked.includes("36001")) {
+          throw new Error("national rankings are not restored");
+        }
+      });
+      const latest = updates.at(-1) ?? "";
+      expect({
+        county: latest.includes("county="),
+        focus: latest.includes("focus="),
+        layer: latest.includes("layer=boundaries"),
+        rankings: screen
+          .getAllByTestId("national-published-county")
+          .map((row) => row.dataset.fips)
+          .toSorted(),
+        scope: latest.includes("scope=ALL"),
+      }).toStrictEqual({
+        county: false,
+        focus: false,
+        layer: true,
+        rankings: ["08001", "08013", "36001"],
+        scope: true,
+      });
+    } finally {
+      await clearNationalGeometry();
     }
   });
 });

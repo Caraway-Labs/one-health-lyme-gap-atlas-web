@@ -11,6 +11,10 @@ import {
   SVI_RAMP,
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
+import {
+  GAP_NO_SCORE_INFO,
+  gapLegendCopyForMinimum,
+} from "@/features/ux-reset/review/explorer-legend-info-copy";
 import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
 import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
@@ -18,7 +22,6 @@ import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { CountyScoreSummary } from "@/generated/models";
 import { ValueState } from "@/generated/models";
-import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 function county(
   fips: string,
@@ -143,13 +146,13 @@ function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
-  const presentation = responseTierPresentationForColor(band.color);
-  if (!presentation) {
-    throw new Error(`Missing response tier for ${band.color}`);
+  const copy = gapLegendCopyForMinimum(band.minInclusive);
+  if (!copy) {
+    throw new Error(`Missing legend copy for ${band.minInclusive}`);
   }
   return {
-    action: presentation.detail,
-    category: presentation.title,
+    action: copy.action,
+    category: copy.category,
     title: gapScoreRangeTitle(band),
   };
 }
@@ -241,7 +244,7 @@ describe("Explorer map legend", () => {
         .querySelectorAll("[data-legend-segment]"),
     ].map((segment) => segment.getAttribute("aria-label") ?? "");
     expect(segments).toStrictEqual([
-      "Gap score unavailable. Insufficient data to calculate a score",
+      `Gap score unavailable. ${GAP_NO_SCORE_INFO.category}. ${GAP_NO_SCORE_INFO.action}`,
       ...SCORE_COLOR_BANDS.map((band) => {
         const copy = operationalBandCopy(band);
         return `${copy.title}. ${copy.category}. ${copy.action}`;
@@ -257,8 +260,8 @@ describe("Explorer map legend", () => {
       scoresStatus: "ready",
     });
     const model = buildExplorerLegendModel(paint);
-    const colored = model.segments.filter(
-      (segment) => segment.disclosure?.category
+    const colored = model.segments.filter((segment) =>
+      segment.disclosure?.title.startsWith("Gap review score:")
     );
     const tooltipText = model.segments
       .map((segment) => segment.accessibleName)
@@ -274,9 +277,19 @@ describe("Explorer map legend", () => {
         category: operationalBandCopy(band).category,
       }))
     );
-    expect(tooltipText).toContain("Conduct targeted follow-up");
-    expect(tooltipText).toContain("Coordinate a local assessment");
-    expect(tooltipText).toContain("Prioritize local investigation");
+    expect({
+      elevated: tooltipText.includes("Elevated"),
+      followUp: tooltipText.includes("Conduct targeted follow-up."),
+      highest: tooltipText.includes("Prioritize targeted follow-up."),
+      local: tooltipText.includes("Coordinate a local assessment."),
+      oldMonitor: tooltipText.includes("Monitor trends over time"),
+    }).toStrictEqual({
+      elevated: true,
+      followUp: true,
+      highest: true,
+      local: true,
+      oldMonitor: false,
+    });
   });
 
   it("shows the seven gap-score disclosures without priority phrases", async () => {
@@ -300,8 +313,8 @@ describe("Explorer map legend", () => {
     render(<ExplorerMapLegend paint={paint} />);
     const expected = [
       {
-        action: "Insufficient data to calculate a score",
-        category: null,
+        action: GAP_NO_SCORE_INFO.action,
+        category: GAP_NO_SCORE_INFO.category,
         name: /Gap score unavailable/,
         title: "Gap score unavailable",
       },
@@ -394,7 +407,7 @@ describe("Explorer map legend", () => {
       oldName: /atlas gap score/i.test(`${legendText} ${aboutText}`),
     }).toStrictEqual({
       about: expect.stringMatching(
-        /CDC Lyme surveillance 2023[\s\S]*Available published data do not support calculation of a Gap review score for this county\.[\s\S]*Not zero[\s\S]*Lower Atlas priority — Not a safety finding/
+        /What this map shows[\s\S]*closer surveillance review[\s\S]*Data release:[\s\S]*CDC Lyme surveillance 2023[\s\S]*Elevated[\s\S]*Monitor the pattern\./
       ),
       aboutRisk: false,
       legendRisk: false,
@@ -425,7 +438,7 @@ describe("Explorer map legend", () => {
     expect(
       screen.getByRole("dialog", { name: "About Blacklegged tick status" })
         .textContent
-    ).toContain("not a continuous risk gradient");
+    ).toContain("not tick abundance or the likelihood of a tick bite");
   });
 
   it("shows a solid swatch for one nonzero incidence value", () => {
@@ -447,9 +460,12 @@ describe("Explorer map legend", () => {
     expect(
       screen.queryByRole("button", { name: /No published value/ })
     ).toBeNull();
-    expect(swatch.getAttribute("aria-label")).toMatch(
-      /Every published number in this load is this value/
-    );
+    expect({
+      darker: /Darker green means higher reported incidence/.test(
+        swatch.getAttribute("aria-label") ?? ""
+      ),
+      load: /this load/.test(swatch.getAttribute("aria-label") ?? ""),
+    }).toStrictEqual({ darker: true, load: false });
   });
 
   it("shows one solid swatch when every incidence value repeats", () => {
@@ -490,8 +506,10 @@ describe("Explorer map legend", () => {
     );
     render(<ExplorerMapLegend paint={paint} />);
     const swatch = screen.getByRole("button", { name: /0 per 100,000/ });
-    expect(swatch.getAttribute("aria-label")).toMatch(/Observed zero/);
-    expect(swatch.getAttribute("aria-label")).toMatch(/not a missing value/);
+    expect(swatch.getAttribute("aria-label")).toMatch(
+      /A reported zero remains separate from missing data/
+    );
+    expect(swatch.getAttribute("aria-label")).not.toMatch(/this load/);
     expect(
       sameColor(
         paintedBackground(/0 per 100,000/),
@@ -526,10 +544,13 @@ describe("Explorer map legend", () => {
     expect(swatchStyle(/Missing \(not zero/)).not.toContain(
       paint.colorsByFips.get("11001") ?? "painted"
     );
-    expect(swatch.getAttribute("aria-label")).toMatch(
-      /Every published number in this load is this value/
-    );
-    expect(screen.queryByRole("button", { name: /Color is mixed/ })).toBeNull();
+    expect({
+      darker: /Darker green means higher reported incidence/.test(
+        swatch.getAttribute("aria-label") ?? ""
+      ),
+      load: /this load/.test(swatch.getAttribute("aria-label") ?? ""),
+      mixed: screen.queryByRole("button", { name: /Color is mixed/ }),
+    }).toStrictEqual({ darker: true, load: false, mixed: null });
   });
 
   it("names the open segment popover with the layer and the value", async () => {
@@ -543,7 +564,7 @@ describe("Explorer map legend", () => {
     await user.click(screen.getByRole("button", { name: /4\.2 per 100,000/ }));
     expect(
       screen.getByRole("dialog", {
-        name: "Minimum reported incidence: Lower published incidence 4.2 per 100,000 residents. Every published number in this load is this value.",
+        name: "Minimum reported Lyme incidence: Lower published incidence 4.2 per 100,000 residents. Darker green means higher reported incidence. Gray indicates unavailable data. A reported zero remains separate from missing data.",
       })
     ).toBeTruthy();
   });
@@ -564,7 +585,7 @@ describe("Explorer map legend", () => {
     const high = paint.entries.find((entry) => entry.role === "endpoint-high");
     const quarter = paint.colorsByFips.get("08005") ?? "";
     const midpoint = paint.colorsByFips.get("08013") ?? "";
-    const style = swatchStyle(/pale green to deep green/);
+    const style = swatchStyle(/Darker green means higher reported incidence/);
     expect({
       high: high?.color,
       low: low?.color,
@@ -653,7 +674,9 @@ describe("Explorer map legend", () => {
     const high = paint.entries.find((entry) => entry.role === "endpoint-high");
     const quarter = paint.colorsByFips.get("08005") ?? "";
     const midpoint = paint.colorsByFips.get("08013") ?? "";
-    const style = swatchStyle(/pale rose to deep burgundy/);
+    const style = swatchStyle(
+      /Darker burgundy means a higher uninsured percentage/
+    );
     expect({
       high: high?.color,
       low: low?.color,
@@ -731,7 +754,7 @@ describe("Explorer map legend", () => {
     };
     expect({
       gap: shape("Gap review score map legend"),
-      incidence: shape("Minimum reported incidence map legend"),
+      incidence: shape("Minimum reported Lyme incidence map legend"),
       pathogen: shape("B. burgdorferi status map legend"),
       tick: shape("Blacklegged tick status map legend"),
     }).toStrictEqual({
