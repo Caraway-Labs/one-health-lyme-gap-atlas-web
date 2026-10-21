@@ -293,7 +293,6 @@ export function CountySummaryActions({
             <TooltipTrigger
               render={
                 <Button
-                  aria-controls={EXPLORER_MAP_FOLLOW_UP_ID}
                   aria-label="View County Follow-Up"
                   data-county={fips}
                   data-testid="review-view-county-follow-up"
