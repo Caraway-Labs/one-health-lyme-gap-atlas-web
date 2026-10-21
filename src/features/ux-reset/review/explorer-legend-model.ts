@@ -142,9 +142,9 @@ function scoreBandThreshold(band: (typeof SCORE_COLOR_BANDS)[number]): string {
 
 function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
   if (band.maxExclusive === null) {
-    return `Atlas gap score: ${band.minInclusive} or higher`;
+    return `Gap review score: ${band.minInclusive} or higher`;
   }
-  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
+  return `Gap review score: ${band.minInclusive} to <${band.maxExclusive}`;
 }
 
 function gapScoreDisclosure(

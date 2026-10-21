@@ -259,9 +259,9 @@ test.describe("Review national geographic navigation", () => {
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
-    await page.getByRole("button", { name: "About Atlas gap score" }).click();
+    await page.getByRole("button", { name: "About Gap review score" }).click();
     await expect(
-      page.getByRole("dialog", { name: "About Atlas gap score" })
+      page.getByRole("dialog", { name: "About Gap review score" })
     ).toContainText("published score colors");
     await page.keyboard.press("Escape");
     await expect(
