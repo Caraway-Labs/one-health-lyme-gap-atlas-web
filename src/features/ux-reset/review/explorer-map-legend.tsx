@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +52,72 @@ function LegendDisclosure({
   );
 }
 
+const REFERENCE_PILL_SEGMENTS = 7;
+
+type LegendPillItem = {
+  background: string;
+  id: string;
+  outline?: string;
+  role: string;
+};
+
+function segmentBackground(
+  gradient?: ExplorerLegendGradient,
+  segment?: ExplorerLegendSegment
+): string {
+  if (gradient) {
+    return `linear-gradient(90deg, ${gradient.stops
+      .map((stop) => `${stop.color} ${stop.percent}%`)
+      .join(", ")})`;
+  }
+  return segment?.color ?? "transparent";
+}
+
+function segmentOutlineShadow(outline: string | undefined): string | undefined {
+  if (!outline) {
+    return undefined;
+  }
+  return `inset 0 0 0 2px ${outline}`;
+}
+
+function LegendStrip({
+  children,
+  fill,
+  items,
+}: {
+  children: ReactNode;
+  fill: "count" | "full";
+  items: readonly LegendPillItem[];
+}) {
+  const count = Math.max(items.length, 1);
+  const style: CSSProperties & { "--legend-count": number } = {
+    "--legend-count": fill === "full" ? REFERENCE_PILL_SEGMENTS : count,
+  };
+  return (
+    <div
+      className="ux-reset-explorer-legend-strip"
+      data-legend-count={count}
+      data-legend-fill={fill}
+      style={style}
+    >
+      <div aria-hidden="true" className="ux-reset-explorer-legend-pill">
+        {items.map((item) => (
+          <span
+            data-legend-pill-role={item.role}
+            data-legend-pill-segment=""
+            key={item.id}
+            style={{
+              background: item.background,
+              boxShadow: segmentOutlineShadow(item.outline),
+            }}
+          />
+        ))}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 function LegendSegmentButton({
   gradient,
   layerTitle,
@@ -73,11 +139,7 @@ function LegendSegmentButton({
   const dialogName = accessibleName.startsWith(`${layerTitle}:`)
     ? accessibleName
     : `${layerTitle}: ${accessibleName}`;
-  const background = gradient
-    ? `linear-gradient(90deg, ${gradient.stops
-        .map((stop) => `${stop.color} ${stop.percent}%`)
-        .join(", ")})`
-    : segment?.color;
+  const background = segmentBackground(gradient, segment);
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger
@@ -106,9 +168,7 @@ function LegendSegmentButton({
           aria-hidden="true"
           style={{
             background,
-            boxShadow: segment?.outline
-              ? `inset 0 0 0 2px ${segment.outline}`
-              : undefined,
+            boxShadow: segmentOutlineShadow(segment?.outline),
           }}
         />
         {segment?.visibleLines?.map((line) => (
@@ -161,7 +221,15 @@ function RuralityLegendScale({
     <div className="ux-reset-explorer-legend-rurality">
       <div className="ux-reset-explorer-legend-rurality-main">
         <div className="ux-reset-explorer-legend-rurality-scale">
-          <div className="ux-reset-explorer-legend-strip">
+          <LegendStrip
+            fill="count"
+            items={classes.map((segment) => ({
+              background: segment.color,
+              id: segment.id,
+              outline: segment.outline,
+              role: segment.role ?? "class",
+            }))}
+          >
             {classes.map((segment) => (
               <LegendSegmentButton
                 key={segment.id}
@@ -173,7 +241,7 @@ function RuralityLegendScale({
                 }}
               />
             ))}
-          </div>
+          </LegendStrip>
           <div className="ux-reset-explorer-legend-rurality-captions">
             {model.leftCaption ? (
               <span className="ux-reset-explorer-legend-caption">
@@ -206,6 +274,118 @@ function RuralityLegendScale({
       <p className="ux-reset-explorer-legend-rurality-explanation">
         {RURALITY_LEGEND_EXPLANATION}
       </p>
+    </div>
+  );
+}
+
+function LegendScale({
+  gradient,
+  layerTitle,
+  leftCaption,
+  onOpenChange,
+  openId,
+  rightCaption,
+  segments,
+}: {
+  gradient: ExplorerLegendGradient | null;
+  layerTitle: string;
+  leftCaption: string | null;
+  onOpenChange: (id: string | null) => void;
+  openId: string | null;
+  rightCaption: string | null;
+  segments: readonly ExplorerLegendSegment[];
+}) {
+  const items = [
+    ...segments.map((segment) => ({
+      background: segment.color,
+      id: segment.id,
+      outline: segment.outline,
+      role: segment.role ?? "class",
+    })),
+    ...(gradient
+      ? [
+          {
+            background: segmentBackground(gradient),
+            id: "gradient",
+            role: "gradient",
+          },
+        ]
+      : []),
+  ];
+  const buttons = (
+    <>
+      {segments.map((segment) => (
+        <LegendSegmentButton
+          key={segment.id}
+          layerTitle={layerTitle}
+          open={openId === segment.id}
+          segment={segment}
+          onOpenChange={(next) => {
+            onOpenChange(next ? segment.id : null);
+          }}
+        />
+      ))}
+      {gradient ? (
+        <LegendSegmentButton
+          gradient={gradient}
+          layerTitle={layerTitle}
+          open={openId === "gradient"}
+          onOpenChange={(next) => {
+            onOpenChange(next ? "gradient" : null);
+          }}
+        />
+      ) : null}
+    </>
+  );
+  if (gradient) {
+    return (
+      <div className="ux-reset-explorer-legend-row">
+        {leftCaption ? (
+          <span
+            className="ux-reset-explorer-legend-caption"
+            data-legend-caption="start"
+          >
+            {leftCaption}
+          </span>
+        ) : null}
+        <LegendStrip fill="full" items={items}>
+          {buttons}
+        </LegendStrip>
+        {rightCaption ? (
+          <span
+            className="ux-reset-explorer-legend-caption"
+            data-legend-caption="end"
+          >
+            {rightCaption}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+  const scaleStyle: CSSProperties & { "--legend-count": number } = {
+    "--legend-count": Math.max(items.length, 1),
+  };
+  return (
+    <div className="ux-reset-explorer-legend-scale" style={scaleStyle}>
+      <LegendStrip fill="count" items={items}>
+        {buttons}
+      </LegendStrip>
+      {leftCaption || rightCaption ? (
+        <div className="ux-reset-explorer-legend-captions">
+          {leftCaption ? (
+            <span className="ux-reset-explorer-legend-caption">
+              {leftCaption}
+            </span>
+          ) : (
+            <span />
+          )}
+          {rightCaption ? (
+            <span className="ux-reset-explorer-legend-caption">
+              {rightCaption}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -288,41 +468,15 @@ export function ExplorerMapLegend({ paint }: { paint: ExplorerMapPaint }) {
           onOpenChange={setOpenId}
         />
       ) : (
-        <div className="ux-reset-explorer-legend-row">
-          {model.leftCaption ? (
-            <span className="ux-reset-explorer-legend-caption">
-              {model.leftCaption}
-            </span>
-          ) : null}
-          <div className="ux-reset-explorer-legend-strip">
-            {model.segments.map((segment) => (
-              <LegendSegmentButton
-                key={segment.id}
-                layerTitle={model.title}
-                open={openId === segment.id}
-                segment={segment}
-                onOpenChange={(next) => {
-                  setOpenId(next ? segment.id : null);
-                }}
-              />
-            ))}
-            {model.gradient ? (
-              <LegendSegmentButton
-                gradient={model.gradient}
-                layerTitle={model.title}
-                open={openId === "gradient"}
-                onOpenChange={(next) => {
-                  setOpenId(next ? "gradient" : null);
-                }}
-              />
-            ) : null}
-          </div>
-          {model.rightCaption ? (
-            <span className="ux-reset-explorer-legend-caption">
-              {model.rightCaption}
-            </span>
-          ) : null}
-        </div>
+        <LegendScale
+          gradient={model.gradient}
+          layerTitle={model.title}
+          leftCaption={model.leftCaption}
+          openId={openId}
+          rightCaption={model.rightCaption}
+          segments={model.segments}
+          onOpenChange={setOpenId}
+        />
       )}
     </section>
   );
