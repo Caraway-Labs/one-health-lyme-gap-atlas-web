@@ -63,7 +63,7 @@ export function compactPublishedCaseCount(count: number): string {
 export type PublishedLymeCaseMeasure = {
   label: string;
   sentence: string;
-  tooltip: string;
+  explanation: string;
 };
 
 export type PublishedLymeCasePresentation = {
@@ -102,18 +102,18 @@ export function publishedLymeCasePresentation(
   const measures: PublishedLymeCaseMeasure[] = [];
   if (count !== null) {
     measures.push({
+      explanation: MINIMUM_REPORTED_CASES_TOOLTIP,
       label: MINIMUM_REPORTED_CASES_LABEL,
       sentence: publishedCaseCountExplanation(count),
-      tooltip: MINIMUM_REPORTED_CASES_TOOLTIP,
     });
   }
   if (rate !== null) {
     measures.push({
+      explanation: MINIMUM_REPORTED_INCIDENCE_TOOLTIP,
       label: MINIMUM_REPORTED_INCIDENCE_LABEL,
       sentence: publishedIncidenceExplanation(
         formatPublishedIncidenceRate(rate)
       ),
-      tooltip: MINIMUM_REPORTED_INCIDENCE_TOOLTIP,
     });
   }
   if (measures.length === 0) {
@@ -122,7 +122,10 @@ export function publishedLymeCasePresentation(
   return {
     measures,
     text: measures
-      .map((measure) => `${measure.label}: ${measure.sentence}`)
+      .map(
+        (measure) =>
+          `${measure.label}: ${measure.sentence} ${measure.explanation}`
+      )
       .join(" "),
   };
 }

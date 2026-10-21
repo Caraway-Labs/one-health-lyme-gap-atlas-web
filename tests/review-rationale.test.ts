@@ -113,7 +113,7 @@ describe("review rationale", () => {
       tick: items[1]?.text,
     }).toStrictEqual({
       human: expect.stringContaining(
-        "Minimum reported cases: At least 1 Lyme disease cases were reported in 2023. Minimum reported incidence: At least 2.1 reported cases per 100,000 residents."
+        "Minimum reported cases: At least 1 Lyme disease cases were reported in 2023. The published data establish a minimum number of reported cases. The actual reported total may be higher. Minimum reported incidence: At least 2.1 reported cases per 100,000 residents. The published data establish a minimum reported incidence. The actual reported rate may be higher."
       ),
       insurance: expect.stringContaining("8.2%"),
       rural: expect.stringContaining("Code 3"),

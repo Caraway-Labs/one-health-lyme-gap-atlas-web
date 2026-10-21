@@ -187,6 +187,19 @@ test.describe("Selected county preview", () => {
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
       "Minimum reported cases"
     );
+    await expect(preview.getByTestId("review-rationale-1")).toContainText(
+      "The published data establish a minimum number of reported cases. The actual reported total may be higher."
+    );
+    await expect(
+      preview
+        .getByTestId("review-rationale")
+        .locator("[data-slot='tooltip-trigger']")
+    ).toHaveCount(0);
+    await expect(
+      preview.getByTestId("review-rationale-1").getByRole("button", {
+        name: /Minimum reported/,
+      })
+    ).toHaveCount(0);
     await expect(preview.getByTestId("review-rationale-1")).not.toContainText(
       "not an exact count"
     );

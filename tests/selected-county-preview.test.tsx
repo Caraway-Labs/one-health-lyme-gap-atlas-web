@@ -410,10 +410,16 @@ describe("selected county preview", () => {
           })}
         />
       );
-      return (
-        screen.getByTestId("review-rationale-1").querySelector("p")
-          ?.textContent ?? ""
-      );
+      const rowElement = screen.getByTestId("review-rationale-1");
+      expect(
+        rowElement.querySelector("[data-slot='tooltip-trigger']")
+      ).toBeNull();
+      expect(
+        within(rowElement).queryByRole("button", {
+          name: /Minimum reported/,
+        })
+      ).toBeNull();
+      return rowElement.querySelector("p")?.textContent ?? "";
     };
     expect({
       absent: row("published_count_floor", null, null),
@@ -427,13 +433,13 @@ describe("selected county preview", () => {
       absent:
         "A 2023 minimum reported case count was published, but the count and rate are unavailable.",
       countOnly:
-        "Minimum reported cases: At least 4 Lyme disease cases were reported in 2023.",
+        "Minimum reported cases: At least 4 Lyme disease cases were reported in 2023. The published data establish a minimum number of reported cases. The actual reported total may be higher.",
       missing: "The 2023 county Lyme case count is missing.",
       noCountyRecord: "No county-linked 2023 Lyme case record is available.",
       publishedZero:
-        "Minimum reported cases: At least 0 Lyme disease cases were reported in 2023. Minimum reported incidence: At least 0.0 reported cases per 100,000 residents.",
+        "Minimum reported cases: At least 0 Lyme disease cases were reported in 2023. The published data establish a minimum number of reported cases. The actual reported total may be higher. Minimum reported incidence: At least 0.0 reported cases per 100,000 residents. The published data establish a minimum reported incidence. The actual reported rate may be higher.",
       rateOnly:
-        "Minimum reported incidence: At least 2.1 reported cases per 100,000 residents.",
+        "Minimum reported incidence: At least 2.1 reported cases per 100,000 residents. The published data establish a minimum reported incidence. The actual reported rate may be higher.",
       suppressed: "The 2023 county Lyme case count is suppressed.",
     });
   });
