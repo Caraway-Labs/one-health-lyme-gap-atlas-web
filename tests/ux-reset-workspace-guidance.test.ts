@@ -103,7 +103,16 @@ describe("six-page workspace guidance", () => {
         "/docs",
         "does not open a side panel",
         "not a statement that the report contains none of a period",
+        "Opening Ask Atlas from Compare does not ask the service to compare counties.",
+        "They do not display the previous county or comparison.",
       ])
+    ).toStrictEqual([]);
+    expect(
+      [
+        "Showing a comparison reference",
+        "validated Explorer or Compare reference",
+        "shown and changed, with a return link",
+      ].filter((phrase) => workspace.includes(phrase))
     ).toStrictEqual([]);
   });
 
