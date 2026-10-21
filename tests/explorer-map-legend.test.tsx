@@ -137,9 +137,9 @@ function paintedBackground(name: RegExp | string): string {
 
 function gapScoreRangeTitle(band: (typeof SCORE_COLOR_BANDS)[number]): string {
   if (band.maxExclusive === null) {
-    return `Atlas gap score: ${band.minInclusive} or higher`;
+    return `Gap review score: ${band.minInclusive} or higher`;
   }
-  return `Atlas gap score: ${band.minInclusive} to <${band.maxExclusive}`;
+  return `Gap review score: ${band.minInclusive} to <${band.maxExclusive}`;
 }
 
 function operationalBandCopy(band: (typeof SCORE_COLOR_BANDS)[number]) {
@@ -199,13 +199,21 @@ describe("Explorer map legend", () => {
     });
     render(<ExplorerMapLegend paint={paint} />);
     const legend = screen.getByRole("region", {
-      name: "Atlas gap score map legend",
+      name: "Gap review score map legend",
     });
-    expect(legend.dataset.legendLayer).toBe("gap_score");
-    expect(legend.dataset.legendScale).toBe("segments");
-    expect(legend.textContent).toContain("review-priority score");
-    expect(legend.textContent).toContain("Gap score unavailable");
-    expect(legend.textContent).toContain(">=75");
+    expect({
+      layer: legend.dataset.legendLayer,
+      oldName: /atlas gap score/i.test(legend.textContent ?? ""),
+      scale: legend.dataset.legendScale,
+      text: legend.textContent,
+    }).toStrictEqual({
+      layer: "gap_score",
+      oldName: false,
+      scale: "segments",
+      text: expect.stringMatching(
+        /review-priority score[\s\S]*Gap score unavailable[\s\S]*>=75|Gap score unavailable[\s\S]*review-priority score[\s\S]*>=75/
+      ),
+    });
   });
 
   it("names the gray gap segment first and both crossover labels", () => {
@@ -229,7 +237,7 @@ describe("Explorer map legend", () => {
     render(<ExplorerMapLegend paint={paint} />);
     const segments = [
       ...screen
-        .getByRole("region", { name: "Atlas gap score map legend" })
+        .getByRole("region", { name: "Gap review score map legend" })
         .querySelectorAll("[data-legend-segment]"),
     ].map((segment) => segment.getAttribute("aria-label") ?? "");
     expect(segments).toStrictEqual([
@@ -314,6 +322,7 @@ describe("Explorer map legend", () => {
     const seen: {
       action: string | null | undefined;
       category: string | null;
+      oldName: boolean;
       priorityPhrases: boolean;
       swatch: boolean;
       title: string | null | undefined;
@@ -328,6 +337,9 @@ describe("Explorer map legend", () => {
         category:
           dialog.querySelector(".ux-reset-explorer-legend-disclosure-category")
             ?.textContent ?? null,
+        oldName: /atlas gap score/i.test(
+          `${dialog.textContent ?? ""} ${dialog.getAttribute("aria-label") ?? ""}`
+        ),
         priorityPhrases: /Priority [12]/.test(dialog.textContent ?? ""),
         swatch: Boolean(
           dialog.querySelector("[data-legend-disclosure-swatch]")
@@ -342,6 +354,7 @@ describe("Explorer map legend", () => {
       expected.map((disclosure) => ({
         action: disclosure.action,
         category: disclosure.category,
+        oldName: false,
         priorityPhrases: false,
         swatch: true,
         title: disclosure.title,
@@ -365,20 +378,28 @@ describe("Explorer map legend", () => {
       ],
     });
     render(<ExplorerMapLegend paint={paint} />);
-    expect(
-      screen.getByRole("region", { name: "Atlas gap score map legend" })
-        .textContent
-    ).not.toContain("not personal disease risk");
+    const legendText =
+      screen.getByRole("region", { name: "Gap review score map legend" })
+        .textContent ?? "";
     await user.click(
-      screen.getByRole("button", { name: "About Atlas gap score" })
+      screen.getByRole("button", { name: "About Gap review score" })
     );
-    const about = screen.getByRole("dialog", { name: "About Atlas gap score" });
-    expect(about.textContent).toContain("CDC Lyme surveillance 2023");
-    expect(about.textContent).not.toContain("not personal disease risk");
-    expect(about.textContent).toContain("Not zero");
-    expect(about.textContent).toContain(
-      "Lower Atlas priority — Not a safety finding"
-    );
+    const aboutText =
+      screen.getByRole("dialog", { name: "About Gap review score" })
+        .textContent ?? "";
+    expect({
+      about: aboutText,
+      aboutRisk: aboutText.includes("not personal disease risk"),
+      legendRisk: legendText.includes("not personal disease risk"),
+      oldName: /atlas gap score/i.test(`${legendText} ${aboutText}`),
+    }).toStrictEqual({
+      about: expect.stringMatching(
+        /CDC Lyme surveillance 2023[\s\S]*Available published data do not support calculation of a Gap review score for this county\.[\s\S]*Not zero[\s\S]*Lower Atlas priority — Not a safety finding/
+      ),
+      aboutRisk: false,
+      legendRisk: false,
+      oldName: false,
+    });
   });
 
   it("uses separate status segments instead of the score strip", async () => {
