@@ -254,6 +254,8 @@ export function AtlasMap({
   onMove,
   onIdle,
   onError,
+  onPaintSettled,
+  paintRevision,
   containerRole = "img",
   ref,
 }: {
@@ -306,6 +308,9 @@ export function AtlasMap({
   onMove?: (camera: AtlasMapCamera) => void;
   onIdle?: () => void;
   onError?: () => void;
+  /** Changes when the selected layer's paint is published. Idle after that paint reports the same value. */
+  paintRevision?: string;
+  onPaintSettled?: (revision: string) => void;
   containerRole?: "img" | "none";
   ref?: Ref<AtlasMapHandle>;
 }) {
@@ -334,12 +339,14 @@ export function AtlasMap({
   const onMoveRef = useRef(onMove);
   const onIdleRef = useRef(onIdle);
   const onErrorRef = useRef(onError);
+  const onPaintSettledRef = useRef(onPaintSettled);
   useEffect(() => {
     selectRef.current = onSelect;
     countyPointerRef.current = onCountyPointer;
     onMoveRef.current = onMove;
     onIdleRef.current = onIdle;
     onErrorRef.current = onError;
+    onPaintSettledRef.current = onPaintSettled;
     resetNationalViewRef.current = resetNationalView;
     cameraFrameStateRef.current = cameraFrameState;
     doubleClickZoomRef.current = doubleClickZoom;
@@ -678,6 +685,36 @@ export function AtlasMap({
       setCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
     }
   });
+
+  useEffect(() => {
+    const instance = map.current;
+    if (!mapReady || !instance || paintRevision === undefined) {
+      return;
+    }
+    let cancelled = false;
+    let rendered = false;
+    const revision = paintRevision;
+    const onRender = () => {
+      rendered = true;
+    };
+    const onIdle = () => {
+      if (cancelled || !rendered) {
+        return;
+      }
+      cancelled = true;
+      instance.off("render", onRender);
+      instance.off("idle", onIdle);
+      onPaintSettledRef.current?.(revision);
+    };
+    instance.on("render", onRender);
+    instance.on("idle", onIdle);
+    instance.triggerRepaint();
+    return () => {
+      cancelled = true;
+      instance.off("render", onRender);
+      instance.off("idle", onIdle);
+    };
+  }, [mapReady, paintRevision]);
 
   useEffect(() => {
     const instance = map.current;
