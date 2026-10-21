@@ -2371,9 +2371,143 @@
 }
 
 .ux-reset-explorer-map .map-wrap {
+  position: relative;
   aspect-ratio: auto;
   min-height: 10rem;
   height: min(26rem, max(10rem, calc(100svh - 39.5rem)));
+}
+
+.explorer-map-surface {
+  height: 100%;
+  min-height: inherit;
+}
+
+.explorer-map-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: color-mix(
+    in srgb,
+    var(--explorer-map-loading-surface) 86%,
+    transparent
+  );
+  color: var(--explorer-map-loading-headline);
+  text-align: center;
+}
+
+.explorer-map-loading-copy {
+  display: grid;
+  justify-items: center;
+  max-width: 18rem;
+}
+
+.explorer-map-loading-icon-slot {
+  width: 130px;
+  height: 118px;
+}
+
+.explorer-map-loading-icon-wrap {
+  display: grid;
+  width: 130px;
+  height: 118px;
+  place-items: center;
+  transform: scale(0.93);
+  transform-origin: center;
+  perspective: 400px;
+}
+
+.ux-reset-explorer-map .map-wrap .explorer-map-loading-icon {
+  width: 112px;
+  height: 112px;
+  color: var(--explorer-map-loading-icon);
+  animation: explorer-map-unfold 3.6s ease-in-out infinite;
+}
+
+.explorer-map-loading-headline {
+  margin: 24px 0 7px;
+  color: var(--explorer-map-loading-headline);
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.explorer-map-loading-support {
+  margin: 0;
+  color: var(--explorer-map-loading-copy);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.explorer-map-loading-dots {
+  display: flex;
+  gap: 7px;
+  margin-top: 24px;
+}
+
+.explorer-map-loading-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--explorer-map-loading-icon);
+  animation: explorer-map-loading-dot 1.5s ease-in-out infinite;
+}
+
+.explorer-map-loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.explorer-map-loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.explorer-map-loading-retry {
+  margin-top: 1rem;
+}
+
+@keyframes explorer-map-unfold {
+  0%,
+  100% {
+    transform: rotateY(-65deg) scaleX(0.6);
+    opacity: 0.45;
+  }
+  40%,
+  70% {
+    transform: rotateY(0deg) scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes explorer-map-loading-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.explorer-map-loading-overlay[data-motion="reduced"] .explorer-map-loading-icon,
+.explorer-map-loading-overlay[data-motion="reduced"]
+  .explorer-map-loading-dots
+  span {
+  animation: none;
+  transform: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ux-reset-explorer-map .map-wrap .explorer-map-loading-icon,
+  .ux-reset-explorer-map .map-wrap .explorer-map-loading-dots span {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
 }
 
 @media (min-width: 1200px) {

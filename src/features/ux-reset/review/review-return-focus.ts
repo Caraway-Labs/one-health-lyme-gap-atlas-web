@@ -4,6 +4,14 @@ type ReviewHistoryState = {
   uxResetReviewReturnFocus?: unknown;
 };
 
+/**
+ * Bumps when the user leaves Review for Compare or Investigate.
+ * A view that is already open must not treat that write as a return:
+ * doing so focuses the row and deletes the token before navigation, so
+ * Back arrives with nothing left to restore.
+ */
+let reviewReturnFocusGeneration = 0;
+
 function historyRecord(): ReviewHistoryState | null {
   if (typeof history === "undefined") {
     return null;
@@ -15,10 +23,20 @@ function historyRecord(): ReviewHistoryState | null {
   return state;
 }
 
+export type ReviewReturnFocusMount = {
+  generation: number;
+  token: string | null;
+};
+
+function reviewReturnFocusValue(value: unknown): string | null {
+  return typeof value === "string" && /^\d{5}$/.test(value) ? value : null;
+}
+
 /**
  * Remember which Review county was open when the user explicitly leaves for
- * Investigate. The flag lives on the current Review history entry so Back
- * restores it without copying Review-only controls into the Investigate URL.
+ * Investigate or Compare. The flag lives on the current Review history entry
+ * so Back restores it without copying Review-only controls into the next URL.
+ * sessionStorage covers a new history entry, such as the Compare return link.
  */
 export function markReviewReturnFocus(fips: string): void {
   try {
@@ -28,21 +46,96 @@ export function markReviewReturnFocus(fips: string): void {
   }
   const current = historyRecord();
   history.replaceState({ ...current, uxResetReviewReturnFocus: fips }, "");
+  reviewReturnFocusGeneration += 1;
 }
 
-export function reviewReturnFocusMatches(selectedFips: string): boolean {
-  const fromHistory =
-    historyRecord()?.uxResetReviewReturnFocus === selectedFips;
-  let stored: string | null = null;
-  try {
-    stored = sessionStorage.getItem(REVIEW_RETURN_FOCUS_KEY);
-    if (stored && stored !== selectedFips) {
-      sessionStorage.removeItem(REVIEW_RETURN_FOCUS_KEY);
-    }
-  } catch {
-    stored = null;
+/** Token already stored when this Review view mounts. Later marks do not count. */
+export function readReviewReturnFocusToken(): string | null {
+  const fromHistory = reviewReturnFocusValue(
+    historyRecord()?.uxResetReviewReturnFocus
+  );
+  if (fromHistory) {
+    return fromHistory;
   }
-  return fromHistory || stored === selectedFips;
+  try {
+    return reviewReturnFocusValue(
+      sessionStorage.getItem(REVIEW_RETURN_FOCUS_KEY)
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function captureReviewReturnFocusMount(): ReviewReturnFocusMount {
+  return {
+    generation: reviewReturnFocusGeneration,
+    token: readReviewReturnFocusToken(),
+  };
+}
+
+/**
+ * Token this mounted view may restore. A mark that happens after mount is the
+ * user leaving, so this view must not focus the row or consume the token.
+ */
+export function reviewReturnFocusTokenForMount(
+  mount: ReviewReturnFocusMount
+): string | null {
+  if (mount.generation !== reviewReturnFocusGeneration) {
+    return null;
+  }
+  return mount.token;
+}
+
+/**
+ * County evidence parks Review instead of unmounting it. The departure mark
+ * stays ignored while that view is open, then this adopts the stored county
+ * once the map is visible again. Call it only on that parked-to-visible
+ * transition: adopting a mark while Review is still interactive consumes the
+ * token before Compare or Investigate navigates away.
+ */
+export function reviewReturnFocusMountAfterPark(
+  current: ReviewReturnFocusMount,
+  becameVisible: boolean
+): ReviewReturnFocusMount {
+  if (!becameVisible) {
+    return current;
+  }
+  const next = captureReviewReturnFocusMount();
+  if (next.generation === current.generation && next.token === current.token) {
+    return current;
+  }
+  return next;
+}
+
+/**
+ * Decide whether this render should move focus back to the returned county.
+ *
+ * The URL county is the return target. A blank or fallback selection while
+ * that URL county is unchanged must not cancel the return: the published
+ * directory can drop for a render, replace the focused row, and come back
+ * with the same county still selected.
+ */
+export function resolveReviewReturnFocus(input: {
+  latchedFips: string | null;
+  mountedToken: string | null;
+  selectedFips: string;
+  urlCounty: string;
+}): { focus: boolean; latch: string | null } {
+  const explicitCounty = /^\d{5}$/.test(input.urlCounty) ? input.urlCounty : "";
+  const matches =
+    explicitCounty !== "" && input.mountedToken === explicitCounty;
+  let latch = input.latchedFips;
+  if (matches && latch !== explicitCounty) {
+    latch = explicitCounty;
+  } else if (
+    latch !== null &&
+    explicitCounty !== "" &&
+    explicitCounty !== latch
+  ) {
+    latch = null;
+  }
+  const focus = input.selectedFips !== "" && latch === input.selectedFips;
+  return { focus, latch };
 }
 
 /** Drop the session fallback once Review has restored focus for this return. */

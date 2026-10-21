@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import {
@@ -54,6 +54,17 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
+  explorerMapFrameReady,
+  explorerMapLoadingMode,
+  explorerMapPaintRevision,
+  explorerMapRenderedFrameSignature,
+  explorerScoresLoadStatus,
+} from "@/features/ux-reset/review/explorer-map-loading";
+import {
+  ExplorerMapLoadingOverlay,
+  ExplorerMapSurface,
+} from "@/features/ux-reset/review/explorer-map-loading-overlay";
+import {
   rankExplorerCounties,
   type ExplorerRankSource,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
@@ -94,14 +105,22 @@ import {
 } from "@/features/ux-reset/review/review-operating-state";
 import { ReviewPublishedCountyPreview } from "@/features/ux-reset/review/review-published-county-preview";
 import {
+  captureReviewReturnFocusMount,
   consumeReviewReturnFocus,
   markReviewReturnFocus,
-  reviewReturnFocusMatches,
+  resolveReviewReturnFocus,
+  reviewReturnFocusMountAfterPark,
+  reviewReturnFocusTokenForMount,
 } from "@/features/ux-reset/review/review-return-focus";
 import {
   isLower48CountyFips,
   stateFipsPrefix,
 } from "@/features/ux-reset/review/review-state-fips";
+import {
+  useExplorerMapLoadingPresentation,
+  useExplorerMapPaintSettlement,
+  usePublishedExplorerMapFrame,
+} from "@/features/ux-reset/review/use-explorer-map-loading";
 import {
   knownEmptyMapSelection,
   observationGate,
@@ -130,11 +149,7 @@ const AtlasMap = dynamic(
     return mod.AtlasMap;
   },
   {
-    loading: () => (
-      <AtlasStatusMessage className="map-loading" tone="loading">
-        Loading map…
-      </AtlasStatusMessage>
-    ),
+    loading: () => null,
     ssr: false,
   }
 );
@@ -365,6 +380,26 @@ export function ReviewOperatingPicture({
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
+  const [returnFocusMount, setReturnFocusMount] = useState(
+    captureReviewReturnFocusMount
+  );
+  const [returnFocusWasParked, setReturnFocusWasParked] = useState(
+    freezeCountySelection
+  );
+  let activeReturnMount = returnFocusMount;
+  if (returnFocusWasParked !== freezeCountySelection) {
+    setReturnFocusWasParked(freezeCountySelection);
+    if (returnFocusWasParked && !freezeCountySelection) {
+      activeReturnMount = reviewReturnFocusMountAfterPark(
+        returnFocusMount,
+        true
+      );
+      if (activeReturnMount !== returnFocusMount) {
+        setReturnFocusMount(activeReturnMount);
+      }
+    }
+  }
+  const mountedReturnToken = reviewReturnFocusTokenForMount(activeReturnMount);
 
   usePublishExploreCommittedNavigation({
     county: selectedFips || null,
@@ -459,12 +494,9 @@ export function ReviewOperatingPicture({
       ),
     [scoresQuery.data?.counties]
   );
-  const scoreLoadStatus =
-    !releaseId || scoresQuery.isError
-      ? "error"
-      : scoresQuery.isPending
-        ? "loading"
-        : "ready";
+  const scoreLoadStatus = releaseId
+    ? explorerScoresLoadStatus(scoresQuery)
+    : "error";
   const layerGates = useMemo(
     () =>
       explorerMapLayerGates({
@@ -512,11 +544,14 @@ export function ReviewOperatingPicture({
       ? applyGapScoreScenarioColors(governedCounties, scenarioByFips)
       : null;
     const scoresStatus = layer.needsScores
-      ? !releaseId || scoresQuery.isError
-        ? "error"
-        : scoresQuery.isPending
-          ? "loading"
-          : "ready"
+      ? releaseId
+        ? explorerScoresLoadStatus({
+            data: scoresQuery.data,
+            isError: scoresQuery.isError,
+            isFetching: scoresQuery.isFetching,
+            isPending: scoresQuery.isPending,
+          })
+        : "error"
       : "ready";
     const paint = paintExplorerMapLayer({
       counties: colored?.counties ?? governedCounties,
@@ -546,6 +581,7 @@ export function ReviewOperatingPicture({
     scoreLoadStatus,
     scoresQuery.data,
     scoresQuery.isError,
+    scoresQuery.isFetching,
     scoresQuery.isPending,
     selectedFips,
     sources,
@@ -595,6 +631,70 @@ export function ReviewOperatingPicture({
       }
     }
   }, [availableDataGate, inStateMapCounties]);
+  const paintRevision = explorerMapPaintRevision({
+    frameReady: explorerMapFrameReady({
+      availableDataKind: availableDataGate.kind,
+      geometryFailed: geometryQuery.isError,
+      geometryPending: Boolean(releaseId) && geometryQuery.isPending,
+      geometryPresent: Boolean(geometryQuery.data),
+    }),
+    frameSignature: explorerMapRenderedFrameSignature(mapCounties),
+    layerId: mapPaint.layerId,
+    paintKind: mapPaint.kind,
+    releaseId: releaseId ?? "",
+    scope: scopeCode,
+  });
+  const publishedMap = usePublishedExplorerMapFrame(paintRevision, mapCounties);
+  const { onPaintSettled, settledRevision } = useExplorerMapPaintSettlement(
+    publishedMap.revision
+  );
+  const mapRequestKey = `${scopeCode}:${releaseId ?? ""}:${mapLayer}`;
+  const [failedMapRequest, setFailedMapRequest] = useState<string | null>(null);
+  const mapFailed = failedMapRequest === mapRequestKey;
+  const queryClient = useQueryClient();
+  const activeObservation = isExplorerObservationLayer(mapLayer)
+    ? observations[mapLayer]
+    : null;
+  const layerFailed =
+    mapFailed ||
+    activeObservation?.status === "error" ||
+    (explorerMapLayerById(mapLayer).needsScores &&
+      Boolean(releaseId) &&
+      scoresQuery.isError &&
+      !scoresQuery.isFetching);
+  const mapLoading = useExplorerMapLoadingPresentation({
+    mode: explorerMapLoadingMode({
+      confirmedEmptyFrame: paintRevision !== null && mapCounties.length === 0,
+      deferToOtherLoader:
+        availableDataGate.kind === "loading" ||
+        availableDataGate.kind === "error",
+      geometryFailed: geometryQuery.isError,
+      geometryPending: Boolean(releaseId) && geometryQuery.isPending,
+      layerFailed,
+      // Construction failure is included in layerFailed so this viewport shows
+      // Retry. The national picture owns that case with its own status message.
+      mapFailed: false,
+      paintKind: mapPaint.kind,
+      publishedRevision: publishedMap.revision,
+      settledRevision,
+    }),
+    requestKey: mapRequestKey,
+  });
+  const retryMapLayer = useCallback(() => {
+    if (mapFailed) {
+      setFailedMapRequest(null);
+      return;
+    }
+    if (isExplorerObservationLayer(mapLayer)) {
+      void queryClient.refetchQueries({
+        queryKey: ["ux-reset-explorer-map-observations", releaseId, mapLayer],
+      });
+      return;
+    }
+    if (explorerMapLayerById(mapLayer).needsScores) {
+      void scoresQuery.refetch();
+    }
+  }, [mapFailed, mapLayer, queryClient, releaseId, scoresQuery]);
   const [fitSignal, setFitSignal] = useState(0);
   const selectCounty = useCallback(
     (fips: string, _surface: GeographySelectionSurface) => {
@@ -646,56 +746,16 @@ export function ReviewOperatingPicture({
       ...buildReviewInvestigateHandoff(source),
     };
   }, [period, releaseId, scopeCode, searchKey, selectedFips]);
-  const returnFocusMatches =
-    /^\d{5}$/.test(selectedFips) && reviewReturnFocusMatches(selectedFips);
-  if (returnFocusMatches && latchedReturnFips !== selectedFips) {
-    setLatchedReturnFips(selectedFips);
-  } else if (
-    !returnFocusMatches &&
-    latchedReturnFips !== null &&
-    latchedReturnFips !== selectedFips
-  ) {
-    setLatchedReturnFips(null);
+  const returnFocus = resolveReviewReturnFocus({
+    latchedFips: latchedReturnFips,
+    mountedToken: mountedReturnToken,
+    selectedFips,
+    urlCounty: county ?? "",
+  });
+  if (returnFocus.latch !== latchedReturnFips) {
+    setLatchedReturnFips(returnFocus.latch);
   }
-  const focusReturnedCounty =
-    returnFocusMatches || latchedReturnFips === selectedFips;
-  // County evidence keeps this picture mounted but parked. A focus call there
-  // does not move the keyboard, and consuming the target would skip the
-  // visible browse surface when the user comes back.
-  useLayoutEffect(() => {
-    if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
-      return;
-    }
-    const row = layoutRef.current?.querySelector<HTMLButtonElement>(
-      `button[data-fips="${selectedFips}"]`
-    );
-    if (row) {
-      const list = row.closest(".ux-reset-review-candidate-list");
-      const alignRow = () => {
-        if (!(list instanceof HTMLElement) || !row.isConnected) {
-          return;
-        }
-        alignCandidateRow(list, row);
-      };
-      alignRow();
-      row.focus({ preventScroll: true });
-      const fips = selectedFips;
-      requestAnimationFrame(() => {
-        const current = layoutRef.current?.querySelector<HTMLButtonElement>(
-          `button[data-fips="${fips}"]`
-        );
-        const currentList = current?.closest(".ux-reset-review-candidate-list");
-        if (
-          !(current instanceof HTMLButtonElement) ||
-          !(currentList instanceof HTMLElement)
-        ) {
-          return;
-        }
-        alignCandidateRow(currentList, current);
-      });
-    }
-    consumeReviewReturnFocus(selectedFips);
-  }, [focusReturnedCounty, freezeCountySelection, selectedFips]);
+  const focusReturnedCounty = returnFocus.focus;
 
   const geometryError = Boolean(geometryQuery.isError);
   const countyQueryText = countyQuery.trim().toLowerCase();
@@ -760,6 +820,74 @@ export function ReviewOperatingPicture({
     () => new Set(candidates.map((candidate) => candidate.countyFips)),
     [candidates]
   );
+  const selectedReturnRank =
+    rankedRows.find((row) => row.fips === selectedFips)?.rank ?? null;
+  // County evidence keeps this picture mounted but parked. A focus call there
+  // does not move the keyboard, and consuming the target would skip the
+  // visible browse surface when the user comes back. Rank is part of the
+  // dependency because a county moves from the unscored list into the ranked
+  // list when scores arrive, and that move replaces the focused button.
+  useLayoutEffect(() => {
+    if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
+      return;
+    }
+    const root = layoutRef.current;
+    if (!root) {
+      return;
+    }
+    const fips = selectedFips;
+    const rowSelector =
+      selectedReturnRank === null
+        ? `button[data-fips="${fips}"]:not([data-rank])`
+        : `button[data-fips="${fips}"][data-rank="${selectedReturnRank}"]`;
+    let focusedNode: HTMLButtonElement | null = null;
+    const findRow = () => root.querySelector<HTMLButtonElement>(rowSelector);
+    const alignRow = (row: HTMLButtonElement) => {
+      const list = row.closest(".ux-reset-review-candidate-list");
+      if (!(list instanceof HTMLElement) || !row.isConnected) {
+        return;
+      }
+      alignCandidateRow(list, row);
+    };
+    // The published directory can drop for a render and replace this button
+    // without changing the URL county. Reclaim focus only when that node is
+    // gone, so a later Tab away from the row still sticks.
+    const focusReturnedRow = () => {
+      const row = findRow();
+      if (!row) {
+        return;
+      }
+      const previousGone = focusedNode !== null && !focusedNode.isConnected;
+      if (
+        document.activeElement !== row &&
+        (focusedNode === null || previousGone || focusedNode !== row)
+      ) {
+        alignRow(row);
+        row.focus({ preventScroll: true });
+        focusedNode = row;
+      }
+    };
+    focusReturnedRow();
+    const consumeFrame = requestAnimationFrame(() => {
+      const row = findRow();
+      if (!(row && document.activeElement === row)) {
+        return;
+      }
+      alignRow(row);
+      consumeReviewReturnFocus(fips);
+    });
+    const observer = new MutationObserver(focusReturnedRow);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => {
+      cancelAnimationFrame(consumeFrame);
+      observer.disconnect();
+    };
+  }, [
+    focusReturnedCounty,
+    freezeCountySelection,
+    selectedFips,
+    selectedReturnRank,
+  ]);
   const visibleCandidateCount = rankedRows.length;
   useEffect(() => {
     if (freezeCountySelection || !selectedFips || visibleCandidateCount === 0) {
@@ -923,10 +1051,12 @@ export function ReviewOperatingPicture({
             data-selected-fips={selectedFips}
             data-testid="review-state-map-region"
             aria-busy={
+              mapLoading.busy ||
               availableDataGate.kind === "loading" ||
               geometryPending ||
               (geometryReady &&
                 hasMapCounties &&
+                !mapFailed &&
                 settledMapContext !== mapContext)
             }
           >
@@ -942,21 +1072,32 @@ export function ReviewOperatingPicture({
                   {EXPLORER_AVAILABLE_DATA_ERROR}
                 </p>
               </AtlasStatusMessage>
-            ) : geometryReady && hasMapCounties ? (
-              <AtlasMap
-                key={mapContext}
-                ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
-                cameraFrameState={scopeCode}
-                fitSignal={fitSignal}
-                geometry={geometryQuery.data as never}
-                includeUnscoredCounties={availableDataGate.kind === "open"}
-                neutralCountyBoundaries={mapLayer === "boundaries"}
-                scores={mapCounties}
-                selectedFips={selectedFips}
-                selectedState={scopeCode}
-                onSelect={selectCounty}
-                onIdle={() => setSettledMapContext(mapContext)}
-              />
+            ) : geometryReady && hasMapCounties && !mapFailed ? (
+              <ExplorerMapSurface
+                blockMap={mapLoading.blockMap}
+                onPaintSettled={onPaintSettled}
+                revision={publishedMap.revision}
+              >
+                <AtlasMap
+                  key={mapContext}
+                  ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
+                  cameraFrameState={scopeCode}
+                  fitSignal={fitSignal}
+                  geometry={geometryQuery.data as never}
+                  includeUnscoredCounties={availableDataGate.kind === "open"}
+                  neutralCountyBoundaries={mapLayer === "boundaries"}
+                  paintRevision={publishedMap.revision ?? undefined}
+                  scores={publishedMap.frame}
+                  selectedFips={selectedFips}
+                  selectedState={scopeCode}
+                  onError={() => {
+                    setFailedMapRequest(mapRequestKey);
+                  }}
+                  onIdle={() => setSettledMapContext(mapContext)}
+                  onPaintSettled={onPaintSettled}
+                  onSelect={selectCounty}
+                />
+              </ExplorerMapSurface>
             ) : geometryError ? (
               <AtlasStatusMessage
                 className="map-loading"
@@ -993,15 +1134,11 @@ export function ReviewOperatingPicture({
                   No county shapes were returned to draw for this result.
                 </p>
               </AtlasStatusMessage>
-            ) : (
-              <AtlasStatusMessage
-                className="map-loading"
-                data-testid="review-state-map-loading"
-                tone="loading"
-              >
-                Loading map…
-              </AtlasStatusMessage>
-            )}
+            ) : null}
+            <ExplorerMapLoadingOverlay
+              view={mapLoading.overlay}
+              onRetry={retryMapLayer}
+            />
           </div>
           <ExplorerMapLegend
             key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}

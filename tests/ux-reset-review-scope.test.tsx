@@ -2743,6 +2743,46 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("does not consume return focus until a later Review mount", async () => {
+    const selected = reviewScopeScoresFixture.counties[0];
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const panel = (
+      <QueryClientProvider client={client}>
+        <ReviewStatePanel
+          county={selected.fips}
+          mapCounties={[selected]}
+          period="2023-01-01"
+          rankedCounties={[selected]}
+          releaseId="alpha-2026"
+          scopeCode="CO"
+        />
+      </QueryClientProvider>
+    );
+    const view = render(panel);
+    markReviewReturnFocus(selected.fips);
+    view.rerender(panel);
+    expect(sessionStorage.getItem("ux-reset-review-return-focus")).toBe(
+      selected.fips
+    );
+    expect(
+      document.activeElement instanceof HTMLElement
+        ? (document.activeElement.dataset.fips ?? null)
+        : null
+    ).toBeNull();
+
+    view.unmount();
+    render(panel);
+    await waitFor(() => {
+      const focused = document.activeElement;
+      expect(focused instanceof HTMLElement ? focused.dataset.fips : null).toBe(
+        selected.fips
+      );
+    });
+    expect(sessionStorage.getItem("ux-reset-review-return-focus")).toBeNull();
+  });
+
   it("previews a map selection without leaving Review", async () => {
     const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
     vi.mocked(scoresV1AtlasScoresGet).mockResolvedValue({

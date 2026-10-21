@@ -27,6 +27,9 @@ vi.mock(
           on() {
             return this;
           },
+          triggerRepaint() {
+            return this;
+          },
           remove() {
             // no-op
           },
