@@ -65,6 +65,11 @@ async function installPublishedReview(page: Page) {
           ...reviewScopeScoresFixture.counties[0],
           ...entry,
           state_name: entry.stateName,
+          // The score mark reads the published map color from this collection.
+          // County detail overrides do not change that chip or its category.
+          ...(publishedColor !== null && entry.fips === "01003"
+            ? { color: publishedColor }
+            : {}),
         })),
       },
     });
