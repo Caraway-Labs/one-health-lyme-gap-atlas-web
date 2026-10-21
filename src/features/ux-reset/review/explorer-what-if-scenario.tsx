@@ -1,16 +1,8 @@
 "use client";
 
-import { Info } from "lucide-react";
-
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   adjustCountyScenarios,
   SCENARIO_CONTROL_RANGES,
@@ -24,6 +16,7 @@ import {
   isLower48ReviewScope,
 } from "@/features/ux-reset/review/review-state-fips";
 import type { CountyScoreSummary } from "@/generated/models";
+import { countyScoreSummaryScoringMethodologyVersionDefault } from "@/generated/zod/countyScoreSummary.zod";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 
 const LIMITED_SCENARIO_REASON =
@@ -31,34 +24,74 @@ const LIMITED_SCENARIO_REASON =
 
 const SAFETY_FINDING_SUFFIX = " — Not a safety finding";
 
-export const EXPLORER_SCENARIO_HEADING = "Explore different scenarios";
+const PUBLISHED_HUMAN_STATUS = "published_count_floor";
+
+export const EXPLORER_SCENARIO_HEADING = "Explore scoring assumptions";
 
 export const EXPLORER_SCENARIO_INTRO =
-  "See how different assumptions change which counties may warrant additional surveillance review.";
+  "Adjust the assumptions. See how county scores and rankings change.";
 
-export const EXPLORER_SCENARIO_EXAMPLE =
-  "Try exploring: What if tick and pathogen data carried more weight?";
+export const EXPLORER_SCENARIO_FOOTER =
+  "Changes are for exploration and do not alter published results. The score supports surveillance review; it does not estimate individual infection risk.";
 
-export const EXPLORER_SCENARIO_RECALCULATION =
-  "Changes to these settings recalculate county scores for exploration. They appear in the county list and Atlas score map but do not change published results.";
+export const EXPLORER_SCENARIO_WEIGHT_LABEL = "Tick and pathogen weight";
 
-export const EXPLORER_SCENARIO_WEIGHT_NOTE =
-  "This share of the context blend is tick and pathogen data. Community context is social vulnerability, insurance access, and rurality.";
+export const EXPLORER_SCENARIO_WEIGHT_DESCRIPTION =
+  "Give tick and pathogen data more influence, or give community context more influence.";
 
-export const EXPLORER_SCENARIO_WEIGHT_TOOLTIP =
-  "Reported Lyme disease data is a separate multiplier. It is not part of these two percentages. Tick status is 60% of the tick-and-pathogen signal and pathogen presence is 40%. Those shares stay fixed. Community context is 50% social vulnerability, 30% uninsured share, and 20% rurality. The published default is 65% tick and pathogen data and 35% community context.";
+export const EXPLORER_SCENARIO_INCIDENCE_LABEL = "Effect of reported incidence";
 
-export const EXPLORER_SCENARIO_RATE_NOTE =
-  "Smooth attenuation k; the published v1.1 default is 50.";
+export const EXPLORER_SCENARIO_INCIDENCE_DESCRIPTION =
+  "Higher reported incidence lowers the score. Choose how strongly it lowers it.";
 
-export const EXPLORER_SCENARIO_RATE_TOOLTIP =
-  "The human term is 100 / (1 + I / k), using the published 2023 minimum reported incidence. At I=k the term is 50; higher incidence reduces it smoothly. The governed default is k=50. Scenario adjustments do not change published results.";
+export const EXPLORER_SCENARIO_MISSING_LABEL = "Missing county case data";
 
-export const EXPLORER_SCENARIO_MISSING_NOTE =
-  "Used when a county has no published case count.";
+export const EXPLORER_SCENARIO_MISSING_DESCRIPTION =
+  "Choose the assumed human disease component when published case data are unavailable.";
 
-export const EXPLORER_SCENARIO_MISSING_TOOLTIP =
-  "Legacy H=75 is an assumption for missing county human observations, not an observed rate or an incidence estimate. Published numeric zero gives H=100. Smooth attenuation has no hard incidence cutoff.";
+export const EXPLORER_SCENARIO_MISSING_SUPPORT =
+  "Can affect other counties and their rankings. This is not an estimated case count.";
+
+export const EXPLORER_SCENARIO_MISSING_INACTIVE = "Does not affect this county";
+
+export const EXPLORER_SCENARIO_DEFAULT_STATUS =
+  "No change · Using default settings";
+
+export const EXPLORER_SCENARIO_UNCHANGED_STATUS =
+  "No score change for this county · Scenario settings";
+
+export const EXPLORER_SCENARIO_FORMULA = `Score = (H / 100) × [w × E + (1 − w) × C]
+H = 100 / (1 + I / k), when published incidence is available
+H = missing-data assumption, otherwise
+E = 0.60 × T + 0.40 × P
+C = 0.50 × S + 0.30 × U + 0.20 × R`;
+
+const SCENARIO_TOPICS = [
+  {
+    body: "The score combines tick and pathogen data with community context, then adjusts that combination using reported Lyme disease incidence. Higher reported incidence lowers the gap review score gradually.",
+    title: "What the score combines",
+  },
+  {
+    body: "Your changes update scores and rankings in the county list. Map colors update when the Gap review score layer is selected. Other map layers keep their published values.",
+    title: "What updates on the page",
+  },
+  {
+    body: "In a state view, the scenario applies to counties in that state. In the United States view, it applies to the lower 48 states and Washington, DC. A county’s score stays the same if your adjustment does not affect its calculation.",
+    title: "Which counties are included",
+  },
+  {
+    body: "Counties without published case data use the missing-data assumption. If required inputs are unavailable, an adjusted score may not be shown. Missing data are not treated as zero cases.",
+    title: "When data are missing",
+  },
+  {
+    body: "The page address includes your settings, so you can share the scenario. Changes are not saved as published results. Select Reset defaults to return to the published scoring settings.",
+    title: "Sharing and resetting",
+  },
+  {
+    body: "The score supports surveillance review. It does not estimate infections or individual risk. These adjustments do not change the separate machine-learning surveillance-priority results.",
+    title: "How to interpret the result",
+  },
+] as const;
 
 export type ExplorerWhatIfImpactState =
   | { status: "none" }
@@ -73,8 +106,12 @@ export type ExplorerWhatIfImpactState =
        */
       assumptionsChanged: boolean;
       countyName: string;
+      /** Set for the United States view, where the county name is not unique. */
+      countyState?: string;
       governedPriority: string;
       governedScore: number;
+      /** True only when this county has a published incidence value. */
+      publishedIncidence?: boolean;
       scenario: AdjustedCountyScenario | null;
       status: "ready";
     };
@@ -137,6 +174,54 @@ export function formatExplorerScenarioDelta(deltaPoints: number): string {
   }
   const absolute = Math.abs(rounded).toFixed(1);
   return rounded > 0 ? `+${absolute} points` : `\u2212${absolute} points`;
+}
+
+/** Comparison-strip status for a moved slider. Zero stays a no-change sentence. */
+export function formatExplorerScenarioChangeStatus(
+  deltaPoints: number
+): string {
+  const delta = formatExplorerScenarioDelta(deltaPoints);
+  if (delta === "0.0 points") {
+    return "No score change for this county";
+  }
+  return `${delta.replace(" points", "")} points from published score`;
+}
+
+/**
+ * Display name for the supported scoring method.
+ * The version comes from the scores contract, not a separate label.
+ */
+export function surveillanceGapScoreVersionLabel(
+  methodologyVersion: string = countyScoreSummaryScoringMethodologyVersionDefault
+): string {
+  const match = /^surveillance-gap-score-v(?<version>\d+(?:\.\d+)*)$/.exec(
+    methodologyVersion
+  );
+  const version = match?.groups?.version;
+  if (!version) {
+    return methodologyVersion;
+  }
+  return `Surveillance Gap Score v${version}`;
+}
+
+function countyHasPublishedIncidence(county: CountyScoreSummary): boolean {
+  return (
+    county.human_status === PUBLISHED_HUMAN_STATUS &&
+    typeof county.incidence_floor_2023 === "number" &&
+    Number.isFinite(county.incidence_floor_2023) &&
+    county.incidence_floor_2023 >= 0
+  );
+}
+
+function settingsStatus(settings: ScoreSettings): string {
+  return `Tick / pathogen weight ${settings.ecological_share}% · Incidence setting ${settings.smooth_k} per 100,000 · Missing-data component ${settings.missing_human_weakness} out of 100`;
+}
+
+function countyIdentity(name: string, state: string | undefined): string {
+  if (!state) {
+    return name;
+  }
+  return `${name}, ${state}`;
 }
 
 /** Panel display name for an Atlas score band. Classification strings stay unchanged. */
@@ -234,8 +319,10 @@ export function resolveExplorerWhatIfImpact(input: {
   return {
     assumptionsChanged: !scenarioSettingsEqual(input.settings, baseline),
     countyName: selected.county.trim() || "Selected county",
+    countyState: input.scopeCode === "ALL" ? selected.state : undefined,
     governedPriority: selected.priority.trim(),
     governedScore: selected.score.score,
+    publishedIncidence: countyHasPublishedIncidence(selected),
     scenario: scenarios?.get(selected.fips) ?? null,
     status: "ready",
   };
@@ -326,12 +413,16 @@ function definiteScenarioImpact(input: {
   resultKind: "adjusted" | "unchanged";
 }): ExplorerScenarioImpactView {
   const deltaPoints = Number(input.adjustedLabel) - Number(input.governedLabel);
-  const deltaLabel = formatExplorerScenarioDelta(deltaPoints);
+  const deltaLabel = formatExplorerScenarioChangeStatus(deltaPoints);
+  const collapsed =
+    deltaLabel === "No score change for this county"
+      ? EXPLORER_SCENARIO_UNCHANGED_STATUS
+      : `${deltaLabel} · Scenario settings`;
   return {
-    accessibleLead: "Published Atlas score to the score with your changes.",
+    accessibleLead: "Published score to the score with your changes.",
     adjustedLabel: input.adjustedLabel,
     adjustedPriority: input.adjustedPriority,
-    collapsed: `${input.governedLabel} → ${input.adjustedLabel} · ${deltaLabel}`,
+    collapsed,
     countyName: input.countyName,
     deltaLabel,
     governedLabel: input.governedLabel,
@@ -352,7 +443,7 @@ function presentReadyImpact(
   if (impact.scenario === null) {
     if (!impact.assumptionsChanged) {
       return {
-        collapsed: `Published Atlas score ${governedLabel} · No adjustments`,
+        collapsed: EXPLORER_SCENARIO_DEFAULT_STATUS,
         countyName: impact.countyName,
         governedLabel,
         governedPriority: impact.governedPriority,
@@ -371,7 +462,7 @@ function presentReadyImpact(
   switch (impact.scenario.kind) {
     case "limited": {
       return {
-        collapsed: `Published Atlas score ${governedLabel} · Score with your changes unavailable`,
+        collapsed: "Score with your changes unavailable",
         countyName: impact.countyName,
         governedLabel,
         governedPriority: impact.governedPriority,
@@ -435,40 +526,89 @@ export function presentExplorerScenarioImpact(
   }
 }
 
-type ScenarioControlProps = {
+type ScenarioSliderProps = {
+  description: string;
+  endLabels: readonly [string, string];
   label: string;
   max: number;
   min: number;
-  note: string;
   onChange: (value: number) => void;
+  quietNote?: string;
   step: number;
-  technical: string;
-  valueLabel: string;
+  supporting?: string;
   value: number;
-  weightShare?: number;
+  valueAnnouncement: string;
+  valueDetail: string;
+  valueText: string;
 };
 
-function weightValueLabel(share: number): string {
-  return `${share}% tick and pathogen data, ${100 - share}% community context`;
-}
-
-function WeightValue({ share }: { share: number }) {
+function ScenarioSlider({
+  description,
+  endLabels,
+  label,
+  max,
+  min,
+  onChange,
+  quietNote,
+  step,
+  supporting,
+  value,
+  valueAnnouncement,
+  valueDetail,
+  valueText,
+}: ScenarioSliderProps) {
+  const slug = label.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const descriptionId = `explorer-scenario-${slug}-description`;
+  const controlId = `explorer-scenario-${slug}-control`;
   return (
-    <strong>
-      {share}% tick and pathogen data
-      <br />
-      {100 - share}% community context
-    </strong>
+    <div className="ux-reset-explorer-scenario-control">
+      <div className="ux-reset-explorer-scenario-control-copy">
+        <label htmlFor={controlId}>{label}</label>
+        <p id={descriptionId}>{description}</p>
+        {supporting ? <p>{supporting}</p> : null}
+        {quietNote ? (
+          <p
+            className="ux-reset-explorer-scenario-quiet"
+            data-testid="explorer-scenario-missing-applicability"
+          >
+            {quietNote}
+          </p>
+        ) : null}
+      </div>
+      <div className="ux-reset-explorer-scenario-control-input">
+        <p className="ux-reset-explorer-scenario-value">
+          <strong>{valueText}</strong>
+          <span>{valueDetail}</span>
+        </p>
+        <Slider
+          aria-describedby={descriptionId}
+          aria-label={label}
+          aria-valuetext={valueAnnouncement}
+          id={controlId}
+          max={max}
+          min={min}
+          step={step}
+          value={value}
+          onChange={(event) => {
+            onChange(Number(event.target.value));
+          }}
+        />
+        <div className="ux-reset-explorer-scenario-ends">
+          <span>{endLabels[0]}</span>
+          <span>{endLabels[1]}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function ImpactScoreCell({
-  detail,
+function ScoreFigure({
   label,
+  numeric,
   value,
 }: {
-  detail?: string;
   label: string;
+  numeric: boolean;
   value: string;
 }) {
   return (
@@ -476,7 +616,7 @@ function ImpactScoreCell({
       <dt>{label}</dt>
       <dd>
         <strong>{value}</strong>
-        {detail ? <span>{detail}</span> : null}
+        {numeric ? <span>out of 100</span> : null}
       </dd>
     </div>
   );
@@ -487,9 +627,8 @@ function ScenarioImpactSummary({ view }: { view: ExplorerScenarioImpactView }) {
     return null;
   }
   return (
-    <span
+    <p
       className="ux-reset-explorer-scenario-impact-summary"
-      data-impact={view.kind === "placeholder" ? view.placeholder : view.kind}
       data-testid="explorer-scenario-impact-summary"
     >
       {view.kind === "definite" ? (
@@ -501,11 +640,43 @@ function ScenarioImpactSummary({ view }: { view: ExplorerScenarioImpactView }) {
         </span>
       ) : null}
       {view.collapsed}
-    </span>
+    </p>
   );
 }
 
-function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
+function adjustedScoreFigure(view: ExplorerScenarioImpactView): {
+  numeric: boolean;
+  value: string;
+} {
+  switch (view.kind) {
+    case "baseline": {
+      return { numeric: true, value: view.governedLabel };
+    }
+    case "definite": {
+      return { numeric: true, value: view.adjustedLabel };
+    }
+    case "limited": {
+      return { numeric: false, value: "Unavailable" };
+    }
+    case "pending":
+    case "error":
+    case "placeholder": {
+      return { numeric: false, value: "" };
+    }
+    default: {
+      const exhaustive: never = view;
+      return exhaustive;
+    }
+  }
+}
+
+function ScenarioImpactDetails({
+  countyState,
+  view,
+}: {
+  countyState?: string;
+  view: ExplorerScenarioImpactView;
+}) {
   switch (view.kind) {
     case "pending":
     case "error": {
@@ -513,93 +684,61 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
     }
     case "placeholder": {
       return (
-        <p
+        <section
+          aria-labelledby="explorer-scenario-impact-heading"
+          className="ux-reset-explorer-scenario-impact"
           data-impact={view.placeholder}
           data-testid="explorer-scenario-impact"
         >
-          {view.expanded}
-        </p>
-      );
-    }
-    case "baseline": {
-      return (
-        <section
-          aria-labelledby="explorer-scenario-impact-heading"
-          className="ux-reset-explorer-scenario-impact"
-          data-impact="baseline"
-          data-testid="explorer-scenario-impact"
-        >
-          <h2 id="explorer-scenario-impact-heading">
-            How the changes affect {view.countyName}
-          </h2>
-          <dl className="ux-reset-explorer-scenario-impact-scores">
-            <ImpactScoreCell
-              detail={followUpCategoryLabel(view.governedPriority)}
-              label="Published Atlas score"
-              value={view.governedLabel}
-            />
-            <ImpactScoreCell
-              label="Score with your changes"
-              value="No adjustments"
-            />
-          </dl>
+          <h3 id="explorer-scenario-impact-heading">Gap review score</h3>
+          <ScenarioImpactSummary view={view} />
+          {view.expanded === view.collapsed ? null : <p>{view.expanded}</p>}
         </section>
       );
     }
-    case "definite": {
-      return (
-        <section
-          aria-labelledby="explorer-scenario-impact-heading"
-          className="ux-reset-explorer-scenario-impact"
-          data-impact={view.resultKind}
-          data-testid="explorer-scenario-impact"
-        >
-          <h2 id="explorer-scenario-impact-heading">
-            How the changes affect {view.countyName}
-          </h2>
-          <dl className="ux-reset-explorer-scenario-impact-scores">
-            <ImpactScoreCell
-              label="Published Atlas score"
-              value={view.governedLabel}
-            />
-            <ImpactScoreCell
-              label="Score with your changes"
-              value={view.adjustedLabel}
-            />
-            <ImpactScoreCell label="Change in points" value={view.deltaLabel} />
-          </dl>
-          <p
-            className="ux-reset-explorer-scenario-impact-priority"
-            data-testid="explorer-scenario-category"
-          >
-            {view.priorityText}
-          </p>
-        </section>
-      );
-    }
+    case "baseline":
+    case "definite":
     case "limited": {
+      const adjusted = adjustedScoreFigure(view);
+      const categoryLabel = followUpCategoryLabel(view.governedPriority);
       return (
         <section
           aria-labelledby="explorer-scenario-impact-heading"
           className="ux-reset-explorer-scenario-impact"
-          data-impact="limited"
+          data-impact={view.kind === "definite" ? view.resultKind : view.kind}
           data-testid="explorer-scenario-impact"
         >
-          <h2 id="explorer-scenario-impact-heading">
-            How the changes affect {view.countyName}
-          </h2>
-          <dl className="ux-reset-explorer-scenario-impact-scores">
-            <ImpactScoreCell
-              detail={followUpCategoryLabel(view.governedPriority)}
-              label="Published Atlas score"
-              value={view.governedLabel}
+          <h3 id="explorer-scenario-impact-heading">Gap review score</h3>
+          <p className="ux-reset-explorer-scenario-impact-county">
+            {countyIdentity(view.countyName, countyState)}
+          </p>
+          <div className="ux-reset-explorer-scenario-impact-scores">
+            <dl>
+              <ScoreFigure
+                label="Published score"
+                numeric
+                value={view.governedLabel}
+              />
+            </dl>
+            <div
+              aria-hidden="true"
+              className="ux-reset-explorer-scenario-impact-arrow"
             />
-            <ImpactScoreCell
-              detail={view.reason}
-              label="Score with your changes"
-              value="Unavailable"
-            />
-          </dl>
+            <dl>
+              <ScoreFigure
+                label="Score with your changes"
+                numeric={adjusted.numeric}
+                value={adjusted.value}
+              />
+            </dl>
+          </div>
+          <ScenarioImpactSummary view={view} />
+          {view.kind === "limited" ? <p>{view.reason}</p> : null}
+          {view.kind === "definite" ? (
+            <p data-testid="explorer-scenario-category">{view.priorityText}</p>
+          ) : (
+            <p>{categoryLabel}</p>
+          )}
         </section>
       );
     }
@@ -610,112 +749,98 @@ function ScenarioImpactDetails({ view }: { view: ExplorerScenarioImpactView }) {
   }
 }
 
-function ScenarioControl({
-  label,
-  max,
-  min,
-  note,
-  onChange,
-  step,
-  technical,
-  value,
-  valueLabel,
-  weightShare,
-}: ScenarioControlProps) {
-  const noteId = `explorer-scenario-${label.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase()}`;
-  const controlId = `${noteId}-control`;
+function ScenarioExplanation() {
   return (
-    <div className="ux-reset-explorer-scenario-control">
-      <div className="ux-reset-explorer-scenario-control-label">
-        <label htmlFor={controlId}>{label}</label>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                aria-label={`Technical note for ${label}`}
-                className="ux-reset-explorer-scenario-info"
-                size="icon-xs"
-                type="button"
-                variant="ghost"
-              />
-            }
-          >
-            <Info />
-          </TooltipTrigger>
-          <TooltipContent
-            className="max-w-sm text-left whitespace-normal"
-            side="top"
-          >
-            {technical}
-          </TooltipContent>
-        </Tooltip>
+    <details
+      className="ux-reset-explorer-scenario-disclosure"
+      data-testid="explorer-scenario-methods"
+      open
+    >
+      <summary>How these scenarios work</summary>
+      <div className="ux-reset-explorer-scenario-topics">
+        {SCENARIO_TOPICS.map((topic) => (
+          <section key={topic.title}>
+            <h4>{topic.title}</h4>
+            <p>{topic.body}</p>
+          </section>
+        ))}
       </div>
-      {weightShare === undefined ? (
-        <strong>{valueLabel}</strong>
-      ) : (
-        <WeightValue share={weightShare} />
-      )}
-      <Slider
-        aria-describedby={noteId}
-        aria-label={label}
-        aria-valuetext={valueLabel}
-        id={controlId}
-        max={max}
-        min={min}
-        step={step}
-        value={value}
-        onChange={(event) => {
-          onChange(Number(event.target.value));
-        }}
-      />
-      <small id={noteId}>{note}</small>
-    </div>
+    </details>
   );
 }
 
-function ScenarioMethods() {
+function ScenarioEquation() {
+  const defaults = SCENARIO_SCORE_DEFAULTS;
   return (
     <details
-      className="ux-reset-explorer-scenario-methods"
-      data-testid="explorer-scenario-methods"
+      className="ux-reset-explorer-scenario-disclosure"
+      data-testid="explorer-scenario-equation"
     >
-      <summary>How these scenarios work</summary>
-      <div className="ux-reset-explorer-scenario-methods-body">
+      <summary>View the equation and technical details</summary>
+      <div className="ux-reset-explorer-scenario-equation-body">
         <p>
-          The score multiplies a case-data term by a blend of tick and pathogen
-          data and community context. The weight slider sets that blend.
-          Reported Lyme disease data supplies the case-data term.
+          <strong>{surveillanceGapScoreVersionLabel()}</strong>
         </p>
         <p>
-          The rate reference point scales a published county rate onto the
-          case-data term. It is a scoring reference. Counties at or above the
-          reference point do not get a higher score from low case data.
+          {`Tick/pathogen weight ${defaults.ecological_share}%; k = ${defaults.smooth_k} per 100,000; missing-data component ${defaults.missing_human_weakness} out of 100.`}
         </p>
-        <p>
-          Counties without a published case count use the missing-data
-          assumption. If you raise the reference point and this view has no
-          published rate for a county whose case-data term is already 0, the
-          score with your changes is unavailable and the published Atlas score
-          stays.
+        <p className="ux-reset-explorer-scenario-formula">
+          {EXPLORER_SCENARIO_FORMULA}
         </p>
+        <dl className="ux-reset-explorer-scenario-definitions">
+          <div>
+            <dt>H</dt>
+            <dd>Human disease component.</dd>
+          </div>
+          <div>
+            <dt>I</dt>
+            <dd>
+              Published 2023 minimum incidence per 100,000 people. This is the
+              published minimum, not actual infection incidence.
+            </dd>
+          </div>
+          <div>
+            <dt>k</dt>
+            <dd>
+              Controls the incidence reduction. When incidence equals k, H is
+              50.
+            </dd>
+          </div>
+          <div>
+            <dt>w</dt>
+            <dd>
+              {`Tick and pathogen weight expressed as a fraction; ${(SCENARIO_SCORE_DEFAULTS.ecological_share / 100).toFixed(2)} by default.`}
+            </dd>
+          </div>
+          <div>
+            <dt>T</dt>
+            <dd>
+              Tick status: established = 100; reported = 55; unknown or no
+              records = 0. Unknown and No records stay distinct in the county
+              data. Both contribute zero in this formula.
+            </dd>
+          </div>
+          <div>
+            <dt>P</dt>
+            <dd>Pathogen status: present = 100; otherwise = 0.</dd>
+          </div>
+          <div>
+            <dt>S</dt>
+            <dd>SVI percentile × 100.</dd>
+          </div>
+          <div>
+            <dt>U</dt>
+            <dd>Uninsured percentile × 100.</dd>
+          </div>
+          <div>
+            <dt>R</dt>
+            <dd>(RUCC − 1) / 8 × 100, limited to 0–100.</dd>
+          </div>
+        </dl>
         <p>
-          On a state view, the county list updates for counties in that state.
-          On the United States view, it updates for counties in the lower 48
-          states and the District of Columbia. The Atlas score map updates
-          colors for those same counties while the Atlas gap score layer is
-          selected. Other map layers keep published colors. Counties the change
-          does not affect keep the published Atlas score.
-        </p>
-        <p>
-          These settings stay in the page address so you can share the scenario.
-          They are not saved as published Atlas results.
-        </p>
-        <p>
-          Follow-up categories are the Atlas score bands: Priority 1 —
-          Investigate at 70 and above, Priority 2 — Review from 50 to less than
-          70, Watch — Monitor signals from 30 to less than 50, and Lower Atlas
-          priority below 30. These bands are separate from Tier 1 ML
-          surveillance-priority labels.
+          Missing SVI or uninsured inputs contribute zero; missing RUCC is
+          treated as 1. Zero contribution does not mean absence. Scores use
+          unrounded components and are rounded to one decimal.
         </p>
       </div>
     </details>
@@ -736,6 +861,13 @@ export function ExplorerWhatIfScenario({
 }: ExplorerWhatIfScenarioProps) {
   const atDefaults = scenarioSettingsEqual(settings, SCENARIO_SCORE_DEFAULTS);
   const impactView = presentExplorerScenarioImpact(impact);
+  const countyState =
+    impact.status === "ready" ? impact.countyState : undefined;
+  const missingQuietNote =
+    impact.status === "ready" && impact.publishedIncidence
+      ? EXPLORER_SCENARIO_MISSING_INACTIVE
+      : undefined;
+  const communityShare = 100 - settings.ecological_share;
   return (
     <>
       {impact.status === "error" ? (
@@ -767,13 +899,12 @@ export function ExplorerWhatIfScenario({
         data-testid="explorer-what-if-scenario"
       >
         <summary data-testid="explorer-what-if-summary">
-          <span className="ux-reset-explorer-scenario-heading">
-            <span>{EXPLORER_SCENARIO_HEADING}</span>
-          </span>
-          <ScenarioImpactSummary view={impactView} />
+          <h2 className="ux-reset-explorer-scenario-heading">
+            {EXPLORER_SCENARIO_HEADING}
+          </h2>
           <span className="ux-reset-explorer-scenario-affordance">
             <span className="ux-reset-explorer-scenario-affordance-closed">
-              Adjust assumptions
+              Show assumptions
             </span>
             <span className="ux-reset-explorer-scenario-affordance-open">
               Hide assumptions
@@ -785,76 +916,89 @@ export function ExplorerWhatIfScenario({
           </span>
         </summary>
         <div className="ux-reset-explorer-scenario-body">
-          <p>{EXPLORER_SCENARIO_INTRO}</p>
-          <p
-            className="ux-reset-explorer-scenario-example"
-            data-testid="explorer-scenario-example"
-          >
-            {EXPLORER_SCENARIO_EXAMPLE}
+          <p className="ux-reset-explorer-scenario-intro">
+            {EXPLORER_SCENARIO_INTRO}
           </p>
-          <TooltipProvider delay={300}>
-            <div className="ux-reset-explorer-scenario-controls">
-              <ScenarioControl
-                label="Weight given to tick and pathogen data"
-                max={SCENARIO_CONTROL_RANGES.ecological_share.max}
-                min={SCENARIO_CONTROL_RANGES.ecological_share.min}
-                note={EXPLORER_SCENARIO_WEIGHT_NOTE}
-                step={SCENARIO_CONTROL_RANGES.ecological_share.step}
-                technical={EXPLORER_SCENARIO_WEIGHT_TOOLTIP}
-                value={settings.ecological_share}
-                valueLabel={weightValueLabel(settings.ecological_share)}
-                weightShare={settings.ecological_share}
-                onChange={(value) => {
-                  onChange({ ...settings, ecological_share: value });
-                }}
-              />
-              <ScenarioControl
-                label="Smooth incidence attenuation (k)"
-                max={SCENARIO_CONTROL_RANGES.smooth_k.max}
-                min={SCENARIO_CONTROL_RANGES.smooth_k.min}
-                note={EXPLORER_SCENARIO_RATE_NOTE}
-                step={SCENARIO_CONTROL_RANGES.smooth_k.step}
-                technical={EXPLORER_SCENARIO_RATE_TOOLTIP}
-                value={settings.smooth_k}
-                valueLabel={`${settings.smooth_k} per 100,000`}
-                onChange={(value) => {
-                  onChange({ ...settings, smooth_k: value });
-                }}
-              />
-              <ScenarioControl
-                label="Assumption for missing county case data"
-                max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
-                min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
-                note={EXPLORER_SCENARIO_MISSING_NOTE}
-                step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
-                technical={EXPLORER_SCENARIO_MISSING_TOOLTIP}
-                value={settings.missing_human_weakness}
-                valueLabel={String(settings.missing_human_weakness)}
-                onChange={(value) => {
-                  onChange({ ...settings, missing_human_weakness: value });
-                }}
-              />
-            </div>
-          </TooltipProvider>
-          <ScenarioImpactDetails view={impactView} />
+          <div className="ux-reset-explorer-scenario-settings">
+            <p data-testid="explorer-scenario-settings">
+              {settingsStatus(settings)}
+            </p>
+            <Button
+              data-testid="explorer-scenario-reset"
+              disabled={atDefaults}
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                onChange(SCENARIO_SCORE_DEFAULTS);
+              }}
+            >
+              Reset defaults
+            </Button>
+          </div>
+          <ScenarioImpactDetails countyState={countyState} view={impactView} />
+          <div className="ux-reset-explorer-scenario-controls">
+            <ScenarioSlider
+              description={EXPLORER_SCENARIO_WEIGHT_DESCRIPTION}
+              endLabels={[
+                "More community weight",
+                "More tick / pathogen weight",
+              ]}
+              label={EXPLORER_SCENARIO_WEIGHT_LABEL}
+              max={SCENARIO_CONTROL_RANGES.ecological_share.max}
+              min={SCENARIO_CONTROL_RANGES.ecological_share.min}
+              step={SCENARIO_CONTROL_RANGES.ecological_share.step}
+              value={settings.ecological_share}
+              valueAnnouncement={`${settings.ecological_share}% tick / pathogen, ${communityShare}% community`}
+              valueDetail={`${communityShare}% community`}
+              valueText={`${settings.ecological_share}% tick / pathogen`}
+              onChange={(value) => {
+                onChange({ ...settings, ecological_share: value });
+              }}
+            />
+            <ScenarioSlider
+              description={EXPLORER_SCENARIO_INCIDENCE_DESCRIPTION}
+              endLabels={["Stronger reduction", "Gentler reduction"]}
+              label={EXPLORER_SCENARIO_INCIDENCE_LABEL}
+              max={SCENARIO_CONTROL_RANGES.smooth_k.max}
+              min={SCENARIO_CONTROL_RANGES.smooth_k.min}
+              step={SCENARIO_CONTROL_RANGES.smooth_k.step}
+              value={settings.smooth_k}
+              valueAnnouncement={`${settings.smooth_k} per 100,000`}
+              valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.smooth_k}`}
+              valueText={`${settings.smooth_k} per 100,000`}
+              onChange={(value) => {
+                onChange({ ...settings, smooth_k: value });
+              }}
+            />
+            <ScenarioSlider
+              description={EXPLORER_SCENARIO_MISSING_DESCRIPTION}
+              endLabels={[
+                "Lower assumed component",
+                "Higher assumed component",
+              ]}
+              label={EXPLORER_SCENARIO_MISSING_LABEL}
+              max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
+              min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
+              quietNote={missingQuietNote}
+              step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
+              supporting={EXPLORER_SCENARIO_MISSING_SUPPORT}
+              value={settings.missing_human_weakness}
+              valueAnnouncement={`${settings.missing_human_weakness} out of 100`}
+              valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.missing_human_weakness}`}
+              valueText={`${settings.missing_human_weakness} out of 100`}
+              onChange={(value) => {
+                onChange({ ...settings, missing_human_weakness: value });
+              }}
+            />
+          </div>
+          <ScenarioExplanation />
+          <ScenarioEquation />
           <p
-            className="type-small ux-reset-explorer-scenario-impact-note"
-            data-testid="explorer-scenario-recalculation"
+            className="ux-reset-explorer-scenario-footer"
+            data-testid="explorer-scenario-footer"
           >
-            {EXPLORER_SCENARIO_RECALCULATION}
+            {EXPLORER_SCENARIO_FOOTER}
           </p>
-          <Button
-            data-testid="explorer-scenario-reset"
-            disabled={atDefaults}
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              onChange(SCENARIO_SCORE_DEFAULTS);
-            }}
-          >
-            Reset
-          </Button>
-          <ScenarioMethods />
         </div>
       </details>
     </>

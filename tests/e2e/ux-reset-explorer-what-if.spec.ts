@@ -137,17 +137,14 @@ test.describe("Explorer what-if scenario", () => {
     const panel = page.getByTestId("explorer-what-if-scenario");
     await expect(panel).toBeVisible();
     await expect(panel).not.toHaveAttribute("open", "");
-    await expect(panel).toContainText("Explore different scenarios");
+    await expect(panel).toContainText("Explore scoring assumptions");
     await expect(panel).not.toContainText("What-if scenario");
-    await expect(panel).toContainText("Adjust assumptions");
+    await expect(panel).toContainText("Show assumptions");
     await expect(page.getByRole("slider")).toHaveCount(0);
     await expect(page.getByTestId("review-candidate")).toContainText(
       "Published score 22.9"
     );
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
-    await expect(
-      page.getByTestId("explorer-scenario-impact-summary")
-    ).toContainText("Published Atlas score 22.9 · No adjustments");
     await page.screenshot({
       path: "test-results/what-if-collapsed.png",
       fullPage: true,
@@ -156,8 +153,14 @@ test.describe("Explorer what-if scenario", () => {
     const summary = page.getByTestId("explorer-what-if-summary");
     await summary.focus();
     await page.keyboard.press("Enter");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText("No change · Using default settings");
+    await expect(page.getByTestId("explorer-scenario-impact")).toContainText(
+      "22.9"
+    );
     const missing = page.getByRole("slider", {
-      name: "Assumption for missing county case data",
+      name: "Missing county case data",
     });
     await expect(missing).toBeVisible();
     await missing.focus();
@@ -183,11 +186,15 @@ test.describe("Explorer what-if scenario", () => {
     const impactSummary = page.getByTestId("explorer-scenario-impact-summary");
     await expect(
       page.getByTestId("explorer-scenario-impact-description")
-    ).toHaveText("Published Atlas score to the score with your changes.");
-    await expect(impactSummary).toContainText("22.9 → 12.2 · −10.7 points");
+    ).toHaveText("Published score to the score with your changes.");
+    await expect(impactSummary).toContainText(
+      "−10.7 points from published score"
+    );
+    await expect(impactSummary).toContainText("Scenario settings");
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("How the changes affect Conejos County");
-    await expect(impact).toContainText("Published Atlas score");
+    await expect(impact).toContainText("Gap review score");
+    await expect(impact).toContainText("Conejos County");
+    await expect(impact).toContainText("Published score");
     await expect(impact).toContainText("Score with your changes");
     await expect(impact).toContainText("12.2");
     await expect(impact).toContainText("−10.7 points");
@@ -220,10 +227,13 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
-    ).toContainText("Published Atlas score 22.9 · No adjustments");
+    ).toContainText("No change · Using default settings");
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
     ).not.toContainText("points");
+    await expect(page.getByTestId("explorer-scenario-impact")).toContainText(
+      "22.9"
+    );
     await expect(candidate).toContainText("Published score 22.9");
     await expect(missing).toHaveValue("75");
 
@@ -328,7 +338,7 @@ test.describe("Explorer what-if scenario", () => {
     const panel = page.getByTestId("explorer-what-if-scenario");
     await page.getByTestId("explorer-what-if-summary").click();
     const threshold = page.getByRole("slider", {
-      name: "Smooth incidence attenuation (k)",
+      name: "Effect of reported incidence",
     });
     await threshold.fill("20");
     await expect(page).toHaveURL(/[?&]smooth=20(?:&|$)/);
@@ -356,9 +366,9 @@ test.describe("Explorer what-if scenario", () => {
       "Governed score 0"
     );
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("How the changes affect Twelve County");
+    await expect(impact).toContainText("Twelve County");
     await expect(impact).toContainText("Unavailable");
-    await expect(impact).toContainText("Published Atlas score");
+    await expect(impact).toContainText("Published score");
     await expect(impact).not.toContainText("points");
     await expect(impact).not.toContainText("Scenario rank");
     await expect(impact).not.toContainText("→");
@@ -370,7 +380,7 @@ test.describe("Explorer what-if scenario", () => {
     ).not.toContainText("→");
 
     await thirty.click();
-    await expect(impact).toContainText("How the changes affect Thirty County");
+    await expect(impact).toContainText("Thirty County");
     await expect(impact).not.toContainText("Twelve County");
     await expect(impact).toContainText("Unavailable");
     await expect(impact).not.toContainText("points");
@@ -435,7 +445,7 @@ test.describe("Explorer what-if scenario", () => {
 
     await page.getByTestId("explorer-what-if-summary").click();
     await page
-      .getByRole("slider", { name: "Assumption for missing county case data" })
+      .getByRole("slider", { name: "Missing county case data" })
       .fill("40");
     await expect(page.getByTestId("review-candidate")).toContainText(
       "Adjusted scenario 12.2"
@@ -476,12 +486,12 @@ test.describe("Explorer what-if scenario", () => {
     await page.getByTestId("explorer-what-if-summary").click();
     await expect(
       page.getByRole("slider", {
-        name: "Assumption for missing county case data",
+        name: "Missing county case data",
       })
     ).toHaveValue("75");
     await expect(
       page.getByRole("slider", {
-        name: "Weight given to tick and pathogen data",
+        name: "Tick and pathogen weight",
       })
     ).toHaveValue("65");
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
@@ -564,51 +574,54 @@ test.describe("Explorer what-if scenario", () => {
 
     await page.setViewportSize({ width: 1711, height: 900 });
     await page.goto("/explore?scope=CO&county=08013&eco=85");
-    const summary = page.getByTestId("explorer-scenario-impact-summary");
-    await expect(
-      page.getByTestId("explorer-scenario-impact-description")
-    ).toHaveText("Published Atlas score to the score with your changes.");
-    await expect(summary).toContainText("65.0 → 85.0 · +20.0 points");
     await expect(
       page.getByTestId("explorer-what-if-scenario")
     ).not.toHaveAttribute("open", "");
-
     await page.getByTestId("explorer-what-if-summary").click();
+    const summary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-description")
+    ).toHaveText("Published score to the score with your changes.");
+    await expect(summary).toContainText("+20.0 points from published score");
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("How the changes affect Boulder County");
+    await expect(impact).toContainText("Boulder County");
     await expect(impact).toContainText(
       `Follow-up category changed: ${review} → ${investigate}`
     );
-    await expect(impact).toContainText("Published Atlas score");
+    await expect(impact).toContainText("Published score");
     await expect(impact).toContainText("85.0");
 
     await page
-      .getByRole("slider", { name: "Weight given to tick and pathogen data" })
+      .getByRole("slider", { name: "Tick and pathogen weight" })
       .fill("40");
-    await expect(summary).toContainText("65.0 → 40.0 · −25.0 points");
+    await expect(summary).toContainText("−25.0 points from published score");
     await expect(impact).toContainText(
       `Follow-up category changed: ${review} → ${watch}`
     );
 
     await page
-      .getByRole("slider", { name: "Weight given to tick and pathogen data" })
+      .getByRole("slider", { name: "Tick and pathogen weight" })
       .fill("85");
     const lake = page.locator(
       "[data-testid='review-candidate'][data-fips='08065']"
     );
     await lake.click();
     await expect(page).toHaveURL(/county=08065/);
-    await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
+    await expect(summary).toContainText(
+      "No score change for this county · Scenario settings"
+    );
     await expect(summary).not.toContainText("65.0");
     await expect(summary).not.toContainText("85.0");
-    await expect(impact).toContainText("How the changes affect Lake County");
+    await expect(impact).toContainText("Lake County");
     await expect(impact).not.toContainText("Boulder");
     await expect(impact).toContainText("Follow-up category unchanged");
 
     await page.setViewportSize({ width: 800, height: 900 });
     await expect(summary).toBeVisible();
     await expect(impact).toBeVisible();
-    await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
+    await expect(summary).toContainText(
+      "No score change for this county · Scenario settings"
+    );
   });
 
   test("hydrates an unchanged scenario from a shared URL and clears it on reset", async ({
@@ -664,33 +677,32 @@ test.describe("Explorer what-if scenario", () => {
     });
 
     await page.goto("/explore?scope=CO&county=08065&eco=85");
-    const summary = page.getByTestId("explorer-scenario-impact-summary");
-    await expect(summary).toContainText("0.0 → 0.0 · 0.0 points");
-    await expect(summary).not.toContainText("No adjustments");
     await expect(
       page.getByTestId("explorer-what-if-scenario")
     ).not.toHaveAttribute("open", "");
-
     await page.getByTestId("explorer-what-if-summary").click();
+    const summary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(summary).toContainText(
+      "No score change for this county · Scenario settings"
+    );
+    await expect(summary).not.toContainText("No adjustments");
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("How the changes affect Lake County");
+    await expect(impact).toContainText("Lake County");
     await expect(impact).toContainText("Follow-up category unchanged");
     await expect(impact).not.toContainText("Adjusted scenario unavailable");
     await expect(
       page.getByRole("slider", {
-        name: "Weight given to tick and pathogen data",
+        name: "Tick and pathogen weight",
       })
     ).toHaveValue("85");
 
     await page.getByTestId("explorer-scenario-reset").click();
     await expect(page).not.toHaveURL(/[?&]eco=/);
-    await expect(summary).toContainText(
-      "Published Atlas score 0.0 · No adjustments"
-    );
+    await expect(summary).toContainText("No change · Using default settings");
     await expect(summary).not.toContainText("0.0 points");
     await expect(
       page.getByRole("slider", {
-        name: "Weight given to tick and pathogen data",
+        name: "Tick and pathogen weight",
       })
     ).toHaveValue("65");
   });
@@ -761,18 +773,13 @@ test.describe("Explorer what-if scenario", () => {
     const panel = page.getByTestId("explorer-what-if-scenario");
     await expect(panel).toBeVisible();
     await expect(panel).not.toHaveAttribute("open", "");
-    await expect(panel).toContainText("Explore different scenarios");
+    await expect(panel).toContainText("Explore scoring assumptions");
     await expect(page.getByTestId("explorer-what-if-summary")).toContainText(
-      "Adjust assumptions"
+      "Show assumptions"
     );
     await expect(
       page.getByTestId("explorer-what-if-summary")
     ).not.toContainText("65%");
-    await expect(
-      page.getByTestId("explorer-scenario-impact-summary")
-    ).toContainText(
-      "Select a county to compare its published Atlas score with the score using your changes."
-    );
     await expect(panel).not.toContainText("points");
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect(page.getByTestId("explorer-map-legend")).not.toContainText(
@@ -786,9 +793,14 @@ test.describe("Explorer what-if scenario", () => {
     const summary = page.getByTestId("explorer-what-if-summary");
     await summary.focus();
     await page.keyboard.press("Enter");
+    await expect(
+      page.getByTestId("explorer-scenario-impact-summary")
+    ).toContainText(
+      "Select a county to compare its published Atlas score with the score using your changes."
+    );
     await expect(page.getByRole("slider")).toHaveCount(3);
     const missing = page.getByRole("slider", {
-      name: "Assumption for missing county case data",
+      name: "Missing county case data",
     });
     await missing.fill("40");
     await expect(page).toHaveURL(/[?&]missing=40(?:&|$)/);
@@ -839,12 +851,12 @@ test.describe("Explorer what-if scenario", () => {
 
     await page.goto("/explore?scope=ALL&county=08013&eco=85");
     await expect(panel).not.toHaveAttribute("open", "");
+    await summary.click();
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
-    ).toContainText("65.0 → 85.0 · +20.0 points");
-    await summary.click();
+    ).toContainText("+20.0 points from published score");
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("How the changes affect Boulder County");
+    await expect(impact).toContainText("Boulder County");
     await expect(impact).toContainText(
       `Follow-up category changed: ${review} → ${investigate}`
     );
@@ -862,7 +874,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(panel).toBeVisible();
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
-    ).toContainText("65.0 → 85.0 · +20.0 points");
+    ).toContainText("+20.0 points from published score");
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.getByTestId("review-scope-select").click();
@@ -873,9 +885,13 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("review-national-orientation")).toHaveCount(
       0
     );
+    const assumptions = page.getByTestId("explorer-what-if-scenario");
+    if ((await assumptions.getAttribute("open")) === null) {
+      await page.getByTestId("explorer-what-if-summary").click();
+    }
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
-    ).toContainText("65.0 → 85.0 · +20.0 points");
+    ).toContainText("+20.0 points from published score");
     await expect(page.getByTestId("explorer-what-if-scenario")).toHaveCount(1);
 
     await page.goto("/explore?scope=ALL&county=08013&mode=evidence&eco=85");
@@ -930,14 +946,15 @@ test.describe("Explorer what-if scenario", () => {
     });
 
     await page.goto("/explore?scope=ALL&county=08001&smooth=20");
-    const summary = page.getByTestId("explorer-scenario-impact-summary");
-    await expect(summary).toContainText(
-      "Published Atlas score 0.0 · Score with your changes unavailable"
-    );
-    await expect(summary).not.toContainText("points");
+    await expect(
+      page.getByTestId("explorer-what-if-scenario")
+    ).not.toHaveAttribute("open", "");
     await page.getByTestId("explorer-what-if-summary").click();
+    const summary = page.getByTestId("explorer-scenario-impact-summary");
+    await expect(summary).toContainText("Score with your changes unavailable");
+    await expect(summary).not.toContainText("points");
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("How the changes affect Adams County");
+    await expect(impact).toContainText("Adams County");
     await expect(impact).toContainText("Unavailable");
     await expect(impact).not.toContainText("points");
     await expect(impact).not.toContainText("Scenario rank");
@@ -1015,7 +1032,7 @@ for (const fips of ["36027", "42017", "25007", "23009", "18097", "08021"]) {
     );
     await page.getByTestId("explorer-what-if-summary").click();
     const slider = page.getByRole("slider", {
-      name: "Smooth incidence attenuation (k)",
+      name: "Effect of reported incidence",
     });
     await expect(slider).toHaveValue("50");
     await slider.fill("100");
@@ -1047,6 +1064,6 @@ test("v1.1 legacy URL reset does not reinterpret breakpoint=10 as k=10", async (
   await expect(page).not.toHaveURL(/[?&]breakpoint=/);
   await page.getByTestId("explorer-what-if-summary").click();
   await expect(
-    page.getByRole("slider", { name: "Smooth incidence attenuation (k)" })
+    page.getByRole("slider", { name: "Effect of reported incidence" })
   ).toHaveValue("50");
 });
