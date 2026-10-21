@@ -2822,9 +2822,10 @@
 }
 
 .ux-reset-explorer-legend-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.4rem;
+  column-gap: 0.4rem;
   min-width: 0;
 }
 
@@ -2860,12 +2861,99 @@
   white-space: pre-line;
 }
 
+.ux-reset-explorer-legend-row > [data-legend-caption="start"] {
+  grid-column: 1;
+}
+
+.ux-reset-explorer-legend-row > [data-legend-caption="end"] {
+  grid-column: 3;
+  justify-self: end;
+}
+
+/* One clipped pill. Seven gap-score segments fill the legend track;
+   fewer categories keep that segment size and a shorter pill. */
 .ux-reset-explorer-legend-strip {
+  position: relative;
   display: flex;
-  flex: 1 1 auto;
-  align-items: center;
+  grid-column: 2;
+  align-items: stretch;
+  justify-self: start;
+  width: min(100%, calc(100% * var(--legend-count) / 7));
+  max-width: 100%;
   min-width: 0;
-  height: 1.75rem;
+  min-height: 1.75rem;
+  height: auto;
+}
+
+.ux-reset-explorer-legend-strip[data-legend-fill="full"] {
+  width: 100%;
+}
+
+.ux-reset-explorer-legend-scale {
+  display: grid;
+  justify-items: start;
+  width: 100%;
+  min-width: 0;
+  row-gap: 0.1rem;
+}
+
+.ux-reset-explorer-legend-scale > .ux-reset-explorer-legend-strip,
+.ux-reset-explorer-legend-scale > .ux-reset-explorer-legend-captions {
+  grid-column: 1;
+  width: min(100%, calc(100% * var(--legend-count) / 7));
+  max-width: 100%;
+}
+
+.ux-reset-explorer-legend-captions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-legend-scale .ux-reset-explorer-legend-caption {
+  min-width: 0;
+  white-space: normal;
+}
+
+.ux-reset-explorer-legend-pill {
+  position: absolute;
+  right: 0;
+  left: 0;
+  display: flex;
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.ux-reset-explorer-legend-strip:not(
+    :has(.ux-reset-explorer-legend-segment-label)
+  )
+  .ux-reset-explorer-legend-pill {
+  top: calc((1.75rem - 0.55rem) / 2);
+}
+
+.ux-reset-explorer-legend-strip:has(.ux-reset-explorer-legend-segment-label)
+  .ux-reset-explorer-legend-pill {
+  top: 0;
+}
+
+.ux-reset-explorer-legend-pill > span {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  border-right: 1px solid color-mix(in srgb, var(--background) 45%, transparent);
+}
+
+.ux-reset-explorer-legend-pill > span:last-child {
+  border-right: 0;
+}
+
+.ux-reset-explorer-legend-strip:has(.ux-reset-explorer-legend-pill)
+  .ux-reset-explorer-legend-segment
+  > span {
+  opacity: 0;
 }
 
 .ux-reset-explorer-legend-segment {
@@ -2900,13 +2988,16 @@
   border-radius: 999px;
 }
 
+/* The painted span is hidden once the pill shows that color. The ring stays
+   on the button so unlabeled segments keep a visible :focus-visible indicator. */
 .ux-reset-explorer-legend-segment:focus-visible {
-  outline: none;
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .ux-reset-explorer-legend-segment:focus-visible > span {
-  outline: var(--focus-ring-width) solid var(--ring);
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Rurality only. Other layers keep the unlabeled swatch strip. */
@@ -2928,6 +3019,12 @@
   flex: 1 1 auto;
   gap: 0.05rem;
   min-width: 0;
+  container-type: inline-size;
+}
+
+.ux-reset-explorer-legend-rurality-scale > .ux-reset-explorer-legend-strip {
+  grid-column: 1;
+  width: min(100cqi, calc(100cqi * var(--legend-count) / 7));
 }
 
 .ux-reset-explorer-legend-rurality-captions {
@@ -2944,20 +3041,6 @@
   line-height: 1.25;
 }
 
-.ux-reset-explorer-legend[data-legend-layer="rurality"]
-  .ux-reset-explorer-legend-strip,
-.ux-reset-explorer-legend[data-legend-layer="rurality"]
-  .ux-reset-explorer-legend-segment[data-legend-role="class"] {
-  height: 0.7rem;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="rurality"]
-  .ux-reset-explorer-legend-segment[data-legend-role="class"]
-  > span {
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--foreground) 14%, transparent);
-}
-
 .ux-reset-explorer-legend-rurality-missing {
   flex: none;
 }
@@ -2969,7 +3052,9 @@
   flex-direction: row;
   align-items: center;
   width: auto;
+  min-width: 1.75rem;
   height: auto;
+  min-height: 1.75rem;
   gap: 0.3rem;
 }
 
@@ -2977,59 +3062,35 @@
   .ux-reset-explorer-legend-rurality-missing
   .ux-reset-explorer-legend-segment
   > span {
-  width: 0.85rem;
+  width: 1.75rem;
   height: 0.55rem;
   flex: none;
-  border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
-  border-radius: 0.15rem;
+  opacity: 1;
+  border: 0;
+  border-radius: 999px;
 }
 
 .ux-reset-explorer-legend[data-legend-layer="rurality"]
   .ux-reset-explorer-legend-segment-label {
+  width: auto;
   color: var(--foreground);
   font-size: 0.65rem;
   line-height: 1.1;
+  text-align: start;
   white-space: nowrap;
+  overflow-wrap: normal;
 }
 
-/* Tick status only. Other layers keep the unlabeled swatch strip. */
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-row {
-  align-items: start;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.75rem), 1fr));
-  align-items: start;
-  height: auto;
-  gap: 0.45rem 0.5rem;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-segment {
+.ux-reset-explorer-legend-segment:has(.ux-reset-explorer-legend-segment-label) {
   flex-direction: column;
+  align-items: stretch;
   justify-content: flex-start;
-  align-items: center;
   height: auto;
-  min-height: 2.6rem;
+  min-height: 1.75rem;
   gap: 0.2rem;
-  padding: 0.15rem 0.1rem;
 }
 
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-segment
-  > span {
-  width: 1.35rem;
-  height: 0.8rem;
-  flex: none;
-  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
-  border-radius: 0.2rem;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-segment-label {
+.ux-reset-explorer-legend-segment-label {
   display: block;
   width: 100%;
   margin: 0;
@@ -3038,109 +3099,47 @@
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-segment-label
+.ux-reset-explorer-legend-scale
+  > .ux-reset-explorer-legend-strip:has(
+    .ux-reset-explorer-legend-segment-label
+  ) {
+  width: min(
+    100%,
+    max(
+      calc(100% * var(--legend-count) / 7),
+      calc(4.75rem * var(--legend-count))
+    )
+  );
+}
+
+.ux-reset-explorer-legend-segment-label
   + .ux-reset-explorer-legend-segment-label {
   color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 400;
 }
 
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-segment:focus-visible {
-  outline: var(--focus-ring-width) solid var(--ring);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.ux-reset-explorer-legend[data-legend-layer="tick_status"]
-  .ux-reset-explorer-legend-segment:focus-visible
-  > span {
-  outline: none;
-}
-
-/* Pathogen status only. Tick status and other layers keep their own legend. */
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-row {
-  align-items: start;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.75rem), 1fr));
-  align-items: start;
-  height: auto;
-  gap: 0.45rem 0.5rem;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-segment {
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  height: auto;
-  min-height: 2.6rem;
-  gap: 0.2rem;
-  padding: 0.15rem 0.1rem;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-segment
-  > span {
-  width: 1.35rem;
-  height: 0.8rem;
-  flex: none;
-  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
-  border-radius: 0.2rem;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-segment-label {
-  display: block;
-  width: 100%;
-  margin: 0;
-  color: var(--foreground);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.25;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-segment-label
-  + .ux-reset-explorer-legend-segment-label {
-  color: var(--muted-foreground);
-  font-size: 0.6875rem;
-  font-weight: 400;
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-segment:focus-visible {
-  outline: var(--focus-ring-width) solid var(--ring);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.ux-reset-explorer-legend[data-legend-layer="pathogen_status"]
-  .ux-reset-explorer-legend-segment:focus-visible
-  > span {
-  outline: none;
-}
-
-.ux-reset-explorer-legend-segment[data-legend-role="gradient"],
-.ux-reset-explorer-legend-segment[data-legend-role="endpoint-low"] {
+.ux-reset-explorer-legend-strip[data-legend-fill="full"]
+  .ux-reset-explorer-legend-segment[data-legend-role="gradient"],
+.ux-reset-explorer-legend-strip[data-legend-fill="full"]
+  .ux-reset-explorer-legend-segment[data-legend-role="endpoint-low"],
+.ux-reset-explorer-legend-strip[data-legend-fill="full"]
+  .ux-reset-explorer-legend-pill
+  > span[data-legend-pill-role="gradient"],
+.ux-reset-explorer-legend-strip[data-legend-fill="full"]
+  .ux-reset-explorer-legend-pill
+  > span[data-legend-pill-role="endpoint-low"] {
   flex: 1 1 auto;
 }
 
-.ux-reset-explorer-legend-strip:has([data-legend-role="gradient"])
+.ux-reset-explorer-legend-strip[data-legend-fill="full"]
   .ux-reset-explorer-legend-segment[data-legend-role="missing"],
-.ux-reset-explorer-legend-strip:has([data-legend-role="endpoint-low"])
-  .ux-reset-explorer-legend-segment[data-legend-role="missing"] {
+.ux-reset-explorer-legend-strip[data-legend-fill="full"]
+  .ux-reset-explorer-legend-pill
+  > span[data-legend-pill-role="missing"] {
   flex: 0 0 0.7rem;
 }
 
