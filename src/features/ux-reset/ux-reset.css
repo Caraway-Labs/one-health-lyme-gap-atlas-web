@@ -467,7 +467,8 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.2rem;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   min-width: 0;
   padding: 0.15rem;
   border: 0;
@@ -479,6 +480,10 @@
   text-align: left;
   white-space: normal;
   cursor: pointer;
+}
+
+.county-summary-mark-cell:nth-child(n + 3) .county-summary-mark {
+  width: 100%;
 }
 
 .county-summary-mark:focus-visible {
@@ -3260,7 +3265,7 @@
   gap: 0.5rem;
 }
 
-.ux-reset-review-preview-actions a.ux-reset-review-open,
+.ux-reset-review-preview-actions a,
 .ux-reset-review-preview-actions button {
   flex: 1 1 11.5rem;
   width: auto;

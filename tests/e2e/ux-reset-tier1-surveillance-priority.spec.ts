@@ -244,6 +244,27 @@ async function installTier1Review(
   );
 }
 
+function reviewPriority(page: Page): Locator {
+  return page
+    .getByTestId("review-county-preview")
+    .getByTestId("surveillance-intelligence-card-ml-review-priority");
+}
+
+async function openReviewPriority(page: Page): Promise<Locator> {
+  const card = reviewPriority(page);
+  const toggle = card.getByRole("button", { name: /ML Review Priority/ });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+  const details = page.getByTestId("surveillance-intelligence-details");
+  await expect(details).toHaveAttribute(
+    "data-perspective",
+    "ml-review-priority"
+  );
+  return details;
+}
+
 function investigatePriority(page: Page): Locator {
   return page
     .getByTestId("explorer-county-evidence")
@@ -309,24 +330,28 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
-    const review = page.getByTestId("tier1-surveillance-priority");
+    const review = reviewPriority(page);
     await expect(review).toHaveAttribute("data-tier", "HIGH");
     await expect(review).toHaveAttribute("data-sufficiency", "SUFFICIENT");
-    await expect(review).toContainText("Model-assisted");
-    await expect(review).toContainText("Sufficient");
-    await expect(review).toContainText("Publisher reports pathogen Present.");
-    await expect(review).not.toContainText(
+    const reviewDetails = await openReviewPriority(page);
+    await expect(reviewDetails).toContainText("Sufficient");
+    await expect(reviewDetails).toContainText(
+      "Publisher reports pathogen Present."
+    );
+    await expect(reviewDetails).not.toContainText(
       "not disease risk or predicted incidence"
     );
     await expect(page.getByTestId("review-preview-why")).toContainText(
       "Albany is included because the review method returned it."
     );
-    await review.getByText("Model and as-of details").click();
-    await expect(review).toContainText("tier1-statistical-reference-v1");
-    await expect(review).toContainText("98.56824689786828");
+    await reviewDetails.getByText("Methodology & source").click();
+    await expect(reviewDetails).toContainText("tier1-statistical-reference-v1");
+    await expect(reviewDetails).toContainText("98.56824689786828");
     await shot(page, testInfo, "tier1-review-high");
     const regionResults = await new AxeBuilder({ page })
-      .include('[data-testid="tier1-surveillance-priority"]')
+      .include(
+        '[data-testid="surveillance-intelligence-card-ml-review-priority"]'
+      )
       .analyze();
     expect(regionResults.violations).toEqual([]);
 
@@ -359,14 +384,12 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.goto("/explore?scope=NY&county=36003&dataset=alpha-2026");
     await openReviewScore(page);
-    const region = page.getByTestId("tier1-surveillance-priority");
+    const region = reviewPriority(page);
     await expect(region).toHaveAttribute("data-tier", "LOW");
     await expect(region).toHaveAttribute("data-sufficiency", "INSUFFICIENT");
-    await expect(region.getByTestId("tier1-priority-tier")).toHaveText("LOW");
-    await expect(region.getByTestId("tier1-evidence-sufficiency")).toHaveText(
-      "Insufficient"
-    );
-    await expect(region).toContainText(
+    const details = await openReviewPriority(page);
+    await expect(details).toContainText("Insufficient");
+    await expect(details).toContainText(
       "No county-linked human record is available"
     );
     await shot(page, testInfo, "tier1-review-low-insufficient");
@@ -388,25 +411,25 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
-    await expect(page.getByTestId("tier1-reasons-absent")).toHaveText(
-      "No contributing reasons were returned."
-    );
-    await expect(page.getByTestId("tier1-priority-tier")).toHaveText("HIGH");
+    const review = reviewPriority(page);
+    await expect(review).toHaveAttribute("data-tier", "HIGH");
+    const details = await openReviewPriority(page);
+    await expect(details.getByRole("list")).toHaveCount(0);
 
     await page.goto("/explore?scope=NY&county=36003&dataset=alpha-2026");
     await openReviewScore(page);
     await expect(
-      page.getByTestId("tier1-surveillance-priority")
+      reviewPriority(page)
     ).toHaveAttribute("data-state", "unavailable");
-    await expectNoLowTier(page.getByTestId("tier1-surveillance-priority"));
+    await expectNoLowTier(reviewPriority(page));
     await shot(page, testInfo, "tier1-review-unavailable");
 
     await page.goto("/explore?scope=NY&county=36005&dataset=alpha-2026");
     await openReviewScore(page);
     await expect(
-      page.getByTestId("tier1-surveillance-priority")
-    ).toHaveAttribute("data-state", "failed", { timeout: 15_000 });
-    await expectNoLowTier(page.getByTestId("tier1-surveillance-priority"));
+      reviewPriority(page)
+    ).toHaveAttribute("data-state", "error", { timeout: 15_000 });
+    await expectNoLowTier(reviewPriority(page));
   });
 
   test("does not show a stale payload for a different county", async ({
@@ -423,9 +446,9 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
-    const region = page.getByTestId("tier1-surveillance-priority");
-    await expect(region).toHaveAttribute("data-state", "stale");
-    await expectNoLowTier(page.getByTestId("tier1-surveillance-priority"));
+    const region = reviewPriority(page);
+    await expect(region).toHaveAttribute("data-state", "unavailable");
+    await expectNoLowTier(reviewPriority(page));
     await expect(region).not.toContainText("MEDIUM");
   });
 
@@ -440,10 +463,10 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.goto("/explore?scope=NY&county=36001&dataset=historical-2024");
     await openReviewScore(page);
-    const review = page.getByTestId("tier1-surveillance-priority");
+    const review = reviewPriority(page);
     await expect(review).toHaveAttribute("data-state", "release-unaligned");
     await expect(review).toHaveAttribute("data-release-reason", "mismatch");
-    await expectNoLowTier(page.getByTestId("tier1-surveillance-priority"));
+    await expectNoLowTier(reviewPriority(page));
     await expect(review).not.toContainText("HIGH");
     await expect(page.getByTestId("review-county-preview")).toBeVisible();
 
@@ -474,7 +497,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
     await expect(
-      page.getByTestId("tier1-surveillance-priority")
+      reviewPriority(page)
     ).toHaveAttribute("data-tier", "HIGH");
     await page.evaluate(() => {
       const link = document.createElement("a");
@@ -485,12 +508,12 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     });
     await page.getByTestId("tier1-dataset-switch").click();
     await expect(page).toHaveURL(/dataset=historical-2024/);
-    const review = page.getByTestId("tier1-surveillance-priority");
+    const review = reviewPriority(page);
     await expect(review).toHaveAttribute("data-state", "release-unaligned");
     await expect(review).toHaveAttribute("data-release-reason", "mismatch");
     await expect(review).not.toHaveAttribute("data-tier", "HIGH");
     await openReviewScore(page);
-    await expectNoLowTier(page.getByTestId("tier1-surveillance-priority"));
+    await expectNoLowTier(reviewPriority(page));
 
     await page.goto(
       "/app/investigate?county=36001&scope=NY&dataset=alpha-2026"
@@ -533,10 +556,10 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     );
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
-    const review = page.getByTestId("tier1-surveillance-priority");
+    const review = reviewPriority(page);
     await expect(review).toHaveAttribute("data-state", "release-unaligned");
     await expect(review).toHaveAttribute("data-release-reason", "unknown");
-    await expectNoLowTier(page.getByTestId("tier1-surveillance-priority"));
+    await expectNoLowTier(reviewPriority(page));
     await expect(review).not.toContainText("HIGH");
 
     await page.goto(

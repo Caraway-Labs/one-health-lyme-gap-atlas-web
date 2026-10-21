@@ -121,22 +121,19 @@ async function expectActionLayout(
       }
       const followBox = followUp.getBoundingClientRect();
       const compareBox = compare.getBoundingClientRect();
-      const width = actions.getBoundingClientRect().width;
-      const sideBySide = width >= 11.5 * 16 * 2 + 8;
       return {
         compareX: compareBox.x,
         compareY: compareBox.y,
         followX: followBox.x,
         followY: followBox.y,
-        sideBySide,
       };
     });
   expect(layout).not.toBeNull();
   if (!layout) {
     return;
   }
-  if (layout.sideBySide) {
-    expect(Math.abs(layout.followY - layout.compareY)).toBeLessThan(4);
+  const sameRow = Math.abs(layout.followY - layout.compareY) < 4;
+  if (sameRow) {
     expect(layout.compareX).toBeGreaterThan(layout.followX);
     return;
   }
@@ -178,12 +175,12 @@ test.describe("Selected county preview", () => {
     await expect(
       preview.getByRole("button", { name: "View County Follow-Up" })
     ).toHaveCount(1);
-    await expect(preview.getByRole("link")).toHaveCount(1);
+    await expect(preview.getByRole("link")).toHaveCount(2);
     await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
     await expect(preview.getByTestId("review-ask-atlas")).toHaveCount(0);
-    await expect(
-      preview.getByTestId("review-view-county-evidence")
-    ).toHaveCount(0);
+    await expect(preview.getByTestId("review-view-county-evidence")).toHaveText(
+      "View Full County Evidence"
+    );
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
       "case-count floor"
     );

@@ -182,7 +182,7 @@ test.describe("selected county response tier", () => {
     await expect(followUp).toHaveText("Conduct targeted follow-up");
     await expect(scoreButton).toHaveAttribute(
       "data-tooltip",
-      "Moderate review priority"
+      "Published score"
     );
     await expect(preview.locator(".priority-pill")).toHaveCount(0);
     await expect(preview.getByTestId("selected-county-gap-score")).toHaveText(
