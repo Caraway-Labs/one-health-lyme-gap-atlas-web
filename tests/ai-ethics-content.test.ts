@@ -57,6 +57,19 @@ describe("AI Ethics content", () => {
     ]);
   });
 
+  it("uses the approved machine-learning description", () => {
+    expect(aiEthicsContent.pillars[1]?.does).toBe(
+      "Atlas applies unsupervised machine learning across all 3,144 U.S. counties to identify surveillance profiles that look unusual compared with similar places. The models group counties into distinct surveillance situations, helping professionals compare counties using the available evidence. A complementary latent-class analysis groups counties into distinct surveillance situations, so each county can be compared with its true peers, its neighbors, and its own history."
+    );
+    expect({
+      isolationForest: publishedCopy().includes("Isolation Forest"),
+      workTogether: publishedCopy().includes("work together"),
+    }).toStrictEqual({
+      isolationForest: false,
+      workTogether: false,
+    });
+  });
+
   it("does not publish maturity labels or internal tracking references", () => {
     const copy = publishedCopy();
     expect({

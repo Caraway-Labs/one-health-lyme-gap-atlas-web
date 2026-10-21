@@ -94,6 +94,23 @@ describe("AI Ethics page", () => {
     });
   });
 
+  it("renders the approved machine-learning sentence without the retired model claim", () => {
+    render(<AiEthicsPage />);
+
+    const text = document.body.textContent ?? "";
+    expect({
+      isolationForest: text.includes("Isolation Forest"),
+      sentence: text.includes(
+        "The models group counties into distinct surveillance situations, helping professionals compare counties using the available evidence."
+      ),
+      workTogether: text.includes("work together"),
+    }).toStrictEqual({
+      isolationForest: false,
+      sentence: true,
+      workTogether: false,
+    });
+  });
+
   it("renders static disclosure content without an API request", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
 

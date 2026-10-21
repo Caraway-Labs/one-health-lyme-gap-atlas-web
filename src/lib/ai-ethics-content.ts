@@ -29,7 +29,7 @@ export const aiEthicsContent = {
     {
       name: "Machine learning",
       title: "Find patterns worth investigating",
-      does: "Atlas applies unsupervised machine learning across all 3,144 U.S. counties to identify surveillance profiles that look unusual compared with similar places. An anomaly-detection model (Isolation Forest) and a statistical reference model work together to produce relative anomaly scores, a review-priority category, and the reasons behind it. A complementary latent-class analysis groups counties into distinct surveillance situations, so each county can be compared with its true peers, its neighbors, and its own history.",
+      does: "Atlas applies unsupervised machine learning across all 3,144 U.S. counties to identify surveillance profiles that look unusual compared with similar places. The models group counties into distinct surveillance situations, helping professionals compare counties using the available evidence. A complementary latent-class analysis groups counties into distinct surveillance situations, so each county can be compared with its true peers, its neighbors, and its own history.",
       matters:
         "Investigative time is limited. These models help teams decide where a closer look is most likely to be worthwhile. They identify places to review, not places at risk.",
     },
