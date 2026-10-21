@@ -71,7 +71,7 @@ describe("review rationale", () => {
       svi: items[3]?.text,
       tick: items[1]?.text,
     }).toStrictEqual({
-      human: expect.stringContaining("2.1 cases per 100,000"),
+      human: expect.stringContaining("2.1 reported cases per 100,000"),
       insurance: expect.stringContaining(
         "No county-level health insurance coverage value was published."
       ),
@@ -109,7 +109,7 @@ describe("review rationale", () => {
       tick: items[1]?.text,
     }).toStrictEqual({
       human: expect.stringContaining(
-        "case-count floor is 1. The published 2023 minimum rate is 2.1 cases per 100,000."
+        "Minimum reported cases: At least 1 Lyme disease cases were reported in 2023. Minimum reported incidence: At least 2.1 reported cases per 100,000 residents in 2023."
       ),
       insurance: expect.stringContaining("8.2%"),
       rural: expect.stringContaining("Code 3"),

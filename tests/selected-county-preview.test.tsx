@@ -95,7 +95,7 @@ describe("selected county preview", () => {
     );
     renderPublished(baldwin);
     await expect(
-      screen.findByText(/case-count floor is 5/)
+      screen.findByText(/At least 5 Lyme disease cases were reported in 2023/)
     ).resolves.toBeInTheDocument();
     const labels = [1, 2, 3, 4, 5, 6].map(
       (number) =>
@@ -196,7 +196,9 @@ describe("selected county preview", () => {
         ?.getAttribute("href") ?? null;
 
     renderPublished(baldwin);
-    await screen.findByText(/case-count floor is 5/);
+    await screen.findByText(
+      /At least 5 Lyme disease cases were reported in 2023/
+    );
     const tick = screen.getByTestId("review-rationale-2");
     const pathogen = screen.getByTestId("review-rationale-3");
     const tickClaim = claim(
@@ -252,7 +254,9 @@ describe("selected county preview", () => {
         ),
       },
     });
-    await screen.findByText(/case-count floor is 5/);
+    await screen.findByText(
+      /At least 5 Lyme disease cases were reported in 2023/
+    );
     const unknownTick = claim(
       screen.getByTestId("review-rationale-2"),
       "Inspect provenance for Ixodes scapularis status"
@@ -286,7 +290,7 @@ describe("selected county preview", () => {
     await expect(
       screen.findByText("No county-linked 2023 Lyme case record is available.")
     ).resolves.toBeInTheDocument();
-    expect(screen.queryByText(/case-count floor is 0/)).toBeNull();
+    expect(screen.queryByText(/At least 0 Lyme disease cases/)).toBeNull();
   });
 
   it("does not request canonical geography for the review-candidate preview", () => {
@@ -395,13 +399,15 @@ describe("selected county preview", () => {
       suppressed: row("suppressed", null, null),
     }).toStrictEqual({
       absent:
-        "A 2023 case-count floor was published, but the count and rate are unavailable.",
-      countOnly: "The published 2023 case-count floor is 4.",
+        "A 2023 minimum reported case count was published, but the count and rate are unavailable.",
+      countOnly:
+        "Minimum reported cases: At least 4 Lyme disease cases were reported in 2023.",
       missing: "The 2023 county Lyme case count is missing.",
       noCountyRecord: "No county-linked 2023 Lyme case record is available.",
       publishedZero:
-        "The published 2023 case-count floor is 0. The published 2023 minimum rate is 0.0 cases per 100,000.",
-      rateOnly: "The published 2023 minimum rate is 2.1 cases per 100,000.",
+        "Minimum reported cases: At least 0 Lyme disease cases were reported in 2023. Minimum reported incidence: At least 0.0 reported cases per 100,000 residents in 2023.",
+      rateOnly:
+        "Minimum reported incidence: At least 2.1 reported cases per 100,000 residents in 2023.",
       suppressed: "The 2023 county Lyme case count is suppressed.",
     });
   });

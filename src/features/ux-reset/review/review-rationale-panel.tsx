@@ -1,8 +1,16 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
+import { publishedLymeCasePresentation } from "@/features/ux-reset/review/published-human-case-copy";
 import {
   reviewRationaleFor,
   type ReviewRationaleItem,
@@ -35,10 +43,53 @@ function ClaimProvenance({ model }: { model: EvidenceObjectModel }) {
   );
 }
 
+function PublishedCaseCopy({ detail }: { detail: CountyDetail }) {
+  const presentation = publishedLymeCasePresentation(detail);
+  if (presentation.measures.length === 0) {
+    return <p>{presentation.text}</p>;
+  }
+  return (
+    <TooltipProvider delay={300}>
+      <p>
+        {presentation.measures.map((measure, index) => (
+          <span key={measure.label}>
+            {index > 0 ? " " : null}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={`${measure.label}. ${measure.tooltip}`}
+                    className="h-auto px-0 py-0 text-[length:inherit] font-semibold whitespace-normal text-inherit underline decoration-dotted underline-offset-2"
+                    size="xs"
+                    type="button"
+                    variant="ghost"
+                  />
+                }
+              >
+                {measure.label}
+              </TooltipTrigger>
+              <TooltipContent
+                className="max-w-xs text-left whitespace-normal"
+                side="bottom"
+              >
+                {measure.tooltip}
+              </TooltipContent>
+            </Tooltip>
+            {": "}
+            {measure.sentence}
+          </span>
+        ))}
+      </p>
+    </TooltipProvider>
+  );
+}
+
 function RationaleItem({
+  detail,
   item,
   models,
 }: {
+  detail: CountyDetail;
   item: ReviewRationaleItem;
   models: readonly EvidenceObjectModel[];
 }) {
@@ -55,7 +106,11 @@ function RationaleItem({
             item.label
           )}
         </h4>
-        <p>{item.text}</p>
+        {item.number === 1 ? (
+          <PublishedCaseCopy detail={detail} />
+        ) : (
+          <p>{item.text}</p>
+        )}
         {models.map((model) => (
           <ClaimProvenance key={model.claimLabel} model={model} />
         ))}
@@ -79,6 +134,7 @@ export function ReviewRationalePanel({ detail }: { detail: CountyDetail }) {
       <ol>
         {surveillance.map((item) => (
           <RationaleItem
+            detail={detail}
             item={item}
             key={item.number}
             models={evidence.get(item.number) ?? []}
@@ -89,6 +145,7 @@ export function ReviewRationalePanel({ detail }: { detail: CountyDetail }) {
       <ol start={4}>
         {community.map((item) => (
           <RationaleItem
+            detail={detail}
             item={item}
             key={item.number}
             models={evidence.get(item.number) ?? []}

@@ -185,7 +185,7 @@ test.describe("Selected county preview", () => {
       preview.getByTestId("review-view-county-evidence")
     ).toHaveCount(0);
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "case-count floor"
+      "Minimum reported cases"
     );
     await expect(preview.getByTestId("review-rationale-1")).not.toContainText(
       "not an exact count"

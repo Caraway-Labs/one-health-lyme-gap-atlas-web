@@ -222,7 +222,9 @@ describe("Published Review county exploration", () => {
     );
     picture("01003");
     await screen.findByText(/Published county evidence could not be loaded/);
-    expect(screen.queryByText(/case-count floor is 5/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/At least 5 Lyme disease cases were reported in 2023/)
+    ).not.toBeInTheDocument();
     cleanup();
     vi.mocked(loadInvestigateCountyRecord).mockResolvedValue(null);
     picture("01003");
@@ -231,7 +233,9 @@ describe("Published Review county exploration", () => {
 
   it("renders captured production floor, null and pathogen no-record semantics", async () => {
     picture("01003");
-    await screen.findByText(/case-count floor is 5/);
+    await screen.findByText(
+      /At least 5 Lyme disease cases were reported in 2023/
+    );
     expect(
       screen.queryByText(/A published floor is a minimum/)
     ).not.toBeInTheDocument();
@@ -256,19 +260,25 @@ describe("Published Review county exploration", () => {
 
   it("withholds cached facts when a profile refresh fails", async () => {
     const view = picture("01003");
-    await screen.findByText(/case-count floor is 5/);
+    await screen.findByText(
+      /At least 5 Lyme disease cases were reported in 2023/
+    );
     vi.mocked(loadInvestigateCountyRecord).mockRejectedValue(new Error("503"));
     await view.client.invalidateQueries({
       queryKey: ["ux-reset-review-published-county"],
     });
     await screen.findByText(/Published county evidence could not be loaded/);
-    expect(screen.queryByText(/case-count floor is 5/)).toBeNull();
+    expect(
+      screen.queryByText(/At least 5 Lyme disease cases were reported in 2023/)
+    ).toBeNull();
     expect(onCountyChange).not.toHaveBeenCalled();
   });
 
   it("withholds cached identities after directory refresh failure without clearing URL", async () => {
     const view = picture("01003");
-    await screen.findByText(/case-count floor is 5/);
+    await screen.findByText(
+      /At least 5 Lyme disease cases were reported in 2023/
+    );
     vi.mocked(fetchExploreCountyDirectory).mockRejectedValue(new Error("503"));
     await view.client.invalidateQueries({
       queryKey: ["ux-reset-review-county-directory"],
@@ -301,7 +311,7 @@ describe("Published Review county exploration", () => {
     {
       status: "published_count_floor",
       floor: 0,
-      display: "0 (published count floor)",
+      display: "Reported cases: 0 or more",
       availability: "limited",
     },
     {

@@ -110,9 +110,9 @@ describe("compare county profile", () => {
     const cases = evidenceFor(COMPARE_LEFT_FIPS, "human_case_floor");
     const incidence = evidenceFor(COMPARE_LEFT_FIPS, "incidence_floor");
     expect(cases.displayValue).toContain("12");
-    expect(cases.displayValue).toContain("floor");
+    expect(cases.displayValue).toContain("or more");
     expect(incidence.displayValue).toContain("4.2");
-    expect(incidence.valueNote).toContain("not an exact rate");
+    expect(incidence.valueNote).toContain("may be higher");
   });
 
   it("keeps percentiles, percents, and scores in their own meaning", () => {
@@ -191,11 +191,11 @@ describe("compare county profile", () => {
     detail.incidence_floor_2023 = null;
     const reasons = reasonTexts(detail);
     expect(evidenceDisplay(detail, "human_case_floor")).toBe(
-      "12 (published count floor)"
+      "Reported cases: 12 or more"
     );
     expect(evidenceDisplay(detail, "incidence_floor")).toBe("Unavailable");
-    expect(reasons).toContain("12 (published count floor)");
-    expect(reasons).toContain("incidence floor is Unavailable");
+    expect(reasons).toContain("Reported cases: 12 or more");
+    expect(reasons).toContain("Reported incidence is Unavailable");
     expect(reasons).not.toContain(
       "No county-level 2023 Lyme case count was published"
     );
@@ -209,7 +209,7 @@ describe("compare county profile", () => {
     const incidence = compareIncidenceFloorEvidence(detail);
     expect(evidenceDisplay(detail, "human_case_floor")).toContain("12");
     expect(incidence.displayValue).toBe("Unavailable");
-    expect(reasons).toContain("12 (published count floor)");
+    expect(reasons).toContain("Reported cases: 12 or more");
     expect(reasons).not.toContain("-4");
     expect(reasons).not.toContain(
       "No county-level 2023 Lyme case count was published"
@@ -225,7 +225,7 @@ describe("compare county profile", () => {
     }
     const reasons = reasonTexts(detail);
     expect(evidence.evidence.displayValue).toBe(
-      "0.04 cases per 100,000 (published incidence floor)"
+      "At least 0.04 reported cases per 100,000 residents in 2023."
     );
     expect(reasons).toContain(evidence.evidence.displayValue);
     expect(reasons).not.toContain("0.0 cases");

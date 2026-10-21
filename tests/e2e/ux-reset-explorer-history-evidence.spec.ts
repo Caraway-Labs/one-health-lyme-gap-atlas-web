@@ -1165,7 +1165,7 @@ test.describe("Explorer evidence-state accessibility", () => {
     await expect(suppressed).not.toContainText("not zero evidence");
     const suppressedProvenance = await openProvenance(
       page,
-      /Inspect provenance for Published 2023 human case-count floor/
+      /Inspect provenance for Reported cases/
     );
     await expect(suppressedProvenance).toContainText(
       "Suppressed or privacy-protected"
