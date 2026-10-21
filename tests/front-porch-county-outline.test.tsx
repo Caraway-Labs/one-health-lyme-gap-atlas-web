@@ -313,7 +313,7 @@ describe("Montgomery County front porch outline", () => {
       censusBoundary: false,
       generatedImport: true,
       oldPath: false,
-      pathUses: 4,
+      pathUses: 2,
     });
   });
 
@@ -322,22 +322,29 @@ describe("Montgomery County front porch outline", () => {
     const { container } = render(<FrontPorchScrolly />);
     const outlines = [
       ...container.querySelectorAll(
-        ".front-porch-county, .front-porch-sketch-county, #county-texture-clip path, #county-sketch-texture-clip path"
+        ".front-porch-county, .front-porch-sketch-county"
       ),
     ].map((outline) => outline.getAttribute("d"));
+    const stage = container.querySelector(".front-porch-stage");
+    const stageHeader = stage?.querySelector(".front-porch-stage-top span");
+    const location = stage?.querySelector(".front-porch-stage-label");
     expect({
       fetchCalls: fetchSpy.mock.calls.length,
+      focus: stageHeader?.textContent,
+      interiorLines: container.querySelectorAll(".front-porch-county-texture")
+        .length,
+      location: location?.textContent,
       map: container.querySelector(".maplibregl-map"),
+      markers: stage?.querySelectorAll(".front-porch-point").length,
       outlines,
     }).toStrictEqual({
       fetchCalls: 0,
+      focus: "Geographic focus",
+      interiorLines: 0,
+      location: "Montgomery CountyVirginia · United States",
       map: null,
-      outlines: [
-        MONTGOMERY_COUNTY_OUTLINE,
-        MONTGOMERY_COUNTY_OUTLINE,
-        MONTGOMERY_COUNTY_OUTLINE,
-        MONTGOMERY_COUNTY_OUTLINE,
-      ],
+      markers: 3,
+      outlines: [MONTGOMERY_COUNTY_OUTLINE, MONTGOMERY_COUNTY_OUTLINE],
     });
   });
 });
