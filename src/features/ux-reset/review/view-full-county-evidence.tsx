@@ -39,9 +39,10 @@ export function ViewFullCountyEvidence({
   params.set(EXPLORER_MODE_PARAM, EXPLORER_EVIDENCE_MODE);
   return (
     <Link
-      className={cn(buttonVariants())}
+      className={cn(buttonVariants(), "ux-reset-review-open")}
       data-county={fips}
       data-testid="review-view-county-evidence"
+      data-variant="primary"
       href={`${pathname}?${params.toString()}`}
     >
       View Full County Evidence
