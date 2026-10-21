@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
 
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
+import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
 import type { StateReview } from "@/generated/models";
 
 import {
@@ -158,6 +159,50 @@ function OperatingPicturePreview({
     });
     // This catalog demonstrates navigation, not a factual county profile.
     storyClient.setQueryData(profileKey, null);
+    const scoreKey = [
+      "ux-reset-review-scores",
+      "alpha-2026",
+      EXPLORER_SCORE_SETTINGS,
+    ];
+    storyClient.setQueryDefaults(scoreKey, {
+      staleTime: Infinity,
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    });
+    // Ready gap-score paint for Adams County so the map stub can finish its
+    // render lifecycle. This catalog does not request published scores.
+    storyClient.setQueryData(scoreKey, {
+      counties: [
+        {
+          burgdorferi_status: "observed",
+          color: "#55a8a3",
+          county: "Adams County",
+          evidence_completeness: 50,
+          fips: "08001",
+          human_status: "observed",
+          in_contiguous_tick_scope: true,
+          priority: "Priority 3 — Review",
+          score: {
+            access_signal: 0.5,
+            community: 0.5,
+            ecological: 0.5,
+            human_weakness: 0.5,
+            pathogen_signal: 0.5,
+            rural_signal: 0.5,
+            score: 70,
+            svi_signal: 0.5,
+            tick_signal: 0.5,
+          },
+          state: "CO",
+          state_name: "Colorado",
+          tick_status: "observed",
+        },
+      ],
+      methodology_version: "1",
+      release_id: "alpha-2026",
+      settings: EXPLORER_SCORE_SETTINGS,
+    });
     return storyClient;
   });
   const [county, setCounty] = useState<string | null>(

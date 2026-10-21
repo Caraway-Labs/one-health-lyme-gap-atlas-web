@@ -32,6 +32,21 @@ describe("AI Ethics content baseline", () => {
     );
   });
 
+  it("shows the model-assisted tier only when its release matches", () => {
+    const current = aiEthicsContent.statements.find(
+      (statement) => statement.status === "current"
+    );
+    const copy = `${current?.summary ?? ""} ${current?.detail ?? ""}`;
+
+    expect(copy).toMatch(/follow-up-priority/i);
+    expect(copy).toMatch(/matches the selected evidence release/i);
+    expect(copy).toMatch(/withholds the tier/i);
+    expect(copy).toMatch(/not shown as LOW/);
+    expect(copy).toMatch(
+      /not disease risk, predicted incidence[\s\S]*Forecasts and anomaly candidates are not released/
+    );
+  });
+
   it("does not turn unresolved commitments into privacy promises", () => {
     const pendingStatement = aiEthicsContent.statements.find(
       (statement) => statement.status === "pending-decision"

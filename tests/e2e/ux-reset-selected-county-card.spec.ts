@@ -215,7 +215,7 @@ async function expectCard(
     .getByRole("button", { name: new RegExp(range.replaceAll("<", "\\<")) });
   await expect(legendButton).toHaveAttribute(
     "aria-label",
-    `Atlas gap score: ${range}. ${presentation.title}. ${presentation.detail}`
+    `Gap review score: ${range}. ${presentation.title}. ${presentation.detail}`
   );
   const colors = await page.evaluate(
     ({ detail, title }) => {

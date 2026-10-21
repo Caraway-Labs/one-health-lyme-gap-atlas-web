@@ -207,6 +207,10 @@ export function useExplorerMapObservations(input: {
         states[layerId] = { status: "unloaded" };
         continue;
       }
+      if (query.isFetching && !query.data && layerId === input.activeLayerId) {
+        states[layerId] = { reason: LOADING_REASON, status: "loading" };
+        continue;
+      }
       if (query.isError) {
         states[layerId] = {
           reason: failureReason(query.error),
