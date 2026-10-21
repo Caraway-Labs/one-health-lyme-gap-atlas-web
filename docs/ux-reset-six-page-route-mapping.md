@@ -57,7 +57,7 @@ Browse is the current Review surface: map, list, and compact preview when `count
 | --- | --- | --- |
 | `/app/review` | `/explore` | Same surface. Supported Review keys stay: `scope`, `county`, `compare`, `dataset`, `period`, `sort`, `page`, `mode`, `selection`, `layer`, `focus`. Other keys are dropped. |
 | `/app/compare` | `/compare` | Same surface. Supported Compare keys stay, including `return` and `mode`. |
-| `/app/assistant` | `/askatlas` | Same surface. `county`, `dataset`, `conversation`, and `page_ref` stay. |
+| `/app/assistant` | `/askatlas` | Same surface. `county`, `dataset`, and `conversation` stay. Obsolete `page_ref` is dropped. |
 | `/app`, `/app/explore` | `/explore` | Browse. Historical alias query rewrite, not the same-surface copy. |
 | `/app/investigate`, `/investigate` | `/explore` | `mode=evidence` when `county` is one valid FIPS. Otherwise browse with no county. |
 | `/app/action` | `/explore` | `mode=follow-up` when `county` is one valid FIPS. Otherwise browse with no county. |
@@ -112,7 +112,7 @@ These are dropped when an alias redirects. They are not Explorer state:
 | `plan`, `role` | Action. Only `plan` is parsed. `evidence-brief` is the one workflow id. `role` is unread. | Other Action links redirect to suggested follow-up and drop `plan`. One `plan=evidence-brief` stays on `/app/action` so the evidence brief remains reachable until that workflow renders in follow-up. |
 | `return` | Compare (`review` or `investigate`) | Kept on `/app/compare` → `/compare`. `return=review` targets `/explore`. `return=investigate` targets Atlas Explorer `mode=evidence`. |
 | `conversation` | `/assistant`, `/app/assistant`, `/askatlas`, `/knowledge-graph` | Kept on the Assistant URLs. `/app/assistant` redirects to `/askatlas` with this key. Not copied to Explorer. |
-| `page_ref` | `/app/assistant`, `/askatlas` | Validated Ask Atlas page reference. Kept across the same-surface redirect. Not a shared key, not a chat request field, and not retrieved evidence. |
+| `page_ref` | `/app/assistant`, `/askatlas` | Obsolete. Dropped on the `/app/assistant` redirect. A direct `/askatlas` link ignores it and removes it from the address bar. `conversation` and other supported parameters stay. It is not a shared key, not a chat request field, and not retrieved evidence. |
 | `tab` | Named on Feed, not read | Feed does not redirect. |
 | `release` | Not a URL key. Release identity is `dataset`. | Dropped. Not aliased onto `dataset`. |
 | `layer` | Review map layer. `/app/explore` uses `metric` instead. | Kept on `/app/review` → `/explore`. Dropped from any historical alias. Not aliased onto `metric`. |
@@ -144,7 +144,7 @@ Product links after #197 and #198:
 | `reset-explore-experience.tsx` | **View county evidence** on `/explore?mode=evidence`. Compare stays `/compare`. |
 | `reset-investigate-experience.tsx` | **Return to Atlas Explorer** for browse. **Suggested follow-up** is `/explore?mode=follow-up`. |
 | `reset-action-experience.tsx` | **Return to county evidence** on `/explore?mode=evidence`. The evidence brief itself stays on `plan=evidence-brief`. |
-| `ask-atlas/page-reference.ts` | Return links run through this map, so an Explore, Investigate, or Action reference opens the Explorer state above. |
+| `ask-atlas/workspace-href.ts` | Ask Atlas links use the shell handoff. They do not add `page_ref`. |
 | `compare-entry.ts`, `use-compare-workspace.ts` | Compare stays dedicated. `return=investigate` opens `mode=evidence`. |
 | `settings-account-controls.tsx` | Account return `/app/settings`. |
 | `middleware.ts` | Unauthenticated `/app` → sign-in `next`, then this map. |

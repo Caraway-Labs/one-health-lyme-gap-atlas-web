@@ -412,7 +412,9 @@ describe("Review operating picture state", () => {
       </QueryClientProvider>
     );
     const download = screen.getByTestId("explore-download-pdf");
-    const surveillance = screen.getByTestId("tier1-surveillance-priority");
+    const surveillance = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
     const investigate =
       screen.getByTestId("review-investigate").getAttribute("href") ?? "";
     expect({
@@ -434,9 +436,7 @@ describe("Review operating picture state", () => {
       release: "alpha-2026",
       state: "idle",
       surveillance: "release-unaligned",
-      text: expect.stringContaining(
-        "governed release for this page is not known"
-      ),
+      text: expect.stringContaining("Unavailable"),
     });
   });
 

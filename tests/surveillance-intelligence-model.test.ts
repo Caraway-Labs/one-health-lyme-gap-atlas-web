@@ -253,6 +253,61 @@ describe("County Surveillance Intelligence mapping", () => {
     );
   });
 
+  it("keeps score, percentile, and class membership on separate tracks", () => {
+    const views = mapped({
+      gap: readyGap(
+        scores([
+          {
+            fips: "01001",
+            in_contiguous_tick_scope: true,
+            score: { score: 36.6 },
+          },
+        ])
+      ),
+      situations: readySituations(
+        situations(
+          variant("AVAILABLE", fourClass),
+          variant("AVAILABLE", tickClass)
+        )
+      ),
+      tier1: readyTier(
+        tier1PriorityForRelease(
+          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
+          TIER1_RELEASE
+        )
+      ),
+    });
+    const selected = views[2]?.memberships.find(
+      (membership) => membership.selected
+    );
+    const tiny = views[2]?.memberships.find(
+      (membership) =>
+        membership.classId === "surveillance-situation-four-state.v1.class-2"
+    );
+    expect({
+      gapLabel: views[0]?.track?.label,
+      gapValue: views[0]?.track?.value,
+      percentile: views[1]?.track?.valueText,
+      percentileLabel: views[1]?.track?.label,
+      rawScoreLabel: views[1]?.disclosure.map((field) => field.label).join(" "),
+      selectedClass: selected?.classId,
+      sufficiency: views[1]?.sufficiency,
+      tier: views[1]?.tier,
+      tinyPercent: tiny?.percent,
+    }).toStrictEqual({
+      gapLabel: "Published Surveillance Gap Score 36.6 out of 100",
+      gapValue: 36.6,
+      percentile: "30.7",
+      percentileLabel:
+        "Within-batch percentile 30.7 out of 100. Not a disease risk probability.",
+      rawScoreLabel: expect.stringContaining("not a probability"),
+      selectedClass: "surveillance-situation-four-state.v1.class-3",
+      sufficiency: "INSUFFICIENT",
+      tier: "LOW",
+      tinyPercent: null,
+    });
+  });
+
   it("formats situation membership and refuses a composite score", () => {
     const views = mapped({
       gap: readyGap(

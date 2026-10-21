@@ -7,8 +7,6 @@ import {
   type Route,
 } from "@playwright/test";
 
-import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
-
 import {
   exploreGeometryFixture,
   exploreMeasuresEnvelope,
@@ -56,38 +54,21 @@ async function fulfillJson(route: Route, body: unknown, status = 200) {
   await route.fulfill({ json: body, status });
 }
 
-function releaseOnlyBookmark(href: string | null) {
+function askAtlasLink(href: string | null) {
   const url = new URL(href ?? "", "http://127.0.0.1");
-  const state = readAskAtlasPageReference(url.pathname, url.searchParams);
-  if (state.kind !== "validated") {
-    return {
-      county: url.searchParams.get("county"),
-      geography: null,
-      kind: state.kind,
-      release: null,
-      returnCounty: null,
-    };
-  }
-  const geography = state.reference.context.fields.geography;
-  const release = state.reference.context.fields.release;
   return {
     county: url.searchParams.get("county"),
-    geography: geography.state === "validated" ? geography.id : null,
-    kind: "validated" as const,
-    release: release.state === "validated" ? release.id : null,
-    returnCounty: new URL(
-      state.returnHref,
-      "http://127.0.0.1"
-    ).searchParams.get("county"),
+    dataset: url.searchParams.get("dataset"),
+    pageRef: url.searchParams.get("page_ref"),
+    pathname: url.pathname,
   };
 }
 
-const RELEASE_ONLY_BOOKMARK = {
-  county: null,
-  geography: null,
-  kind: "validated" as const,
-  release: "alpha-2026",
-  returnCounty: null,
+const RELEASE_ONLY_LINK = {
+  county: "08001",
+  dataset: "alpha-2026",
+  pageRef: null,
+  pathname: "/askatlas",
 };
 
 async function expectReleaseOnlySidebar(page: Page) {
@@ -95,8 +76,8 @@ async function expectReleaseOnlySidebar(page: Page) {
     .getByRole("navigation", { name: "Professional workspace" })
     .getByRole("link", { name: "Ask Atlas", exact: true });
   await expect
-    .poll(async () => releaseOnlyBookmark(await ask.getAttribute("href")))
-    .toEqual(RELEASE_ONLY_BOOKMARK);
+    .poll(async () => askAtlasLink(await ask.getAttribute("href")))
+    .toEqual(RELEASE_ONLY_LINK);
 }
 
 async function installExploreMocks(page: Page) {
@@ -173,21 +154,16 @@ test("asks on the dedicated page and keeps that conversation in this browser", a
   await expectReleaseOnlySidebar(page);
   await ask.click();
   await expect(page).toHaveURL(/\/askatlas\?/);
-  await expect
-    .poll(() => releaseOnlyBookmark(page.url()))
-    .toEqual(RELEASE_ONLY_BOOKMARK);
+  await expect.poll(() => askAtlasLink(page.url())).toEqual(RELEASE_ONLY_LINK);
   await expect(page).not.toHaveURL(/conversation=/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Ask Atlas" })
   ).toBeVisible();
   await expect(page.getByText("Reviewed literature").first()).toBeVisible();
-  const reference = page.getByTestId("ask-atlas-page-reference");
-  await expect(reference).toHaveAttribute("data-reference-state", "validated");
-  await expect(reference.locator("[data-field='release']")).toHaveAttribute(
-    "data-field-id",
-    "alpha-2026"
-  );
-  await expect(reference.locator("[data-field='geography']")).toHaveCount(0);
+  await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Page reference" })
+  ).toHaveCount(0);
   await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   await expect(page.getByTestId("ask-atlas-launcher")).toHaveCount(0);
   await page.getByLabel("Your research question").fill(QUESTION);

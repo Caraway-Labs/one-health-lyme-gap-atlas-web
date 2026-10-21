@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { EvidenceChatWorkspaceShell } from "@/components/evidence-chat/evidence-chat-layout-shell";
 import { useEvidenceChat } from "@/components/evidence-chat/use-evidence-chat";
 import { Badge } from "@/components/ui/badge";
 import { AskAtlasLiteraturePrompts } from "@/features/ux-reset/ask-atlas/ask-atlas-literature-prompts";
 import { AskAtlasUnavailableNotice } from "@/features/ux-reset/ask-atlas/ask-atlas-unavailable";
-import { AskAtlasPageReferenceStrip } from "@/features/ux-reset/ask-atlas/page-reference-strip";
+import { replaceObsoleteAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { isAtlasAssistantLiteratureEnabled } from "@/lib/assistant-entry-points";
 
 const ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID =
@@ -17,6 +19,9 @@ export function AskAtlasWorkspace({
   initialConversationId?: string;
 }) {
   const requestsEnabled = isAtlasAssistantLiteratureEnabled();
+  useEffect(() => {
+    replaceObsoleteAskAtlasPageReference();
+  }, []);
 
   return (
     <div
@@ -34,7 +39,6 @@ export function AskAtlasWorkspace({
           <p className="ux-reset-ask-atlas-intro">
             Explore reviewed research on Lyme disease and ticks.
           </p>
-          <AskAtlasPageReferenceStrip />
           <AskAtlasUnavailableNotice
             headingId={ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID}
           />
@@ -65,7 +69,6 @@ function AskAtlasWorkspaceChat({
           visible={model.showEmptyState}
         />
       }
-      leading={<AskAtlasPageReferenceStrip />}
       model={model}
       presentation="ask-atlas"
     />

@@ -188,7 +188,7 @@ test.describe("Ranking influence", () => {
     await expect(influence).not.toHaveAttribute("open");
     await expect(
       preview.getByTestId("selected-county-response-tier")
-    ).toBeVisible();
+    ).toHaveCount(0);
     await expect(preview.getByTestId("explore-download-pdf")).toBeVisible();
     await expect(page.getByTestId("explorer-map-follow-up")).toBeVisible();
     await captureCard(page, testInfo, "worth-ranking-collapsed");

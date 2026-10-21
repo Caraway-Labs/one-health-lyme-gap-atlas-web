@@ -673,4 +673,119 @@ describe("Explorer map legend", () => {
       unit: screen.queryByText(/· percent/) !== null,
     }).toStrictEqual({ higher: true, lower: true, unit: true });
   });
+
+  it("keeps one clipped pill and shortens it as categories drop", () => {
+    const pathogen = paintExplorerMapLayer({
+      counties: [
+        county("08013", { burgdorferi_status: "No records" }),
+        county("08001", { burgdorferi_status: "Present" }),
+      ],
+      layerId: "pathogen_status",
+      scoresStatus: "ready",
+    });
+    const tick = paintExplorerMapLayer({
+      counties: [
+        county("08013", { tick_status: "No records" }),
+        county("08005", { fips: "08005", tick_status: "Reported" }),
+        county("08001", { tick_status: "Established" }),
+      ],
+      layerId: "tick_status",
+      scoresStatus: "ready",
+    });
+    const gap = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "gap_score",
+      scoresStatus: "ready",
+    });
+    const incidence = quantityPaint(
+      "incidence_floor",
+      [
+        numericRow("08001", ValueState.OBSERVED, 0, "0"),
+        numericRow("08005", ValueState.UNAVAILABLE, null, null),
+        numericRow("11001", ValueState.OBSERVED, 12, "12"),
+      ],
+      "per 100,000"
+    );
+    render(
+      <>
+        <ExplorerMapLegend paint={pathogen} />
+        <ExplorerMapLegend paint={tick} />
+        <ExplorerMapLegend paint={gap} />
+        <ExplorerMapLegend paint={incidence} />
+      </>
+    );
+    const shape = (name: string) => {
+      const legend = screen.getByRole("region", { name });
+      const strip = legend.querySelector<HTMLElement>(
+        ".ux-reset-explorer-legend-strip"
+      );
+      const pill = legend.querySelector<HTMLElement>(
+        ".ux-reset-explorer-legend-pill"
+      );
+      return {
+        count: strip?.dataset.legendCount,
+        fill: strip?.dataset.legendFill,
+        pill: pill?.querySelectorAll("[data-legend-pill-segment]").length,
+        width: strip?.style.getPropertyValue("--legend-count"),
+      };
+    };
+    expect({
+      gap: shape("Gap review score map legend"),
+      incidence: shape("Minimum reported incidence map legend"),
+      pathogen: shape("B. burgdorferi status map legend"),
+      tick: shape("Blacklegged tick status map legend"),
+    }).toStrictEqual({
+      gap: { count: "7", fill: "count", pill: 7, width: "7" },
+      incidence: { count: "2", fill: "full", pill: 2, width: "7" },
+      pathogen: { count: "2", fill: "count", pill: 2, width: "2" },
+      tick: { count: "3", fill: "count", pill: 3, width: "3" },
+    });
+    const pathogenLegend = screen.getByRole("region", {
+      name: "B. burgdorferi status map legend",
+    });
+    expect(
+      pathogenLegend.textContent?.includes("(not zero, not confirmed absence)")
+    ).toBeTruthy();
+    const colors = [
+      ...pathogenLegend.querySelectorAll<HTMLElement>(
+        ".ux-reset-explorer-legend-pill [data-legend-pill-segment]"
+      ),
+    ].map((segment) => segment.style.background);
+    const buttonColors = [
+      ...pathogenLegend.querySelectorAll<HTMLElement>("[data-legend-segment]"),
+    ].map((segment) => segment.querySelector("span")?.style.background);
+    expect(colors).toStrictEqual(buttonColors);
+  });
+
+  it("draws the county boundaries key on the visible pill", () => {
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "boundaries",
+      scoresStatus: "ready",
+    });
+    render(<ExplorerMapLegend paint={paint} />);
+    const legend = screen.getByRole("region", {
+      name: "County boundaries map legend",
+    });
+    const visible = legend.querySelector<HTMLElement>(
+      ".ux-reset-explorer-legend-pill [data-legend-pill-segment]"
+    );
+    const shadow = visible?.style.boxShadow ?? "";
+    const shadowColor = /rgb\([^)]+\)|#[0-9A-Fa-f]{6}/.exec(shadow)?.[0] ?? "";
+    // jsdom serializes the authored #F3F4F6 fill and #4B5563 inset stroke as rgb().
+    expect({
+      disclosure: legend.querySelector("[data-legend-disclosure]") !== null,
+      fill: sameColor(visible?.style.background ?? "", "#F3F4F6"),
+      missing: legend.querySelector("[data-legend-role='missing']") !== null,
+      stroke:
+        sameColor(shadowColor, "#4B5563") &&
+        /inset/.test(shadow) &&
+        shadow.includes("2px"),
+    }).toStrictEqual({
+      disclosure: false,
+      fill: true,
+      missing: false,
+      stroke: true,
+    });
+  });
 });

@@ -14,7 +14,6 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uxResetDestinationHref } from "@/features/ux-reset";
-import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { ResetReviewExperience } from "@/features/ux-reset/review/reset-review-experience";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
@@ -38,15 +37,11 @@ const reviewRouter = vi.hoisted(() => ({
 
 let mockedSearch = "";
 
-function askAtlasContentReference() {
-  const href = new URL(
+function askAtlasContentHref() {
+  return new URL(
     screen.getByTestId("review-ask-atlas").getAttribute("href") ?? "",
     "http://localhost"
   );
-  return {
-    href,
-    state: readAskAtlasPageReference(href.pathname, href.searchParams),
-  };
 }
 
 const reviewReleaseControls: {
@@ -1470,25 +1465,15 @@ describe("Reset Review scope UI", () => {
         }
       });
       await waitFor(() => {
-        const { state } = askAtlasContentReference();
-        if (state.kind !== "validated") {
-          throw new Error(state.kind);
-        }
-        const geography = state.reference.context.fields.geography;
+        const href = askAtlasContentHref();
         if (
-          geography.state !== "validated" ||
-          geography.label !== "Denver, Colorado (08001)"
+          href.searchParams.get("county") !== "08001" ||
+          href.searchParams.has("page_ref")
         ) {
-          throw new Error(
-            geography.state === "validated" ? geography.label : geography.state
-          );
+          throw new Error(href.search);
         }
       });
-      const { href, state } = askAtlasContentReference();
-      const geography =
-        state.kind === "validated"
-          ? state.reference.context.fields.geography
-          : null;
+      const href = askAtlasContentHref();
       const navigation = screen.getByRole("navigation", {
         name: "Professional workspace",
       });
@@ -1506,9 +1491,8 @@ describe("Reset Review scope UI", () => {
         askOtherCounty: ask.includes("08013"),
         compareCounty: compare.includes("county=08001"),
         compareOtherCounty: compare.includes("08013"),
-        geographyLabel:
-          geography?.state === "validated" ? geography.label : null,
-        geographyState: geography?.state ?? null,
+        contentCounty: href.searchParams.get("county"),
+        contentPageRef: href.searchParams.get("page_ref"),
         investigateCounty: investigate.includes("county=08001"),
         investigateOtherCounty: investigate.includes("08013"),
         otherCountyOnLink: href.href.includes("Boulder"),
@@ -1516,27 +1500,18 @@ describe("Reset Review scope UI", () => {
         preview: screen
           .getByTestId("review-county-preview")
           .getAttribute("aria-label"),
-        publishedFormat:
-          geography?.state === "validated" &&
-          geography.label.includes(", Colorado ("),
-        returnCounty:
-          state.kind === "validated" &&
-          state.returnHref.includes("/explore?") &&
-          state.returnHref.includes("county=08001"),
       }).toStrictEqual({
         askCounty: true,
         askOtherCounty: false,
         compareCounty: true,
         compareOtherCounty: false,
-        geographyLabel: "Denver, Colorado (08001)",
-        geographyState: "validated",
+        contentCounty: "08001",
+        contentPageRef: null,
         investigateCounty: true,
         investigateOtherCounty: false,
         otherCountyOnLink: false,
         panel: null,
         preview: "County preview for Unavailable, Colorado",
-        publishedFormat: true,
-        returnCounty: true,
       });
     } finally {
       review.mockImplementation(
@@ -1600,18 +1575,12 @@ describe("Reset Review scope UI", () => {
         }
       });
       await waitFor(() => {
-        const { state } = askAtlasContentReference();
-        if (state.kind !== "validated") {
-          throw new Error(state.kind);
-        }
-        const geography = state.reference.context.fields.geography;
+        const href = askAtlasContentHref();
         if (
-          geography.state !== "validated" ||
-          !geography.label.includes("Denver, Colorado (08001)")
+          href.searchParams.get("county") !== "08001" ||
+          href.searchParams.has("page_ref")
         ) {
-          throw new Error(
-            geography.state === "validated" ? geography.label : geography.state
-          );
+          throw new Error(href.search);
         }
       });
       failRefresh = true;
@@ -3601,11 +3570,13 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=alpha-2026");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
       ).toBe("HIGH")
     );
     expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.sufficiency
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .dataset.sufficiency
     ).toBe("SUFFICIENT");
   });
 
@@ -3618,10 +3589,13 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=historical-2024");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.state
       ).toBe("release-unaligned")
     );
-    const region = screen.getByTestId("tier1-surveillance-priority");
+    const region = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
       reason: region.dataset.releaseReason,
@@ -3646,13 +3620,16 @@ describe("Reset Review scope UI", () => {
     });
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
       ).toBe("HIGH")
     );
     reviewReleaseControls.metadataReleaseId = "historical-2024";
     view.rerenderSearch("?scope=NY&county=36001&dataset=historical-2024");
     await waitFor(() => {
-      const region = screen.getByTestId("tier1-surveillance-priority");
+      const region = screen.getByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      );
       if (
         region.dataset.state !== "release-unaligned" ||
         region.dataset.tier === "HIGH"
@@ -3661,10 +3638,12 @@ describe("Reset Review scope UI", () => {
       }
     });
     expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .dataset.releaseReason
     ).toBe("mismatch");
     expect(
-      screen.getByTestId("tier1-surveillance-priority").textContent
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .textContent
     ).not.toMatch(/\bLOW\b|\bHIGH\b/);
   });
 
@@ -3702,7 +3681,10 @@ describe("Reset Review scope UI", () => {
     });
     renderReview("?scope=NY&county=36001&dataset=alpha-2026", { client });
     await waitFor(() =>
-      expect(screen.getByTestId("tier1-priority-tier").textContent).toBe("HIGH")
+      expect(
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
+      ).toBe("HIGH")
     );
 
     reviewReleaseControls.metadataStatus = 503;
@@ -3712,7 +3694,8 @@ describe("Reset Review scope UI", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.state
       ).toBe("release-unaligned")
     );
     const legend =
@@ -3723,9 +3706,12 @@ describe("Reset Review scope UI", () => {
       insufficient: /\bINSUFFICIENT\b/.test(pageText),
       low: /\bLOW\b/.test(pageText),
       medium: /\bMEDIUM\b/.test(pageText),
-      panels: screen.getAllByTestId("tier1-surveillance-priority").length,
-      reason: screen.getByTestId("tier1-surveillance-priority").dataset
-        .releaseReason,
+      panels: screen.getAllByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      ).length,
+      reason: screen.getByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      ).dataset.releaseReason,
       sufficiency: screen.queryByTestId("tier1-evidence-sufficiency"),
       tier: screen.queryByTestId("tier1-priority-tier"),
     }).toStrictEqual({
@@ -3978,7 +3964,7 @@ describe("Reset Review scope UI", () => {
     expect(screen.queryByTestId("review-state-panel")).toBeTruthy();
   });
 
-  it("keeps a chosen national county on Ask Atlas and leaves a bookmark county off it", async () => {
+  it("keeps the visible national county on Ask Atlas without a page reference", async () => {
     const search = "scope=ALL&county=08001&dataset=alpha-2026";
     mockedSearch = search;
     const client = new QueryClient({
@@ -4015,25 +4001,22 @@ describe("Reset Review scope UI", () => {
       );
       return {
         county: href.searchParams.get("county"),
-        state: readAskAtlasPageReference(href.pathname, href.searchParams),
+        pageRef: href.searchParams.get("page_ref"),
       };
     };
     await waitFor(() => {
-      if (dedicatedAsk().county !== null) {
-        throw new Error(dedicatedAsk().county ?? "county still present");
+      const link = dedicatedAsk();
+      if (link.county !== "08001" || link.pageRef !== null) {
+        throw new Error(`${link.county ?? "missing"} ${link.pageRef ?? ""}`);
       }
     });
     const bookmarked = dedicatedAsk();
-    const bookmarkedGeography =
-      bookmarked.state.kind === "validated"
-        ? bookmarked.state.reference.context.fields.geography
-        : null;
     expect({
-      bookmarkGeography: bookmarkedGeography,
+      bookmarkPageRef: bookmarked.pageRef,
       bookmarkPreviewCounty: bookmarked.county,
     }).toStrictEqual({
-      bookmarkGeography: { state: "absent" },
-      bookmarkPreviewCounty: null,
+      bookmarkPageRef: null,
+      bookmarkPreviewCounty: "08001",
     });
 
     const boulder = screen
@@ -4055,22 +4038,14 @@ describe("Reset Review scope UI", () => {
         .querySelector("[data-testid='review-ask-atlas']")
     ).toBeNull();
     const chosen = dedicatedAsk();
-    const geography =
-      chosen.state.kind === "validated"
-        ? chosen.state.reference.context.fields.geography
-        : null;
     expect({
-      geography,
       launcherCounty: chosen.county,
+      pageRef: chosen.pageRef,
       previewFips: screen.getByTestId("review-published-county-preview").dataset
         .fips,
     }).toStrictEqual({
-      geography: {
-        id: "08013",
-        label: "Boulder, Colorado (08013)",
-        state: "validated",
-      },
       launcherCounty: "08013",
+      pageRef: null,
       previewFips: "08013",
     });
   });

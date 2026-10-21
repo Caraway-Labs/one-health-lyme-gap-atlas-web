@@ -52,7 +52,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Blacklegged tick status legend. Swatches use the tick-only contract, with persistent category labels.",
+          "Blacklegged tick status legend. Categories share one segmented pill, with persistent labels under each segment.",
       },
     },
   },

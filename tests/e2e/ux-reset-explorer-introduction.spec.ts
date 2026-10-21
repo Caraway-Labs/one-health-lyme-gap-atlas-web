@@ -217,7 +217,11 @@ test.describe("Explorer and Compare introductions", () => {
     await expect(
       page.getByText("Explore potential Lyme surveillance gaps")
     ).toHaveCount(0);
-    await expect(page.getByText("Surveillance gap score")).toHaveCount(0);
+    await expect(
+      page
+        .getByTestId("page-introduction-explorer")
+        .getByText("Surveillance gap score")
+    ).toHaveCount(0);
     await expect(
       page.getByRole("heading", { level: 2, name: "Explore county patterns" })
     ).toBeVisible();

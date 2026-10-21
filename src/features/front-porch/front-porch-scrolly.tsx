@@ -20,15 +20,6 @@ const COUNTY_MARKERS = [
   { cx: 230, cy: 290, halo: 16, point: 6, opacity: 0.18 },
   { cx: 392, cy: 272, halo: 16, point: 5, opacity: 0.2 },
 ] as const;
-const ORIGINAL_ZIGZAG = "M108 218 l89 -24 l68 38 l69 -41 l77 47 l86 -13";
-const ORIGINAL_LEFT_LINE = "M139 162 l36 77 l-18 71";
-const ORIGINAL_REMAINING_LINES = "M380 155 l-23 101 l63 99";
-const ORIGINAL_VERTICAL_LINE = "M240 118 l10 90 l26 195";
-const ORIGINAL_LINE_CENTER = { x: 302.5, y: 260.5 } as const;
-const COUNTY_LINE_FIT = { x: 301.4, y: 260.3, scale: 0.75 } as const;
-const LEFTMOST_LINE_SHIFT = 24;
-const NEXT_LINE_SHIFT = 77.3;
-const VERTICAL_LINE_SHIFT = 16;
 const COUNTY_PLACEMENT = { x: 301.4, y: 260.3, scale: 1.08, lift: 18 } as const;
 const READING_LINE = 0.28;
 /**
@@ -77,45 +68,10 @@ function CardLines({ beat }: { beat: FrontPorchBeat }) {
   ));
 }
 
-function CountyLines({ clipId }: { clipId: string }) {
-  return (
-    <g
-      aria-hidden="true"
-      clipPath={`url(#${clipId})`}
-      transform={`translate(${COUNTY_LINE_FIT.x} ${COUNTY_LINE_FIT.y}) scale(${COUNTY_LINE_FIT.scale}) translate(${-ORIGINAL_LINE_CENTER.x} ${-ORIGINAL_LINE_CENTER.y})`}
-    >
-      <path
-        className="front-porch-county-texture"
-        d={ORIGINAL_ZIGZAG}
-        transform={`translate(${LEFTMOST_LINE_SHIFT} 0)`}
-      />
-      <path
-        className="front-porch-county-texture"
-        d={ORIGINAL_LEFT_LINE}
-        transform={`translate(${NEXT_LINE_SHIFT} 0)`}
-      />
-      <path
-        className="front-porch-county-texture"
-        d={ORIGINAL_VERTICAL_LINE}
-        transform={`translate(${VERTICAL_LINE_SHIFT} 0)`}
-      />
-      <path
-        className="front-porch-county-texture"
-        d={ORIGINAL_REMAINING_LINES}
-      />
-    </g>
-  );
-}
-
 function MobileSketch({ step }: { step: number }) {
   if (step === 0) {
     return (
       <svg aria-hidden="true" viewBox="120 50 350 390">
-        <defs>
-          <clipPath id="county-sketch-texture-clip">
-            <path d={MONTGOMERY_COUNTY_OUTLINE} />
-          </clipPath>
-        </defs>
         <g
           transform={`translate(0 ${-COUNTY_PLACEMENT.lift}) translate(${COUNTY_PLACEMENT.x} ${COUNTY_PLACEMENT.y}) scale(${COUNTY_PLACEMENT.scale}) translate(${-COUNTY_PLACEMENT.x} ${-COUNTY_PLACEMENT.y})`}
         >
@@ -125,7 +81,6 @@ function MobileSketch({ step }: { step: number }) {
             strokeLinejoin="round"
             strokeWidth="4"
           />
-          <CountyLines clipId="county-sketch-texture-clip" />
         </g>
       </svg>
     );
@@ -290,7 +245,7 @@ export function FrontPorchScrolly() {
           >
             <div className="front-porch-stage-top">
               <strong>{FRONT_PORCH_STAGE_HEADER}</strong>
-              <span>Geographic focus · Montgomery County, VA</span>
+              <span>Geographic focus</span>
             </div>
             <div
               aria-label="County illustration"
@@ -319,9 +274,6 @@ export function FrontPorchScrolly() {
                     >
                       <circle className="front-porch-dot" cx="1" cy="1" r="1" />
                     </pattern>
-                    <clipPath id="county-texture-clip">
-                      <path d={MONTGOMERY_COUNTY_OUTLINE} />
-                    </clipPath>
                   </defs>
                   <rect fill="url(#county-dot-grid)" height="480" width="600" />
                   <g
@@ -333,7 +285,6 @@ export function FrontPorchScrolly() {
                       strokeLinejoin="round"
                       strokeWidth="2.2"
                     />
-                    <CountyLines clipId="county-texture-clip" />
                     {COUNTY_MARKERS.map((marker, index) => (
                       <g
                         className={
