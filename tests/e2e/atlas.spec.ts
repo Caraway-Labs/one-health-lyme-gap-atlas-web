@@ -218,7 +218,7 @@ test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages",
   ).toHaveCount(0);
 
   for (const [path, heading] of [
-    ["/docs", "Start with Atlas"],
+    ["/docs", "Start with One Health Atlas"],
     ["/privacy", "Privacy without the fine print."],
     ["/ai-ethics", "How Atlas approaches AI"],
   ] as const) {

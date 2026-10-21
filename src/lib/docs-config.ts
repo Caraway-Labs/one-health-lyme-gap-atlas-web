@@ -3,6 +3,9 @@ import { getDocsUrl, type PublicOriginEnvironment } from "@/lib/public-origins";
 export type { PublicOriginEnvironment as PublicDocsEnvironment } from "@/lib/public-origins";
 export { getDocsUrl } from "@/lib/public-origins";
 
+/** Visible name of the documentation site. */
+export const DOCS_SITE_TITLE = "One Health Atlas documentation";
+
 export function getDocsHref(
   anchor?: string,
   environment?: PublicOriginEnvironment

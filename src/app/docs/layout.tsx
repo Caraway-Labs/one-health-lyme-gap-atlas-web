@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { BrandMark } from "@/components/brand-mark";
 import { DocsAccessibility } from "@/components/docs-accessibility";
 import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
+import { DOCS_SITE_TITLE } from "@/lib/docs-config";
 import { docsSource } from "@/lib/docs-source";
 
 import "@/features/ux-reset/trust-footer.css";
@@ -22,7 +23,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             title: (
               <span className="atlas-docs-brand">
                 <BrandMark size={28} />
-                <span>Atlas documentation</span>
+                <span>{DOCS_SITE_TITLE}</span>
               </span>
             ),
             url: "/docs",

@@ -15,7 +15,9 @@ test("renders the Tier 1 availability decision guide", async ({
   await expect(
     page.getByRole("heading", { name: "Tier 1 availability", exact: true })
   ).toBeVisible();
-  await expect(page).toHaveTitle(/Tier 1 availability \| Atlas documentation/);
+  await expect(page).toHaveTitle(
+    /Tier 1 availability \| One Health Atlas documentation/
+  );
   await expect(page.locator(".app-shell")).toHaveCount(0);
 
   await expect(

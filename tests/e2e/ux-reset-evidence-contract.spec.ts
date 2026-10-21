@@ -101,7 +101,9 @@ test("ux-reset evidence provenance keyboard, expanded axe, and doc/source links"
   await page.keyboard.press("Enter");
   await expect(technical).toHaveAttribute("open", "");
 
-  const docsLink = specimen.getByRole("link", { name: /Atlas documentation/ });
+  const docsLink = specimen.getByRole("link", {
+    name: /One Health Atlas documentation/,
+  });
   await expect(docsLink).toHaveAttribute(
     "href",
     /\/docs\/evidence-and-uncertainty\/?$/

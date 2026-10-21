@@ -240,11 +240,14 @@ test.describe("workspace header titles", () => {
 
     await page.goto("/docs");
     await expect(
-      page.getByRole("link", { name: "Atlas documentation" }).first()
+      page.getByRole("link", { name: "One Health Atlas documentation" }).first()
     ).toBeVisible();
     await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Start with Atlas Lyme" })
+      page.getByRole("heading", {
+        level: 1,
+        name: "Start with One Health Atlas",
+      })
     ).toBeVisible();
   });
 
