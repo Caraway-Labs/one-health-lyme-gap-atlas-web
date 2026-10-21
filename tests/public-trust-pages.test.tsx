@@ -176,7 +176,7 @@ describe("public trust page family", () => {
       parts.push(work.topic, work.detail);
     }
     parts.push(
-      `Version ${aiEthicsContent.version} · Last updated September 7, 2026`,
+      `Version ${aiEthicsContent.version} · Last updated October 21, 2026`,
       aiEthicsContent.maintenance.review,
       aiEthicsContent.maintenance.updateRule,
       "Return to the Atlas"
