@@ -513,7 +513,7 @@ describe("Storybook P0 evidence fixtures", () => {
     fetchSpy.mockRestore();
   });
 
-  it("calls onOpen once per county action with the preview fips", () => {
+  it("calls onOpen for the compare action with the preview fips", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("rationale");
     render(
@@ -531,11 +531,8 @@ describe("Storybook P0 evidence fixtures", () => {
         />
       </QueryClientProvider>
     );
-    clickLink(screen.getByRole("link", { name: "County evidence" }));
+    clickLink(screen.getByRole("link", { name: "Compare This County" }));
     expect(onOpen).toHaveBeenCalledExactlyOnceWith(syntheticCounty.fips);
-    clickLink(screen.getByRole("link", { name: "Compare this county" }));
-    expect(onOpen).toHaveBeenCalledTimes(2);
-    expect(onOpen.mock.calls[1]).toStrictEqual([syntheticCounty.fips]);
   });
 
   it("does not treat a provenance source reference as a county open", () => {
@@ -564,7 +561,7 @@ describe("Storybook P0 evidence fixtures", () => {
     );
     expect(onOpen).not.toHaveBeenCalled();
     expect(
-      screen.getByTestId("review-investigate").getAttribute("href")
+      screen.getByTestId("review-county-preview").dataset.target
     ).toContain(`dataset=${syntheticReleaseId}`);
     expect(screen.getByTestId("review-compare").getAttribute("href")).toContain(
       `county=${syntheticCounty.fips}`

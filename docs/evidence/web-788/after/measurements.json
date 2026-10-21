@@ -1,0 +1,152 @@
+[
+  {
+    "label": "national-1440x900",
+    "bodyFontSizes": [11.5, 12, 13, 14, 16, 24],
+    "buttons": 64,
+    "links": 0,
+    "mapTop": 378,
+    "pageHeight": 854,
+    "proseWords": 182,
+    "totalWords": 733
+  },
+  {
+    "label": "state-1440x900",
+    "bodyFontSizes": [11.5, 12, 13, 14, 16, 24, 24.8],
+    "buttons": 92,
+    "links": 2,
+    "mapTop": 378,
+    "pageHeight": 923,
+    "proseWords": 181,
+    "totalWords": 1073
+  },
+  {
+    "label": "state-county-1440x900",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8],
+    "buttons": 110,
+    "links": 48,
+    "mapTop": 378,
+    "pageHeight": 923,
+    "proseWords": 395,
+    "totalWords": 395
+  },
+  {
+    "label": "evidence-1440x900",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8, 30],
+    "buttons": 131,
+    "links": 64,
+    "mapTop": 0,
+    "pageHeight": 800,
+    "proseWords": 175,
+    "totalWords": 175
+  },
+  {
+    "label": "follow-up-1440x900",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8, 30],
+    "buttons": 131,
+    "links": 64,
+    "mapTop": 0,
+    "pageHeight": 2255,
+    "proseWords": 286,
+    "totalWords": 286
+  },
+  {
+    "label": "national-1280x720",
+    "bodyFontSizes": [11.5, 12, 13, 14, 16, 24],
+    "buttons": 64,
+    "links": 0,
+    "mapTop": 421,
+    "pageHeight": 803,
+    "proseWords": 182,
+    "totalWords": 733
+  },
+  {
+    "label": "state-1280x720",
+    "bodyFontSizes": [11.5, 12, 13, 14, 16, 24, 24.8],
+    "buttons": 92,
+    "links": 2,
+    "mapTop": 395,
+    "pageHeight": 873,
+    "proseWords": 181,
+    "totalWords": 1073
+  },
+  {
+    "label": "state-county-1280x720",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8],
+    "buttons": 110,
+    "links": 48,
+    "mapTop": 395,
+    "pageHeight": 873,
+    "proseWords": 395,
+    "totalWords": 395
+  },
+  {
+    "label": "evidence-1280x720",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8, 30],
+    "buttons": 131,
+    "links": 64,
+    "mapTop": 0,
+    "pageHeight": 620,
+    "proseWords": 175,
+    "totalWords": 175
+  },
+  {
+    "label": "follow-up-1280x720",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8, 30],
+    "buttons": 131,
+    "links": 64,
+    "mapTop": 0,
+    "pageHeight": 2273,
+    "proseWords": 286,
+    "totalWords": 286
+  },
+  {
+    "label": "national-390x844",
+    "bodyFontSizes": [11.5, 12, 13, 14, 16, 24],
+    "buttons": 64,
+    "links": 0,
+    "mapTop": 708,
+    "pageHeight": 1420,
+    "proseWords": 180,
+    "totalWords": 731
+  },
+  {
+    "label": "state-390x844",
+    "bodyFontSizes": [11.5, 12, 13, 14, 16, 24, 24.8],
+    "buttons": 92,
+    "links": 2,
+    "mapTop": 709,
+    "pageHeight": 1421,
+    "proseWords": 179,
+    "totalWords": 1071
+  },
+  {
+    "label": "state-county-390x844",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8],
+    "buttons": 110,
+    "links": 48,
+    "mapTop": 709,
+    "pageHeight": 1945,
+    "proseWords": 393,
+    "totalWords": 393
+  },
+  {
+    "label": "evidence-390x844",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8],
+    "buttons": 131,
+    "links": 64,
+    "mapTop": 0,
+    "pageHeight": 841,
+    "proseWords": 173,
+    "totalWords": 173
+  },
+  {
+    "label": "follow-up-390x844",
+    "bodyFontSizes": [11.5, 12, 12.5, 12.8, 13, 13.4, 14, 16, 20, 24, 24.8],
+    "buttons": 131,
+    "links": 64,
+    "mapTop": 0,
+    "pageHeight": 2444,
+    "proseWords": 284,
+    "totalWords": 284
+  }
+]

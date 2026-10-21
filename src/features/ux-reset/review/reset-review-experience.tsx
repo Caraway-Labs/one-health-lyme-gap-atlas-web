@@ -21,6 +21,7 @@ import {
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { resetRouteById } from "@/features/ux-reset/paths";
+import { ExplorerRailTabMemoryProvider } from "@/features/ux-reset/review/explorer-browse-rail";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import {
   downloadExplorerCountyList,
@@ -31,6 +32,7 @@ import {
   filterExplorerCountyReference,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerCountyToolbar } from "@/features/ux-reset/review/explorer-county-toolbar";
+import { ExplorerExportMenu } from "@/features/ux-reset/review/explorer-export-menu";
 import {
   explorerFollowUpSelection,
   explorerFollowUpState,
@@ -49,6 +51,8 @@ import {
   EXPLORER_SELECTION_REQUIRED,
   resolveExplorerModeQuery,
 } from "@/features/ux-reset/review/explorer-mode";
+import { ExplorerOfficialResources } from "@/features/ux-reset/review/explorer-official-resources";
+import { ExplorerReleaseBadge } from "@/features/ux-reset/review/explorer-release-badge";
 import {
   ExplorerWhatIfScenario,
   explorerScenarioScopeSupported,
@@ -84,7 +88,6 @@ import {
   reviewCountyFipsForScope,
   unsupportedReviewScopeMessage,
 } from "@/features/ux-reset/review/review-operating-state";
-import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release-evidence";
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
 import {
   reviewSearchParams,
@@ -652,6 +655,9 @@ function ResetReviewExperienceInner() {
       if (!county) {
         return;
       }
+      // Leaving for county evidence is a return trip. Mark the county so
+      // focus comes back to its list row, as it does for Back to map.
+      markReviewReturnFocus(county);
       // The state review was loaded for this release. Pin it so county
       // evidence does not request a newer current release.
       void setUrlState(
@@ -719,6 +725,18 @@ function ResetReviewExperienceInner() {
     );
   }, [clearCompare, clearCounty, reviewCounty, setUrlState]);
   const scopeLabel = reviewScopeLabel(scope, stateOptions);
+  const exportCountyRecord = reviewCounty
+    ? countyReference.counties.find((entry) => entry.fips === reviewCounty)
+    : undefined;
+  const exportCounty =
+    exportCountyRecord && confirmedRelease
+      ? {
+          countyName: exportCountyRecord.county,
+          fips: exportCountyRecord.fips,
+          releaseId: confirmedRelease,
+          stateCode: exportCountyRecord.state,
+        }
+      : null;
   const renderedScope = nationalReady ? "ALL" : scope;
   const metadataLoading =
     presentationQuery.isLoading && !presentationQuery.metadata;
@@ -739,15 +757,43 @@ function ResetReviewExperienceInner() {
         availableData={availableData}
         counties={countyReference.counties}
         countyQuery={countyQuery}
-        downloadDisabled={!countyReference.isSuccess}
         scope={scope}
+        scopeLabel={scopeLabel}
         selectedFips={reviewCounty}
         stateOptions={stateOptions}
+        trailing={
+          <>
+            {scenarioScopeSupported && !explorerMode ? (
+              <ExplorerWhatIfScenario
+                impact={scenarioImpact}
+                scoresRetrying={
+                  scenarioScoresQuery.isFetching && scenarioScoresQuery.isError
+                }
+                settings={scenarioSettings}
+                onChange={setScenarioSettings}
+                onRetryScores={() => {
+                  void scenarioScoresQuery.refetch();
+                }}
+              />
+            ) : null}
+            <ExplorerOfficialResources />
+            <ExplorerExportMenu
+              county={exportCounty}
+              csvDisabled={!countyReference.isSuccess}
+              onDownloadCsv={downloadCountyList}
+            />
+            <ExplorerReleaseBadge
+              errorMessage={presentationQuery.metadataError}
+              isError={presentationQuery.metadataIsError}
+              isLoading={metadataLoading}
+              metadata={presentationQuery.metadata}
+            />
+          </>
+        }
         onAvailableDataChange={setAvailableData}
         onClearSelection={clearToolbarCounty}
         onCountyQueryChange={setCountyQuery}
         onCountySelect={selectToolbarCounty}
-        onDownload={downloadCountyList}
         onScopeChange={setScope}
       />
       {scopeViewReady ? (
@@ -760,18 +806,10 @@ function ResetReviewExperienceInner() {
         </p>
       ) : null}
 
-      {scenarioScopeSupported && !explorerMode ? (
-        <ExplorerWhatIfScenario
-          impact={scenarioImpact}
-          scoresRetrying={
-            scenarioScoresQuery.isFetching && scenarioScoresQuery.isError
-          }
-          settings={scenarioSettings}
-          onChange={setScenarioSettings}
-          onRetryScores={() => {
-            void scenarioScoresQuery.refetch();
-          }}
-        />
+      {presentationQuery.metadataIsError && presentationQuery.metadataError ? (
+        <AtlasStatusMessage tone="error">
+          {presentationQuery.metadataError}
+        </AtlasStatusMessage>
       ) : null}
 
       {metadataLoading || startingScopePending ? (
@@ -884,15 +922,6 @@ function ResetReviewExperienceInner() {
           </section>
         ) : null}
       </div>
-      <details className="ux-reset-explorer-release">
-        <summary>Release and methodology</summary>
-        <ReviewReleaseEvidence
-          errorMessage={presentationQuery.metadataError}
-          isError={presentationQuery.metadataIsError}
-          isLoading={metadataLoading}
-          metadata={presentationQuery.metadata}
-        />
-      </details>
     </div>
   );
 }
@@ -949,7 +978,9 @@ export function ResetReviewExperience() {
         <AtlasStatusMessage tone="loading">Loading review…</AtlasStatusMessage>
       }
     >
-      <ResetReviewExperienceInner />
+      <ExplorerRailTabMemoryProvider>
+        <ResetReviewExperienceInner />
+      </ExplorerRailTabMemoryProvider>
     </Suspense>
   );
 }

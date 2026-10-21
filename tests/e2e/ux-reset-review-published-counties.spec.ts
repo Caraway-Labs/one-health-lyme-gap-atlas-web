@@ -7,6 +7,7 @@ import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" }
 import barbour from "../fixtures/review-al-v11-01005.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
+import { openEvidenceDisclosure, showCountyList } from "./explorer-rail";
 
 const release = baldwin.release.release_id;
 async function installPublishedReview(page: Page) {
@@ -114,15 +115,18 @@ test.describe("Published Review county exploration", () => {
   }) => {
     await installPublishedReview(page);
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
+    await showCountyList(page);
     const rows = page.locator("button.ux-reset-ranked-row");
     await expect(rows).toHaveCount(67);
     await choose(page, "01003");
+    await openEvidenceDisclosure(page);
     await expect(
       page.getByText(/At least 5 Lyme disease cases were reported in 2023/)
     ).toBeVisible();
     await expect(page.getByText(/A published floor is a minimum/)).toHaveCount(
       0
     );
+    await showCountyList(page);
     await rankedRow(page, "01003").focus();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");

@@ -12,6 +12,7 @@ import {
   reviewCandidate,
 } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeMetadataFixture } from "../fixtures/review-scope-api-fixtures";
+import { showCountyList } from "./explorer-rail";
 
 const scoreBreakdown = {
   access_signal: 0.5,
@@ -311,6 +312,7 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).toHaveURL(/sort=score/);
     await expect(page).toHaveURL(/page=2/);
 
+    await showCountyList(page);
     const suffolkRow = page.locator('button[data-fips="36024"]');
     await suffolkRow.click();
     const suffolk = page.getByTestId("review-county-preview");
@@ -366,14 +368,18 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page.getByText("not a diagnosis")).toHaveCount(0);
     expect(await rowVisibleInRankList(page, "36024")).toBe(true);
 
-    await page.getByTestId("review-investigate").click();
+    // The handoff drops legacy analytical params. The in-place action keeps
+    // the Explorer URL contract (scope, county, dataset, period, compare).
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
+      /^(?!.*[?&]sort=)(?!.*[?&]page=).*$/
+    );
+    await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36024/);
     await expect(page).toHaveURL(/scope=NY/);
     await expect(page).toHaveURL(/dataset=alpha-2026/);
     await expect(page).toHaveURL(/period=2023-01-01/);
-    await expect(page).not.toHaveURL(/sort=/);
-    await expect(page).not.toHaveURL(/page=/);
     await expect(page).toHaveURL(/compare=08001(?:%2C|,)08013/);
     await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
@@ -451,11 +457,12 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36001"
     );
+    await showCountyList(page);
     await page.locator('button[data-fips="36001"]').click();
     await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "href",
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
       /county=36001/
     );
 
@@ -471,27 +478,33 @@ test.describe("Review county preview and Investigate handoff", () => {
     await expect(page).toHaveURL(/\/explore/);
     await expect(page).not.toHaveURL(/\/app\/investigate/);
     const mapHref =
-      (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
+      (await page
+        .getByTestId("review-county-preview")
+        .getAttribute("data-target")) ?? "";
     expect(mapHref).toContain("county=36003");
     expect(mapHref).toContain("scope=NY");
     expect(mapHref).toContain("dataset=alpha-2026");
     expect(mapHref).toContain("period=2023-01-01");
     expect(mapHref).not.toContain("sort=");
 
+    await showCountyList(page);
     await page.locator('button[data-fips="36001"]').click();
     await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
       "data-fips",
       "36001"
     );
     await expect(page).not.toHaveURL(/\/app\/investigate/);
+    await showCountyList(page);
     await page.locator('button[data-fips="36003"]').click();
     const listPreview = page.getByTestId("review-county-preview");
     await expect(listPreview).toHaveAttribute("data-fips", "36003");
     const listHref =
-      (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
+      (await page
+        .getByTestId("review-county-preview")
+        .getAttribute("data-target")) ?? "";
     expect(listHref).toBe(mapHref);
 
-    await page.getByTestId("review-investigate").click();
+    await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=36003/);
     await expect(page).toHaveURL(/period=2023-01-01/);
@@ -517,8 +530,8 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36005"
     );
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "href",
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
       /county=36005/
     );
     await page.reload();
@@ -558,6 +571,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36045"
     );
+    await showCountyList(page);
     await page.locator('button[data-fips="36047"]').click();
     const preview = page.getByTestId("review-county-preview");
     await expect(preview).toHaveAttribute("data-fips", "36047");
@@ -569,8 +583,8 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-follow-up",
       "Review the cited source records."
     );
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "href",
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
       /county=36047/
     );
     await expect(page).not.toHaveURL(/county=36045/);
@@ -590,7 +604,7 @@ test.describe("Review county preview and Investigate handoff", () => {
       "data-fips",
       "36024"
     );
-    await page.getByTestId("review-investigate").click();
+    await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(
       page.getByText("Governed measures could not be loaded.")

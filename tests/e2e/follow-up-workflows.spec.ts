@@ -88,9 +88,8 @@ async function columnShares(page: Page) {
       return node ? node.getBoundingClientRect().width / width : 0;
     };
     return {
-      list: share(".ux-reset-explorer-list"),
       map: share(".ux-reset-explorer-map"),
-      preview: share(".ux-reset-explorer-preview"),
+      rail: share("[data-testid='explorer-rail']"),
     };
   });
 }
@@ -106,12 +105,11 @@ test.describe("five-category suggested follow-up", () => {
     await expect(preview).toBeVisible();
     await expect(preview.getByTestId("suggested-follow-up")).toHaveCount(0);
     const wide = await columnShares(page);
-    expect(wide?.list).toBeGreaterThan(0.16);
-    expect(wide?.list).toBeLessThan(0.2);
-    expect(wide?.map).toBeGreaterThan(0.5);
-    expect(wide?.map).toBeLessThan(0.54);
-    expect(wide?.preview).toBeGreaterThan(0.28);
-    expect(wide?.preview).toBeLessThan(0.32);
+    // The map leads. The rail (List and County tabs) is the companion.
+    expect(wide?.map).toBeGreaterThan(0.6);
+    expect(wide?.map).toBeLessThan(0.75);
+    expect(wide?.rail).toBeGreaterThan(0.22);
+    expect(wide?.rail).toBeLessThan(0.35);
     const card = page.getByTestId("explorer-map-follow-up");
     const followUp = card.getByTestId("suggested-follow-up");
     await expect(followUp).toBeVisible();
@@ -142,6 +140,7 @@ test.describe("five-category suggested follow-up", () => {
     await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
     await expect(followUp).toContainText("not documented negative findings");
     await expect(followUp).not.toContainText("within 2 weeks");
+    await page.getByTestId("explorer-official-resources-trigger").click();
     const resources = page.getByTestId("explorer-official-resources");
     await expect(resources).toBeVisible();
     await expect(
@@ -168,51 +167,39 @@ test.describe("five-category suggested follow-up", () => {
       "href",
       "https://ndc.services.cdc.gov/case-definitions/lyme-disease-2022/"
     );
+    await page.keyboard.press("Escape");
+    await expect(resources).toHaveCount(0);
     const placement = await page.evaluate(() => {
       const browse = document.querySelector("[data-testid='explorer-browse']");
       const map = document.querySelector(".ux-reset-explorer-map");
-      const lower = document.querySelector(
-        "[data-testid='explorer-lower-workspace']"
-      );
+      const rail = document.querySelector("[data-testid='explorer-rail']");
       const followUpCard = document.querySelector(
         "[data-testid='explorer-map-follow-up']"
-      );
-      const resourcesCard = document.querySelector(
-        "[data-testid='explorer-official-resources']"
       );
       if (
         !(browse instanceof HTMLElement) ||
         !(map instanceof HTMLElement) ||
-        !(lower instanceof HTMLElement) ||
-        !(followUpCard instanceof HTMLElement) ||
-        !(resourcesCard instanceof HTMLElement)
+        !(rail instanceof HTMLElement) ||
+        !(followUpCard instanceof HTMLElement)
       ) {
         return null;
       }
       const browseBox = browse.getBoundingClientRect();
       const mapBox = map.getBoundingClientRect();
-      const lowerBox = lower.getBoundingClientRect();
-      const followBox = followUpCard.getBoundingClientRect();
-      const resourcesBox = resourcesCard.getBoundingClientRect();
-      const gap = resourcesBox.left - followBox.right;
-      const inner = followBox.width + resourcesBox.width + gap;
+      const railBox = rail.getBoundingClientRect();
       return {
-        belowMap: lowerBox.top >= mapBox.bottom - 2,
-        followShare: followBox.width / inner,
-        resourcesShare: resourcesBox.width / inner,
-        sideBySide: followBox.left < resourcesBox.left,
+        followInRail: rail.contains(followUpCard),
+        railBesideMap: railBox.left >= mapBox.right - 2,
         spansContent:
-          Math.abs(lowerBox.left - browseBox.left) < 4 &&
-          Math.abs(lowerBox.right - browseBox.right) < 4,
+          Math.abs(mapBox.left - browseBox.left) < 4 &&
+          Math.abs(railBox.right - browseBox.right) < 4,
       };
     });
-    expect(placement?.spansContent).toBeTruthy();
-    expect(placement?.belowMap).toBeTruthy();
-    expect(placement?.sideBySide).toBeTruthy();
-    expect(placement?.followShare).toBeGreaterThan(0.58);
-    expect(placement?.followShare).toBeLessThan(0.66);
-    expect(placement?.resourcesShare).toBeGreaterThan(0.34);
-    expect(placement?.resourcesShare).toBeLessThan(0.42);
+    expect(placement).toStrictEqual({
+      followInRail: true,
+      railBesideMap: true,
+      spansContent: true,
+    });
     await followUp.screenshot({
       path: "test-results/follow-up-available-1792.png",
     });
@@ -221,29 +208,9 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-available-1440.png",
     });
-    const desktopResources = await page.evaluate(() => {
-      const followUpCard = document.querySelector(
-        "[data-testid='explorer-map-follow-up']"
-      );
-      const resourcesCard = document.querySelector(
-        "[data-testid='explorer-official-resources']"
-      );
-      if (
-        !(followUpCard instanceof HTMLElement) ||
-        !(resourcesCard instanceof HTMLElement)
-      ) {
-        return null;
-      }
-      const followBox = followUpCard.getBoundingClientRect();
-      const resourcesBox = resourcesCard.getBoundingClientRect();
-      return followBox.left < resourcesBox.left;
-    });
-    expect(desktopResources).toBeTruthy();
     const narrow = await columnShares(page);
-    expect(narrow?.list).toBeGreaterThan(0.16);
-    expect(narrow?.map).toBeGreaterThan(0.5);
-    expect(narrow?.preview).toBeGreaterThan(0.28);
-
+    expect(narrow?.map).toBeGreaterThan(0.55);
+    expect(narrow?.rail).toBeGreaterThan(0.22);
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
     await expect(followUp).toContainText(
       "check whether additional county case information is available"
@@ -267,31 +234,23 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
     });
-    await expect(resources.getByRole("link")).toHaveCount(5);
 
     await page.setViewportSize({ height: 900, width: 800 });
     const stacked = await page.evaluate(() => {
-      const followUpCard = document.querySelector(
-        "[data-testid='explorer-map-follow-up']"
-      );
-      const resourcesCard = document.querySelector(
-        "[data-testid='explorer-official-resources']"
-      );
-      if (
-        !(followUpCard instanceof HTMLElement) ||
-        !(resourcesCard instanceof HTMLElement)
-      ) {
+      const map = document.querySelector(".ux-reset-explorer-map");
+      const rail = document.querySelector("[data-testid='explorer-rail']");
+      if (!(map instanceof HTMLElement) || !(rail instanceof HTMLElement)) {
         return null;
       }
-      const followBox = followUpCard.getBoundingClientRect();
-      const resourcesBox = resourcesCard.getBoundingClientRect();
+      const mapBox = map.getBoundingClientRect();
+      const railBox = rail.getBoundingClientRect();
       return {
-        followFirst: followBox.bottom <= resourcesBox.top + 2,
-        similarWidth: Math.abs(followBox.width - resourcesBox.width) < 8,
+        mapFirst: mapBox.bottom <= railBox.top + 2,
+        similarWidth: Math.abs(mapBox.width - railBox.width) < 8,
       };
     });
     expect(stacked).toStrictEqual({
-      followFirst: true,
+      mapFirst: true,
       similarWidth: true,
     });
   });

@@ -1,8 +1,17 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ExplorerOfficialResources } from "@/features/ux-reset/review/explorer-official-resources";
+import {
+  ExplorerOfficialResources,
+  ExplorerOfficialResourcesContent,
+} from "@/features/ux-reset/review/explorer-official-resources";
 
 const TOPICS = [
   "Lyme disease surveillance",
@@ -10,13 +19,30 @@ const TOPICS = [
   "Clinical testing and reporting",
 ] as const;
 
-describe("Explorer official resources card", () => {
+describe("Explorer official resources", () => {
   afterEach(() => {
     cleanup();
   });
 
-  it("shows one heading, the intro, and three topic groups", () => {
+  it("is a closed-by-default popover that opens the same references", async () => {
     render(<ExplorerOfficialResources />);
+
+    const trigger = screen.getByTestId("explorer-official-resources-trigger");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("explorer-official-resources")).toBeNull();
+    fireEvent.click(trigger);
+    const panel = await screen.findByTestId("explorer-official-resources");
+    expect(
+      within(panel).getByRole("heading", {
+        level: 3,
+        name: "Official resources",
+      })
+    ).toBeVisible();
+    expect(within(panel).getAllByRole("link")).toHaveLength(5);
+  });
+
+  it("shows one heading, the intro, and three topic groups", () => {
+    render(<ExplorerOfficialResourcesContent />);
 
     expect(
       screen.getByRole("heading", { level: 3, name: "Official resources" })
@@ -36,7 +62,7 @@ describe("Explorer official resources card", () => {
   });
 
   it("keeps the five external destinations in the approved order", () => {
-    render(<ExplorerOfficialResources />);
+    render(<ExplorerOfficialResourcesContent />);
 
     expect(screen.getAllByRole("list")).toHaveLength(3);
     expect(

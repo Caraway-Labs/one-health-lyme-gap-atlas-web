@@ -21,16 +21,15 @@ const SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 const COLLAPSED_SIDEBAR_PX = 68;
 /** 16rem shell at a 16px root. */
 const EXPANDED_SIDEBAR_PX = 256;
-/** Desktop three-column tracks: county nav, map, selected county. */
-const THREE_COLUMN_SHARES = [0.18, 0.52, 0.3] as const;
-/** 20rem two-column preview cap below the 1200px breakpoint. */
-const TWO_COLUMN_PREVIEW_CAP_PX = 320;
+/** Desktop browse tracks: map, then the List and County rail (22rem to 26rem). */
+const RAIL_MIN_PX = 352;
+const RAIL_MAX_PX = 416;
 
 type SidebarState = "collapsed" | "expanded";
 
 type WidthCase = {
   height: number;
-  kind: "three-column" | "two-column";
+  kind: "map-and-rail";
   label: string;
   sidebar: SidebarState;
   width: number;
@@ -39,42 +38,42 @@ type WidthCase = {
 const WIDTH_CASES: readonly WidthCase[] = [
   {
     height: 800,
-    kind: "three-column",
+    kind: "map-and-rail",
     label: "1280-collapsed",
     sidebar: "collapsed",
     width: 1280,
   },
   {
     height: 900,
-    kind: "three-column",
+    kind: "map-and-rail",
     label: "1440-collapsed",
     sidebar: "collapsed",
     width: 1440,
   },
   {
     height: 896,
-    kind: "three-column",
+    kind: "map-and-rail",
     label: "1673-collapsed",
     sidebar: "collapsed",
     width: 1673,
   },
   {
     height: 1080,
-    kind: "three-column",
+    kind: "map-and-rail",
     label: "1920-collapsed",
     sidebar: "collapsed",
     width: 1920,
   },
   {
     height: 1080,
-    kind: "three-column",
+    kind: "map-and-rail",
     label: "1920-expanded",
     sidebar: "expanded",
     width: 1920,
   },
   {
     height: 727,
-    kind: "two-column",
+    kind: "map-and-rail",
     label: "1164-two-column",
     sidebar: "collapsed",
     width: 1164,
@@ -95,10 +94,10 @@ type ExplorerLayout = {
   flexDirection: string;
   gridTemplateColumns: string;
   innerWidth: number;
-  listBottom: number;
-  listRight: number;
-  listTop: number;
-  listWidth: number;
+  railBottom: number;
+  railRight: number;
+  railTop: number;
+  railWidth: number;
   mainOverflow: number;
   mapBottom: number;
   mapTop: number;
@@ -274,8 +273,8 @@ async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
     const preview = requireElement(
       ".ux-reset-review-operating .ux-reset-explorer-preview"
     );
-    const list = requireElement(
-      ".ux-reset-review-operating .ux-reset-explorer-list"
+    const rail = requireElement(
+      ".ux-reset-review-operating [data-testid=\u0027explorer-rail\u0027]"
     );
     const map = requireElement(
       ".ux-reset-review-operating .ux-reset-explorer-map"
@@ -289,7 +288,7 @@ async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
     const mainRect = main.getBoundingClientRect();
     const browseRect = browse.getBoundingClientRect();
     const previewRect = preview.getBoundingClientRect();
-    const listRect = list.getBoundingClientRect();
+    const railRect = rail.getBoundingClientRect();
     const mapRect = map.getBoundingClientRect();
     const paddingLeft = Number.parseFloat(mainStyle.paddingLeft);
     const paddingRight = Number.parseFloat(mainStyle.paddingRight);
@@ -297,7 +296,7 @@ async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
     const contentRight =
       mainRect.left + main.clientLeft + main.clientWidth - paddingRight;
     const canvas = map.querySelector(".map-wrap");
-    const candidates = list.querySelector(".ux-reset-review-candidate-list");
+    const candidates = rail.querySelector(".ux-reset-review-candidate-list");
     return {
       alignItems: operatingStyle.alignItems,
       browseRight: browseRect.right,
@@ -315,10 +314,10 @@ async function readExplorerLayout(page: Page): Promise<ExplorerLayout> {
       flexDirection: operatingStyle.flexDirection,
       gridTemplateColumns: operatingStyle.gridTemplateColumns,
       innerWidth: window.innerWidth,
-      listBottom: listRect.bottom,
-      listRight: listRect.right,
-      listTop: listRect.top,
-      listWidth: listRect.width,
+      railBottom: railRect.bottom,
+      railRight: railRect.right,
+      railTop: railRect.top,
+      railWidth: railRect.width,
       mainOverflow: main.scrollWidth - main.clientWidth,
       mapBottom: mapRect.bottom,
       mapTop: mapRect.top,
@@ -372,7 +371,7 @@ function expectStretchContext(
   expect(layout.flexDirection).toBe("column");
   expect(layout.alignItems).toBe("stretch");
   expect(layout.gridTemplateColumns).toBe("none");
-  expectNear(layout.previewRight, layout.contentRight);
+  expectNear(layout.railRight, layout.contentRight);
   expectNear(layout.browseRight, layout.contentRight);
   expectNear(layout.browseWidth, layout.contentWidth);
   expectNear(layout.resultWidth, layout.browseWidth);
@@ -387,33 +386,20 @@ function trackAt(tracks: readonly number[], index: number): number {
   return value;
 }
 
-function expectThreeColumn(layout: ExplorerLayout): void {
-  expect(layout.tracks).toHaveLength(3);
-  const trackSum = layout.tracks.reduce((sum, track) => sum + track, 0);
-  expectNear(trackAt(layout.tracks, 0), trackSum * THREE_COLUMN_SHARES[0], 2);
-  expectNear(trackAt(layout.tracks, 1), trackSum * THREE_COLUMN_SHARES[1], 2);
-  expectNear(trackAt(layout.tracks, 2), trackSum * THREE_COLUMN_SHARES[2], 2);
-  expect(layout.previewWidth).toBeGreaterThan(layout.listWidth);
-  expect(layout.listBottom).toBeLessThanOrEqual(
-    layout.mapBottom + EDGE_TOLERANCE_PX
-  );
-  expectNear(layout.canvasHeight, 32 * layout.rootFontSize);
-  expect(layout.candidateOverflow).toBe("auto");
-}
-
-function expectTwoColumn(layout: ExplorerLayout): void {
+function expectMapAndRail(layout: ExplorerLayout): void {
   expect(layout.tracks).toHaveLength(2);
-  expectNear(layout.previewWidth, TWO_COLUMN_PREVIEW_CAP_PX);
-  expectNear(trackAt(layout.tracks, 1), TWO_COLUMN_PREVIEW_CAP_PX);
-  expectNear(layout.mapWidth, layout.browseWidth);
-  expect(layout.mapBottom).toBeLessThanOrEqual(
-    layout.listTop + EDGE_TOLERANCE_PX
-  );
-  expect(layout.mapTop).toBeLessThan(layout.previewTop);
-  expectNear(layout.previewTop, layout.listTop);
-  expect(layout.previewLeft).toBeGreaterThan(layout.listRight);
+  const rail = trackAt(layout.tracks, 1);
+  expect(rail).toBeGreaterThanOrEqual(RAIL_MIN_PX - 1);
+  expect(rail).toBeLessThanOrEqual(RAIL_MAX_PX + 1);
+  expectNear(layout.railWidth, rail, 2);
+  // The map leads: it is the wider column and sits left of the rail.
+  expect(layout.mapWidth).toBeGreaterThan(layout.railWidth);
+  expectNear(layout.mapTop, layout.railTop);
+  expectNear(layout.mapBottom, layout.railBottom);
+  expect(layout.candidateOverflow).toBe("auto");
+  // The canvas fills the stage instead of a fixed 32rem box.
+  expect(layout.canvasHeight).toBeGreaterThan(14 * layout.rootFontSize);
 }
-
 function layoutNamed(
   layouts: ReadonlyMap<string, ExplorerLayout>,
   label: string
@@ -433,15 +419,9 @@ function expectMapGrew(
   expect(wider.mapWidth).toBeGreaterThan(narrower.mapWidth);
   const browseGrowth = wider.browseWidth - narrower.browseWidth;
   expectNear(browseGrowth, viewportGrowth, 4);
-  expectNear(
-    wider.mapWidth - narrower.mapWidth,
-    browseGrowth * THREE_COLUMN_SHARES[1],
-    4
-  );
-  expect(wider.previewWidth).toBeGreaterThan(wider.listWidth);
-  expect(narrower.previewWidth).toBeGreaterThan(narrower.listWidth);
+  // The rail is capped, so the map takes the growth.
+  expectNear(wider.mapWidth - narrower.mapWidth, browseGrowth, 6);
 }
-
 test("desktop browse grid fills the main content edge", async ({
   page,
 }, testInfo) => {
@@ -499,16 +479,7 @@ test("desktop browse grid fills the main content edge", async ({
     const layout = layoutNamed(layouts, widthCase.label);
     expect(layout.innerWidth).toBe(widthCase.width);
     expectStretchContext(layout, widthCase.sidebar);
-    if (widthCase.kind === "three-column") {
-      expectThreeColumn(layout);
-      continue;
-    }
-    if (widthCase.kind === "two-column") {
-      expectTwoColumn(layout);
-      continue;
-    }
-    const unreachable: never = widthCase.kind;
-    throw new Error(`Unhandled width case ${unreachable}`);
+    expectMapAndRail(layout);
   }
 
   expectMapGrew(

@@ -8,6 +8,7 @@ import { responseTierPresentationForColor } from "@/lib/response-tier";
 import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" };
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import { openEvidenceDisclosure } from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const release = baldwin.release.release_id;
@@ -182,6 +183,7 @@ async function expectCard(
   }
   const preview = page.getByTestId("review-published-county-preview");
   await expect(preview).toHaveAttribute("data-fips", fips);
+  await openEvidenceDisclosure(page);
   await expect(
     preview.getByTestId("selected-county-response-tier")
   ).toHaveCount(0);
@@ -365,6 +367,7 @@ test.describe("selected county summary card", () => {
     await installIndiana(page);
     await page.setViewportSize({ height: 1100, width: 1440 });
     await page.goto(`/explore?scope=IN&dataset=${release}&county=18057`);
+    await openEvidenceDisclosure(page);
     await expectCard(page, "18057", "49.8", "#87b982");
     const provenance = page
       .getByTestId("review-published-county-preview")

@@ -10,6 +10,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showCountyList, showSelectedCounty } from "./explorer-rail";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/v1/atlas/scores**", (route) => {
@@ -92,6 +93,7 @@ test.describe("Review operating picture", () => {
         page.locator('[data-testid="review-candidate"][aria-current="true"]')
       ).toHaveCount(0);
       await expect(page.getByTestId("review-county-preview")).toHaveCount(0);
+      await showCountyList(page);
       await expect(
         page.getByRole("heading", { exact: true, name: "Counties" })
       ).toBeVisible();
@@ -146,6 +148,7 @@ test.describe("Review operating picture", () => {
     ).toHaveAttribute("data-fips", "08013");
 
     await page.goto("/app/investigate?scope=CO&county=nope");
+    await showCountyList(page);
     await expect(
       page.getByRole("heading", { exact: true, name: "Counties" })
     ).toBeVisible();
@@ -211,11 +214,14 @@ test.describe("Review operating picture", () => {
     );
     await expect(page.getByTestId("review-candidate")).toHaveCount(1);
     const href =
-      (await page.getByTestId("review-investigate").getAttribute("href")) ?? "";
+      (await page
+        .getByTestId("review-county-preview")
+        .getAttribute("data-target")) ?? "";
     expect(href).toContain("county=08001");
     expect(href).toContain("/explore");
     expect(href).toContain("mode=evidence");
-    await page.getByTestId("review-investigate").click();
+    await showSelectedCounty(page);
+    await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/\/explore/);
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
@@ -343,10 +349,9 @@ test.describe("Review operating picture", () => {
       });
     });
     await page.goto("/explore?scope=CO&county=08001");
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "data-county",
-      "08001"
-    );
+    await expect(
+      page.getByTestId("review-view-county-evidence")
+    ).toHaveAttribute("data-county", "08001");
     await page.getByTestId("review-scope-select").click();
     await page.getByRole("option", { name: "New York (NY)" }).click();
     await expect(page.getByTestId("review-state-panel")).toHaveAttribute(
@@ -531,6 +536,10 @@ test.describe("Review operating picture", () => {
       const summaryCount = await scoreSummaries.count();
       for (let index = 0; index < summaryCount; index += 1) {
         const scoreSummary = scoreSummaries.nth(index);
+        if (!(await scoreSummary.isVisible())) {
+          // The county summary keeps its own copy in the hidden rail tab.
+          continue;
+        }
         const collapsed = await scoreSummary.evaluate(
           (element) => element.parentElement?.hasAttribute("open") !== true
         );
@@ -629,6 +638,17 @@ test.describe("Review operating picture", () => {
       expect(results.violations).toEqual([]);
     }
 
+    await showSelectedCounty(page);
+    const countyMethodology = page
+      .getByTestId("review-county-preview")
+      .locator("summary", { hasText: "Score and methodology" });
+    if (
+      await countyMethodology.evaluate(
+        (element) => element.parentElement?.hasAttribute("open") !== true
+      )
+    ) {
+      await countyMethodology.click();
+    }
     const qualification = page.getByTestId("review-preview-qualification");
     await qualification.getByText("Inspect provenance").click();
     await expect(qualification).toContainText(`source as of ${sourceAsOf}`);

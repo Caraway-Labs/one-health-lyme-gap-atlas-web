@@ -1,22 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { Ref } from "react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
 import { EvidenceStateStrip } from "@/features/ux-reset/evidence/evidence-state-strip";
 import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
-import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
+import {
+  CountySummaryActions,
+  CountySummaryHeader,
+} from "@/features/ux-reset/review/county-summary-card-parts";
 import type { ReviewCountyPreviewModel } from "@/features/ux-reset/review/review-county-preview";
-import { ViewFullCountyEvidence } from "@/features/ux-reset/review/view-full-county-evidence";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import { cn } from "@/lib/utils";
 
 type ReviewCountyPreviewPanelProps = {
   categoryLabel?: string;
@@ -64,14 +64,19 @@ export function ReviewCountyPreviewPanel({
       data-why={preview.why}
       role="region"
     >
-      <p className="eyebrow">Selected county</p>
-      <h2 className="type-card">{title}</h2>
-      <p className="type-body" data-testid="review-preview-category">
-        {categoryLabel}
-      </p>
-      <p className="type-body" data-testid="review-preview-identity">
-        FIPS {fipsLabel} · {stateCode}
-      </p>
+      <CountySummaryHeader
+        county={countyName}
+        fips={fipsLabel}
+        fipsTestId="review-preview-identity"
+        stateCode={stateCode}
+        stateName={stateName}
+      />
+      <p
+        className="county-summary-category"
+        data-testid="review-preview-category"
+      >
+        <Badge variant="secondary">{categoryLabel}</Badge>
+      </p>{" "}
       {/^\d{5}$/.test(preview.fips) ? (
         <CountySummarySurveillance fips={preview.fips} release={release} />
       ) : null}
@@ -134,59 +139,18 @@ export function ReviewCountyPreviewPanel({
           ))}
         </ul>
       ) : null}
-      <div className="ux-reset-review-preview-actions">
-        <ViewFullCountyEvidence
-          fips={preview.fips}
-          onViewCountyEvidence={onViewCountyEvidence}
-        />
-        <DownloadCountyPdfButton
-          countyName={preview.countyName}
-          fips={preview.fips}
-          releaseId={releaseId}
-          stateCode={preview.stateCode}
-        />
-        <Link
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-review-open"
-          )}
-          data-county={preview.fips}
-          data-testid="review-investigate"
-          data-variant="secondary"
-          href={href}
-          onClick={() => {
-            onOpen(preview.fips);
-          }}
-        >
-          County evidence
-        </Link>
-        <Link
-          ref={openRef}
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-review-open"
-          )}
-          data-county={preview.fips}
-          data-testid="review-compare"
-          data-variant="secondary"
-          href={compareHref}
-          onClick={() => {
-            onOpen(preview.fips);
-          }}
-        >
-          Compare this county
-        </Link>
-        <Link
-          className={cn(
-            buttonVariants({ variant: "secondary" }),
-            "ux-reset-review-open"
-          )}
-          data-testid="review-ask-atlas"
-          href={askHref}
-        >
-          Ask Atlas
-        </Link>
-      </div>
+      <CountySummaryActions
+        askHref={askHref}
+        compareHref={compareHref}
+        countyName={preview.countyName}
+        evidenceHref={href}
+        fips={preview.fips}
+        openRef={openRef}
+        releaseId={releaseId}
+        stateCode={preview.stateCode}
+        onOpen={onOpen}
+        onViewCountyEvidence={onViewCountyEvidence}
+      />
     </Card>
   );
 }

@@ -50,27 +50,50 @@ describe(ExplorerWhatIfScenario, () => {
     cleanup();
   });
 
-  it("starts collapsed with the governed assumption values", () => {
+  it("starts closed with a quiet trigger and the governed assumption values", () => {
     renderScenario();
 
-    const panel = screen.getByTestId("explorer-what-if-scenario");
-    const summary =
-      screen.getByTestId("explorer-what-if-summary").textContent ?? "";
+    const trigger = screen.getByTestId("explorer-what-if-summary");
     expect({
-      adjust: summary.includes("Show assumptions"),
-      heading: summary.includes(EXPLORER_SCENARIO_HEADING),
-      open: (panel as HTMLDetailsElement).open,
-      parameters: summary.includes("65%"),
-      scoring: summary.includes("Scoring calculation"),
-      tag: panel.tagName,
+      active: screen.queryByTestId("explorer-scenario-active"),
+      label: trigger.textContent,
+      panel: screen.queryByTestId("explorer-what-if-scenario"),
+      quickReset: screen.queryByTestId("explorer-scenario-quick-reset"),
     }).toStrictEqual({
-      adjust: true,
-      heading: true,
-      open: false,
-      parameters: false,
-      scoring: false,
-      tag: "DETAILS",
+      active: null,
+      label: "Scenarios",
+      panel: null,
+      quickReset: null,
     });
+    fireEvent.click(trigger);
+    const panel = screen.getByTestId("explorer-what-if-scenario");
+    const text = panel.textContent ?? "";
+    expect({
+      heading: text.includes(EXPLORER_SCENARIO_HEADING),
+      intro: text.includes(EXPLORER_SCENARIO_INTRO),
+      parameters: text.includes("65%"),
+      scoring: text.includes("Scoring calculation"),
+    }).toStrictEqual({
+      heading: true,
+      intro: true,
+      parameters: true,
+      scoring: false,
+    });
+  });
+
+  it("marks a non-default scenario on the trigger and offers a quick reset", () => {
+    const onChange = vi.fn<(next: ScoreSettings) => void>();
+    renderScenario(
+      { ...SCENARIO_SCORE_DEFAULTS, ecological_share: 80 },
+      NO_COUNTY,
+      onChange
+    );
+
+    expect(screen.getByTestId("explorer-scenario-active").textContent).toBe(
+      "Scenario active"
+    );
+    fireEvent.click(screen.getByTestId("explorer-scenario-quick-reset"));
+    expect(onChange).toHaveBeenCalledWith(SCENARIO_SCORE_DEFAULTS);
   });
 
   it("shows the rate reference point and missing-record value after expanding", () => {
@@ -189,10 +212,10 @@ describe(ExplorerWhatIfScenario, () => {
       scenario: null,
       status: "ready",
     });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
 
     const summary = screen.getByTestId("explorer-scenario-impact-summary");
     expect(summary.textContent).toBe(EXPLORER_SCENARIO_DEFAULT_STATUS);
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact").textContent;
     expect({
       county:
@@ -304,6 +327,7 @@ describe(ExplorerWhatIfScenario, () => {
       assumptionsChanged: true,
       status: "ready",
     });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
 
     const summary = screen.getByTestId("explorer-scenario-impact-summary");
     expect(summary.textContent).toContain(
@@ -312,7 +336,6 @@ describe(ExplorerWhatIfScenario, () => {
     expect(summary.textContent).toContain(
       "+11.7 points from published score · Scenario settings"
     );
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact").textContent;
     expect({
       adjusted:
@@ -348,11 +371,11 @@ describe(ExplorerWhatIfScenario, () => {
       assumptionsChanged: true,
       status: "ready",
     });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
 
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
     ).toContain("\u221210.7 points from published score · Scenario settings");
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
     ).toContain("Follow-up category unchanged");
@@ -374,11 +397,11 @@ describe(ExplorerWhatIfScenario, () => {
       assumptionsChanged: true,
       status: "ready",
     });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
 
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
     ).toContain(EXPLORER_SCENARIO_UNCHANGED_STATUS);
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact");
     expect(impact.dataset.impact).toBe("unchanged");
     expect(impact.textContent).toContain("Follow-up category unchanged");
@@ -398,10 +421,10 @@ describe(ExplorerWhatIfScenario, () => {
       assumptionsChanged: true,
       status: "ready",
     });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
 
     const summary = screen.getByTestId("explorer-scenario-impact-summary");
     expect(summary.textContent).toBe("Score with your changes unavailable");
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact =
       screen.getByTestId("explorer-scenario-impact").textContent ?? "";
     expect({
@@ -434,6 +457,7 @@ describe(ExplorerWhatIfScenario, () => {
       scenario: null,
       status: "ready",
     });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
     ).toContain("22.9");
@@ -473,7 +497,6 @@ describe(ExplorerWhatIfScenario, () => {
       previousCounty: false,
       previousScore: false,
     });
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact =
       screen.getByTestId("explorer-scenario-impact").textContent ?? "";
     expect({
@@ -489,6 +512,7 @@ describe(ExplorerWhatIfScenario, () => {
 
   it("omits numbers while the published score is loading and when it is unavailable", () => {
     const view = renderScenario(SCENARIO_SCORE_DEFAULTS, { status: "pending" });
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     expect(screen.queryByTestId("explorer-scenario-impact-summary")).toBeNull();
     expect(screen.queryByTestId("explorer-scenario-impact")).toBeNull();
 
@@ -502,7 +526,6 @@ describe(ExplorerWhatIfScenario, () => {
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
     ).toBe("Score comparison unavailable");
-    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
     ).toContain("Score comparison is unavailable for this county.");
@@ -712,11 +735,14 @@ describe(ExplorerWhatIfScenario, () => {
     });
   });
 
-  it("opens the plain-language explanation and keeps the equation collapsed", () => {
+  it("keeps the plain-language explanation and equation collapsed until asked", () => {
     const onChange = vi.fn<(next: ScoreSettings) => void>();
     renderScenario(SCENARIO_SCORE_DEFAULTS, NO_COUNTY, onChange);
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const methods = screen.getByTestId("explorer-scenario-methods");
+    const methodsTrigger = screen.getByRole("button", {
+      name: "How these scenarios work",
+    });
     const equation = screen.getByTestId("explorer-scenario-equation");
     const methodText = methods.textContent ?? "";
     const equationText = equation.textContent ?? "";
@@ -728,7 +754,7 @@ describe(ExplorerWhatIfScenario, () => {
       footer: screen.getByTestId("explorer-scenario-footer").textContent,
       formula: equationText.includes(EXPLORER_SCENARIO_FORMULA),
       legacyCategory: panel.includes("Priority 1 — Investigate at 70"),
-      methodsOpen: (methods as HTMLDetailsElement).open,
+      methodsOpen: methodsTrigger.getAttribute("aria-expanded") === "true",
       notes: screen.queryAllByRole("button", { name: /Technical note for/ })
         .length,
       safety: methodText.includes("Not a safety finding"),
@@ -744,18 +770,20 @@ describe(ExplorerWhatIfScenario, () => {
       footer: EXPLORER_SCENARIO_FOOTER,
       formula: true,
       legacyCategory: false,
-      methodsOpen: true,
+      methodsOpen: false,
       notes: 0,
       safety: false,
       sharing: true,
       version: true,
     });
 
+    fireEvent.click(methodsTrigger);
+    expect(methodsTrigger.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(equation.querySelector("summary") as HTMLElement);
-    fireEvent.click(methods.querySelector("summary") as HTMLElement);
     expect(onChange).not.toHaveBeenCalled();
     expect((equation as HTMLDetailsElement).open).toBeTruthy();
-    expect((methods as HTMLDetailsElement).open).toBeFalsy();
+    fireEvent.click(methodsTrigger);
+    expect(methodsTrigger.getAttribute("aria-expanded")).toBe("false");
   });
 
   it("shows the missing-data note only when the selected county has published incidence", () => {

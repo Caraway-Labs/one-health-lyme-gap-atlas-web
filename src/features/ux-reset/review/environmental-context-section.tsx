@@ -1,8 +1,8 @@
 "use client";
 
+import { CloudSun, RotateCcw } from "lucide-react";
 import { useState } from "react";
 
-import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,9 @@ import {
   ENVIRONMENTAL_CONTEXT_MEASURES,
   ENVIRONMENTAL_CONTEXT_WINDOW,
 } from "@/features/ux-reset/review/environmental-context";
+import { ExplorerLoadingStatus } from "@/features/ux-reset/review/explorer-loading-status";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
+import { ExplorerSectionHeading } from "@/features/ux-reset/review/explorer-section-heading";
 import {
   useEnvironmentalContext,
   type EnvironmentalMeasureView,
@@ -39,9 +41,9 @@ function EnvironmentalMeasureBody({
     }
     case "loading": {
       return (
-        <AtlasStatusMessage tone="loading">
+        <ExplorerLoadingStatus>
           {`Loading ${measureClaim(view.measureId)}…`}
-        </AtlasStatusMessage>
+        </ExplorerLoadingStatus>
       );
     }
     case "error": {
@@ -51,11 +53,10 @@ function EnvironmentalMeasureBody({
       return (
         <AtlasStatusMessage tone="error">
           <p>{view.message}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleRetry}
-          >{`Retry ${measureClaim(view.measureId)}`}</Button>
+          <Button type="button" variant="secondary" onClick={handleRetry}>
+            <RotateCcw aria-hidden="true" data-icon="inline-start" />
+            {`Retry ${measureClaim(view.measureId)}`}
+          </Button>
         </AtlasStatusMessage>
       );
     }
@@ -87,6 +88,7 @@ function EnvironmentalMeasureBody({
         <>
           <EvidenceObject
             model={view.presentation.evidence}
+            presentation="compact"
             showCaveat={false}
             showReason
           />
@@ -213,10 +215,10 @@ export function EnvironmentalContextSection({
       data-testid="explorer-environmental-context"
       id={EXPLORER_SECTION_IDS.environmental}
     >
-      <AtlasSectionHeader
+      <ExplorerSectionHeading
         description="January 2025 NOAA weather for this county."
-        eyebrow="Context"
-        headingLevel="h2"
+        icon={CloudSun}
+        note="Context"
         title="Environmental context"
       />
       <div className="ux-reset-environmental-date">
@@ -241,15 +243,11 @@ export function EnvironmentalContextSection({
         {liveText}
       </p>
       {status ? (
-        <AtlasStatusMessage
-          tone={
-            countyHoldPending || (releaseLoading && !releaseId)
-              ? "loading"
-              : "empty"
-          }
-        >
-          {status}
-        </AtlasStatusMessage>
+        countyHoldPending || (releaseLoading && !releaseId) ? (
+          <ExplorerLoadingStatus>{status}</ExplorerLoadingStatus>
+        ) : (
+          <AtlasStatusMessage tone="empty">{status}</AtlasStatusMessage>
+        )
       ) : null}
       {context.enabled ? (
         <>

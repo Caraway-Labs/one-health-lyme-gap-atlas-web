@@ -7,6 +7,11 @@ import barbour from "../fixtures/review-al-v11-01005.json" with { type: "json" }
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import {
+  showCountyList,
+  showSelectedCounty,
+  openEvidenceDisclosure,
+} from "./explorer-rail";
 
 const release = baldwin.release.release_id;
 const rowLabels = [
@@ -89,26 +94,31 @@ async function installPublishedReview(page: Page) {
 }
 
 async function expectFollowUpInView(page: Page) {
+  // The County tab scrolls inside the rail, so "in view" means the card sits at
+  // the top of its panel and is visible there.
   await expect
     .poll(async () =>
       page.locator("#explorer-map-follow-up").evaluate((element) => {
+        const panel = element.closest(
+          "[data-testid='explorer-rail-panel-county']"
+        );
+        const bounds = panel
+          ? panel.getBoundingClientRect()
+          : { bottom: window.innerHeight, top: 0 };
         const rect = element.getBoundingClientRect();
         const visibleHeight =
-          Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-        return (
-          visibleHeight > 0 && rect.top < window.innerHeight && rect.top <= 80
-        );
+          Math.min(rect.bottom, bounds.bottom) - Math.max(rect.top, bounds.top);
+        return visibleHeight > 0 && rect.top <= bounds.top + 80;
       })
     )
     .toBe(true);
 }
-
 async function expectActionLayout(
   page: Page,
   preview: ReturnType<Page["getByTestId"]>
 ) {
   const layout = await preview
-    .locator(".ux-reset-review-preview-actions")
+    .locator(".county-summary-icon-actions")
     .evaluate((actions) => {
       const followUp = actions.querySelector(
         "[data-testid='review-view-county-follow-up']"
@@ -164,8 +174,8 @@ test.describe("Selected county preview", () => {
     await expect(preview).toBeVisible();
     await expect(
       preview.getByTestId("review-view-county-follow-up")
-    ).toHaveText("View County Follow-Up");
-    await expect(preview.getByTestId("review-compare")).toHaveText(
+    ).toHaveAccessibleName("View County Follow-Up");
+    await expect(preview.getByTestId("review-compare")).toHaveAccessibleName(
       "Compare This County"
     );
     await expect(preview.getByTestId("review-compare")).toHaveAttribute(
@@ -181,6 +191,7 @@ test.describe("Selected county preview", () => {
     await expect(preview.getByTestId("review-view-county-evidence")).toHaveText(
       "View Full County Evidence"
     );
+    await openEvidenceDisclosure(page);
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
       "Minimum reported cases"
     );
@@ -218,6 +229,7 @@ test.describe("Selected county preview", () => {
     );
     expect(hits).toEqual([]);
 
+    await showCountyList(page);
     await page.locator('button.ux-reset-ranked-row[data-fips="01001"]').click();
     await expect(preview).toHaveAttribute("data-fips", "01001");
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
@@ -226,6 +238,7 @@ test.describe("Selected county preview", () => {
     expect(hits).toEqual([]);
 
     await page.getByRole("button", { name: "Clear county" }).click();
+    await showSelectedCounty(page);
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
     expect(hits).toEqual([]);
   });
@@ -304,6 +317,8 @@ test.describe("Selected county preview", () => {
       .toBeGreaterThan(0);
     const afterEvidence = hits.length;
     await page.getByTestId("explorer-back-to-map").click();
+    // Focus returns to the county row, so the list shows first.
+    await showSelectedCounty(page);
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toBeVisible();

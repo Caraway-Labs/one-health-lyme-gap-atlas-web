@@ -1,11 +1,15 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  type ExplorerCountyReference,
-  EXPLORER_COUNTY_EXPORT_NOTE,
-} from "@/features/ux-reset/review/explorer-county-reference";
+import type { ExplorerCountyReference } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerCountyToolbar } from "@/features/ux-reset/review/explorer-county-toolbar";
 import type { EvidenceView } from "@/lib/atlas-ui";
 
@@ -45,11 +49,9 @@ const counties: ExplorerCountyReference[] = [
 function ToolbarHarness({
   onClearSelection,
   onCountySelect,
-  onDownload,
 }: {
   onClearSelection: () => void;
   onCountySelect: (county: ExplorerCountyReference) => void;
-  onDownload: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
@@ -59,8 +61,8 @@ function ToolbarHarness({
       availableData={availableData}
       counties={counties}
       countyQuery={query}
-      downloadDisabled={false}
       scope="AL"
+      scopeLabel="Alabama"
       selectedFips={selectedFips}
       stateOptions={[{ code: "AL", name: "Alabama" }]}
       onAvailableDataChange={setAvailableData}
@@ -75,7 +77,6 @@ function ToolbarHarness({
         setSelectedFips(county.fips);
         onCountySelect(county);
       }}
-      onDownload={onDownload}
       onScopeChange={vi.fn<() => void>()}
     />
   );
@@ -86,12 +87,11 @@ describe("explorer county toolbar", () => {
     cleanup();
   });
 
-  it("names the four controls and keeps the export note out of the row", () => {
+  it("names the controls and shows geography and the filtered count", () => {
     render(
       <ToolbarHarness
         onClearSelection={vi.fn<() => void>()}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
       />
     );
     expect(screen.getByRole("combobox", { name: "State" })).toBeTruthy();
@@ -101,14 +101,48 @@ describe("explorer county toolbar", () => {
     expect(
       screen.getByRole("combobox", { name: "Available data" })
     ).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Download county list as CSV" })
-    ).toBeTruthy();
-    const note = screen.getByTestId("explorer-county-export-note");
+    expect(screen.getByTestId("explorer-filter-count").textContent).toBe(
+      "3 counties"
+    );
+    const geography = screen.getByRole("navigation", { name: "Geography" });
     expect({
-      hidden: note.className.includes("sr-only"),
-      note: note.textContent,
-    }).toStrictEqual({ hidden: true, note: EXPLORER_COUNTY_EXPORT_NOTE });
+      current: geography.querySelector("[aria-current='page']")?.textContent,
+      home: within(geography).getByRole("button", { name: "United States" })
+        .textContent,
+    }).toStrictEqual({ current: "Alabama", home: "United States" });
+  });
+
+  it("renders trailing controls and offers no inline download button", () => {
+    render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips="01001"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        trailing={<button type="button">Trailing control</button>}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    expect(
+      screen.getByRole("button", { name: "Trailing control" })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Download county list as CSV" })
+    ).toBeNull();
+    const geography = screen.getByRole("navigation", { name: "Geography" });
+    expect(
+      within(geography).getByRole("button", { name: "Alabama" })
+    ).toBeTruthy();
+    expect(geography.querySelector("[aria-current='page']")?.textContent).toBe(
+      "Autauga"
+    );
   });
 
   it("selects an exact FIPS and shows the county name", () => {
@@ -117,7 +151,6 @@ describe("explorer county toolbar", () => {
       <ToolbarHarness
         onClearSelection={vi.fn<() => void>()}
         onCountySelect={onCountySelect}
-        onDownload={vi.fn<() => void>()}
       />
     );
     const search = screen.getByTestId("explorer-county-search");
@@ -139,7 +172,6 @@ describe("explorer county toolbar", () => {
       <ToolbarHarness
         onClearSelection={vi.fn<() => void>()}
         onCountySelect={onCountySelect}
-        onDownload={vi.fn<() => void>()}
       />
     );
     const search = screen.getByTestId("explorer-county-search");
@@ -158,7 +190,6 @@ describe("explorer county toolbar", () => {
       <ToolbarHarness
         onClearSelection={onClearSelection}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
       />
     );
     const search = screen.getByTestId("explorer-county-search");
@@ -182,15 +213,14 @@ describe("explorer county toolbar", () => {
         availableData="all"
         counties={counties}
         countyQuery=""
-        downloadDisabled={false}
         scope="AL"
+        scopeLabel="Alabama"
         selectedFips="01001"
         stateOptions={[{ code: "AL", name: "Alabama" }]}
         onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
         onClearSelection={vi.fn<() => void>()}
         onCountyQueryChange={vi.fn<(value: string) => void>()}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
         onScopeChange={vi.fn<() => void>()}
       />
     );
@@ -207,15 +237,14 @@ describe("explorer county toolbar", () => {
         availableData="all"
         counties={counties}
         countyQuery="auta"
-        downloadDisabled={false}
         scope="AL"
+        scopeLabel="Alabama"
         selectedFips="01011"
         stateOptions={[{ code: "AL", name: "Alabama" }]}
         onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
         onClearSelection={vi.fn<() => void>()}
         onCountyQueryChange={vi.fn<(value: string) => void>()}
         onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
-        onDownload={vi.fn<() => void>()}
         onScopeChange={vi.fn<() => void>()}
       />
     );
@@ -226,5 +255,290 @@ describe("explorer county toolbar", () => {
       clear: true,
       value: "Bullock County, AL - 01011",
     });
+  });
+
+  it("returns to the national scope from the United States breadcrumb", () => {
+    const onScopeChange = vi.fn<(scope: string) => void>();
+    render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips={null}
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={onScopeChange}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("explorer-breadcrumb-us"));
+
+    expect(onScopeChange).toHaveBeenCalledWith("ALL");
+  });
+
+  it("shows only United States as the current page in the national scope", () => {
+    render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        scope="ALL"
+        scopeLabel="United States"
+        selectedFips={null}
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+
+    const geography = screen.getByRole("navigation", { name: "Geography" });
+    expect(geography.querySelector("[aria-current='page']")?.textContent).toBe(
+      "United States"
+    );
+    expect(screen.queryByTestId("explorer-breadcrumb-us")).toBeNull();
+  });
+
+  it("clears the county from the state breadcrumb while a county is selected", () => {
+    const onClearSelection = vi.fn<() => void>();
+    render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips="01001"
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={onClearSelection}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("explorer-breadcrumb-state"));
+
+    expect(onClearSelection).toHaveBeenCalledOnce();
+  });
+
+  it("selects the county under the pointer without moving focus off the search", () => {
+    const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={onCountySelect}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    fireEvent.change(search, { target: { value: "bull" } });
+
+    const notPrevented = fireEvent.mouseDown(
+      screen.getByRole("option", { name: "Bullock County, AL - 01011" })
+    );
+
+    expect(notPrevented).toBeFalsy();
+    expect(onCountySelect).toHaveBeenCalledWith(
+      expect.objectContaining({ fips: "01011" })
+    );
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("opens the list on focus when text is typed and closes it on blur", () => {
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    fireEvent.change(search, { target: { value: "au" } });
+    fireEvent.blur(search);
+    expect(screen.queryByRole("listbox")).toBeNull();
+
+    fireEvent.focus(search);
+
+    expect(screen.getByRole("listbox")).toBeTruthy();
+    fireEvent.blur(search);
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("does not open the list on focus when the search is empty", () => {
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+      />
+    );
+
+    fireEvent.focus(screen.getByTestId("explorer-county-search"));
+
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+
+  it("keeps focus in the search when the clear button is pressed", () => {
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+      />
+    );
+    fireEvent.change(screen.getByTestId("explorer-county-search"), {
+      target: { value: "auta" },
+    });
+
+    const notPrevented = fireEvent.mouseDown(
+      screen.getByRole("button", { name: "Clear county" })
+    );
+
+    expect(notPrevented).toBeFalsy();
+  });
+
+  it("jumps to the first and last match with Home and End and wraps with ArrowUp", () => {
+    const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={onCountySelect}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    fireEvent.change(search, { target: { value: "01" } });
+
+    fireEvent.keyDown(search, { key: "End" });
+    expect(
+      screen
+        .getByRole("option", { name: "Bullock County, AL - 01011" })
+        .getAttribute("aria-selected")
+    ).toBe("true");
+
+    fireEvent.keyDown(search, { key: "Home" });
+    expect(
+      screen
+        .getByRole("option", { name: "Autauga, AL - 01001" })
+        .getAttribute("aria-selected")
+    ).toBe("true");
+
+    fireEvent.keyDown(search, { key: "ArrowUp" });
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(onCountySelect).toHaveBeenCalledWith(
+      expect.objectContaining({ fips: "01011" })
+    );
+  });
+
+  it("reports when no county matches and ignores the arrow keys and Enter", () => {
+    const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={onCountySelect}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    fireEvent.change(search, { target: { value: "zzz" } });
+
+    expect(
+      screen.getByText("No counties match that name or FIPS.")
+    ).toBeTruthy();
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(onCountySelect).not.toHaveBeenCalled();
+  });
+
+  it("selects the only match when Enter is pressed with the list closed", () => {
+    const onCountySelect = vi.fn<(county: ExplorerCountyReference) => void>();
+    render(
+      <ToolbarHarness
+        onClearSelection={vi.fn<() => void>()}
+        onCountySelect={onCountySelect}
+      />
+    );
+    const search = screen.getByTestId("explorer-county-search");
+    fireEvent.change(search, { target: { value: "baldwin" } });
+    fireEvent.keyDown(search, { key: "Escape" });
+
+    fireEvent.keyDown(search, { key: "Enter" });
+
+    expect(onCountySelect).toHaveBeenCalledWith(
+      expect.objectContaining({ fips: "01003" })
+    );
+  });
+
+  it("reports the available-data filter choice", async () => {
+    const onAvailableDataChange = vi.fn<(value: EvidenceView) => void>();
+    render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={counties}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips={null}
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={onAvailableDataChange}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("explorer-available-data"));
+    await user.click(
+      await screen.findByRole("option", {
+        name: "Published Lyme case count available",
+      })
+    );
+
+    expect(onAvailableDataChange).toHaveBeenCalledWith("human");
+  });
+
+  it("uses the singular for a single county and hides the count with no counties", () => {
+    const view = render(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={[counties[0] as ExplorerCountyReference]}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips={null}
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.getByTestId("explorer-filter-count").textContent).toBe(
+      "1 county"
+    );
+
+    view.rerender(
+      <ExplorerCountyToolbar
+        availableData="all"
+        counties={[]}
+        countyQuery=""
+        scope="AL"
+        scopeLabel="Alabama"
+        selectedFips={null}
+        stateOptions={[{ code: "AL", name: "Alabama" }]}
+        onAvailableDataChange={vi.fn<(value: EvidenceView) => void>()}
+        onClearSelection={vi.fn<() => void>()}
+        onCountyQueryChange={vi.fn<(value: string) => void>()}
+        onCountySelect={vi.fn<(county: ExplorerCountyReference) => void>()}
+        onScopeChange={vi.fn<() => void>()}
+      />
+    );
+    expect(screen.queryByTestId("explorer-filter-count")).toBeNull();
   });
 });

@@ -1,0 +1,1196 @@
+/*
+ * Atlas Explorer visual-first layout (WEB 788, UX audit L1-L5, L7).
+ *
+ * Map-led stage with a right rail (List | County tabs), a slim context bar,
+ * overlay map controls, and visual summary parts. Selectors are scoped under
+ * `.ux-reset-explorer-page` so they win over the legacy three-column rules in
+ * ux-reset.css without `!important`. Semantic tokens only. The map ramp stays
+ * the domain `--map-ramp-*` set.
+ *
+ * Type scale (audit A5): 12 / 14 / 16 / 20 / 30 px. No body text below 12px.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Context bar                                                         */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-page .ux-reset-explorer-context-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.ux-reset-explorer-context-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem 1rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-breadcrumb ol {
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.ux-reset-explorer-breadcrumb button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ux-reset-explorer-breadcrumb button:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.ux-reset-explorer-breadcrumb button:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.ux-reset-explorer-breadcrumb [aria-current="page"] {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.ux-reset-explorer-context-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.ux-reset-explorer-context-actions > p.sr-only {
+  position: absolute;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-context-fields {
+  display: grid;
+  grid-template-columns:
+    minmax(9rem, 0.9fr) minmax(12rem, 1.6fr)
+    minmax(14rem, 1.5fr);
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.ux-reset-explorer-toolbar .ux-reset-explorer-filter {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ux-reset-explorer-toolbar
+  .ux-reset-explorer-filter
+  [data-slot="select-trigger"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ux-reset-explorer-filter-icon {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-explorer-filter-count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ux-reset-explorer-scenario-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.ux-reset-explorer-scenario-active {
+  margin-left: 0.25rem;
+}
+
+.ux-reset-explorer-export-item {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.ux-reset-explorer-export-description {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.ux-reset-explorer-resources-popover {
+  width: min(28rem, calc(100vw - 1.5rem));
+  max-width: min(28rem, calc(100vw - 1.5rem));
+  padding: 1rem;
+}
+
+.ux-reset-explorer-resources-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ux-reset-explorer-resources-panel h3 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-resources-panel h4 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-resources-panel p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.ux-reset-explorer-resources-panel ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-explorer-resources-panel li p {
+  font-size: 0.75rem;
+}
+
+.ux-reset-explorer-resources-panel a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-resources-panel a svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Browse stage: map + rail                                            */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-page .ux-reset-explorer-browse {
+  --explorer-stage-height: clamp(32rem, calc(100dvh - 20rem), 60rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  height: auto;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ux-reset-explorer-map-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map .map-wrap {
+  flex: 1 1 auto;
+  height: min(30rem, 62dvh);
+  min-height: 18rem;
+  overflow: hidden;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map .maplibre-atlas {
+  height: 100%;
+  min-height: 0;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map-heading {
+  padding: 0.5rem 0.75rem;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map-heading h2 {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-map-scenario,
+.ux-reset-explorer-map-stage-chip {
+  flex: 0 1 auto;
+  white-space: normal;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map-layer {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.75rem;
+  z-index: 6;
+  width: min(17rem, calc(100% - 4.5rem));
+  padding: 0;
+}
+
+.ux-reset-explorer-page
+  .ux-reset-explorer-map-layer
+  .ux-reset-review-scope-field {
+  gap: 0.375rem;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map-layer label {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map-layer label svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ux-reset-explorer-page
+  .ux-reset-explorer-map-layer
+  [data-slot="select-trigger"] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-map-availability {
+  position: absolute;
+  top: 0.5rem;
+  left: min(17.75rem, calc(100% - 3.75rem));
+  z-index: 6;
+  padding: 0;
+}
+
+.ux-reset-layer-availability {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.ux-reset-layer-availability p,
+.ux-reset-layer-availability ul {
+  margin: 0;
+}
+
+.ux-reset-layer-availability ul {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* The legend is a compact strip under the canvas. It never covers counties,
+   so every county stays clickable. */
+.ux-reset-explorer-page .ux-reset-explorer-map .ux-reset-explorer-legend {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+  padding: 0.5rem 0.75rem 0.625rem;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--card);
+  box-shadow: none;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-legend-head {
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.ux-reset-explorer-legend-qualifier {
+  flex: 0 1 auto;
+  white-space: normal;
+}
+
+/* ------------------------------------------------------------------ */
+/* Rail                                                                */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--line, var(--border));
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.ux-reset-explorer-rail-tabs {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  width: 100%;
+  height: auto;
+  padding: 0 0.5rem;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ux-reset-explorer-rail-tabs [data-slot="tabs-trigger"] {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+.ux-reset-explorer-rail-tabs [data-slot="tabs-trigger"][aria-selected="true"] {
+  color: var(--foreground);
+}
+
+.ux-reset-explorer-rail-tabs [data-slot="tabs-trigger"]::after {
+  bottom: -1px;
+}
+
+.ux-reset-explorer-rail-count {
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ux-reset-explorer-rail-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  scrollbar-color: var(--line, var(--border)) transparent;
+  scrollbar-width: thin;
+}
+
+.ux-reset-explorer-rail-panel[hidden] {
+  display: none;
+}
+
+.ux-reset-explorer-rail-panel > [data-slot="card"] {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  --tw-ring-shadow: 0 0 transparent;
+  min-height: 100%;
+}
+
+.ux-reset-explorer-rail-panel[data-testid="explorer-rail-panel-county"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.ux-reset-explorer-rail-panel[data-testid="explorer-rail-panel-county"][hidden] {
+  display: none;
+}
+
+.ux-reset-explorer-rail-panel[data-testid="explorer-rail-panel-county"] > * {
+  flex: 0 0 auto;
+}
+
+.ux-reset-explorer-county-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.ux-reset-explorer-county-empty svg {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (min-width: 1100px) {
+  .ux-reset-explorer-page .ux-reset-explorer-browse {
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 26rem);
+    height: var(--explorer-stage-height);
+    align-items: stretch;
+  }
+
+  .ux-reset-explorer-page .ux-reset-explorer-map {
+    grid-column: 1;
+    grid-row: 1;
+    height: 100%;
+  }
+
+  .ux-reset-explorer-page .ux-reset-explorer-map .map-wrap {
+    height: auto;
+    min-height: 0;
+  }
+
+  .ux-reset-explorer-page .ux-reset-explorer-rail {
+    grid-column: 2;
+    grid-row: 1;
+    height: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Shortlist rows                                                      */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-ranked-counties-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+}
+
+.ux-reset-ranked-sort {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 0.15rem 0.5rem;
+}
+
+.ux-reset-ranked-sort-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.ux-reset-ranked-sort-label svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.ux-reset-ranked-sort [data-slot="toggle-group-item"] {
+  height: 1.75rem;
+  padding: 0 0.5rem;
+  font-size: 0.75rem;
+}
+
+.ux-reset-ranked-columns {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr) 4.5rem 3.75rem;
+  column-gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.ux-reset-ranked-columns span:first-child {
+  text-align: right;
+}
+
+.ux-reset-ranked-columns span:nth-child(n + 3) {
+  text-align: right;
+}
+
+.ux-reset-explorer-page .ux-reset-ranked-row {
+  grid-template-columns: 1.75rem minmax(0, 1fr) 4.5rem 3.75rem;
+  column-gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.5rem;
+}
+
+.ux-reset-explorer-page .ux-reset-ranked-name {
+  overflow: visible;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ux-reset-explorer-page .ux-reset-ranked-row .ux-reset-ranked-score {
+  display: grid;
+  width: auto;
+  height: auto;
+  justify-items: end;
+  gap: 0.25rem;
+  background: transparent;
+  font-size: 0.875rem;
+}
+
+.ux-reset-ranked-score-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.ux-reset-ranked-scenario-mark {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-ranked-bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0.375rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.ux-reset-ranked-bar::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ranked-bar-size, 0%);
+  border-radius: inherit;
+  background: var(--ranked-bar-color, var(--primary));
+  content: "";
+}
+
+.ux-reset-explorer-page
+  .ux-reset-ranked-row
+  .ux-reset-ranked-score.is-unavailable {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 0.25rem;
+  padding: 0.25rem 0.375rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ux-reset-ranked-score.is-unavailable svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.ux-reset-ranked-evidence {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: end;
+  min-width: 0;
+  height: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.ux-reset-ranked-evidence-value {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+span.ux-reset-ranked-evidence.atlas-state-unavailable {
+  width: 100%;
+  height: 0.375rem;
+  border-radius: 999px;
+}
+
+.ux-reset-ranked-evidence [data-slot="meter-track"] {
+  width: 100%;
+  height: 0.375rem;
+}
+
+.ux-reset-ranked-evidence [data-slot="meter-indicator"] {
+  background: var(--muted-foreground);
+}
+
+.ux-reset-explorer-page .ux-reset-ranked-unscored {
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* County summary card                                                 */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-page .county-summary-card {
+  gap: 0.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  --tw-ring-shadow: 0 0 transparent;
+}
+
+.county-summary-header {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ux-reset-pro-main .ux-reset-explorer-page .county-summary-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.county-summary-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.county-summary-category {
+  margin: 0;
+}
+
+.county-summary-score {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.county-summary-score-meter {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.county-summary-qualifier {
+  justify-self: start;
+  height: auto;
+  padding-block: 0.125rem;
+  white-space: normal;
+}
+
+.county-summary-ramp {
+  position: relative;
+  height: 0.5rem;
+  overflow: visible;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--map-ramp-1),
+    var(--map-ramp-2),
+    var(--map-ramp-3),
+    var(--map-ramp-4),
+    var(--map-ramp-5),
+    var(--map-ramp-6)
+  );
+}
+
+.county-summary-ramp-marker {
+  position: relative;
+  height: 100%;
+  border-right: 3px solid var(--foreground);
+  border-radius: 0;
+  background: transparent;
+}
+
+.county-summary-ramp-marker::after {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.4375rem;
+  width: 0.5rem;
+  height: 1rem;
+  border: 2px solid var(--background);
+  border-radius: 999px;
+  background: var(--foreground);
+  content: "";
+}
+
+.county-summary-ramp-scenario {
+  position: absolute;
+  top: -0.1875rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: -0.375rem;
+  border: 2px solid var(--foreground);
+  border-radius: 999px;
+  background: var(--background);
+}
+
+.county-summary-delta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.county-summary-delta svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.county-summary-completeness {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.county-summary-completeness-label {
+  color: var(--muted-foreground);
+  font-weight: 600;
+}
+
+.county-summary-completeness-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.county-summary-completeness [data-slot="meter-track"] {
+  grid-column: 1 / -1;
+}
+
+.county-summary-completeness [data-slot="meter-indicator"] {
+  background: var(--muted-foreground);
+}
+
+.county-summary-fingerprint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.county-summary-fingerprint > li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.county-summary-fingerprint > li > svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.county-summary-fingerprint-label {
+  font-weight: 600;
+}
+
+.county-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.county-summary-actions > [data-slot="button"],
+.county-summary-actions > a {
+  flex: 1 1 10rem;
+  justify-content: center;
+}
+
+.county-summary-icon-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.county-summary-disclosure {
+  border-top: 1px solid var(--border);
+}
+
+.county-summary-disclosure-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.county-summary-disclosure-trigger:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid var(--ring);
+  outline-offset: 2px;
+}
+
+.county-summary-disclosure-trigger svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 120ms ease;
+}
+
+.county-summary-disclosure-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .county-summary-disclosure-trigger svg {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Follow-up checklist                                                 */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-page .ux-reset-explorer-map-follow-up {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--action-plan-border, var(--border));
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+.action-checklist {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.action-checklist-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-checklist-heading svg {
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--primary);
+}
+
+.action-checklist-heading :is(h3, h4) {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.action-checklist-rows {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.action-checklist-row {
+  border-top: 1px solid var(--border);
+}
+
+div.action-checklist-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.action-checklist-trigger {
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.action-checklist-icon {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+  color: var(--primary);
+}
+
+.action-checklist-copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.action-checklist-copy strong {
+  font-size: 0.875rem;
+}
+
+.action-checklist-copy .action-lead {
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.action-checklist .action-fact {
+  display: block;
+  padding-left: 1.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+.action-checklist [data-slot="accordion-trigger"] {
+  font-size: 0.875rem;
+}
+
+.action-checklist .action-summary,
+.action-checklist .action-caution {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Scenario sheet                                                      */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-scenario-sheet.ux-reset-explorer-scenario-sheet {
+  display: flex;
+  width: min(30rem, 100vw);
+  max-width: 100vw;
+  gap: 0;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.ux-reset-explorer-scenario-sheet .ux-reset-explorer-scenario-sheet-header {
+  padding: 1rem 3rem 0.5rem 1rem;
+}
+
+.ux-reset-explorer-scenario-sheet .ux-reset-explorer-scenario-body {
+  display: grid;
+  gap: 1rem;
+  padding: 0.5rem 1rem 1.25rem;
+}
+
+.ux-reset-explorer-scenario-sheet .ux-reset-explorer-scenario-heading {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ux-reset-explorer-scenario-sheet .ux-reset-explorer-scenario-intro {
+  font-size: 0.875rem;
+}
+
+.ux-reset-explorer-scenario-methods-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ux-reset-explorer-scenario-methods-trigger svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ux-reset-explorer-scenario-methods-trigger:focus-visible {
+  outline: var(--focus-ring-width, 2px) solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Release sheet                                                       */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-release-sheet.ux-reset-explorer-release-sheet {
+  overflow-y: auto;
+  width: min(30rem, 100vw);
+  max-width: 100vw;
+}
+
+.ux-reset-explorer-release-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0 1rem 1.25rem;
+}
+
+.ux-reset-explorer-release-body p {
+  margin: 0;
+}
+
+.ux-reset-explorer-release-link a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ */
+/* Narrow layouts                                                      */
+/* ------------------------------------------------------------------ */
+
+.ux-reset-explorer-filters-toggle {
+  display: none;
+}
+
+@media (max-width: 1099px) {
+  .ux-reset-explorer-page .ux-reset-explorer-rail {
+    max-height: 40rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .ux-reset-explorer-page .ux-reset-explorer-context-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ux-reset-explorer-filter {
+    flex-wrap: wrap;
+  }
+
+  .ux-reset-explorer-page .ux-reset-explorer-map .map-wrap {
+    height: min(26rem, 56dvh);
+  }
+}
+
+.atlas-status-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.375rem;
+  vertical-align: -0.1875rem;
+  color: var(--muted-foreground);
+}
+
+/* List panel: the ranked list is the scroll container so selected-row
+   alignment and focus return keep working. */
+.ux-reset-explorer-rail-panel[data-testid="explorer-rail-panel-list"] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ux-reset-explorer-rail-panel[data-testid="explorer-rail-panel-list"][hidden] {
+  display: none;
+}
+
+.ux-reset-explorer-rail-panel[data-testid="explorer-rail-panel-list"]
+  > [data-slot="card"] {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.5rem 0.25rem 0;
+}
+
+.ux-reset-explorer-rail .ux-reset-ranked-counties {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ux-reset-explorer-rail .ux-reset-review-candidate-list {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  border-top: 0;
+}
+
+.ux-reset-explorer-rail [data-testid="explorer-national-shortlist-note"] {
+  margin: 0 0.15rem 0.5rem;
+}
+
+/* Map first on narrow screens, then the rail. */
+.ux-reset-explorer-page .ux-reset-explorer-map {
+  order: 1;
+}
+
+.ux-reset-explorer-page .ux-reset-explorer-rail {
+  order: 2;
+}
+
+@media (min-width: 1100px) {
+  .ux-reset-explorer-page .ux-reset-explorer-map,
+  .ux-reset-explorer-page .ux-reset-explorer-rail {
+    order: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  /* State and data filter share a row; the county search spans both. */
+  .ux-reset-explorer-page .ux-reset-explorer-context-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.375rem;
+  }
+
+  .ux-reset-explorer-context-fields > .ux-reset-county-combobox {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .ux-reset-explorer-context-fields > .ux-reset-explorer-filter {
+    flex-wrap: nowrap;
+  }
+
+  .ux-reset-explorer-filter-icon {
+    display: none;
+  }
+
+  .ux-reset-explorer-filter-count {
+    display: none;
+  }
+
+  .ux-reset-explorer-page .ux-reset-explorer-context-bar {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .ux-reset-explorer-page .ux-reset-explorer-map-layer,
+  .ux-reset-explorer-page .ux-reset-explorer-map-availability {
+    position: static;
+    width: auto;
+    padding: 0 0.75rem 0.5rem;
+  }
+
+  .ux-reset-explorer-page .ux-reset-explorer-map-availability {
+    padding-top: 0;
+  }
+}
+
+.ux-reset-explorer-page .county-summary-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+
+/* Dark navy text on the orange end of the review ramp needs 4.5:1. */
+.county-summary-marks .ux-reset-ranked-score:not(.is-unavailable) {
+  color: color-mix(in srgb, var(--navy) 65%, black);
+}

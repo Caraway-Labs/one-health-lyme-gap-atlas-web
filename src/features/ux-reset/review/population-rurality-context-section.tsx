@@ -1,11 +1,14 @@
 "use client";
 
-import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import { RotateCcw, Users } from "lucide-react";
+
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { EvidenceObject } from "@/features/ux-reset/evidence/evidence-object";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
+import { ExplorerLoadingStatus } from "@/features/ux-reset/review/explorer-loading-status";
 import { EXPLORER_SECTION_IDS } from "@/features/ux-reset/review/explorer-mode";
+import { ExplorerSectionHeading } from "@/features/ux-reset/review/explorer-section-heading";
 import { POPULATION_RURALITY_MEASURES } from "@/features/ux-reset/review/population-rurality-context";
 import {
   usePopulationRuralityContext,
@@ -31,9 +34,9 @@ function PopulationRuralityMeasureBody({
     }
     case "loading": {
       return (
-        <AtlasStatusMessage tone="loading">
+        <ExplorerLoadingStatus>
           {`Loading ${measureClaim(view.measureId)}…`}
-        </AtlasStatusMessage>
+        </ExplorerLoadingStatus>
       );
     }
     case "error": {
@@ -43,11 +46,10 @@ function PopulationRuralityMeasureBody({
       return (
         <AtlasStatusMessage tone="error">
           <p>{view.message}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleRetry}
-          >{`Retry ${measureClaim(view.measureId)}`}</Button>
+          <Button type="button" variant="secondary" onClick={handleRetry}>
+            <RotateCcw aria-hidden="true" data-icon="inline-start" />
+            {`Retry ${measureClaim(view.measureId)}`}
+          </Button>
         </AtlasStatusMessage>
       );
     }
@@ -78,6 +80,7 @@ function PopulationRuralityMeasureBody({
       return (
         <EvidenceObject
           model={view.presentation.evidence}
+          presentation="compact"
           showGovernedLimitations={false}
           showReason
         />
@@ -171,25 +174,21 @@ export function PopulationRuralityContextSection({
       data-testid="explorer-population-rurality"
       id={EXPLORER_SECTION_IDS.populationRurality}
     >
-      <AtlasSectionHeader
+      <ExplorerSectionHeading
         description="Rural-urban codes stay categories. Population is a count of people. Social vulnerability and the uninsured percentile stay on a 0 to 1 scale. The uninsured percentage is a percent of people."
-        eyebrow="Context"
-        headingLevel="h2"
+        icon={Users}
+        note="Context"
         title="Population & Rurality Context"
       />
       <p className="sr-only" role="status">
         {liveText}
       </p>
       {status ? (
-        <AtlasStatusMessage
-          tone={
-            countyHoldPending || (releaseLoading && !releaseId)
-              ? "loading"
-              : "empty"
-          }
-        >
-          {status}
-        </AtlasStatusMessage>
+        countyHoldPending || (releaseLoading && !releaseId) ? (
+          <ExplorerLoadingStatus>{status}</ExplorerLoadingStatus>
+        ) : (
+          <AtlasStatusMessage tone="empty">{status}</AtlasStatusMessage>
+        )
       ) : null}
       {context.enabled ? (
         <>

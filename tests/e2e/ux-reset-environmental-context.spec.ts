@@ -138,6 +138,7 @@ test.describe("Atlas Explorer environmental context", () => {
   }, testInfo) => {
     await installEnvironmentalMocks(page);
     await page.goto(`/explore?scope=TX&county=${SAMPLE_FIPS}&mode=evidence`);
+    await page.getByRole("tab", { name: "Context" }).click();
     const section = page.getByTestId("explorer-environmental-context");
     await expect(section).toBeVisible();
     await expect(section).toHaveAttribute("data-county", SAMPLE_FIPS);
@@ -172,7 +173,7 @@ test.describe("Atlas Explorer environmental context", () => {
         path: testInfo.outputPath("environmental-context-precipitation.png"),
       });
 
-    const provenance = page.getByText("Inspect provenance").first();
+    const provenance = section.getByText("Inspect provenance").first();
     await provenance.focus();
     await page.keyboard.press("Enter");
     await expect(provenance).toBeFocused();

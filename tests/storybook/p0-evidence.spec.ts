@@ -302,18 +302,14 @@ test.describe("P0 evidence catalog", () => {
     await expect(page.getByTestId("preview-action")).toHaveText(
       "Last preview action: None"
     );
-    const investigate = page.getByTestId("review-investigate");
+    const evidence = page.getByTestId("review-view-county-evidence");
     const compare = page.getByTestId("review-compare");
-    await expect(investigate).toHaveAttribute("href", /dataset=alpha-2026/);
-    await expect(investigate).toHaveAttribute("href", /county=08001/);
+    await expect(evidence).toHaveAttribute("href", /dataset=alpha-2026/);
+    await expect(evidence).toHaveAttribute("href", /county=08001/);
     await expect(compare).toHaveAttribute("href", /dataset=alpha-2026/);
     await compare.click();
     await expect(page.getByTestId("preview-action")).toHaveText(
       "Last preview action: Opened county 08001 (1)"
-    );
-    await investigate.click();
-    await expect(page.getByTestId("preview-action")).toHaveText(
-      "Last preview action: Opened county 08001 (2)"
     );
     await openStory(page, `${preview}--long-references`);
     await expect(page.getByTestId("preview-action")).toHaveText(

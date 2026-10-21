@@ -10,6 +10,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showSelectedCounty } from "./explorer-rail";
 
 async function installExplorerMocks(page: Page) {
   await page.route("**/v1/**", async (route) => {
@@ -79,8 +80,8 @@ test.describe("Atlas Explorer county evidence", () => {
     await installExplorerMocks(page);
     await page.goto("/explore?scope=CO&county=08001");
     await expect(page.getByTestId("review-view-county-evidence")).toBeVisible();
-    await expect(page.getByTestId("review-investigate")).toHaveAttribute(
-      "href",
+    await expect(page.getByTestId("review-county-preview")).toHaveAttribute(
+      "data-target",
       /\/explore\?.*mode=evidence/
     );
 
@@ -98,20 +99,27 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-review-priority")).toContainText(
       "Highest review priority"
     );
+    await page.getByRole("tab", { name: "Follow-up" }).click();
     const resource = page
-      .locator("summary", {
-        hasText: "Questions, partner roles, and official resources",
+      .getByRole("button", {
+        name: "Questions, partner roles, and official resources",
       })
       .first();
     await resource.focus();
     await page.keyboard.press("Enter");
     await expect(resource).toBeFocused();
+    await expect(resource).toHaveAttribute("aria-expanded", "true");
     await expect(
       page.getByRole("link", { name: "Lyme surveillance case definition" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-summary-limitation")).toHaveCount(
       0
     );
+    await page.getByRole("tab", { name: "Evidence" }).click();
+    await expect(
+      page.getByRole("tab", { name: "Evidence", selected: true })
+    ).toBeVisible();
+    await page.getByRole("tab", { name: "Overview" }).click();
     await expect(page.getByText("Why review this county?")).toBeVisible();
     await expect(page.getByTestId("explorer-review-category")).toContainText(
       "Review category PATHOGEN_PRESENT_VECTOR_REPORTED_REVIEW."
@@ -120,7 +128,8 @@ test.describe("Atlas Explorer county evidence", () => {
       "Denver is included because the review method returned it."
     );
     await expect(page.getByText("Review limitations")).toHaveCount(0);
-    await page.getByRole("link", { name: "Suggested follow-up" }).click();
+    await page.getByRole("tab", { name: "Follow-up" }).click();
+    await expect(page.locator("#explorer-follow-up")).toBeVisible();
     await expect(page.locator("#explorer-follow-up")).toBeInViewport();
 
     const compareHref =
@@ -138,6 +147,7 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page).toHaveURL(/county=08001/);
 
     if (!testInfo.project.name.includes("mobile")) {
+      await showSelectedCounty(page);
       await page.getByTestId("review-view-county-evidence").click();
       const results = await new AxeBuilder({ page })
         .exclude(".maplibregl-canvas")
@@ -217,12 +227,13 @@ test.describe("Atlas Explorer county evidence", () => {
       "Denver"
     );
     await expect(
-      page.locator("[data-atlas-status='error']").first()
+      page.getByRole("tabpanel").locator("[data-atlas-status='error']").first()
     ).toBeVisible();
     const text =
       (await page.getByTestId("explorer-county-evidence").textContent()) ?? "";
     expect(text).not.toMatch(/\b0 cases\b/);
     expect(text.toLowerCase()).not.toContain("pathogen is absent");
+    await page.getByRole("tab", { name: "Sources" }).click();
     await expect(page.getByTestId("explorer-export-unavailable")).toBeVisible();
   });
 });

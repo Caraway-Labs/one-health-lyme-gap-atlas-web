@@ -1,0 +1,185 @@
+[
+  {
+    "label": "national-1440x900",
+    "bodyFontSizes": [10.4, 11.5, 12, 12.8, 13, 14, 15, 16, 17, 18.4, 24, 24.8],
+    "buttons": 59,
+    "links": 5,
+    "mapTop": 469,
+    "pageHeight": 1787,
+    "proseWords": 285,
+    "totalWords": 747
+  },
+  {
+    "label": "state-1440x900",
+    "bodyFontSizes": [
+      10.4, 10.9, 11.5, 12, 12.8, 13, 14, 15, 16, 17, 18.4, 24, 24.8
+    ],
+    "buttons": 86,
+    "links": 7,
+    "mapTop": 469,
+    "pageHeight": 1856,
+    "proseWords": 288,
+    "totalWords": 1032
+  },
+  {
+    "label": "state-county-1440x900",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 18.4, 24, 24.8, 28
+    ],
+    "buttons": 93,
+    "links": 53,
+    "mapTop": 469,
+    "pageHeight": 2086,
+    "proseWords": 746,
+    "totalWords": 1490
+  },
+  {
+    "label": "evidence-1440x900",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 23.2, 24, 24.8, 56
+    ],
+    "buttons": 101,
+    "links": 76,
+    "mapTop": 0,
+    "pageHeight": 3102,
+    "proseWords": 138,
+    "totalWords": 680
+  },
+  {
+    "label": "follow-up-1440x900",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 23.2, 24, 24.8, 56
+    ],
+    "buttons": 101,
+    "links": 76,
+    "mapTop": 0,
+    "pageHeight": 3102,
+    "proseWords": 138,
+    "totalWords": 680
+  },
+  {
+    "label": "national-1280x720",
+    "bodyFontSizes": [10.4, 11.5, 12, 12.8, 13, 14, 15, 16, 17, 18.4, 24, 24.8],
+    "buttons": 59,
+    "links": 5,
+    "mapTop": 487,
+    "pageHeight": 1868,
+    "proseWords": 285,
+    "totalWords": 747
+  },
+  {
+    "label": "state-1280x720",
+    "bodyFontSizes": [
+      10.4, 10.9, 11.5, 12, 12.8, 13, 14, 15, 16, 17, 18.4, 24, 24.8
+    ],
+    "buttons": 86,
+    "links": 7,
+    "mapTop": 487,
+    "pageHeight": 1937,
+    "proseWords": 288,
+    "totalWords": 1032
+  },
+  {
+    "label": "state-county-1280x720",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 18.4, 24, 24.8, 28
+    ],
+    "buttons": 93,
+    "links": 53,
+    "mapTop": 487,
+    "pageHeight": 2122,
+    "proseWords": 746,
+    "totalWords": 1490
+  },
+  {
+    "label": "evidence-1280x720",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 23.2, 24, 24.8, 51.2
+    ],
+    "buttons": 101,
+    "links": 76,
+    "mapTop": 0,
+    "pageHeight": 3116,
+    "proseWords": 138,
+    "totalWords": 680
+  },
+  {
+    "label": "follow-up-1280x720",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 23.2, 24, 24.8, 51.2
+    ],
+    "buttons": 101,
+    "links": 76,
+    "mapTop": 0,
+    "pageHeight": 3116,
+    "proseWords": 138,
+    "totalWords": 680
+  },
+  {
+    "label": "national-390x844",
+    "bodyFontSizes": [10.4, 11.5, 12, 12.8, 13, 14, 15, 16, 17, 18.4, 24, 24.8],
+    "buttons": 59,
+    "links": 5,
+    "mapTop": 877,
+    "pageHeight": 4631,
+    "proseWords": 285,
+    "totalWords": 747
+  },
+  {
+    "label": "state-390x844",
+    "bodyFontSizes": [
+      10.4, 10.9, 11.5, 12, 12.8, 13, 14, 15, 16, 17, 18.4, 24, 24.8
+    ],
+    "buttons": 86,
+    "links": 7,
+    "mapTop": 877,
+    "pageHeight": 6122,
+    "proseWords": 288,
+    "totalWords": 1032
+  },
+  {
+    "label": "state-county-390x844",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 18.4, 24, 24.8, 28
+    ],
+    "buttons": 93,
+    "links": 53,
+    "mapTop": 877,
+    "pageHeight": 8836,
+    "proseWords": 746,
+    "totalWords": 1490
+  },
+  {
+    "label": "evidence-390x844",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 21.1, 24, 24.8, 33.6
+    ],
+    "buttons": 101,
+    "links": 76,
+    "mapTop": 0,
+    "pageHeight": 4758,
+    "proseWords": 138,
+    "totalWords": 680
+  },
+  {
+    "label": "follow-up-390x844",
+    "bodyFontSizes": [
+      10.4, 10.7, 10.9, 11, 11.5, 12, 12.5, 12.8, 13, 13.4, 14, 15, 16, 16.8,
+      17, 21.1, 24, 24.8, 33.6
+    ],
+    "buttons": 101,
+    "links": 76,
+    "mapTop": 0,
+    "pageHeight": 4758,
+    "proseWords": 138,
+    "totalWords": 680
+  }
+]

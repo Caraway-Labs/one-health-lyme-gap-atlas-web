@@ -407,22 +407,9 @@
   }
 }
 
-.ux-reset-review-toolbar {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-}
-
 .ux-reset-review-scope-field {
   display: grid;
   gap: var(--space-2);
-}
-
-.ux-reset-review-scope-status {
-  margin: 0;
 }
 
 .ux-reset-review-results {
@@ -490,7 +477,7 @@
 .county-summary-mark-caption {
   max-width: 100%;
   color: var(--muted-foreground);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 650;
   letter-spacing: 0.02em;
   line-height: 1.2;
@@ -579,68 +566,6 @@
 
 .ux-reset-review-preview .eyebrow {
   display: block;
-}
-
-.ux-reset-selected-county-header {
-  container-type: inline-size;
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.65rem 0.75rem;
-  width: 100%;
-  min-width: 0;
-}
-
-.ux-reset-selected-county-identity {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.ux-reset-selected-county-identity h2 {
-  font-size: clamp(1.05rem, 5.4cqi, 1.45rem);
-  line-height: 1.15;
-  overflow-wrap: break-word;
-}
-
-.ux-reset-selected-county-score {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-  max-width: 100%;
-  min-width: 0;
-  text-align: right;
-}
-
-.ux-reset-selected-county-gap-score {
-  display: grid;
-  justify-items: end;
-  margin: 0;
-  gap: 0.1rem;
-}
-
-.ux-reset-selected-county-gap-score-value {
-  display: flex;
-  align-items: baseline;
-  gap: 0.15rem;
-}
-
-.ux-reset-selected-county-gap-score strong {
-  color: var(--navy);
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.ux-reset-selected-county-gap-score-value span,
-.ux-reset-selected-county-gap-score-label {
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1.3;
 }
 
 .response-tier-pill {
@@ -735,12 +660,6 @@
   width: fit-content;
   font-weight: 500;
   text-decoration: none;
-}
-
-.ux-reset-review-preview-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .ux-reset-pro-main a.ux-reset-review-open[data-variant="primary"] {
@@ -1040,37 +959,6 @@
   .ux-reset-population-rurality-measures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
-
-.ux-reset-explorer-actions,
-.ux-reset-explorer-section-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  align-items: center;
-}
-
-.ux-reset-explorer-section-nav a {
-  color: var(--primary);
-}
-
-.ux-reset-explorer-checklist {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ux-reset-explorer-checklist label {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
-}
-
-.ux-reset-explorer-disclosure {
-  display: grid;
-  gap: var(--space-2);
 }
 
 .ux-reset-investigate-header,
@@ -1966,11 +1854,6 @@
   background: transparent;
 }
 
-.ux-reset-explorer-heading {
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
 .ux-reset-explorer-heading p,
 .ux-reset-compare-header p {
   margin: 0.25rem 0 0;
@@ -2199,13 +2082,6 @@
   min-width: 0;
 }
 
-.ux-reset-explorer-download {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
 /* Match the State and Available data select size (h-8 / --spacing * 8). */
 .ux-reset-explorer-toolbar [data-slot="select-trigger"],
 .ux-reset-explorer-toolbar [data-slot="button"],
@@ -2348,15 +2224,6 @@
   background: var(--card);
 }
 
-.ux-reset-explorer-list > .gap-0 {
-  min-height: 0;
-  padding-top: 0.75rem;
-}
-
-.ux-reset-explorer-list [data-testid="explorer-national-shortlist-note"] {
-  margin: 0 0.15rem 0.35rem;
-}
-
 .ux-reset-explorer-map {
   width: 100%;
   min-height: 20rem;
@@ -2408,41 +2275,12 @@
   background: transparent;
 }
 
-.ux-reset-explorer-lower {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  width: 100%;
-  min-width: 0;
-  align-items: start;
-}
-
-.ux-reset-explorer-lower > * {
-  min-width: 0;
-}
-
 /* Official resources card. Sizes are the desktop targets at the default
    browser font size, scoped so Suggested follow-up keeps its own type. */
-.ux-reset-explorer-resources.ux-reset-explorer-resources {
-  gap: var(--space-6);
-  padding: 1.625rem;
-  border: 1px solid var(--line);
-  background: var(--card);
-  box-shadow: none;
-}
 
 .ux-reset-explorer-resources-intro {
   display: grid;
   gap: var(--space-2);
-}
-
-.ux-reset-pro-main .ux-reset-explorer-resources h3 {
-  margin: 0;
-  color: var(--navy);
-  font-family: var(--font-sans);
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.25;
 }
 
 .ux-reset-pro-main .ux-reset-explorer-resources-intro p {
@@ -2464,15 +2302,6 @@
   margin-top: var(--space-5);
   padding-top: var(--space-5);
   border-top: 1px solid var(--line);
-}
-
-.ux-reset-pro-main .ux-reset-explorer-resources h4 {
-  margin: 0;
-  color: var(--navy);
-  font-family: var(--font-sans);
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.3;
 }
 
 .ux-reset-explorer-resource-list {
@@ -2520,12 +2349,6 @@
   font-size: var(--type-small-size);
   font-weight: 400;
   line-height: 1.5;
-}
-
-@media (max-width: 799px) {
-  .ux-reset-explorer-resources.ux-reset-explorer-resources {
-    padding: 1.125rem;
-  }
 }
 
 .ux-reset-explorer-map .map-wrap {
@@ -2743,10 +2566,6 @@
   appearance: none;
 }
 
-.ux-reset-explorer-list .type-small {
-  margin: 0.15rem 0 0;
-}
-
 .ux-reset-ranked-counties {
   display: flex;
   flex: 1 1 auto;
@@ -2825,7 +2644,7 @@
   border-radius: 0.35rem;
   background: var(--muted);
   color: var(--navy);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -2844,63 +2663,9 @@
 .ux-reset-ranked-unscored p {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-}
-
-.ux-reset-explorer-list .ux-reset-review-candidate-list {
-  max-height: none;
-  overflow: visible;
-}
-
-.ux-reset-explorer-list .ux-reset-review-candidate {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: var(--space-3);
-  row-gap: 0.15rem;
-  padding: 0.7rem 0.85rem;
-}
-
-.ux-reset-explorer-list
-  .ux-reset-review-candidate:hover:not([aria-current="true"]) {
-  background: var(--pale);
-}
-
-.ux-reset-explorer-list .ux-reset-review-candidate strong {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  color: var(--navy);
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1.3;
-  overflow-wrap: break-word;
-}
-
-.ux-reset-explorer-list .ux-reset-review-candidate small,
-.ux-reset-explorer-list .ux-reset-explorer-county-score,
-.ux-reset-explorer-list .ux-reset-explorer-scenario-result {
-  grid-column: 1 / -1;
-}
-
-.ux-reset-explorer-list .ux-reset-review-candidate[aria-current="true"] {
-  border: 1px solid var(--primary);
-  box-shadow: inset 3px 0 0 var(--primary);
-}
-
-.ux-reset-explorer-list .ux-reset-ml-priority.priority-pill {
-  /* The 18% column cannot share a row with a nowrap badge.
-     A squeezed name wraps one letter per line and the row no longer fits the list. */
-  grid-column: 1 / -1;
-  grid-row: auto;
-  align-self: center;
-  justify-self: start;
-  max-width: 100%;
-  margin-bottom: 0;
-  font-size: var(--type-small-size);
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: normal;
 }
 
 .ux-reset-ml-priority.priority-pill[data-tier="unavailable"],
@@ -2980,7 +2745,7 @@
 .ux-reset-explorer-legend-caption {
   flex: none;
   color: var(--muted-foreground);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -3185,7 +2950,7 @@
 .ux-reset-explorer-legend-rurality-explanation {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   line-height: 1.25;
 }
 
@@ -3222,7 +2987,7 @@
   .ux-reset-explorer-legend-segment-label {
   width: auto;
   color: var(--foreground);
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   line-height: 1.1;
   text-align: start;
   white-space: nowrap;
@@ -3266,7 +3031,7 @@
 .ux-reset-explorer-legend-segment-label
   + .ux-reset-explorer-legend-segment-label {
   color: var(--muted-foreground);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 400;
 }
 
@@ -3447,21 +3212,6 @@
   background: color-mix(in srgb, var(--mint) 72%, white);
 }
 
-.ux-reset-review-preview-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.ux-reset-review-preview-actions :is(a, button) {
-  flex: 1 1 11.5rem;
-  width: auto;
-  max-width: 100%;
-  min-width: min(100%, 11.5rem);
-  justify-content: center;
-  white-space: normal;
-}
-
 .ux-reset-pro-main a.ux-reset-review-open[data-variant="outline"] {
   color: var(--foreground);
 }
@@ -3472,16 +3222,10 @@
   margin-top: 0;
 }
 
-.ux-reset-review-preview-support {
-  margin-top: 1rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--line);
-}
-
 .ux-reset-review-rationale h3 {
   margin: 0.85rem 0 0.45rem;
   color: var(--teal-dark);
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3896,57 +3640,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   border-radius: 999px;
 }
 
-.ux-reset-explorer-activities {
-  display: grid;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ux-reset-explorer-activity {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-}
-
-.ux-reset-explorer-activity h3,
-.ux-reset-explorer-activity p {
-  margin: 0;
-}
-
-.ux-reset-explorer-activity-meta {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.ux-reset-explorer-activity-meta div {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.ux-reset-explorer-activity-meta dt {
-  color: var(--muted-foreground);
-}
-
-.ux-reset-explorer-activity-meta dd {
-  margin: 0;
-}
-
-.ux-reset-explorer-disclosure summary {
-  cursor: pointer;
-}
-
-@media (max-width: 799px) {
-  .ux-reset-explorer-activity {
-    padding: var(--space-3);
-  }
-}
-
 .ux-reset-evidence-columns {
   display: grid;
   gap: 1rem;
@@ -3962,46 +3655,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     min-height: 0;
   }
 
-  .ux-reset-explorer-list,
-  .ux-reset-explorer-preview {
-    /* Zero height keeps county content from stretching the map row.
-       The stretched minimum matches the map card. */
-    height: 0;
-    min-height: 100%;
-    overflow: hidden;
-  }
-
-  .ux-reset-explorer-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ux-reset-explorer-list > .gap-0 {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-  }
-
-  .ux-reset-explorer-list .ux-reset-review-candidate-list {
-    flex: 1 1 0;
-    min-height: 0;
-    overflow: auto;
-  }
-
   /* At 18% the published-category sentence wraps taller than the list.
      Keep the full sentence in the button name and show two lines. */
-  .ux-reset-explorer-list .ux-reset-review-candidate small {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  .ux-reset-explorer-preview {
-    overflow: auto;
-  }
 
   .ux-reset-explorer-map {
     display: flex;
@@ -4040,30 +3695,9 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     padding: 0.35rem 0.9rem 0.75rem;
   }
 
-  .ux-reset-explorer-preview {
-    overflow: auto;
-  }
-
-  .ux-reset-explorer-list {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
   .ux-reset-explorer-map {
     grid-column: 2;
     grid-row: 1;
-  }
-
-  .ux-reset-explorer-preview {
-    grid-column: 3;
-    grid-row: 1;
-  }
-
-  .ux-reset-explorer-lower {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
-    align-items: stretch;
   }
 
   /* State orientation keeps the map and state list in one column. The
@@ -4076,22 +3710,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   }
 
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
-    > .ux-reset-explorer-list,
-  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
-    > .ux-reset-explorer-preview {
-    height: auto;
-    overflow: visible;
-  }
-
-  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
     > .ux-reset-review-state-nav {
     grid-column: 1;
-    grid-row: 1;
-  }
-
-  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
-    > .ux-reset-explorer-preview {
-    grid-column: 2;
     grid-row: 1;
   }
 
@@ -4118,21 +3738,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     grid-column: 1 / -1;
     grid-row: 1;
   }
-
-  .ux-reset-explorer-list {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  .ux-reset-explorer-preview {
-    grid-column: 2;
-    grid-row: 3;
-  }
-
-  .ux-reset-explorer-lower {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
 }
 
 @media (max-width: 799px) {
@@ -4143,18 +3748,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-map {
     order: 1;
-  }
-
-  .ux-reset-explorer-lower {
-    order: 2;
-  }
-
-  .ux-reset-explorer-preview {
-    order: 3;
-  }
-
-  .ux-reset-explorer-list {
-    order: 4;
   }
 
   .ux-reset-explorer-map .map-wrap {
@@ -4225,53 +3818,6 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   color: var(--atlas-muted-text);
   font-size: 0.75rem;
   font-weight: 500;
-}
-
-.ux-reset-explorer-scenario-affordance {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--primary);
-  font-size: 0.875rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ux-reset-explorer-scenario-affordance-open {
-  display: none;
-}
-
-.ux-reset-explorer-scenario[open]
-  > summary
-  .ux-reset-explorer-scenario-affordance-closed {
-  display: none;
-}
-
-.ux-reset-explorer-scenario[open]
-  > summary
-  .ux-reset-explorer-scenario-affordance-open {
-  display: inline;
-}
-
-.ux-reset-explorer-scenario-chevron {
-  display: inline-block;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
-}
-
-.ux-reset-explorer-scenario[open]
-  > summary
-  .ux-reset-explorer-scenario-chevron {
-  transform: rotate(-135deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ux-reset-explorer-scenario-chevron {
-    transition: none;
-  }
 }
 
 .ux-reset-explorer-scenario-body {

@@ -1,5 +1,13 @@
 "use client";
 
+import { Layers, TriangleAlert } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -31,7 +39,8 @@ export function ExplorerMapLayerControl({
   return (
     <div className="ux-reset-review-scope-field">
       <label className="type-small" htmlFor="explorer-map-layer">
-        Map layer
+        <Layers aria-hidden="true" />
+        <span className="sr-only">Map layer</span>
       </label>
       <Select
         value={selected.id}
@@ -83,27 +92,48 @@ export function ExplorerMapLayerAvailability({
 }: {
   gates: Record<ExplorerMapLayerId, ExplorerLayerGate>;
 }) {
+  const hasGap = EXPLORER_MAP_LAYERS.some(
+    (layer) => !(gates[layer.id]?.selectable ?? false)
+  );
+  if (!hasGap) {
+    return null;
+  }
   return (
-    <details
-      className="ux-reset-layer-availability"
-      data-testid="explorer-layer-availability"
-    >
-      <summary>Layer availability</summary>
-      <p>
-        The county list stays a review ranking when one exists. Changing the
-        layer does not rank counties by this measure.
-      </p>
-      <ul>
-        {EXPLORER_MAP_LAYERS.map((layer) => (
-          <li key={layer.id}>
-            <strong>{layer.label}.</strong>{" "}
-            {gates[layer.id]?.selectable
-              ? "Available from the published collection for this release. Changing the layer does not rank counties by this measure."
-              : (gates[layer.id]?.reason ??
-                "This layer is not available for the current release.")}
-          </li>
-        ))}
-      </ul>
-    </details>
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            aria-label="Layer availability"
+            data-testid="explorer-layer-availability"
+            size="icon-sm"
+            type="button"
+            variant="outline"
+          />
+        }
+      >
+        <TriangleAlert aria-hidden="true" />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="ux-reset-layer-availability w-[min(26rem,calc(100vw-1.5rem))] max-w-[min(26rem,calc(100vw-1.5rem))]"
+        side="top"
+      >
+        <p>
+          The county list stays a review ranking when one exists. Changing the
+          layer does not rank counties by this measure.
+        </p>
+        <ul>
+          {EXPLORER_MAP_LAYERS.map((layer) => (
+            <li key={layer.id}>
+              <strong>{layer.label}.</strong>{" "}
+              {gates[layer.id]?.selectable
+                ? "Available from the published collection for this release. Changing the layer does not rank counties by this measure."
+                : (gates[layer.id]?.reason ??
+                  "This layer is not available for the current release.")}
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }

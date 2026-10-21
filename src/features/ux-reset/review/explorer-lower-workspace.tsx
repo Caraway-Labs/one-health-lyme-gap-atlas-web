@@ -1,7 +1,11 @@
 import { ExplorerMapFollowUp } from "@/features/ux-reset/review/explorer-map-follow-up";
-import { ExplorerOfficialResources } from "@/features/ux-reset/review/explorer-official-resources";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
 
+/**
+ * Suggested follow-up for the selected county. It renders nothing until a
+ * county is chosen, and it lives in the rail beside the county summary. The
+ * official resources moved to the context bar menu.
+ */
 export function ExplorerLowerWorkspace({
   fips,
   governedNextCheck = null,
@@ -16,19 +20,12 @@ export function ExplorerLowerWorkspace({
   whatIfActive?: boolean;
 }) {
   return (
-    <section
-      aria-label="Follow-up and official resources"
-      className="ux-reset-explorer-lower"
-      data-testid="explorer-lower-workspace"
-    >
-      <ExplorerMapFollowUp
-        fips={fips}
-        governedNextCheck={governedNextCheck}
-        releaseId={releaseId}
-        reviewResultState={reviewResultState}
-        whatIfActive={whatIfActive}
-      />
-      <ExplorerOfficialResources />
-    </section>
+    <ExplorerMapFollowUp
+      fips={fips}
+      governedNextCheck={governedNextCheck}
+      releaseId={releaseId}
+      reviewResultState={reviewResultState}
+      whatIfActive={whatIfActive}
+    />
   );
 }

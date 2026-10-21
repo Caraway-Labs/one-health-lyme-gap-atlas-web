@@ -291,6 +291,7 @@ describe("Explorer county rows show ML surveillance priority", () => {
     ).toBeNull();
     expect(rowRank("08019")).toBe("Not ranked");
 
+    fireEvent.click(screen.getByRole("tab", { name: /List/ }));
     fireEvent.click(screen.getByRole("button", { name: /Boulder, CO/ }));
     expect(onCountyChange).toHaveBeenCalledWith("08013", "push");
   });

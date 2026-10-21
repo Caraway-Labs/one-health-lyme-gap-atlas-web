@@ -8,6 +8,7 @@ import {
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import { showCountyList } from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 function box(
@@ -335,6 +336,7 @@ test.describe("State-scoped Explorer boundaries", () => {
     expect(idaho.selectedCountyColor).toBe("#061f3d");
     expect(idaho.selectedCountyWidth).toBe(3);
 
+    await showCountyList(page);
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
     await expect
@@ -448,6 +450,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     expect(untouched.attribute).toBe("accent");
     expect(untouched.stage).toBe("national");
 
+    await showCountyList(page);
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
     await expect(page).not.toHaveURL(/focus=/);
@@ -526,6 +529,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
         path: testInfo.outputPath("selected-state-tick-desktop.png"),
       });
 
+    await showCountyList(page);
     await page.getByRole("button", { name: /Denver, CO/ }).click();
     await expect(page).toHaveURL(/county=08001/);
     await fitUnitedStates(page);
@@ -534,6 +538,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
       .toEqual(["08001"]);
     expect((await readOutline(page)).lineColor).toBe("#000000");
 
+    await showCountyList(page);
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
     await fitUnitedStates(page);
@@ -585,6 +590,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     await installOutlineApi(page);
     await page.setViewportSize({ height: 900, width: 768 });
     await page.goto("/explore?scope=ALL&county=16001");
+    await showCountyList(page);
     await expect(page.getByRole("button", { name: /Ada, ID/ })).toHaveAttribute(
       "aria-current",
       "true"
@@ -619,6 +625,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     await installOutlineApi(page);
     await page.setViewportSize({ height: 844, width: 390 });
     await page.goto("/explore?scope=ALL&county=16001");
+    await showCountyList(page);
     await expect(page.getByRole("button", { name: /Ada, ID/ })).toHaveAttribute(
       "aria-current",
       "true"

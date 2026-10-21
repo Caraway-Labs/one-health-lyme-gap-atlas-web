@@ -1,26 +1,26 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import type { Ref } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { ExploreCountyIdentity } from "@/features/ux-reset/explore/explore-model";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
-import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
+import {
+  CountyCompleteness,
+  CountyEvidenceDisclosure,
+  CountyFingerprint,
+  CountyScoreRamp,
+  CountySummaryActions,
+  CountySummaryHeader,
+} from "@/features/ux-reset/review/county-summary-card-parts";
+import type { AdjustedCountyScenario } from "@/features/ux-reset/review/explorer-scenario-score";
 import { RankingInfluencePanel } from "@/features/ux-reset/review/ranking-influence-panel";
 import { ReviewRationalePanel } from "@/features/ux-reset/review/review-rationale-panel";
-import {
-  EXPLORER_MAP_FOLLOW_UP_ID,
-  scrollToSuggestedFollowUp,
-} from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
-import { ViewFullCountyEvidence } from "@/features/ux-reset/review/view-full-county-evidence";
 import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
-import { cn } from "@/lib/utils";
 
 export { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-human-floor-evidence";
 
@@ -34,6 +34,7 @@ export function ReviewPublishedCountyPreview({
   openRef,
   release = UNKNOWN_PREVIEW_RELEASE,
   releaseId,
+  scenario = null,
 }: {
   county: ExploreCountyIdentity;
   compareHref: string;
@@ -43,6 +44,8 @@ export function ReviewPublishedCountyPreview({
   release?: Tier1ActiveRelease;
   releaseId: string;
   reviewResultState?: GovernedReviewResultState | null;
+  /** Browser what-if for this county. Published values stay the default. */
+  scenario?: AdjustedCountyScenario | null;
 }) {
   const query = useQuery({
     queryKey: ["ux-reset-review-published-county", releaseId, county.fips],
@@ -54,23 +57,35 @@ export function ReviewPublishedCountyPreview({
   return (
     <Card
       aria-label={`Published county preview for ${county.county}, ${county.stateName}`}
-      className="ux-reset-review-preview gap-0 p-4"
+      className="ux-reset-review-preview county-summary-card gap-0 p-4"
       role="region"
       data-testid="review-published-county-preview"
       data-fips={county.fips}
     >
-      <header className="ux-reset-selected-county-header">
-        <div className="ux-reset-selected-county-identity">
-          <p className="eyebrow">Selected county</p>
-          <h2 className="type-card">
-            {county.county}, {county.stateName}
-          </h2>
-          <p className="type-small" data-testid="review-preview-fips">
-            FIPS {county.fips}
-          </p>
-        </div>
-      </header>
+      <CountySummaryHeader
+        county={county.county}
+        fips={county.fips}
+        stateCode={county.state}
+        stateName={county.stateName}
+      />
+      {detail ? (
+        <>
+          <CountyScoreRamp scenario={scenario} score={detail.score.score} />
+          <CountyCompleteness value={detail.evidence_completeness} />
+          <CountyFingerprint detail={detail} />
+        </>
+      ) : null}
       <CountySummarySurveillance fips={county.fips} release={release} />
+      <CountySummaryActions
+        compareHref={compareHref}
+        countyName={county.county}
+        fips={county.fips}
+        openRef={openRef}
+        releaseId={releaseId}
+        stateCode={county.state}
+        onOpen={onOpen}
+        onViewCountyEvidence={onViewCountyEvidence}
+      />
       {query.isPending ? (
         <AtlasStatusMessage tone="loading">
           Loading published county evidence…
@@ -87,96 +102,60 @@ export function ReviewPublishedCountyPreview({
           No published county record was returned for this release.
         </AtlasStatusMessage>
       ) : null}
-      {detail ? <ReviewRationalePanel detail={detail} /> : null}
-      {detail ? <RankingInfluencePanel detail={detail} /> : null}
       {detail ? (
-        <details
-          className="ux-reset-explorer-score"
-          data-testid="review-sources-methods"
-        >
-          <summary>Sources & methods</summary>
-          <p className="type-small">
-            Release {detail.release.release_id}. Methodology{" "}
-            {detail.release.methodology_version}.
-          </p>
-          <p className="type-small">
-            Release loaded {detail.release.loaded_at}.
-          </p>
-          {detail.release.sources.length > 0 ? (
-            <ul>
-              {detail.release.sources.map((source) => (
-                <li key={source.key}>
-                  <p>
-                    {source.label}{" "}
-                    <span className="type-small">
-                      Source id {source.key}
-                      {source.vintage ? ` · ${source.vintage}` : ""}
-                    </span>
-                  </p>
-                  {source.note ? (
-                    <p className="type-small">{source.note}</p>
-                  ) : null}
-                  {source.url.trim() ? (
-                    <p className="type-small">
-                      <a
-                        data-source-key={source.key}
-                        data-testid="review-source-url"
-                        href={source.url}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        Open source reference ↗
-                      </a>
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
+        <CountyEvidenceDisclosure>
+          <ReviewRationalePanel detail={detail} />
+          <RankingInfluencePanel detail={detail} />
+          <details
+            className="ux-reset-explorer-score"
+            data-testid="review-sources-methods"
+          >
+            <summary>Sources & methods</summary>
             <p className="type-small">
-              No source list was returned with this release.
+              Release {detail.release.release_id}. Methodology{" "}
+              {detail.release.methodology_version}.
             </p>
-          )}
-        </details>
+            <p className="type-small">
+              Release loaded {detail.release.loaded_at}.
+            </p>
+            {detail.release.sources.length > 0 ? (
+              <ul>
+                {detail.release.sources.map((source) => (
+                  <li key={source.key}>
+                    <p>
+                      {source.label}{" "}
+                      <span className="type-small">
+                        Source id {source.key}
+                        {source.vintage ? ` · ${source.vintage}` : ""}
+                      </span>
+                    </p>
+                    {source.note ? (
+                      <p className="type-small">{source.note}</p>
+                    ) : null}
+                    {source.url.trim() ? (
+                      <p className="type-small">
+                        <a
+                          data-source-key={source.key}
+                          data-testid="review-source-url"
+                          href={source.url}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          Open source reference ↗
+                        </a>
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="type-small">
+                No source list was returned with this release.
+              </p>
+            )}
+          </details>
+        </CountyEvidenceDisclosure>
       ) : null}
-      <div className="ux-reset-review-preview-actions">
-        <ViewFullCountyEvidence
-          fips={county.fips}
-          onViewCountyEvidence={onViewCountyEvidence}
-        />
-        <Button
-          aria-controls={EXPLORER_MAP_FOLLOW_UP_ID}
-          data-county={county.fips}
-          data-testid="review-view-county-follow-up"
-          type="button"
-          onClick={() => {
-            scrollToSuggestedFollowUp(
-              document.querySelector(`#${EXPLORER_MAP_FOLLOW_UP_ID}`)
-            );
-          }}
-        >
-          View County Follow-Up
-        </Button>
-        <Link
-          ref={openRef}
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "ux-reset-review-open"
-          )}
-          data-testid="review-compare"
-          data-variant="outline"
-          href={compareHref}
-          onClick={() => onOpen(county.fips)}
-        >
-          Compare This County
-        </Link>
-        <DownloadCountyPdfButton
-          countyName={county.county}
-          fips={county.fips}
-          releaseId={releaseId}
-          stateCode={county.state}
-        />
-      </div>
     </Card>
   );
 }

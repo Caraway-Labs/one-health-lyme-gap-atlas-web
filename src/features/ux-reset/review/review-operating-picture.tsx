@@ -23,7 +23,11 @@ import {
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
 import { COUNTY_BOUNDARIES_FILL } from "@/features/ux-reset/review/county-boundaries-palette";
-import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
+import {
+  ExplorerBrowseRail,
+  ExplorerCountyEmptyState,
+  useExplorerRailTab,
+} from "@/features/ux-reset/review/explorer-browse-rail";
 import {
   countyPassesAvailableData,
   EXPLORER_AVAILABLE_DATA_EMPTY,
@@ -33,10 +37,7 @@ import {
   type ExplorerAvailableDataGate,
 } from "@/features/ux-reset/review/explorer-county-reference";
 import { ExplorerLowerWorkspace } from "@/features/ux-reset/review/explorer-lower-workspace";
-import {
-  ExplorerMapSectionHeader,
-  ExplorerMapSourceCaption,
-} from "@/features/ux-reset/review/explorer-map-chrome";
+import { ExplorerMapSectionHeader } from "@/features/ux-reset/review/explorer-map-chrome";
 import {
   ExplorerMapLayerAvailability,
   ExplorerMapLayerControl,
@@ -759,6 +760,11 @@ export function ReviewOperatingPicture({
     setLatchedReturnFips(returnFocus.latch);
   }
   const focusReturnedCounty = returnFocus.focus;
+  const rail = useExplorerRailTab({
+    explicit: Boolean(county),
+    returnFocus: focusReturnedCounty,
+    selectedFips,
+  });
 
   const geometryError = Boolean(geometryQuery.isError);
   const countyQueryText = countyQuery.trim().toLowerCase();
@@ -786,6 +792,7 @@ export function ReviewOperatingPicture({
       const score = county.in_contiguous_tick_scope ? county.score.score : null;
       byFips.set(county.fips, {
         color: score === null ? null : county.color,
+        completeness: county.evidence_completeness,
         county:
           candidateNames.get(county.fips) ?? existing?.county ?? county.county,
         fips: county.fips,
@@ -1022,6 +1029,7 @@ export function ReviewOperatingPicture({
             fitLabel={`Fit ${scopeCode}`}
             fitPlaceName={stateName}
             fitTestId="explorer-fit-scope"
+            scenarioActive={scenarioByFips !== null && mapLayer === "gap_score"}
             onFit={() => {
               setFitSignal((value) => value + 1);
             }}
@@ -1029,273 +1037,278 @@ export function ReviewOperatingPicture({
               onReturnToUsView?.();
             }}
           />
-          {onMapLayerChange ? (
-            <div className="ux-reset-explorer-map-layer">
-              <ExplorerMapLayerControl
-                gates={layerGates}
-                layerId={mapLayer}
-                onLayerChange={onMapLayerChange}
+          <div className="ux-reset-explorer-map-stage">
+            {onMapLayerChange ? (
+              <div className="ux-reset-explorer-map-layer">
+                <ExplorerMapLayerControl
+                  gates={layerGates}
+                  layerId={mapLayer}
+                  onLayerChange={onMapLayerChange}
+                />
+              </div>
+            ) : null}
+            {knownEmptySelection ? (
+              <KnownEmptySelectionNotice
+                omitCaveats
+                selections={[knownEmptySelection]}
+                testId="explorer-map-known-empty"
+              />
+            ) : null}
+            <div
+              className="map-wrap"
+              data-include-unscored={
+                availableDataGate.kind === "open" ? "true" : "false"
+              }
+              data-map-colors={mapCounties
+                .map((county) => `${county.fips}:${county.color ?? ""}`)
+                .join(" ")}
+              data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
+              data-selected-fips={selectedFips}
+              data-testid="review-state-map-region"
+              aria-busy={
+                mapLoading.busy ||
+                availableDataGate.kind === "loading" ||
+                geometryPending ||
+                (geometryReady &&
+                  hasMapCounties &&
+                  !mapFailed &&
+                  settledMapContext !== mapContext)
+              }
+            >
+              {availableDataGate.kind === "loading" ? (
+                <AtlasStatusMessage className="map-loading" tone="loading">
+                  <p data-testid="explorer-map-available-data-loading">
+                    {EXPLORER_AVAILABLE_DATA_LOADING}
+                  </p>
+                </AtlasStatusMessage>
+              ) : availableDataGate.kind === "error" ? (
+                <AtlasStatusMessage className="map-loading" tone="error">
+                  <p data-testid="explorer-map-available-data-error">
+                    {EXPLORER_AVAILABLE_DATA_ERROR}
+                  </p>
+                </AtlasStatusMessage>
+              ) : geometryReady && hasMapCounties && !mapFailed ? (
+                <ExplorerMapSurface
+                  blockMap={mapLoading.blockMap}
+                  onPaintSettled={onPaintSettled}
+                  revision={publishedMap.revision}
+                >
+                  <AtlasMap
+                    key={mapContext}
+                    ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
+                    cameraFrameState={scopeCode}
+                    fitSignal={fitSignal}
+                    geometry={geometryQuery.data as never}
+                    includeUnscoredCounties={availableDataGate.kind === "open"}
+                    neutralCountyBoundaries={mapLayer === "boundaries"}
+                    paintRevision={publishedMap.revision ?? undefined}
+                    scores={publishedMap.frame}
+                    selectedFips={selectedFips}
+                    selectedState={scopeCode}
+                    onError={() => {
+                      setFailedMapRequest(mapRequestKey);
+                    }}
+                    onIdle={() => setSettledMapContext(mapContext)}
+                    onPaintSettled={onPaintSettled}
+                    onSelect={selectCounty}
+                  />
+                </ExplorerMapSurface>
+              ) : geometryError ? (
+                <AtlasStatusMessage
+                  className="map-loading"
+                  data-testid="review-state-map-error"
+                  tone="error"
+                >
+                  <p>
+                    The map is temporarily unavailable. Use the county list to
+                    inspect the same review result.
+                  </p>
+                </AtlasStatusMessage>
+              ) : geometryUnavailable ? (
+                <AtlasStatusMessage
+                  className="map-loading"
+                  data-testid="review-state-map-unavailable"
+                  tone="empty"
+                >
+                  <p data-testid="review-state-map-unavailable">
+                    The map is unavailable. This result did not include a
+                    release Atlas can request.
+                  </p>
+                </AtlasStatusMessage>
+              ) : availableDataGate.kind === "ready" &&
+                geometryReady &&
+                inStateMapCounties.length > 0 ? (
+                <AtlasStatusMessage className="map-loading" tone="empty">
+                  <p data-testid="explorer-map-available-data-empty">
+                    {EXPLORER_AVAILABLE_DATA_EMPTY}
+                  </p>
+                </AtlasStatusMessage>
+              ) : !hasMapCounties && !geometryPending ? (
+                <AtlasStatusMessage className="map-loading" tone="empty">
+                  <p data-testid="review-state-map-empty">
+                    No county shapes were returned to draw for this result.
+                  </p>
+                </AtlasStatusMessage>
+              ) : null}
+              <ExplorerMapLoadingOverlay
+                view={mapLoading.overlay}
+                onRetry={retryMapLayer}
               />
             </div>
-          ) : null}
-          {knownEmptySelection ? (
-            <KnownEmptySelectionNotice
-              omitCaveats
-              selections={[knownEmptySelection]}
-              testId="explorer-map-known-empty"
+            <ExplorerMapLegend
+              key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
+              paint={mapPaint}
             />
-          ) : null}
-          <div
-            className="map-wrap"
-            data-include-unscored={
-              availableDataGate.kind === "open" ? "true" : "false"
-            }
-            data-map-colors={mapCounties
-              .map((county) => `${county.fips}:${county.color ?? ""}`)
-              .join(" ")}
-            data-map-fips={mapCounties.map((county) => county.fips).join(" ")}
-            data-selected-fips={selectedFips}
-            data-testid="review-state-map-region"
-            aria-busy={
-              mapLoading.busy ||
-              availableDataGate.kind === "loading" ||
-              geometryPending ||
-              (geometryReady &&
-                hasMapCounties &&
-                !mapFailed &&
-                settledMapContext !== mapContext)
-            }
-          >
-            {availableDataGate.kind === "loading" ? (
-              <AtlasStatusMessage className="map-loading" tone="loading">
-                <p data-testid="explorer-map-available-data-loading">
-                  {EXPLORER_AVAILABLE_DATA_LOADING}
-                </p>
-              </AtlasStatusMessage>
-            ) : availableDataGate.kind === "error" ? (
-              <AtlasStatusMessage className="map-loading" tone="error">
-                <p data-testid="explorer-map-available-data-error">
-                  {EXPLORER_AVAILABLE_DATA_ERROR}
-                </p>
-              </AtlasStatusMessage>
-            ) : geometryReady && hasMapCounties && !mapFailed ? (
-              <ExplorerMapSurface
-                blockMap={mapLoading.blockMap}
-                onPaintSettled={onPaintSettled}
-                revision={publishedMap.revision}
-              >
-                <AtlasMap
-                  key={mapContext}
-                  ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
-                  cameraFrameState={scopeCode}
-                  fitSignal={fitSignal}
-                  geometry={geometryQuery.data as never}
-                  includeUnscoredCounties={availableDataGate.kind === "open"}
-                  neutralCountyBoundaries={mapLayer === "boundaries"}
-                  paintRevision={publishedMap.revision ?? undefined}
-                  scores={publishedMap.frame}
-                  selectedFips={selectedFips}
-                  selectedState={scopeCode}
-                  onError={() => {
-                    setFailedMapRequest(mapRequestKey);
-                  }}
-                  onIdle={() => setSettledMapContext(mapContext)}
-                  onPaintSettled={onPaintSettled}
-                  onSelect={selectCounty}
-                />
-              </ExplorerMapSurface>
-            ) : geometryError ? (
-              <AtlasStatusMessage
-                className="map-loading"
-                data-testid="review-state-map-error"
-                tone="error"
-              >
-                <p>
-                  The map is temporarily unavailable. Use the county list to
-                  inspect the same review result.
-                </p>
-              </AtlasStatusMessage>
-            ) : geometryUnavailable ? (
-              <AtlasStatusMessage
-                className="map-loading"
-                data-testid="review-state-map-unavailable"
-                tone="empty"
-              >
-                <p data-testid="review-state-map-unavailable">
-                  The map is unavailable. This result did not include a release
-                  Atlas can request.
-                </p>
-              </AtlasStatusMessage>
-            ) : availableDataGate.kind === "ready" &&
-              geometryReady &&
-              inStateMapCounties.length > 0 ? (
-              <AtlasStatusMessage className="map-loading" tone="empty">
-                <p data-testid="explorer-map-available-data-empty">
-                  {EXPLORER_AVAILABLE_DATA_EMPTY}
-                </p>
-              </AtlasStatusMessage>
-            ) : !hasMapCounties && !geometryPending ? (
-              <AtlasStatusMessage className="map-loading" tone="empty">
-                <p data-testid="review-state-map-empty">
-                  No county shapes were returned to draw for this result.
-                </p>
-              </AtlasStatusMessage>
+            {onMapLayerChange ? (
+              <div className="ux-reset-explorer-map-availability">
+                <ExplorerMapLayerAvailability gates={layerGates} />
+              </div>
             ) : null}
-            <ExplorerMapLoadingOverlay
-              view={mapLoading.overlay}
-              onRetry={retryMapLayer}
-            />
           </div>
-          <ExplorerMapLegend
-            key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
-            paint={mapPaint}
-          />
-          {onMapLayerChange ? (
-            <div className="ux-reset-explorer-map-availability">
-              <ExplorerMapLayerAvailability gates={layerGates} />
-            </div>
-          ) : null}
-          <ExplorerMapSourceCaption
-            period={period}
-            releaseId={review.data_release_version}
-          />
         </Card>
-        <ExplorerLowerWorkspace
-          fips={selectedFips}
-          governedNextCheck={preview?.followUp ?? null}
-          releaseId={releaseId}
-          reviewResultState={authoritativeResultState}
-          whatIfActive={scenarioByFips !== null && mapLayer === "gap_score"}
-        />
-
-        <div className="ux-reset-explorer-list">
-          <Card className="gap-0 p-3">
-            {directory.isLoading ? (
-              <AtlasStatusMessage tone="loading">
-                Loading published counties…
-              </AtlasStatusMessage>
-            ) : null}
-            {directory.isError ? (
-              <AtlasStatusMessage tone="error">
-                Published counties could not be loaded. Reload to retry; this is
-                a request failure, not missing evidence.
-              </AtlasStatusMessage>
-            ) : null}
-            {directory.isSuccess && directory.counties.length === 0 ? (
-              <AtlasStatusMessage tone="empty">
-                No published counties were returned for this state and release.
-              </AtlasStatusMessage>
-            ) : null}
-            {availableDataGate.kind === "loading" ? (
-              <AtlasStatusMessage tone="loading">
-                <p data-testid="explorer-available-data-loading">
-                  {EXPLORER_AVAILABLE_DATA_LOADING}
-                </p>
-              </AtlasStatusMessage>
-            ) : null}
-            {availableDataGate.kind === "error" ? (
-              <AtlasStatusMessage tone="error">
-                <p data-testid="explorer-available-data-error">
-                  {EXPLORER_AVAILABLE_DATA_ERROR}
-                </p>
-              </AtlasStatusMessage>
-            ) : null}
-            {availableDataGate.kind === "ready" &&
-            directory.isSuccess &&
-            directory.counties.length > 0 &&
-            rankedRows.length === 0 &&
-            countyQueryText.length === 0 ? (
-              <p data-testid="explorer-available-data-empty">
-                {EXPLORER_AVAILABLE_DATA_EMPTY}
-              </p>
-            ) : null}
-            {omittedOutOfScopeCount > 0 ? (
-              <p className="type-small" data-testid="review-omitted-candidates">
-                {omittedOutOfScopeCount === 1
-                  ? `1 candidate was omitted because its county FIPS is not in ${stateName}.`
-                  : `${omittedOutOfScopeCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
-              </p>
-            ) : null}
-            {omittedDuplicateCount > 0 ? (
-              <p
-                className="type-small"
-                data-testid="review-omitted-duplicate-candidates"
-              >
-                {omittedDuplicateCount === 1
-                  ? "1 candidate was omitted because its county FIPS was already listed."
-                  : `${omittedDuplicateCount} candidates were omitted because their county FIPS was already listed.`}
-              </p>
-            ) : null}
-            <ExplorerRankedCountyList
-              candidateFips={candidateFips}
-              emptyLabel={
-                countyQueryText
-                  ? "No counties match that name or FIPS."
-                  : "No counties in this state have a published Atlas gap score."
-              }
-              rows={rankedRows}
-              scenarios={scenarioByFips}
-              scopeKey={`${scopeCode}\u0000${availableDataGate.kind}`}
-              selectedFips={selectedFips}
-              testId="review-published-county"
-              onSelect={(fips) => {
-                selectCounty(fips, "ranked_list");
-              }}
-            />
-          </Card>
-        </div>
-        <div className="ux-reset-explorer-preview">
-          {selectedScenario ? (
-            <p className="type-small" data-testid="explorer-scenario-selected">
-              {explorerScenarioSelectionText(selectedScenario)}
-            </p>
-          ) : null}
-          {!preview && handoff && releaseId && selectedPublished ? (
-            <ReviewPublishedCountyPreview
-              compareHref={handoff.compareHref}
-              county={selectedPublished}
-              onOpen={markReviewReturnFocus}
-              onViewCountyEvidence={onViewCountyEvidence}
-              openRef={openRef}
-              release={tierRelease}
-              releaseId={releaseId}
-              reviewResultState={authoritativeResultState}
-            />
-          ) : null}
-          {preview && handoff ? (
-            <ReviewCountyPreviewPanel
-              compareHref={handoff.compareHref}
-              droppedNotes={handoff.droppedNotes}
-              href={handoff.href}
-              openRef={openRef}
-              preview={preview}
-              categoryLabel={
-                authoritativeResultState === "candidates_found"
-                  ? "Returned for review"
-                  : authoritativeResultState
-                    ? reviewResultStateLabel(authoritativeResultState)
-                    : "Review category unavailable"
-              }
-              release={tierRelease}
-              releaseId={releaseId ?? ""}
-              onOpen={markReviewReturnFocus}
-              onViewCountyEvidence={onViewCountyEvidence}
-            />
-          ) : null}
-          {preview || (handoff && releaseId && selectedPublished) ? null : (
+        <ExplorerBrowseRail
+          county={
             <>
-              <p className="type-body" data-testid="explorer-preview-empty">
-                No county is selected. Choose one from the list or the map.
-              </p>
-              <DownloadCountyPdfButton
-                countyName=""
-                fips=""
-                releaseId=""
-                stateCode=""
+              {selectedScenario ? (
+                <p className="sr-only" data-testid="explorer-scenario-selected">
+                  {explorerScenarioSelectionText(selectedScenario)}
+                </p>
+              ) : null}
+              {!preview && handoff && releaseId && selectedPublished ? (
+                <ReviewPublishedCountyPreview
+                  compareHref={handoff.compareHref}
+                  county={selectedPublished}
+                  openRef={openRef}
+                  release={tierRelease}
+                  releaseId={releaseId}
+                  reviewResultState={authoritativeResultState}
+                  scenario={selectedScenario ?? null}
+                  onOpen={markReviewReturnFocus}
+                  onViewCountyEvidence={onViewCountyEvidence}
+                />
+              ) : null}
+              {preview && handoff ? (
+                <ReviewCountyPreviewPanel
+                  categoryLabel={
+                    authoritativeResultState === "candidates_found"
+                      ? "Returned for review"
+                      : authoritativeResultState
+                        ? reviewResultStateLabel(authoritativeResultState)
+                        : "Review category unavailable"
+                  }
+                  compareHref={handoff.compareHref}
+                  droppedNotes={handoff.droppedNotes}
+                  href={handoff.href}
+                  openRef={openRef}
+                  preview={preview}
+                  release={tierRelease}
+                  releaseId={releaseId ?? ""}
+                  onOpen={markReviewReturnFocus}
+                  onViewCountyEvidence={onViewCountyEvidence}
+                />
+              ) : null}
+              {preview || (handoff && releaseId && selectedPublished) ? null : (
+                <ExplorerCountyEmptyState />
+              )}
+              <ExplorerLowerWorkspace
+                fips={selectedFips}
+                governedNextCheck={preview?.followUp ?? null}
+                releaseId={releaseId}
+                reviewResultState={authoritativeResultState}
+                whatIfActive={
+                  scenarioByFips !== null && mapLayer === "gap_score"
+                }
               />
             </>
-          )}
-        </div>
+          }
+          list={
+            <Card className="gap-0 p-3">
+              {directory.isLoading ? (
+                <AtlasStatusMessage tone="loading">
+                  Loading published counties…
+                </AtlasStatusMessage>
+              ) : null}
+              {directory.isError ? (
+                <AtlasStatusMessage tone="error">
+                  Published counties could not be loaded. Reload to retry; this
+                  is a request failure, not missing evidence.
+                </AtlasStatusMessage>
+              ) : null}
+              {directory.isSuccess && directory.counties.length === 0 ? (
+                <AtlasStatusMessage tone="empty">
+                  No published counties were returned for this state and
+                  release.
+                </AtlasStatusMessage>
+              ) : null}
+              {availableDataGate.kind === "loading" ? (
+                <AtlasStatusMessage tone="loading">
+                  <p data-testid="explorer-available-data-loading">
+                    {EXPLORER_AVAILABLE_DATA_LOADING}
+                  </p>
+                </AtlasStatusMessage>
+              ) : null}
+              {availableDataGate.kind === "error" ? (
+                <AtlasStatusMessage tone="error">
+                  <p data-testid="explorer-available-data-error">
+                    {EXPLORER_AVAILABLE_DATA_ERROR}
+                  </p>
+                </AtlasStatusMessage>
+              ) : null}
+              {availableDataGate.kind === "ready" &&
+              directory.isSuccess &&
+              directory.counties.length > 0 &&
+              rankedRows.length === 0 &&
+              countyQueryText.length === 0 ? (
+                <p data-testid="explorer-available-data-empty">
+                  {EXPLORER_AVAILABLE_DATA_EMPTY}
+                </p>
+              ) : null}
+              {omittedOutOfScopeCount > 0 ? (
+                <p
+                  className="type-small"
+                  data-testid="review-omitted-candidates"
+                >
+                  {omittedOutOfScopeCount === 1
+                    ? `1 candidate was omitted because its county FIPS is not in ${stateName}.`
+                    : `${omittedOutOfScopeCount} candidates were omitted because their county FIPS is not in ${stateName}.`}
+                </p>
+              ) : null}
+              {omittedDuplicateCount > 0 ? (
+                <p
+                  className="type-small"
+                  data-testid="review-omitted-duplicate-candidates"
+                >
+                  {omittedDuplicateCount === 1
+                    ? "1 candidate was omitted because its county FIPS was already listed."
+                    : `${omittedDuplicateCount} candidates were omitted because their county FIPS was already listed.`}
+                </p>
+              ) : null}
+              <ExplorerRankedCountyList
+                candidateFips={candidateFips}
+                emptyLabel={
+                  countyQueryText
+                    ? "No counties match that name or FIPS."
+                    : "No counties in this state have a published Atlas gap score."
+                }
+                rows={rankedRows}
+                scenarioActive={scenarioByFips !== null}
+                scenarios={scenarioByFips}
+                scopeKey={`${scopeCode}\u0000${availableDataGate.kind}`}
+                selectedFips={selectedFips}
+                testId="review-published-county"
+                onSelect={(fips) => {
+                  rail.showCounty();
+                  selectCounty(fips, "ranked_list");
+                }}
+              />
+            </Card>
+          }
+          listCount={rankedRows.length}
+          tab={rail.tab}
+          onTabChange={(next) => {
+            rail.setTab(next);
+          }}
+        />{" "}
       </div>
 
       {gapModel ? (

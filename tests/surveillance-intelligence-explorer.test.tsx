@@ -759,7 +759,8 @@ function countyEvidenceWorkspace(releaseId: string): InvestigateWorkspace {
   };
 }
 
-function renderCountyEvidence(releaseId: string) {
+/** County evidence opens on the Evidence tab. Surveillance intelligence is on Overview. */
+async function renderCountyEvidence(releaseId: string) {
   evidenceWorkspace.current = countyEvidenceWorkspace(releaseId);
   renderView(
     <ExplorerCountyEvidence
@@ -769,6 +770,7 @@ function renderCountyEvidence(releaseId: string) {
       onBackToMap={vi.fn<() => void>()}
     />
   );
+  await userEvent.click(screen.getByRole("tab", { name: "Overview" }));
 }
 
 describe("Explorer county evidence owns one Tier 1 presentation", () => {
@@ -800,7 +802,7 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
         PAGE_RELEASE
       )
     );
-    renderCountyEvidence(PAGE_RELEASE);
+    await renderCountyEvidence(PAGE_RELEASE);
     const priority = await screen.findByTestId(
       "surveillance-intelligence-card-ml-review-priority"
     );
@@ -828,7 +830,7 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
         PAGE_RELEASE
       )
     );
-    renderCountyEvidence(PAGE_RELEASE);
+    await renderCountyEvidence(PAGE_RELEASE);
     const priority = await screen.findByTestId(
       "surveillance-intelligence-card-ml-review-priority"
     );

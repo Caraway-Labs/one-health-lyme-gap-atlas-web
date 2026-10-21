@@ -168,6 +168,7 @@ test.describe("Explorer county surveillance intelligence", () => {
     await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
+    await page.getByRole("tab", { name: "Overview" }).click();
     const section = page
       .getByTestId("explorer-county-evidence")
       .getByTestId("county-surveillance-intelligence");

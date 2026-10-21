@@ -5,6 +5,7 @@ import baldwin from "../fixtures/review-al-v11-01003.json" with { type: "json" }
 import { buildStateReview } from "../fixtures/review-operating-picture-fixtures";
 import { reviewScopeScoresFixture } from "../fixtures/review-scope-api-fixtures";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
+import { openEvidenceDisclosure } from "./explorer-rail";
 
 const release = baldwin.release.release_id;
 
@@ -183,6 +184,7 @@ test.describe("Ranking influence", () => {
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
       "No county-linked 2023 Lyme case record is available."
     );
+    await openEvidenceDisclosure(page);
     await expect(preview.getByTestId("review-rationale-6")).toBeVisible();
     const influence = preview.getByTestId("ranking-influence");
     await expect(influence).not.toHaveAttribute("open");
@@ -231,6 +233,7 @@ test.describe("Ranking influence", () => {
     await expect(preview.getByTestId("review-rationale-2")).toContainText(
       "established"
     );
+    await openEvidenceDisclosure(page);
     const influence = preview.getByTestId("ranking-influence");
     await influence.locator("summary").click();
     await expect(influence).toContainText(

@@ -148,7 +148,7 @@ describe("national county shortlist", () => {
     renderPicture(null);
     const national = listedFips();
     const note = screen.getByTestId("explorer-national-shortlist-note");
-    const list = document.querySelector(".ux-reset-explorer-list");
+    const list = screen.getByTestId("explorer-rail-panel-list");
     expect({
       count: national.length,
       firstHeading: list?.querySelector("h1, h2, h3")?.textContent ?? "",

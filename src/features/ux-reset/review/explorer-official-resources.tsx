@@ -1,11 +1,20 @@
-import { ExternalLink } from "lucide-react";
+"use client";
+
+import { BookOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   OFFICIAL_FOLLOW_UP_RESOURCES,
   type OfficialFollowUpResource,
 } from "@/lib/follow-up-workflows";
+
+import "./explorer-visual-first.css";
 
 const OFFICIAL_RESOURCES_INTRO =
   "Authoritative references to support surveillance review, reporting, and public health action.";
@@ -51,12 +60,13 @@ function OfficialResourceLink({
   return <Link href={resource.href}>{resource.label}</Link>;
 }
 
-export function ExplorerOfficialResources() {
+/** The same references as the former inline card, grouped by topic. */
+export function ExplorerOfficialResourcesContent() {
   const groups = groupOfficialResources(OFFICIAL_FOLLOW_UP_RESOURCES);
 
   return (
-    <Card
-      className="ux-reset-explorer-resources ring-0"
+    <div
+      className="ux-reset-explorer-resources-panel"
       data-testid="explorer-official-resources"
     >
       <div className="ux-reset-explorer-resources-intro">
@@ -78,6 +88,37 @@ export function ExplorerOfficialResources() {
           </section>
         ))}
       </div>
-    </Card>
+    </div>
+  );
+}
+
+/**
+ * Official resources as a closed-by-default popover (UX audit A4/Q5). The
+ * references are unchanged and are no longer a permanent card under the map.
+ */
+export function ExplorerOfficialResources() {
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            data-testid="explorer-official-resources-trigger"
+            size="sm"
+            type="button"
+            variant="outline"
+          />
+        }
+      >
+        <BookOpen aria-hidden="true" data-icon="inline-start" />
+        <span className="max-sm:sr-only">Official resources</span>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="ux-reset-explorer-resources-popover"
+        side="bottom"
+      >
+        <ExplorerOfficialResourcesContent />
+      </PopoverContent>
+    </Popover>
   );
 }
