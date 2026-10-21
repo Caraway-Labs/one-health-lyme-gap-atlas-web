@@ -2606,6 +2606,20 @@
   flex: 0 0 auto;
 }
 
+.ux-reset-explorer-map-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ux-reset-explorer-map-heading
+  svg.ux-reset-us-view-icon[data-icon="inline-start"] {
+  width: 1.15rem;
+  height: 0.72rem;
+}
+
 .ux-reset-explorer-map-provenance {
   margin: 0;
   padding: 0.15rem 0.75rem 0.65rem;
