@@ -330,6 +330,11 @@ function endpointCaption(label: string): string {
   return head || label;
 }
 
+/**
+ * Observed low and high for layers whose legend endpoints come from the
+ * counties in view. Fixed color scales (SVI 0–1, uninsured 0–100) must not
+ * use this sentence: those endpoints are scale bounds, not published extrema.
+ */
 function publishedRangeSentence(paint: ExplorerMapPaint): string | null {
   const low = paint.entries.find((entry) => entry.role === "endpoint-low");
   const high = paint.entries.find((entry) => entry.role === "endpoint-high");
@@ -379,7 +384,6 @@ function sviSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
   const indexName = year
     ? `the ${year} CDC/ATSDR Social Vulnerability Index`
     : "the CDC/ATSDR Social Vulnerability Index";
-  const range = publishedRangeSentence(paint);
   return [
     section(LEGEND_INFO_HEADING.shows, [
       paragraphs(
@@ -396,8 +400,7 @@ function sviSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
         ),
         text(
           "The value is a county ranking, not the percentage of residents who are vulnerable. Gray indicates unavailable data."
-        ),
-        ...(range ? [text(range)] : [])
+        )
       ),
     ]),
     ...optional(countySection(paint)),
@@ -407,7 +410,6 @@ function sviSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
 function uninsuredSections(
   paint: ExplorerMapPaint
 ): ExplorerLegendAboutSection[] {
-  const range = publishedRangeSentence(paint);
   return [
     section(LEGEND_INFO_HEADING.shows, [
       paragraphs(
@@ -424,8 +426,7 @@ function uninsuredSections(
       paragraphs(
         text(
           "Gray indicates unavailable data; 0% means a reported uninsured percentage of zero."
-        ),
-        ...(range ? [text(range)] : [])
+        )
       ),
     ]),
     ...optional(countySection(paint)),

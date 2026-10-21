@@ -343,6 +343,71 @@ describe("Explorer legend INFO copy", () => {
     });
   });
 
+  it("does not treat fixed SVI and uninsured color-scale bounds as published values", () => {
+    const svi = paintExplorerMapLayer({
+      counties: [],
+      layerId: "svi",
+      observation: {
+        omitted: 0,
+        period: "ACS 2018-01-01 through 2022-12-31. Vintage 2024.",
+        rows: [row("08001", ValueState.OBSERVED, 0.2, "0.2")],
+        sourceLabel: "CDC/ATSDR",
+        status: "ready",
+        unit: "percentile",
+      },
+      scoresStatus: "ready",
+      selectedFips: "08001",
+    });
+    const uninsured = paintExplorerMapLayer({
+      counties: [],
+      layerId: "uninsured",
+      observation: {
+        omitted: 0,
+        period: "ACS 2018-01-01 through 2022-12-31. Vintage 2024.",
+        rows: [row("08001", ValueState.OBSERVED, 12, "12")],
+        sourceLabel: "ACS",
+        status: "ready",
+        unit: "percent",
+      },
+      scoresStatus: "ready",
+      selectedFips: "08001",
+    });
+    const sviText = aboutText(svi);
+    const uninsuredText = aboutText(uninsured);
+    const endpoint = (
+      paint: ReturnType<typeof paintExplorerMapLayer>,
+      role: "endpoint-high" | "endpoint-low"
+    ) => paint.entries.find((entry) => entry.role === role)?.label ?? "";
+    expect({
+      sviClaimsScaleAsPublished:
+        sviText.includes("Published values in this view run from 0 to 1") ||
+        sviText.includes("Published value in this view: 0"),
+      sviScale: sviText.includes("Values range from 0 to 1."),
+      sviSelected: sviText.includes("Selected county 08001: 0.2 percentile."),
+      sviLow: endpoint(svi, "endpoint-low"),
+      sviHigh: endpoint(svi, "endpoint-high"),
+      uninsuredClaimsScaleAsPublished:
+        uninsuredText.includes(
+          "Published values in this view run from 0 to 100"
+        ) || uninsuredText.includes("Published value in this view: 0"),
+      uninsuredSelected: uninsuredText.includes(
+        "Selected county 08001: 12 percent."
+      ),
+      uninsuredLow: endpoint(uninsured, "endpoint-low"),
+      uninsuredHigh: endpoint(uninsured, "endpoint-high"),
+    }).toStrictEqual({
+      sviClaimsScaleAsPublished: false,
+      sviScale: true,
+      sviSelected: true,
+      sviLow: "0 (low end)",
+      sviHigh: "1 (scale high end)",
+      uninsuredClaimsScaleAsPublished: false,
+      uninsuredSelected: true,
+      uninsuredLow: "0 (low end)",
+      uninsuredHigh: "100 (scale high end)",
+    });
+  });
+
   it("coordinates a factual year and relabels shared source wording", () => {
     expect({
       missing: factualSourceYear("Published period.", "2023"),
