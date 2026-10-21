@@ -259,7 +259,7 @@ describe("front porch session middleware", () => {
       ],
       [
         "/app/assistant?conversation=abc&page_ref=kept",
-        "/askatlas?conversation=abc&page_ref=kept",
+        "/askatlas?conversation=abc",
       ],
       ["/explore?scope=CO", null],
       ["/compare?compare=08001,08013", null],
