@@ -443,6 +443,140 @@
   padding: var(--space-3) var(--space-4);
 }
 
+.county-summary-surveillance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.county-summary-marks {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.35rem 0.6rem;
+  align-items: start;
+  min-width: 0;
+}
+
+.county-summary-mark-cell {
+  min-width: 0;
+}
+
+.county-summary-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  line-height: 1.2;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.county-summary-mark:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.county-summary-mark-caption {
+  max-width: 100%;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.county-summary-marks .ux-reset-ranked-score {
+  width: 2.75rem;
+  height: 2rem;
+  font-size: 0.8rem;
+}
+
+.county-summary-priority {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  height: 2rem;
+}
+
+.county-summary-priority span {
+  width: 0.85rem;
+  height: 0.45rem;
+  border-radius: 0.15rem;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--border);
+}
+
+.county-summary-priority span[data-filled="true"][data-level="LOW"] {
+  background: var(--priority-lower-fg);
+  box-shadow: none;
+}
+
+.county-summary-priority span[data-filled="true"][data-level="MEDIUM"] {
+  background: var(--priority-review-fg);
+  box-shadow: none;
+}
+
+.county-summary-priority span[data-filled="true"][data-level="HIGH"] {
+  background: var(--priority-urgent-fg);
+  box-shadow: none;
+}
+
+.county-summary-situation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.county-summary-class-name {
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.county-summary-ring {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+.county-summary-ring-track,
+.county-summary-ring-value {
+  fill: none;
+  stroke-width: 3;
+}
+
+.county-summary-ring-track {
+  stroke: var(--border);
+}
+
+.county-summary-ring-value {
+  stroke: var(--foreground);
+  stroke-linecap: round;
+}
+
+.county-summary-mark-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
 .ux-reset-review-preview .eyebrow {
   display: block;
 }
@@ -1535,7 +1669,6 @@
   scroll-margin-bottom: 1.5rem;
 }
 
-.ux-reset-ask-atlas-reference,
 .ux-reset-ask-atlas-storage,
 .ux-reset-ask-atlas-heading {
   display: grid;
@@ -1553,7 +1686,6 @@
   margin: 0;
 }
 
-.ux-reset-ask-atlas-reference,
 .ux-reset-ask-atlas-storage {
   padding: var(--space-3);
   border: 1px solid var(--border);
@@ -1562,45 +1694,13 @@
   color: var(--foreground);
 }
 
-.ux-reset-ask-atlas-reference h2,
-.ux-reset-ask-atlas-reference p,
 .ux-reset-ask-atlas-storage p {
   margin: 0;
 }
 
-.ux-reset-ask-atlas-reference h2,
 .ux-reset-ask-atlas-storage summary {
   font-size: var(--type-small-size);
   font-weight: 700;
-}
-
-.ux-reset-ask-atlas-reference-list {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.ux-reset-ask-atlas-reference-list div {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.ux-reset-ask-atlas-reference-list dt {
-  color: var(--muted-foreground);
-  font-size: var(--type-small-size);
-}
-
-.ux-reset-ask-atlas-reference-list dd {
-  display: grid;
-  gap: var(--space-2);
-  justify-items: start;
-  margin: 0;
-}
-
-.ux-reset-ask-atlas-reference-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .ux-reset-ask-atlas-more-topics {
@@ -1777,10 +1877,6 @@
   padding: 0;
   border: 0;
   background: transparent;
-}
-
-.ux-reset-ask-atlas-workspace .ux-reset-ask-atlas-reference {
-  width: 100%;
 }
 
 .ux-reset-ask-atlas-workspace .chat-transcript {
@@ -3326,12 +3422,13 @@
   gap: 0.5rem;
 }
 
-.ux-reset-review-preview-actions a.ux-reset-review-open,
-.ux-reset-review-preview-actions button {
+.ux-reset-review-preview-actions :is(a, button) {
   flex: 1 1 11.5rem;
   width: auto;
+  max-width: 100%;
   min-width: min(100%, 11.5rem);
   justify-content: center;
+  white-space: normal;
 }
 
 .ux-reset-pro-main a.ux-reset-review-open[data-variant="outline"] {

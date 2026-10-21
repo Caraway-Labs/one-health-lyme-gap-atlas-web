@@ -119,6 +119,41 @@ describe("Ask Atlas research workspace", () => {
     vi.unstubAllGlobals();
   });
 
+  it("drops an obsolete page reference and keeps the other parameters", async () => {
+    const storageKey =
+      "one-health-lyme-gap-atlas:ask-atlas-accepted-page-reference:v1";
+    search = new URLSearchParams("page_ref=not-json&county=08001");
+    window.history.replaceState(
+      {},
+      "",
+      "/askatlas?page_ref=not-json&page_ref=again&county=08001&dataset=alpha-2026"
+    );
+    sessionStorage.setItem(
+      storageKey,
+      JSON.stringify({ items: ["stale"], v: 1 })
+    );
+    render(<AskAtlasWorkspace />);
+    await waitFor(() => {
+      expect(window.location.search).not.toContain("page_ref");
+    });
+    const params = new URLSearchParams(window.location.search);
+    expect({
+      county: params.get("county"),
+      dataset: params.get("dataset"),
+      heading: screen.queryByRole("heading", { name: "Page reference" }),
+      panel: screen.queryByTestId("ask-atlas-page-reference"),
+      pathname: window.location.pathname,
+      stored: sessionStorage.getItem(storageKey),
+    }).toStrictEqual({
+      county: "08001",
+      dataset: "alpha-2026",
+      heading: null,
+      panel: null,
+      pathname: "/askatlas",
+      stored: null,
+    });
+  });
+
   it("asks once on the dedicated page and restores that conversation without a second request", async () => {
     chatRequest.mockResolvedValue(
       chatResult(

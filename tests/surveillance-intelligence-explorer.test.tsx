@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
+import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import { ExplorerSurveillanceIntelligence } from "@/features/ux-reset/surveillance-intelligence/explorer-surveillance-intelligence";
 import { SURVEILLANCE_INTELLIGENCE_GUIDE } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import { surveillanceSituationsQueryOptions } from "@/features/ux-reset/surveillance-intelligence/use-surveillance-situations";
@@ -258,6 +259,147 @@ describe("Explorer County Surveillance Intelligence", () => {
     );
     expect(tier1Get).toHaveBeenCalledWith("08001", expect.anything());
     expect(scoresGet).toHaveBeenCalledOnce();
+  });
+
+  it("renders the county summary as four visual tiles with one closed expansion", async () => {
+    const user = userEvent.setup();
+    scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
+    tier1Get.mockResolvedValue(
+      ok(
+        tier1PriorityForRelease(
+          tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
+          reviewScopeScoresFixture.release_id
+        )
+      )
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "08001",
+        classification(
+          "class-3",
+          "A very long surveillance class name that must wrap inside the tile",
+          0.25
+        ),
+        classification("class-0", "Established blacklegged tick", 0)
+      )
+    );
+    renderView(<CountySummarySurveillance fips="08001" release={release} />);
+    await screen.findByText("75.0");
+    const grid = screen.getByTestId("surveillance-intelligence-grid");
+    expect(
+      [...grid.querySelectorAll("article")].map(
+        (article) => article.dataset.perspective
+      )
+    ).toStrictEqual([
+      "gap-score",
+      "ml-review-priority",
+      "surveillance-situation",
+      "ecological-situation",
+    ]);
+    const priority = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
+    const situation = screen.getByTestId(
+      "surveillance-intelligence-card-surveillance-situation"
+    );
+    const ecological = screen.getByTestId(
+      "surveillance-intelligence-card-ecological-situation"
+    );
+    expect({
+      collapsed: screen.queryByTestId("surveillance-intelligence-details"),
+      ecological: ecological.textContent,
+      guideOpen: screen
+        .getByTestId("surveillance-intelligence-guide")
+        .hasAttribute("open"),
+      confidence: priority.textContent?.includes("confidence") ?? false,
+      percentile: priority.textContent,
+      priority: priority.textContent,
+      score: screen.getByTestId("selected-county-gap-score").textContent,
+      situation: situation.textContent,
+      zero: within(ecological).getByRole("meter").getAttribute("aria-valuenow"),
+    }).toStrictEqual({
+      collapsed: null,
+      confidence: false,
+      ecological: expect.stringContaining("Class membership 0.0%"),
+      guideOpen: false,
+      percentile: expect.stringContaining(
+        "Within-batch percentile 30.7 out of 100"
+      ),
+      priority: expect.stringContaining("LOW"),
+      score: expect.stringContaining("75.0"),
+      situation: expect.stringContaining(
+        "A very long surveillance class name that must wrap inside the tile"
+      ),
+      zero: "0",
+    });
+    await user.click(
+      within(priority).getByRole("button", { name: /ML Review Priority/ })
+    );
+    const details = screen.getByTestId("surveillance-intelligence-details");
+    await user.click(within(details).getByText("Methodology & source"));
+    const methodology = details.textContent;
+    within(situation).getByRole("button").focus();
+    await user.keyboard(" ");
+    const openDetails = screen.getByTestId("surveillance-intelligence-details");
+    expect({
+      anomalyBar: within(openDetails).queryByRole("progressbar", {
+        name: /anomaly/i,
+      }),
+      methodology,
+      perspective: openDetails.dataset.perspective,
+      priorityExpanded: within(priority)
+        .getByRole("button", { name: /ML Review Priority/ })
+        .getAttribute("aria-expanded"),
+    }).toStrictEqual({
+      anomalyBar: null,
+      methodology: expect.stringMatching(
+        /Insufficient[\s\S]*not a probability/
+      ),
+      perspective: "surveillance-situation",
+      priorityExpanded: "false",
+    });
+  });
+
+  it("explains the surveillance and ecology patterns in each mark tooltip", async () => {
+    scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
+    tier1Get.mockResolvedValue(
+      ok(
+        tier1PriorityForRelease(
+          tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
+          reviewScopeScoresFixture.release_id
+        )
+      )
+    );
+    situationsGet.mockResolvedValue(
+      situationsResponse(
+        "08001",
+        classification("class-3", "Pathogen not recorded", 0.25),
+        classification(
+          "class-0",
+          "Established blacklegged tick",
+          0.999961073640964
+        )
+      )
+    );
+    renderView(<CountySummarySurveillance fips="08001" release={release} />);
+    await screen.findByText("75.0");
+    const tooltip = (id: string) =>
+      within(
+        screen.getByTestId(`surveillance-intelligence-card-${id}`)
+      ).getByRole("button").dataset.tooltip;
+    expect({
+      ecology: tooltip("ecological-situation"),
+      priority: tooltip("ml-review-priority"),
+      score: tooltip("gap-score"),
+      surveillance: tooltip("surveillance-situation"),
+    }).toStrictEqual({
+      ecology:
+        "The pattern in tick and pathogen evidence alone. Compare it with Surveillance. Strong fit.",
+      priority: "Low · 30.7",
+      score: "Published score",
+      surveillance:
+        "The pattern in human, tick, and pathogen reporting. Compare it with Ecology. Partial fit, 25%.",
+    });
   });
 
   it("keeps a situation visible when Tier 1 fails, then retries only that model", async () => {
