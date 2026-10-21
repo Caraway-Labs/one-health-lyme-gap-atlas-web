@@ -101,6 +101,37 @@ describe("explorer map loading overlay", () => {
     );
   });
 
+  it("returns map focus only when the overlay still holds it", () => {
+    function FocusHarness({ view }: { view: "hidden" | "loading" }) {
+      return (
+        <div className="map-wrap">
+          <div className="explorer-map-surface">
+            <canvas data-testid="map-canvas" tabIndex={0} />
+          </div>
+          <button type="button">County</button>
+          <ExplorerMapLoadingOverlay view={view} onRetry={() => {}} />
+        </div>
+      );
+    }
+
+    const view = render(<FocusHarness view="hidden" />);
+    const canvas = screen.getByTestId("map-canvas");
+    canvas.focus();
+    view.rerender(<FocusHarness view="loading" />);
+    expect(screen.getByRole("status")).toHaveFocus();
+
+    screen.getByRole("button", { name: "County" }).focus();
+    view.rerender(<FocusHarness view="hidden" />);
+    expect(screen.getByRole("button", { name: "County" })).toHaveFocus();
+    expect(canvas).not.toHaveFocus();
+
+    canvas.focus();
+    view.rerender(<FocusHarness view="loading" />);
+    expect(screen.getByRole("status")).toHaveFocus();
+    view.rerender(<FocusHarness view="hidden" />);
+    expect(canvas).toHaveFocus();
+  });
+
   it("clears the busy state as soon as the current load is ready", () => {
     vi.useFakeTimers();
     const view = render(<Harness mode="pending" requestKey="C" />);

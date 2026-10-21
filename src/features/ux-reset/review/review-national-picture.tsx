@@ -521,6 +521,7 @@ export function ReviewNationalPicture({
     (layer.needsScores && scoresQuery.isError && !scoresQuery.isFetching);
   const mapLoading = useExplorerMapLoadingPresentation({
     mode: explorerMapLoadingMode({
+      confirmedEmptyFrame: paintRevision !== null && mapCounties.length === 0,
       deferToOtherLoader:
         availableDataGate.kind === "loading" ||
         availableDataGate.kind === "error",

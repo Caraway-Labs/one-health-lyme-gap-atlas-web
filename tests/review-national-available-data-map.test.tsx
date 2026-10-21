@@ -63,7 +63,7 @@ const engine = vi.hoisted(() => {
         if (key === event) {
           this.handlers.set(
             key,
-            callbacks.filter((callback) => callback !== handler)
+            callbacks.filter((registered) => registered !== handler)
           );
         }
       }
@@ -118,7 +118,9 @@ const engine = vi.hoisted(() => {
     getCanvas() {
       return { style: { cursor: this.removed ? "" : "" } };
     }
-    triggerRepaint() {}
+    triggerRepaint() {
+      return this.removed;
+    }
     remove() {
       this.removed = true;
     }

@@ -101,7 +101,7 @@ const engine = vi.hoisted(() => {
       }
       this.handlers.set(
         event,
-        callbacks.filter((callback) => callback !== handler)
+        callbacks.filter((registered) => registered !== handler)
       );
     }
     addControl() {
@@ -172,7 +172,9 @@ const engine = vi.hoisted(() => {
         style: { cursor: this.removed ? "" : "" },
       };
     }
-    triggerRepaint() {}
+    triggerRepaint() {
+      return this.removed;
+    }
     remove() {
       this.removed = true;
     }

@@ -26,13 +26,22 @@ export function ExplorerMapLoadingOverlay({
   const overlayRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<HTMLElement | null>(null);
   const movedFocus = useRef(false);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (view === "hidden") {
-      if (movedFocus.current) {
-        surfaceRef.current?.querySelector<HTMLElement>("canvas")?.focus();
-      }
+      const active = document.activeElement;
+      const focusLeftOnOverlay =
+        movedFocus.current &&
+        (active === null ||
+          active === document.body ||
+          active === document.documentElement);
+      const restore = previousFocusRef.current;
       movedFocus.current = false;
+      previousFocusRef.current = null;
+      if (focusLeftOnOverlay && restore?.isConnected) {
+        restore.focus();
+      }
       return;
     }
     const surface = overlayRef.current?.parentElement?.querySelector(
@@ -47,6 +56,7 @@ export function ExplorerMapLoadingOverlay({
       active instanceof HTMLElement &&
       surface.contains(active)
     ) {
+      previousFocusRef.current = active;
       overlayRef.current?.focus();
       movedFocus.current = true;
     }

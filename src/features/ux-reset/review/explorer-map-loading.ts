@@ -220,6 +220,7 @@ export function acceptExplorerMapPaintSettlement(
 }
 
 export function explorerMapLoadingMode(input: {
+  confirmedEmptyFrame: boolean;
   deferToOtherLoader: boolean;
   geometryFailed: boolean;
   geometryPending: boolean;
@@ -235,11 +236,17 @@ export function explorerMapLoadingMode(input: {
   if (input.layerFailed) {
     return "error";
   }
+  if (input.geometryPending || input.paintKind === "loading") {
+    return "pending";
+  }
+  // A settled Available-data filter can match nothing. That frame is complete
+  // without a canvas: AtlasMap stays unmounted when there are no counties.
+  if (input.confirmedEmptyFrame) {
+    return "idle";
+  }
   if (
-    input.geometryPending ||
-    input.paintKind === "loading" ||
-    (input.publishedRevision !== null &&
-      input.publishedRevision !== input.settledRevision)
+    input.publishedRevision !== null &&
+    input.publishedRevision !== input.settledRevision
   ) {
     return "pending";
   }

@@ -96,7 +96,9 @@ const engine = vi.hoisted(() => {
       return this.canvas;
     }
 
-    triggerRepaint() {}
+    triggerRepaint() {
+      return this.removed;
+    }
     remove() {
       this.removed = true;
     }

@@ -161,6 +161,7 @@ describe("explorer map loading lifecycle", () => {
     expect(explorerMapLoadView(state).overlay).toBe("loading");
     expect(
       explorerMapLoadingMode({
+        confirmedEmptyFrame: false,
         deferToOtherLoader: false,
         geometryFailed: false,
         geometryPending: false,
@@ -173,6 +174,7 @@ describe("explorer map loading lifecycle", () => {
     ).toBe("pending");
     expect(
       explorerMapLoadingMode({
+        confirmedEmptyFrame: false,
         deferToOtherLoader: true,
         geometryFailed: false,
         geometryPending: true,
@@ -183,6 +185,35 @@ describe("explorer map loading lifecycle", () => {
         settledRevision: null,
       })
     ).toBe("idle");
+  });
+
+  it("treats a confirmed empty frame as complete without a canvas", () => {
+    expect(
+      explorerMapLoadingMode({
+        confirmedEmptyFrame: true,
+        deferToOtherLoader: false,
+        geometryFailed: false,
+        geometryPending: false,
+        layerFailed: false,
+        mapFailed: false,
+        paintKind: "choropleth",
+        publishedRevision: "empty",
+        settledRevision: "previous",
+      })
+    ).toBe("idle");
+    expect(
+      explorerMapLoadingMode({
+        confirmedEmptyFrame: true,
+        deferToOtherLoader: false,
+        geometryFailed: false,
+        geometryPending: true,
+        layerFailed: false,
+        mapFailed: false,
+        paintKind: "choropleth",
+        publishedRevision: null,
+        settledRevision: null,
+      })
+    ).toBe("pending");
   });
 });
 

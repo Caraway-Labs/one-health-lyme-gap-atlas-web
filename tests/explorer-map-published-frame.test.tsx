@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
@@ -9,39 +11,36 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ExplorerAvailableDataGate } from "@/features/ux-reset/review/explorer-county-reference";
+import {
+  EXPLORER_AVAILABLE_DATA_EMPTY,
+  type ExplorerAvailableDataGate,
+} from "@/features/ux-reset/review/explorer-county-reference";
+import { EXPLORER_MAP_LOADING_DELAY_MS } from "@/features/ux-reset/review/explorer-map-loading";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
+import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import { usePublishedExplorerMapFrame } from "@/features/ux-reset/review/use-explorer-map-loading";
 import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
 import type { CountyScoreSummary } from "@/generated/models";
 import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
+
+import { buildStateReview } from "./fixtures/review-operating-picture-fixtures";
 
 const recorded = vi.hoisted(() => ({
   paints: [] as { fips: string[]; revision: string | undefined }[],
 }));
 
 const geometryRequest = vi.hoisted(() => {
-  const state: {
-    promise: Promise<CountyDisplayGeometryFeatureCollection>;
-    resolve: (value: CountyDisplayGeometryFeatureCollection) => void;
-  } = {
-    promise: Promise.resolve({
-      features: [],
-      type: "FeatureCollection",
-    }),
-    resolve: () => {},
-  };
+  let deferred =
+    Promise.withResolvers<CountyDisplayGeometryFeatureCollection>();
   return {
     get promise() {
-      return state.promise;
+      return deferred.promise;
     },
     reset: () => {
-      state.promise = new Promise((resolve) => {
-        state.resolve = resolve;
-      });
+      deferred = Promise.withResolvers();
     },
     resolve: (value: CountyDisplayGeometryFeatureCollection) => {
-      state.resolve(value);
+      deferred.resolve(value);
     },
   };
 });
@@ -52,21 +51,29 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
   useSearchParams: () => new URLSearchParams("") as ReadonlyURLSearchParams,
 }));
 
-vi.mock(import("@/components/atlas-map"), () => ({
-  AtlasMap: ({
-    paintRevision,
-    scores,
-  }: {
-    paintRevision?: string;
-    scores: readonly { fips: string }[];
-  }) => {
-    recorded.paints.push({
-      fips: scores.map((county) => county.fips),
-      revision: paintRevision,
-    });
-    return <div data-testid="mock-atlas-map" />;
-  },
-}));
+vi.mock(import("@/components/atlas-map"), async () => {
+  const { useEffect } = await import("react");
+  return {
+    AtlasMap: ({
+      onIdle,
+      paintRevision,
+      scores,
+    }: {
+      onIdle?: () => void;
+      paintRevision?: string;
+      scores: readonly { fips: string }[];
+    }) => {
+      recorded.paints.push({
+        fips: scores.map((county) => county.fips),
+        revision: paintRevision,
+      });
+      useEffect(() => {
+        onIdle?.();
+      }, [onIdle]);
+      return <div data-testid="mock-atlas-map" />;
+    },
+  };
+});
 
 vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
   const actual = await importOriginal();
@@ -252,5 +259,125 @@ describe("published explorer map frame", () => {
         revision: openRevision,
       });
     });
+  });
+});
+
+function statePicture(gate: ExplorerAvailableDataGate) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  client.setQueryData(
+    ["ux-reset-review-scores", RELEASE_ID, EXPLORER_SCORE_SETTINGS],
+    {
+      counties: COUNTIES,
+      methodology_version: "1",
+      release_id: RELEASE_ID,
+      settings: EXPLORER_SCORE_SETTINGS,
+    }
+  );
+  client.setQueryData(
+    ["ux-reset-review-county-directory", RELEASE_ID],
+    COUNTIES.map((county) => ({
+      county: county.county,
+      fips: county.fips,
+      state: county.state,
+      stateName: county.state_name,
+    }))
+  );
+  return (
+    <QueryClientProvider client={client}>
+      <ReviewOperatingPicture
+        availableDataGate={gate}
+        review={buildStateReview({ state: "CO" })}
+        scopeCode="CO"
+        stateName="Colorado"
+      />
+    </QueryClientProvider>
+  );
+}
+
+async function expectEmptyFrameSettled(regionTestId: string): Promise<void> {
+  await waitFor(() => {
+    const region = screen.getByTestId(regionTestId);
+    expect(region.textContent ?? "").toContain(EXPLORER_AVAILABLE_DATA_EMPTY);
+  });
+  await delay(EXPLORER_MAP_LOADING_DELAY_MS + 50);
+  expect(screen.queryByTestId("explorer-map-loading")).toBeNull();
+  expect(screen.queryByTestId("explorer-map-loading-error")).toBeNull();
+  expect(screen.queryByTestId("mock-atlas-map")).toBeNull();
+  expect(screen.getByTestId(regionTestId).getAttribute("aria-busy")).toBe(
+    "false"
+  );
+}
+
+describe("confirmed empty explorer map frames", () => {
+  beforeEach(() => {
+    recorded.paints.length = 0;
+    geometryRequest.reset();
+    geometryRequest.resolve(geometry());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("completes an initial empty national result without a loader", async () => {
+    render(picture({ kind: "ready", fips: new Set() }));
+    await expectEmptyFrameSettled("review-national-map-region");
+    expect(
+      screen.getByTestId("review-national-map-region").textContent ?? ""
+    ).toContain(EXPLORER_AVAILABLE_DATA_EMPTY);
+  });
+
+  it("completes an initial empty state result without a loader", async () => {
+    render(statePicture({ kind: "ready", fips: new Set() }));
+    await expectEmptyFrameSettled("review-state-map-region");
+    expect(
+      screen.getByTestId("review-state-map-region").textContent ?? ""
+    ).toContain(EXPLORER_AVAILABLE_DATA_EMPTY);
+  });
+
+  it("recovers a national map after an empty Available data result", async () => {
+    const view = render(picture({ kind: "open" }));
+    await waitFor(() => {
+      expect(latestPaint().fips).toStrictEqual(["08001", "36001"]);
+    });
+
+    view.rerender(picture({ kind: "ready", fips: new Set() }));
+    await expectEmptyFrameSettled("review-national-map-region");
+
+    view.rerender(picture({ kind: "ready", fips: new Set(["08001"]) }));
+    await waitFor(() => {
+      expect(latestPaint().fips).toStrictEqual(["08001"]);
+    });
+    expect(
+      screen.getByTestId("review-national-map-region").textContent ?? ""
+    ).not.toContain(EXPLORER_AVAILABLE_DATA_EMPTY);
+    expect(screen.queryByTestId("explorer-map-loading")).toBeNull();
+    expect(
+      screen.getByTestId("review-national-map-region").getAttribute("aria-busy")
+    ).toBe("false");
+  });
+
+  it("recovers a state map after an empty Available data result", async () => {
+    const view = render(statePicture({ kind: "open" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-atlas-map")).toBeTruthy();
+    });
+
+    view.rerender(statePicture({ kind: "ready", fips: new Set() }));
+    await expectEmptyFrameSettled("review-state-map-region");
+
+    view.rerender(statePicture({ kind: "ready", fips: new Set(["08001"]) }));
+    await waitFor(() => {
+      expect(latestPaint().fips).toStrictEqual(["08001"]);
+    });
+    expect(
+      screen.getByTestId("review-state-map-region").textContent ?? ""
+    ).not.toContain(EXPLORER_AVAILABLE_DATA_EMPTY);
+    expect(screen.queryByTestId("explorer-map-loading")).toBeNull();
+    expect(
+      screen.getByTestId("review-state-map-region").getAttribute("aria-busy")
+    ).toBe("false");
   });
 });

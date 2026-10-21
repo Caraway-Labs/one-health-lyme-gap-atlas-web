@@ -644,6 +644,7 @@ export function ReviewOperatingPicture({
       !scoresQuery.isFetching);
   const mapLoading = useExplorerMapLoadingPresentation({
     mode: explorerMapLoadingMode({
+      confirmedEmptyFrame: paintRevision !== null && mapCounties.length === 0,
       deferToOtherLoader:
         availableDataGate.kind === "loading" ||
         availableDataGate.kind === "error",
@@ -732,43 +733,6 @@ export function ReviewOperatingPicture({
   }
   const focusReturnedCounty =
     returnFocusMatches || latchedReturnFips === selectedFips;
-  // County evidence keeps this picture mounted but parked. A focus call there
-  // does not move the keyboard, and consuming the target would skip the
-  // visible browse surface when the user comes back.
-  useLayoutEffect(() => {
-    if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
-      return;
-    }
-    const row = layoutRef.current?.querySelector<HTMLButtonElement>(
-      `button[data-fips="${selectedFips}"]`
-    );
-    if (row) {
-      const list = row.closest(".ux-reset-review-candidate-list");
-      const alignRow = () => {
-        if (!(list instanceof HTMLElement) || !row.isConnected) {
-          return;
-        }
-        alignCandidateRow(list, row);
-      };
-      alignRow();
-      row.focus({ preventScroll: true });
-      const fips = selectedFips;
-      requestAnimationFrame(() => {
-        const current = layoutRef.current?.querySelector<HTMLButtonElement>(
-          `button[data-fips="${fips}"]`
-        );
-        const currentList = current?.closest(".ux-reset-review-candidate-list");
-        if (
-          !(current instanceof HTMLButtonElement) ||
-          !(currentList instanceof HTMLElement)
-        ) {
-          return;
-        }
-        alignCandidateRow(currentList, current);
-      });
-    }
-    consumeReviewReturnFocus(selectedFips);
-  }, [focusReturnedCounty, freezeCountySelection, selectedFips]);
 
   const geometryError = Boolean(geometryQuery.isError);
   const countyQueryText = countyQuery.trim().toLowerCase();
@@ -833,6 +797,55 @@ export function ReviewOperatingPicture({
     () => new Set(candidates.map((candidate) => candidate.countyFips)),
     [candidates]
   );
+  const selectedReturnRank =
+    rankedRows.find((row) => row.fips === selectedFips)?.rank ?? null;
+  // County evidence keeps this picture mounted but parked. A focus call there
+  // does not move the keyboard, and consuming the target would skip the
+  // visible browse surface when the user comes back. Rank is part of the
+  // dependency because a county moves from the unscored list into the ranked
+  // list when scores arrive, and that move replaces the focused button.
+  useLayoutEffect(() => {
+    if (freezeCountySelection || !(focusReturnedCounty && selectedFips)) {
+      return;
+    }
+    const rowSelector =
+      selectedReturnRank === null
+        ? `button[data-fips="${selectedFips}"]:not([data-rank])`
+        : `button[data-fips="${selectedFips}"][data-rank="${selectedReturnRank}"]`;
+    const row =
+      layoutRef.current?.querySelector<HTMLButtonElement>(rowSelector);
+    if (row) {
+      const list = row.closest(".ux-reset-review-candidate-list");
+      const alignRow = () => {
+        if (!(list instanceof HTMLElement) || !row.isConnected) {
+          return;
+        }
+        alignCandidateRow(list, row);
+      };
+      alignRow();
+      row.focus({ preventScroll: true });
+      const fips = selectedFips;
+      requestAnimationFrame(() => {
+        const current = layoutRef.current?.querySelector<HTMLButtonElement>(
+          `button[data-fips="${fips}"]`
+        );
+        const currentList = current?.closest(".ux-reset-review-candidate-list");
+        if (
+          !(current instanceof HTMLButtonElement) ||
+          !(currentList instanceof HTMLElement)
+        ) {
+          return;
+        }
+        alignCandidateRow(currentList, current);
+      });
+    }
+    consumeReviewReturnFocus(selectedFips);
+  }, [
+    focusReturnedCounty,
+    freezeCountySelection,
+    selectedFips,
+    selectedReturnRank,
+  ]);
   const visibleCandidateCount = rankedRows.length;
   useEffect(() => {
     if (freezeCountySelection || !selectedFips || visibleCandidateCount === 0) {
