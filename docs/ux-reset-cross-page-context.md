@@ -47,7 +47,7 @@ Parsing is canonical in `parseUxResetSharedContext` and must match `loadUxResetS
 | Investigate | `evidence`, `eco`, `breakpoint`, `missing`, `q` |
 | Compare | `metric`, `return` |
 | Action | `plan`, `role` |
-| Assistant | `conversation`, `page_ref` |
+| Assistant | `conversation` |
 | Feed | `tab` |
 | Settings | _(none)_ |
 

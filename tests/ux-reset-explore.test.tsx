@@ -1076,7 +1076,7 @@ describe("Explore workspace", () => {
     expectGeometryStayedOnAlpha();
   });
 
-  it("keeps the Ask Atlas page reference on the committed release when a later release is rejected", async () => {
+  it("keeps the Ask Atlas link on the committed release when a later release is rejected", async () => {
     const initial = "?scope=CO&county=08001&period=2025-01-01";
     function RejectOctober() {
       const [search, setSearch] = useState(initial);
@@ -1134,14 +1134,14 @@ describe("Explore workspace", () => {
         conversation: null,
         county: "08001",
         dataset: "alpha-2026",
-        keys: ["county", "dataset", "page_ref"],
+        keys: ["county", "dataset"],
       },
     });
     expect(chatRequest).not.toHaveBeenCalled();
     expect(screen.queryByTestId("ask-atlas-panel")).toBeNull();
   });
 
-  it("keeps the Ask Atlas page reference on the resolved release when Explore is unpinned", async () => {
+  it("keeps the Ask Atlas link on the resolved release when Explore is unpinned", async () => {
     vi.stubEnv("NEXT_PUBLIC_KG_CHAT_ENABLED", "true");
     navigationSearchParams = new URLSearchParams(
       "scope=CO&county=08001&period=2025-01-01"
@@ -1171,12 +1171,12 @@ describe("Explore workspace", () => {
       conversation: null,
       county: "08001",
       dataset: "alpha-2026",
-      keys: ["county", "dataset", "page_ref"],
+      keys: ["county", "dataset"],
     });
     expect(chatRequest).not.toHaveBeenCalled();
   });
 
-  it("keeps the Ask Atlas page reference on the committed release while a later release is pending", async () => {
+  it("keeps the Ask Atlas link on the committed release while a later release is pending", async () => {
     const initial = "?scope=CO&county=08001&period=2025-01-01";
     function RequestPendingRelease() {
       const [search, setSearch] = useState(initial);
@@ -1238,7 +1238,7 @@ describe("Explore workspace", () => {
       conversation: null,
       county: "08001",
       dataset: "alpha-2026",
-      keys: ["county", "dataset", "page_ref"],
+      keys: ["county", "dataset"],
     });
   });
 });

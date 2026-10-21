@@ -1,11 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
-  ASK_ATLAS_PAGE_REFERENCE_PARAM,
-  readAskAtlasPageReference,
-} from "@/features/ux-reset/ask-atlas/page-reference";
-
-import {
   LOWER_48_DC_CAMERA_BOUNDS,
   reviewNationalCameraContains,
   reviewNationalNavigationCamera,
@@ -110,19 +105,10 @@ async function installReviewApi(
 
 function publishedAskHandoff(href: string | null) {
   const url = new URL(href ?? "", "http://127.0.0.1");
-  const state = readAskAtlasPageReference(url.pathname, url.searchParams);
-  const geography =
-    state.kind === "validated"
-      ? state.reference.context.fields.geography
-      : null;
-  const returnHref = state.kind === "validated" ? state.returnHref : "";
   return {
     county: url.searchParams.get("county"),
-    geography: geography?.state === "validated" ? geography.id : null,
-    pageRef: url.searchParams.get(ASK_ATLAS_PAGE_REFERENCE_PARAM) !== null,
-    returnCounty: new URL(returnHref, "http://127.0.0.1").searchParams.get(
-      "county"
-    ),
+    pageRef: url.searchParams.get("page_ref"),
+    pathname: url.pathname,
   };
 }
 
@@ -135,9 +121,8 @@ function dedicatedAskAtlasLink(page: Page) {
 async function expectPublishedNationalCounty(page: Page, fips: string) {
   const expected = {
     county: fips,
-    geography: fips,
-    pageRef: true,
-    returnCounty: fips,
+    pageRef: null,
+    pathname: "/askatlas",
   };
   await expect(
     page.getByTestId("review-published-county-preview")
@@ -517,14 +502,14 @@ test.describe("Review national geographic navigation", () => {
         );
         return {
           county: handoff.county,
-          geography: handoff.geography,
-          returnCounty: handoff.returnCounty,
+          pageRef: handoff.pageRef,
+          pathname: handoff.pathname,
         };
       })
       .toEqual({
-        county: null,
-        geography: null,
-        returnCounty: null,
+        county: "08013",
+        pageRef: null,
+        pathname: "/askatlas",
       });
   });
 

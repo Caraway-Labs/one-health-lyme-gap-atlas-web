@@ -30,8 +30,7 @@ import {
 } from "@/components/ui/sidebar";
 import { uxResetShellHandoffHref } from "@/features/ux-reset";
 import { AskAtlasChromeProvider } from "@/features/ux-reset/ask-atlas/ask-atlas-chrome";
-import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
-import { askAtlasEntryHref } from "@/features/ux-reset/ask-atlas/page-reference";
+import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import {
   ExploreCommittedNavigationProvider,
   searchParamsWithCommittedExploreContext,
@@ -236,8 +235,6 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
     searchParams,
     committedExploreNavigation
   );
-  const askContext = useAskAtlasInheritedContext();
-
   const shellHref = useCallback(
     (route: ResetRoute) => {
       const explorerReturn = committedExploreNavigation?.explorerReturnHref;
@@ -245,11 +242,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         return explorerReturn;
       }
       if (route.id === "assistant") {
-        return askAtlasEntryHref({
-          context: askContext,
-          pathname,
-          searchParams: shellSearchParams,
-        });
+        return resetAskAtlasWorkspaceHref(pathname, shellSearchParams);
       }
       return uxResetShellHandoffHref(
         route.externalHref ?? route.href,
@@ -257,7 +250,7 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         shellSearchParams
       );
     },
-    [askContext, committedExploreNavigation, pathname, shellSearchParams]
+    [committedExploreNavigation, pathname, shellSearchParams]
   );
 
   useEffect(() => {

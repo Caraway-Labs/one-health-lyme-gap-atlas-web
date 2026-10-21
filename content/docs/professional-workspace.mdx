@@ -23,7 +23,7 @@ To resume the review, return to the original workspace tab. Its address still ha
 | --- | --- | --- | --- |
 | Atlas Explorer | [/explore](/explore) | Available now | See a national or one-state picture, with the map and county list together. Open county evidence or suggested follow-up on that same address. |
 | Compare | [/compare](/compare) | Available now | Compare two counties on aligned measures. Availability stays visible. The page does not rank a winner. |
-| Ask Atlas | [/askatlas](/askatlas) | Experimental | Ask reviewed-literature questions when that service is enabled. A validated Explorer or Compare reference can be shown and changed, with a return link. |
+| Ask Atlas | [/askatlas](/askatlas) | Experimental | Ask reviewed-literature questions when that service is enabled. Atlas Explorer and Compare open this page. They do not display the previous county or comparison. |
 | Feed | [/app/feed](/app/feed) | Present, empty | The destination is in the navigation. It does not yet list items, alerts, or a saved-article library. |
 | Data Provenance | [/data-provenance](/data-provenance) | Available now | Read where the current release's evidence comes from, open a source card, and follow Docs for methodology. Provenance beside a result stays on that result. |
 | Settings | [/app/settings](/app/settings) | Available now | Save a default jurisdiction and optional profile details, then use account sign-out, export, and removal. |
@@ -81,7 +81,7 @@ Compare places two counties side by side.
 - Choose **First county** and **Second county**. The workspace accepts two counties.
 - Each measure row keeps that county's unit, period, and availability. Similar values, different values, and withheld comparisons are labeled. A withheld comparison explains why the values were not treated as a simple difference.
 - The page does not produce a winner, a combined score, or a rank.
-- **View first county evidence** and **View second county evidence** open that county in Atlas Explorer. **Ask Atlas about this comparison** opens Ask Atlas with the pair as a page reference, not as a request to compare the counties for you.
+- **View first county evidence** and **View second county evidence** open that county in Atlas Explorer. **Ask Atlas about this comparison** opens Ask Atlas. It does not ask Ask Atlas to compare the counties.
 - **Return to Atlas Explorer** or **Return to county evidence** appears when you opened Compare from that place.
 
 If the county list is still loading, the selectors say so. If the list fails, Compare says the published counties could not be loaded. If evidence fails, the page says aligned evidence did not load. Those messages are request states.
@@ -102,11 +102,11 @@ Settings does not generate, display, or revoke an API key. It does not manage sa
 
 Atlas Explorer and Compare include an **Ask Atlas** control. It opens the [Ask Atlas page](/askatlas). It does not open a side panel or a dialog.
 
-When reviewed-literature chat is enabled for that deployment, that page asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare can carry a validated page reference. That reference is labeled on the page, can be changed or cleared, and is not a citation or retrieved surveillance evidence. The return link restores Atlas Explorer or the Compare pair, including the relevant geography, period, and release. An address that does not verify is not shown as evidence.
+When reviewed-literature chat is enabled for that deployment, that page asks the literature service and shows cited evidence or an explicit unavailable-evidence outcome. Explorer and Compare open the same page. The county, comparison, or release on the previous page is not labeled above the search and is not sent with the question. Old links that still include `page_ref` open this page without that reference.
 
 When literature chat is not enabled, the page says Ask Atlas is unavailable and the other workspace pages stay usable. That message is a service state. It does not mean the county's evidence is absent.
 
-Ask Atlas does not change filters or maps on its own, and it does not run a workflow for you. It has no Structured mode and no Both mode. Showing a comparison reference does not ask the service to compare counties.
+Ask Atlas does not change filters or maps on its own, and it does not run a workflow for you. It has no Structured mode and no Both mode. Opening Ask Atlas from Compare does not ask the service to compare counties.
 
 A direct link to a conversation that is not saved in this browser says so and lets you start a new chat. History stays in this browser for up to 30 days. It is not a saved research library on Atlas servers.
 

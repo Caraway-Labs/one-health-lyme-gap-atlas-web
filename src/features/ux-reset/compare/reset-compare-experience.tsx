@@ -17,10 +17,7 @@ import {
 } from "@/components/ui/select";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
-import {
-  ASK_ATLAS_PAGE_REFERENCE_PARAM,
-  askAtlasEntryHref,
-} from "@/features/ux-reset/ask-atlas/page-reference";
+import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import type {
   CompareAlignedRow,
   CompareAlignment,
@@ -273,12 +270,7 @@ function CompareExperienceInner() {
     if (!askContext) {
       return null;
     }
-    const href = askAtlasEntryHref({
-      context: askContext,
-      pathname: RESET_COMPARE_PATH,
-      searchParams,
-    });
-    return href.includes(`${ASK_ATLAS_PAGE_REFERENCE_PARAM}=`) ? href : null;
+    return resetAskAtlasWorkspaceHref(RESET_COMPARE_PATH, searchParams);
   }, [askContext, searchParams]);
   usePublishAskAtlasInheritedContext(askContext);
   usePublishExploreCommittedNavigation({
