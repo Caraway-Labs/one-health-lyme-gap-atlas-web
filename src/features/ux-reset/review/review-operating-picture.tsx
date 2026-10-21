@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import {
@@ -54,6 +54,18 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
+  acceptExplorerMapPaintSettlement,
+  explorerMapFrameReady,
+  explorerMapLoadingMode,
+  explorerMapPaintRevision,
+  explorerMapRenderedFrameSignature,
+  explorerScoresLoadStatus,
+} from "@/features/ux-reset/review/explorer-map-loading";
+import {
+  ExplorerMapLoadingOverlay,
+  ExplorerMapSurface,
+} from "@/features/ux-reset/review/explorer-map-loading-overlay";
+import {
   rankExplorerCounties,
   type ExplorerRankSource,
 } from "@/features/ux-reset/review/explorer-ranked-counties";
@@ -103,6 +115,10 @@ import {
   stateFipsPrefix,
 } from "@/features/ux-reset/review/review-state-fips";
 import {
+  useExplorerMapLoadingPresentation,
+  usePublishedExplorerMapFrame,
+} from "@/features/ux-reset/review/use-explorer-map-loading";
+import {
   knownEmptyMapSelection,
   observationGate,
   observationPaintState,
@@ -130,11 +146,7 @@ const AtlasMap = dynamic(
     return mod.AtlasMap;
   },
   {
-    loading: () => (
-      <AtlasStatusMessage className="map-loading" tone="loading">
-        Loading map…
-      </AtlasStatusMessage>
-    ),
+    loading: () => null,
     ssr: false,
   }
 );
@@ -459,12 +471,9 @@ export function ReviewOperatingPicture({
       ),
     [scoresQuery.data?.counties]
   );
-  const scoreLoadStatus =
-    !releaseId || scoresQuery.isError
-      ? "error"
-      : scoresQuery.isPending
-        ? "loading"
-        : "ready";
+  const scoreLoadStatus = releaseId
+    ? explorerScoresLoadStatus(scoresQuery)
+    : "error";
   const layerGates = useMemo(
     () =>
       explorerMapLayerGates({
@@ -512,11 +521,14 @@ export function ReviewOperatingPicture({
       ? applyGapScoreScenarioColors(governedCounties, scenarioByFips)
       : null;
     const scoresStatus = layer.needsScores
-      ? !releaseId || scoresQuery.isError
-        ? "error"
-        : scoresQuery.isPending
-          ? "loading"
-          : "ready"
+      ? releaseId
+        ? explorerScoresLoadStatus({
+            data: scoresQuery.data,
+            isError: scoresQuery.isError,
+            isFetching: scoresQuery.isFetching,
+            isPending: scoresQuery.isPending,
+          })
+        : "error"
       : "ready";
     const paint = paintExplorerMapLayer({
       counties: colored?.counties ?? governedCounties,
@@ -546,6 +558,7 @@ export function ReviewOperatingPicture({
     scoreLoadStatus,
     scoresQuery.data,
     scoresQuery.isError,
+    scoresQuery.isFetching,
     scoresQuery.isPending,
     selectedFips,
     sources,
@@ -595,6 +608,66 @@ export function ReviewOperatingPicture({
       }
     }
   }, [availableDataGate, inStateMapCounties]);
+  const paintRevision = explorerMapPaintRevision({
+    frameReady: explorerMapFrameReady({
+      availableDataKind: availableDataGate.kind,
+      geometryFailed: geometryQuery.isError,
+      geometryPending: Boolean(releaseId) && geometryQuery.isPending,
+      geometryPresent: Boolean(geometryQuery.data),
+    }),
+    frameSignature: explorerMapRenderedFrameSignature(mapCounties),
+    layerId: mapPaint.layerId,
+    paintKind: mapPaint.kind,
+    releaseId: releaseId ?? "",
+    scope: scopeCode,
+  });
+  const publishedMap = usePublishedExplorerMapFrame(paintRevision, mapCounties);
+  const [settledRevision, setSettledRevision] = useState<string | null>(null);
+  const onPaintSettled = useCallback(
+    (revision: string) => {
+      if (!acceptExplorerMapPaintSettlement(publishedMap.revision, revision)) {
+        return;
+      }
+      setSettledRevision(revision);
+    },
+    [publishedMap.revision]
+  );
+  const queryClient = useQueryClient();
+  const activeObservation = isExplorerObservationLayer(mapLayer)
+    ? observations[mapLayer]
+    : null;
+  const layerFailed =
+    activeObservation?.status === "error" ||
+    (explorerMapLayerById(mapLayer).needsScores &&
+      Boolean(releaseId) &&
+      scoresQuery.isError &&
+      !scoresQuery.isFetching);
+  const mapLoading = useExplorerMapLoadingPresentation({
+    mode: explorerMapLoadingMode({
+      deferToOtherLoader:
+        availableDataGate.kind === "loading" ||
+        availableDataGate.kind === "error",
+      geometryFailed: geometryQuery.isError,
+      geometryPending: Boolean(releaseId) && geometryQuery.isPending,
+      layerFailed,
+      mapFailed: false,
+      paintKind: mapPaint.kind,
+      publishedRevision: publishedMap.revision,
+      settledRevision,
+    }),
+    requestKey: `${scopeCode}:${releaseId ?? ""}:${mapLayer}`,
+  });
+  const retryMapLayer = useCallback(() => {
+    if (isExplorerObservationLayer(mapLayer)) {
+      void queryClient.refetchQueries({
+        queryKey: ["ux-reset-explorer-map-observations", releaseId, mapLayer],
+      });
+      return;
+    }
+    if (explorerMapLayerById(mapLayer).needsScores) {
+      void scoresQuery.refetch();
+    }
+  }, [mapLayer, queryClient, releaseId, scoresQuery]);
   const [fitSignal, setFitSignal] = useState(0);
   const selectCounty = useCallback(
     (fips: string, _surface: GeographySelectionSurface) => {
@@ -923,6 +996,7 @@ export function ReviewOperatingPicture({
             data-selected-fips={selectedFips}
             data-testid="review-state-map-region"
             aria-busy={
+              mapLoading.busy ||
               availableDataGate.kind === "loading" ||
               geometryPending ||
               (geometryReady &&
@@ -943,20 +1017,28 @@ export function ReviewOperatingPicture({
                 </p>
               </AtlasStatusMessage>
             ) : geometryReady && hasMapCounties ? (
-              <AtlasMap
-                key={mapContext}
-                ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
-                cameraFrameState={scopeCode}
-                fitSignal={fitSignal}
-                geometry={geometryQuery.data as never}
-                includeUnscoredCounties={availableDataGate.kind === "open"}
-                neutralCountyBoundaries={mapLayer === "boundaries"}
-                scores={mapCounties}
-                selectedFips={selectedFips}
-                selectedState={scopeCode}
-                onSelect={selectCounty}
-                onIdle={() => setSettledMapContext(mapContext)}
-              />
+              <ExplorerMapSurface
+                blockMap={mapLoading.blockMap}
+                onPaintSettled={onPaintSettled}
+                revision={publishedMap.revision}
+              >
+                <AtlasMap
+                  key={mapContext}
+                  ariaLabel={`Map of ${stateName}. Select a county from the map or the ranked list.`}
+                  cameraFrameState={scopeCode}
+                  fitSignal={fitSignal}
+                  geometry={geometryQuery.data as never}
+                  includeUnscoredCounties={availableDataGate.kind === "open"}
+                  neutralCountyBoundaries={mapLayer === "boundaries"}
+                  paintRevision={publishedMap.revision ?? undefined}
+                  scores={publishedMap.frame}
+                  selectedFips={selectedFips}
+                  selectedState={scopeCode}
+                  onIdle={() => setSettledMapContext(mapContext)}
+                  onPaintSettled={onPaintSettled}
+                  onSelect={selectCounty}
+                />
+              </ExplorerMapSurface>
             ) : geometryError ? (
               <AtlasStatusMessage
                 className="map-loading"
@@ -993,15 +1075,11 @@ export function ReviewOperatingPicture({
                   No county shapes were returned to draw for this result.
                 </p>
               </AtlasStatusMessage>
-            ) : (
-              <AtlasStatusMessage
-                className="map-loading"
-                data-testid="review-state-map-loading"
-                tone="loading"
-              >
-                Loading map…
-              </AtlasStatusMessage>
-            )}
+            ) : null}
+            <ExplorerMapLoadingOverlay
+              view={mapLoading.overlay}
+              onRetry={retryMapLayer}
+            />
           </div>
           <ExplorerMapLegend
             key={`${mapPaint.layerId}:${mapPaint.kind}:${mapPaint.title}`}
