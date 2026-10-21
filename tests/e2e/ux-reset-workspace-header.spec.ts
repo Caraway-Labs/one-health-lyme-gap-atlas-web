@@ -200,23 +200,6 @@ test.describe("workspace header titles", () => {
     await expectHeaderTitle(page, "Atlas Explorer");
   });
 
-  test("uses the fallback on an authenticated page outside the six destinations", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ height: 900, width: 1280 });
-    await page.goto("/app/ai-responsible-use");
-    await expect
-      .poll(() => new URL(page.url()).pathname)
-      .toBe("/app/ai-responsible-use");
-    await expectHeaderTitle(page, "One Health Atlas");
-    await expect(
-      page.getByRole("heading", { level: 1, name: "AI / Responsible Use" })
-    ).toBeVisible();
-    await expect(
-      page.getByRole("navigation", { name: "Professional workspace" })
-    ).toBeVisible();
-  });
-
   test("leaves public and documentation chrome unchanged", async ({ page }) => {
     await page.setViewportSize({ height: 900, width: 1280 });
     await page.goto("/");

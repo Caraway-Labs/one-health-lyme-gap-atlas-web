@@ -144,15 +144,12 @@ test("opens trust links from the professional footer", async ({
   const responsibleUse = footer.getByRole("link", {
     name: "AI / Responsible Use",
   });
-  await expect(responsibleUse).toHaveAttribute(
-    "href",
-    "/app/ai-responsible-use"
-  );
+  await expect(responsibleUse).toHaveAttribute("href", "/ai-ethics");
   await page.keyboard.press("Tab");
   await expect(responsibleUse).toBeFocused();
   expect(await visibleFocusCue(responsibleUse)).toEqual(LINK_FOCUS_CUE);
   await footer.screenshot({
-    path: testInfo.outputPath("footer-ai-responsible-use-focus.png"),
+    path: testInfo.outputPath("footer-ai-ethics-focus.png"),
   });
 
   const settings = footer.getByRole("link", { name: "Privacy settings" });

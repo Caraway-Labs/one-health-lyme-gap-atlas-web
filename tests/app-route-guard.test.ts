@@ -12,7 +12,7 @@ describe("professional app route guard", () => {
     expect(isProfessionalAppPath("/app")).toBeTruthy();
     expect(isProfessionalAppPath("/app/review")).toBeTruthy();
     expect(isProfessionalAppPath("/app/explore")).toBeTruthy();
-    expect(isProfessionalAppPath("/app/ai-responsible-use")).toBeTruthy();
+    expect(isProfessionalAppPath("/app/settings")).toBeTruthy();
     expect(isProfessionalAppPath("/application")).toBeFalsy();
   });
 
@@ -53,7 +53,7 @@ describe("professional app route guard", () => {
       shouldRedirectUnauthenticatedAppRoute({
         atlasE2E: false,
         nodeEnv: "development",
-        pathname: "/app/ai-responsible-use",
+        pathname: "/app/settings",
         supabaseConfigured: false,
         userPresent: false,
       })

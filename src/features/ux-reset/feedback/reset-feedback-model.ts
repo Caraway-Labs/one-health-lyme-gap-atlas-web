@@ -4,7 +4,6 @@ import {
   isLower48ReviewScope,
   STATE_FIPS_PREFIX,
 } from "@/features/ux-reset/review/review-state-fips";
-import { RESET_AI_RESPONSIBLE_USE_PATH } from "@/features/ux-reset/routes";
 import {
   type FeedbackContext,
   FeedbackSubmissionRequestCategory,
@@ -194,17 +193,6 @@ export function resetFeedbackDraftHasContent(
 
 export function resetFeedbackPage(pathname: string): ResetFeedbackPage {
   const path = pathname.split(/[?#]/, 1)[0] || "/";
-  if (
-    path === RESET_AI_RESPONSIBLE_USE_PATH ||
-    path.startsWith(`${RESET_AI_RESPONSIBLE_USE_PATH}/`)
-  ) {
-    return {
-      includeGeography: false,
-      pageLabel: "AI responsible use",
-      routeId: FeedbackSubmissionRequestRouteId.ai_ethics,
-    };
-  }
-
   const route = findResetRoute(path);
   if (!route || route.id === "docs") {
     return {

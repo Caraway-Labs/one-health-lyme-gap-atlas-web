@@ -650,11 +650,6 @@ describe("six-page workspace route migration", () => {
       pathname: "/",
       reason: "front-porch",
     });
-    expect(migrate("/app/ai-responsible-use")).toStrictEqual({
-      kind: "unchanged",
-      pathname: "/app/ai-responsible-use",
-      reason: "out-of-scope",
-    });
     expect(migrate("/account")).toStrictEqual({
       kind: "unchanged",
       pathname: "/account",

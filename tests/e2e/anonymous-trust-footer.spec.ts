@@ -162,6 +162,6 @@ test("public and workspace footers stay single and unchanged", async ({
     await expect(footer).toHaveCount(1);
     await expect(
       footer.getByRole("link", { name: "AI / Responsible Use" })
-    ).toHaveAttribute("href", "/app/ai-responsible-use");
+    ).toHaveAttribute("href", "/ai-ethics");
   }
 });

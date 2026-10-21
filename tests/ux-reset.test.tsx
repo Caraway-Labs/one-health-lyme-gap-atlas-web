@@ -226,7 +226,7 @@ describe("UX Reset professional workspace", () => {
     expect(
       screen.getByRole("contentinfo").contains(responsibleUse)
     ).toBeTruthy();
-    expect(responsibleUse.getAttribute("href")).toBe("/app/ai-responsible-use");
+    expect(responsibleUse.getAttribute("href")).toBe("/ai-ethics");
     expect(responsibleUse.getAttribute("target")).toBeNull();
   });
 
