@@ -2,7 +2,9 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
+  fireEvent,
   render,
   renderHook,
   screen,
@@ -20,7 +22,10 @@ import { EXPLORER_MAP_LOADING_DELAY_MS } from "@/features/ux-reset/review/explor
 import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
-import { usePublishedExplorerMapFrame } from "@/features/ux-reset/review/use-explorer-map-loading";
+import {
+  useExplorerMapPaintSettlement,
+  usePublishedExplorerMapFrame,
+} from "@/features/ux-reset/review/use-explorer-map-loading";
 import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
 import { ValueState, type CountyScoreSummary } from "@/generated/models";
 import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
@@ -28,6 +33,7 @@ import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geogra
 import { buildStateReview } from "./fixtures/review-operating-picture-fixtures";
 
 const recorded = vi.hoisted(() => ({
+  failMap: false,
   paints: [] as {
     colors: string[];
     fips: string[];
@@ -61,22 +67,31 @@ vi.mock(import("@/components/atlas-map"), async () => {
   const { useEffect } = await import("react");
   return {
     AtlasMap: ({
+      onError,
       onIdle,
       paintRevision,
       scores,
     }: {
+      onError?: () => void;
       onIdle?: () => void;
       paintRevision?: string;
       scores: readonly { color?: string; fips: string }[];
     }) => {
+      useEffect(() => {
+        if (recorded.failMap) {
+          onError?.();
+          return;
+        }
+        onIdle?.();
+      }, [onError, onIdle]);
+      if (recorded.failMap) {
+        return <div data-testid="mock-atlas-map-failed" />;
+      }
       recorded.paints.push({
         colors: scores.map((county) => county.color ?? ""),
         fips: scores.map((county) => county.fips),
         revision: paintRevision,
       });
-      useEffect(() => {
-        onIdle?.();
-      }, [onIdle]);
       return <div data-testid="mock-atlas-map" />;
     },
   };
@@ -186,6 +201,7 @@ function latestPaint(): {
 
 describe("published explorer map frame", () => {
   beforeEach(() => {
+    recorded.failMap = false;
     recorded.paints.length = 0;
     geometryRequest.reset();
   });
@@ -255,6 +271,28 @@ describe("published explorer map frame", () => {
       ],
       revision: "gap:unavailable",
     });
+  });
+
+  it("waits for a new paint when a settled revision is published again", () => {
+    const { result, rerender } = renderHook(
+      ({ revision }: { revision: string }) =>
+        useExplorerMapPaintSettlement(revision),
+      { initialProps: { revision: "A" } }
+    );
+    const firstPaint = result.current.onPaintSettled;
+    act(() => {
+      firstPaint("A");
+    });
+    rerender({ revision: "B" });
+    rerender({ revision: "A" });
+    act(() => {
+      firstPaint("A");
+    });
+    expect(result.current.settledRevision).toBeNull();
+    act(() => {
+      result.current.onPaintSettled("A");
+    });
+    expect(result.current.settledRevision).toBe("A");
   });
 
   it("keeps the previous map while geometry is unresolved, then publishes the rendered counties", async () => {
@@ -363,6 +401,7 @@ async function expectEmptyFrameSettled(regionTestId: string): Promise<void> {
 
 describe("confirmed empty explorer map frames", () => {
   beforeEach(() => {
+    recorded.failMap = false;
     recorded.paints.length = 0;
     geometryRequest.reset();
     geometryRequest.resolve(geometry());
@@ -577,6 +616,7 @@ async function expectNeutralBoundaryFrame(
 
 describe("terminal unavailable score frames", () => {
   beforeEach(() => {
+    recorded.failMap = false;
     recorded.paints.length = 0;
     geometryRequest.reset();
     geometryRequest.resolve(geometry());
@@ -677,5 +717,49 @@ describe("terminal unavailable score frames", () => {
         .getAttribute("aria-busy"),
       loading: screen.queryByTestId("explorer-map-loading"),
     }).toStrictEqual({ busy: "false", loading: null });
+  });
+
+  it("shows Retry when the state map fails and restores the map after retry", async () => {
+    recorded.failMap = true;
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData(
+      ["ux-reset-review-scores", RELEASE_ID, EXPLORER_SCORE_SETTINGS],
+      {
+        counties: COUNTIES,
+        methodology_version: "1",
+        release_id: RELEASE_ID,
+        settings: EXPLORER_SCORE_SETTINGS,
+      }
+    );
+    client.setQueryData(
+      ["ux-reset-review-county-directory", RELEASE_ID],
+      [
+        {
+          county: "Adams",
+          fips: "08001",
+          state: "CO",
+          stateName: "Colorado",
+        },
+      ]
+    );
+    render(stateLayerPicture("gap_score", client));
+    await waitFor(() => {
+      expect(screen.getByTestId("explorer-map-loading-error")).toBeTruthy();
+    });
+    recorded.failMap = false;
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("mock-atlas-map")).toBeTruthy();
+    });
+    await delay(EXPLORER_MAP_LOADING_DELAY_MS + 50);
+    expect({
+      busy: screen
+        .getByTestId("review-state-map-region")
+        .getAttribute("aria-busy"),
+      error: screen.queryByTestId("explorer-map-loading-error"),
+      loading: screen.queryByTestId("explorer-map-loading"),
+    }).toStrictEqual({ busy: "false", error: null, loading: null });
   });
 });

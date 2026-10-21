@@ -45,7 +45,6 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
-  acceptExplorerMapPaintSettlement,
   explorerMapFrameReady,
   explorerMapLoadingMode,
   explorerMapPaintRevision,
@@ -86,6 +85,7 @@ import {
 import { RURALITY_NO_DATA_COLOR } from "@/features/ux-reset/review/rurality-palette";
 import {
   useExplorerMapLoadingPresentation,
+  useExplorerMapPaintSettlement,
   usePublishedExplorerMapFrame,
 } from "@/features/ux-reset/review/use-explorer-map-loading";
 import {
@@ -502,15 +502,8 @@ export function ReviewNationalPicture({
     scope: "US",
   });
   const publishedMap = usePublishedExplorerMapFrame(paintRevision, mapCounties);
-  const [settledRevision, setSettledRevision] = useState<string | null>(null);
-  const onPaintSettled = useCallback(
-    (revision: string) => {
-      if (!acceptExplorerMapPaintSettlement(publishedMap.revision, revision)) {
-        return;
-      }
-      setSettledRevision(revision);
-    },
-    [publishedMap.revision]
+  const { onPaintSettled, settledRevision } = useExplorerMapPaintSettlement(
+    publishedMap.revision
   );
   const queryClient = useQueryClient();
   const activeObservation = isExplorerObservationLayer(mapLayer)

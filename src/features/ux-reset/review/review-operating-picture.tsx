@@ -54,7 +54,6 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapLegend } from "@/features/ux-reset/review/explorer-map-legend";
 import {
-  acceptExplorerMapPaintSettlement,
   explorerMapFrameReady,
   explorerMapLoadingMode,
   explorerMapPaintRevision,
@@ -116,6 +115,7 @@ import {
 } from "@/features/ux-reset/review/review-state-fips";
 import {
   useExplorerMapLoadingPresentation,
+  useExplorerMapPaintSettlement,
   usePublishedExplorerMapFrame,
 } from "@/features/ux-reset/review/use-explorer-map-loading";
 import {
@@ -622,21 +622,18 @@ export function ReviewOperatingPicture({
     scope: scopeCode,
   });
   const publishedMap = usePublishedExplorerMapFrame(paintRevision, mapCounties);
-  const [settledRevision, setSettledRevision] = useState<string | null>(null);
-  const onPaintSettled = useCallback(
-    (revision: string) => {
-      if (!acceptExplorerMapPaintSettlement(publishedMap.revision, revision)) {
-        return;
-      }
-      setSettledRevision(revision);
-    },
-    [publishedMap.revision]
+  const { onPaintSettled, settledRevision } = useExplorerMapPaintSettlement(
+    publishedMap.revision
   );
+  const mapRequestKey = `${scopeCode}:${releaseId ?? ""}:${mapLayer}`;
+  const [failedMapRequest, setFailedMapRequest] = useState<string | null>(null);
+  const mapFailed = failedMapRequest === mapRequestKey;
   const queryClient = useQueryClient();
   const activeObservation = isExplorerObservationLayer(mapLayer)
     ? observations[mapLayer]
     : null;
   const layerFailed =
+    mapFailed ||
     activeObservation?.status === "error" ||
     (explorerMapLayerById(mapLayer).needsScores &&
       Boolean(releaseId) &&
@@ -651,14 +648,20 @@ export function ReviewOperatingPicture({
       geometryFailed: geometryQuery.isError,
       geometryPending: Boolean(releaseId) && geometryQuery.isPending,
       layerFailed,
+      // Construction failure is included in layerFailed so this viewport shows
+      // Retry. The national picture owns that case with its own status message.
       mapFailed: false,
       paintKind: mapPaint.kind,
       publishedRevision: publishedMap.revision,
       settledRevision,
     }),
-    requestKey: `${scopeCode}:${releaseId ?? ""}:${mapLayer}`,
+    requestKey: mapRequestKey,
   });
   const retryMapLayer = useCallback(() => {
+    if (mapFailed) {
+      setFailedMapRequest(null);
+      return;
+    }
     if (isExplorerObservationLayer(mapLayer)) {
       void queryClient.refetchQueries({
         queryKey: ["ux-reset-explorer-map-observations", releaseId, mapLayer],
@@ -668,7 +671,7 @@ export function ReviewOperatingPicture({
     if (explorerMapLayerById(mapLayer).needsScores) {
       void scoresQuery.refetch();
     }
-  }, [mapLayer, queryClient, releaseId, scoresQuery]);
+  }, [mapFailed, mapLayer, queryClient, releaseId, scoresQuery]);
   const [fitSignal, setFitSignal] = useState(0);
   const selectCounty = useCallback(
     (fips: string, _surface: GeographySelectionSurface) => {
@@ -1014,6 +1017,7 @@ export function ReviewOperatingPicture({
               geometryPending ||
               (geometryReady &&
                 hasMapCounties &&
+                !mapFailed &&
                 settledMapContext !== mapContext)
             }
           >
@@ -1029,7 +1033,7 @@ export function ReviewOperatingPicture({
                   {EXPLORER_AVAILABLE_DATA_ERROR}
                 </p>
               </AtlasStatusMessage>
-            ) : geometryReady && hasMapCounties ? (
+            ) : geometryReady && hasMapCounties && !mapFailed ? (
               <ExplorerMapSurface
                 blockMap={mapLoading.blockMap}
                 onPaintSettled={onPaintSettled}
@@ -1047,6 +1051,9 @@ export function ReviewOperatingPicture({
                   scores={publishedMap.frame}
                   selectedFips={selectedFips}
                   selectedState={scopeCode}
+                  onError={() => {
+                    setFailedMapRequest(mapRequestKey);
+                  }}
                   onIdle={() => setSettledMapContext(mapContext)}
                   onPaintSettled={onPaintSettled}
                   onSelect={selectCounty}

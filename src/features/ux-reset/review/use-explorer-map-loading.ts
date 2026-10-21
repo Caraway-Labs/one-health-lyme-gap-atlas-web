@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   EXPLORER_MAP_LOADING_DELAY_MS,
+  acceptExplorerMapPaintSettlement,
   explorerMapLoadView,
   initialExplorerMapLoadState,
   reduceExplorerMapLoad,
@@ -74,4 +75,42 @@ export function usePublishedExplorerMapFrame<T>(
     return published;
   }
   return { frame, revision };
+}
+
+/**
+ * A revision string can be published more than once. Equality with an older
+ * settlement is not proof that the current canvas has rendered.
+ */
+export function useExplorerMapPaintSettlement(
+  publishedRevision: string | null
+): {
+  onPaintSettled: (revision: string) => void;
+  settledRevision: string | null;
+} {
+  const [trackedRevision, setTrackedRevision] = useState(publishedRevision);
+  const [publication, setPublication] = useState(0);
+  const [settledPublication, setSettledPublication] = useState<number | null>(
+    null
+  );
+  if (publishedRevision !== trackedRevision) {
+    setTrackedRevision(publishedRevision);
+    setPublication(publication + 1);
+    setSettledPublication(null);
+  }
+  const onPaintSettled = useCallback(
+    (revision: string) => {
+      if (!acceptExplorerMapPaintSettlement(publishedRevision, revision)) {
+        return;
+      }
+      setSettledPublication((current) =>
+        current !== null && current >= publication ? current : publication
+      );
+    },
+    [publication, publishedRevision]
+  );
+  return {
+    onPaintSettled,
+    settledRevision:
+      settledPublication === publication ? publishedRevision : null,
+  };
 }
