@@ -4,6 +4,7 @@ import {
   captureReviewReturnFocusMount,
   markReviewReturnFocus,
   resolveReviewReturnFocus,
+  reviewReturnFocusMountAfterPark,
   reviewReturnFocusTokenForMount,
 } from "@/features/ux-reset/review/review-return-focus";
 
@@ -84,5 +85,16 @@ describe(resolveReviewReturnFocus, () => {
       urlCounty: "08041",
     });
     expect(focus).toStrictEqual({ focus: true, latch: "08041" });
+  });
+
+  it("adopts a departure token when parked Review becomes visible again", () => {
+    const open = captureReviewReturnFocusMount();
+    markReviewReturnFocus("08041");
+    expect(reviewReturnFocusMountAfterPark(open, false)).toBe(open);
+    expect(reviewReturnFocusTokenForMount(open)).toBeNull();
+
+    const visible = reviewReturnFocusMountAfterPark(open, true);
+    expect(reviewReturnFocusTokenForMount(visible)).toBe("08041");
+    expect(reviewReturnFocusMountAfterPark(visible, true)).toBe(visible);
   });
 });

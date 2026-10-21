@@ -109,6 +109,7 @@ import {
   consumeReviewReturnFocus,
   markReviewReturnFocus,
   resolveReviewReturnFocus,
+  reviewReturnFocusMountAfterPark,
   reviewReturnFocusTokenForMount,
 } from "@/features/ux-reset/review/review-return-focus";
 import {
@@ -379,8 +380,26 @@ export function ReviewOperatingPicture({
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
-  const [returnFocusMount] = useState(captureReviewReturnFocusMount);
-  const mountedReturnToken = reviewReturnFocusTokenForMount(returnFocusMount);
+  const [returnFocusMount, setReturnFocusMount] = useState(
+    captureReviewReturnFocusMount
+  );
+  const [returnFocusWasParked, setReturnFocusWasParked] = useState(
+    freezeCountySelection
+  );
+  let activeReturnMount = returnFocusMount;
+  if (returnFocusWasParked !== freezeCountySelection) {
+    setReturnFocusWasParked(freezeCountySelection);
+    if (returnFocusWasParked && !freezeCountySelection) {
+      activeReturnMount = reviewReturnFocusMountAfterPark(
+        returnFocusMount,
+        true
+      );
+      if (activeReturnMount !== returnFocusMount) {
+        setReturnFocusMount(activeReturnMount);
+      }
+    }
+  }
+  const mountedReturnToken = reviewReturnFocusTokenForMount(activeReturnMount);
 
   usePublishExploreCommittedNavigation({
     county: selectedFips || null,

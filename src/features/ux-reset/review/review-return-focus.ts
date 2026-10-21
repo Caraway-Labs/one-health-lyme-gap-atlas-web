@@ -87,6 +87,27 @@ export function reviewReturnFocusTokenForMount(
 }
 
 /**
+ * County evidence parks Review instead of unmounting it. The departure mark
+ * stays ignored while that view is open, then this adopts the stored county
+ * once the map is visible again. Call it only on that parked-to-visible
+ * transition: adopting a mark while Review is still interactive consumes the
+ * token before Compare or Investigate navigates away.
+ */
+export function reviewReturnFocusMountAfterPark(
+  current: ReviewReturnFocusMount,
+  becameVisible: boolean
+): ReviewReturnFocusMount {
+  if (!becameVisible) {
+    return current;
+  }
+  const next = captureReviewReturnFocusMount();
+  if (next.generation === current.generation && next.token === current.token) {
+    return current;
+  }
+  return next;
+}
+
+/**
  * Decide whether this render should move focus back to the returned county.
  *
  * The URL county is the return target. A blank or fallback selection while
