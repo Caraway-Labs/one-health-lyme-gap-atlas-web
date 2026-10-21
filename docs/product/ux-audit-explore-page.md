@@ -1,11 +1,6 @@
 # UX Audit: Atlas Explorer (`/explore`)
 
-**Role:** Senior UX Designer / UX Engineer audit
-**Date:** 2026-10-20
-**Product:** One Health Lyme Gap Atlas, professional workspace (`one-health-lyme-gap-atlas-web`)
-**Target users:** Epidemiologists using Atlas as a decision-support intelligence platform
-**Type of work:** Inspection and audit only. **No application code was changed.**
-**Target stack for recommendations:** shadcn/ui (primary) · Base UI (interactive primitives) · Lucide React (icons) · Tailwind CSS v4 (styling and tokens)
+**Role:** Senior UX Designer / UX Engineer audit **Date:** 2026-10-20 **Product:** One Health Lyme Gap Atlas, professional workspace (`one-health-lyme-gap-atlas-web`) **Target users:** Epidemiologists using Atlas as a decision-support intelligence platform **Type of work:** Inspection and audit only. **No application code was changed.** **Target stack for recommendations:** shadcn/ui (primary) · Base UI (interactive primitives) · Lucide React (icons) · Tailwind CSS v4 (styling and tokens)
 
 ---
 
@@ -13,7 +8,7 @@
 
 ### Verdict
 
-`/explore` is **scientifically careful but visually under-powered**. The governance work is strong: evidence states, caveats, URL reproducibility, and map/list parity are all taken seriously. But the interface expresses almost all of that care **as sentences**. An epidemiologist arriving at the page has to *read* their way to the answer to the four questions they came with:
+`/explore` is **scientifically careful but visually under-powered**. The governance work is strong: evidence states, caveats, URL reproducibility, and map/list parity are all taken seriously. But the interface expresses almost all of that care **as sentences**. An epidemiologist arriving at the page has to _read_ their way to the answer to the four questions they came with:
 
 1. **Where** should I look?
 2. **Why** is this county flagged?
@@ -49,7 +44,7 @@ None of those four questions is answerable at a glance today. Each is answerable
 | 9 | **Fill the missing primitives** (Tabs, ToggleGroup, Collapsible/Accordion, Sheet/Drawer, Breadcrumb, Combobox, Separator, ScrollArea, Meter). Base UI 1.9 (installed) already ships the behavior; shadcn wrappers are missing in `src/components/ui`. | Every recommendation above is buildable with **zero new dependencies**. |
 | 10 | **Run a 5–6 user task test with real epidemiologists** before and after. | Everything here is expert inference; Section 9 gives a ready-to-run protocol. |
 
-### What is *not* recommended
+### What is _not_ recommended
 
 - Not recommending new pages, a dashboard, or absorbing Compare/Ask Atlas into Explorer (constitution forbids "mega-page").
 - Not recommending a contextual-help system, tours, or "?" widgets (explicitly out of scope for Reset V1).
@@ -61,8 +56,7 @@ None of those four questions is answerable at a glance today. Each is answerable
 
 ### What was audited
 
-Route `/explore` (**Atlas Explorer**), rendered by `ResetReviewExperience`
-(`src/features/ux-reset/review/reset-review-experience.tsx`), including:
+Route `/explore` (**Atlas Explorer**), rendered by `ResetReviewExperience` (`src/features/ux-reset/review/reset-review-experience.tsx`), including:
 
 - National view (`scope=ALL`)
 - State view with and without a selected county (`scope=AL`, `county=…`)
@@ -83,7 +77,7 @@ Route `/explore` (**Atlas Explorer**), rendered by `ResetReviewExperience`
 | Limitation | Effect on the audit |
 | --- | --- |
 | **Fixture data, not live data.** All Alabama counties share one grey fill; the national map geometry was not served by the fixtures. | I could **not** judge the real color ramp on the map, real map legibility, or the real national map. Color findings are from tokens and code, not pixels. |
-| **County-evidence measure catalog did not render** in my mock, so the "Observed evidence" tables showed their *error* states. | Findings about the evidence hierarchy come from the code (`InvestigateEvidenceHierarchy`, evidence cards) plus the partial render. Re-verify with live data. |
+| **County-evidence measure catalog did not render** in my mock, so the "Observed evidence" tables showed their _error_ states. | Findings about the evidence hierarchy come from the code (`InvestigateEvidenceHierarchy`, evidence cards) plus the partial render. Re-verify with live data. |
 | **Alabama fixture scores all 67 counties.** | The county list is much longer than a typical bounded list would be. Row design findings still hold; list-length findings are noted as fixture-inflated. |
 | **No users, no analytics, no session recordings.** | Persona jobs below are **inferred**, labelled as such, and need validation. |
 | **No assistive-technology pass, no contrast measurement.** | Accessibility notes are code-and-visual observations, not a conformance statement. |
@@ -113,7 +107,7 @@ ORIENT  →  TRIAGE  →  EXPLAIN  →  ASSESS CONFIDENCE  →  ACT / COMMUNICAT
 | --- | --- | --- |
 | Orient | Hero text + state select + map | Geography shown four ways, none unified |
 | Triage | Ranked list (name + score pill) + map color | List truncates names; no visual of how scores are distributed |
-| Explain | One sentence of prose + collapsed "Score and methodology" | No visual of *what drives* the score |
+| Explain | One sentence of prose + collapsed "Score and methodology" | No visual of _what drives_ the score |
 | Assess confidence | Words (Limited, Available, "Missing records are not documented negative findings") | No at-a-glance completeness |
 | Act / communicate | 5 stacked buttons + two prose cards + CSV that excludes scores | Hierarchy of actions unclear; export loses the score |
 
@@ -171,10 +165,10 @@ Every recommendation below was checked against these. Items marked **Owner decis
 
 | Rule (source) | How this audit respects it |
 | --- | --- |
-| Evidence vocabulary is **Available / Limited / Unavailable**, from API metadata only (constitution, #409) | All redesigned evidence states keep these three words as the label. Icons/patterns *add* encoding; they never replace the word. |
+| Evidence vocabulary is **Available / Limited / Unavailable**, from API metadata only (constitution, #409) | All redesigned evidence states keep these three words as the label. Icons/patterns _add_ encoding; they never replace the word. |
 | **Loading/error are not "Unavailable"** (#426) | Loading uses a neutral spinner, never a value-shaped skeleton (constitution anti-pattern: "skeleton layouts that imply governed evidence"). |
 | **Missing is not zero** | Pattern + icon for missing/suppressed; zero keeps a numeric look. |
-| **Review priority is not disease risk**; avoid red/green clinical-dashboard cues | The disclaimer is *kept visible* (compact Badge). Ramp change is flagged **Owner decision**. |
+| **Review priority is not disease risk**; avoid red/green clinical-dashboard cues | The disclaimer is _kept visible_ (compact Badge). Ramp change is flagged **Owner decision**. |
 | **No general contextual help in Reset V1** (no tours, field-level "?" systems) | No new help system proposed. Accessible names/labels for icon-only buttons are not "help". The existing legend "About" popover is reused rather than expanded. |
 | **No default nationwide county leaderboard** | Shortlist stays bounded (current: first 40). Rank-number display is flagged **Owner decision**. |
 | **Explorer must not absorb Compare, Ask Atlas, or Feed** | Actions remain hand-offs (links), not embedded workflows. |
@@ -193,7 +187,7 @@ A fair audit credits the strong parts. These should survive any redesign:
 - **URL-reproducible state** (scope, county, layer, scenario, dataset, mode). This is excellent for epidemiologists who share findings.
 - **Map and list parity.** The ranked list is a real non-map path to the same result.
 - **Honest absence handling.** The product refuses to turn missing data into zero, and says why.
-- **Atlas will not pick for you.** "Choose a county… Atlas will not pick one." is a principled stance (the *wording* is wordy; the *behavior* is right).
+- **Atlas will not pick for you.** "Choose a county… Atlas will not pick one." is a principled stance (the _wording_ is wordy; the _behavior_ is right).
 - **Bounded national shortlist**, with an explanation of why it is bounded.
 - **Layer system** (10 layers: gap score, incidence floor, tick status, B. burgdorferi, SVI, uninsured, rurality, completeness, boundaries) with a legend whose segments are interactive.
 - **Scenario sliders persisted in the URL**, so a what-if analysis is shareable.
@@ -218,16 +212,17 @@ Each finding lists **Evidence**, **Impact for an epidemiologist**, and **Recomme
 
 #### A1 · The map is not the hero (S1)
 
-**Evidence.** Hero (A), toolbar (B), and scenario bar (C) stack above the map. The map *canvas* begins ~440 px down at 1440×900 (49% of viewport height), ~455 px down at 1280×720 (63%), and is entirely below the first screen at 390×844.
+**Evidence.** Hero (A), toolbar (B), and scenario bar (C) stack above the map. The map _canvas_ begins ~440 px down at 1440×900 (49% of viewport height), ~455 px down at 1280×720 (63%), and is entirely below the first screen at 390×844.
 
 ![1280×720: the map canvas starts almost two-thirds of the way down](ux-audit-assets/explore/06-state-county-1280x720.png)
 
-**Impact.** The page job is "bounded national/state operating picture" and the constitution calls it *map-led*. Today the first thing an expert sees is a navy marketing-style banner and form controls. The visual overview (where are the hot spots?) requires scrolling, defeating the "glance" that makes maps valuable.
+**Impact.** The page job is "bounded national/state operating picture" and the constitution calls it _map-led_. Today the first thing an expert sees is a navy marketing-style banner and form controls. The visual overview (where are the hot spots?) requires scrolling, defeating the "glance" that makes maps valuable.
 
 **Recommendation.**
+
 - Replace A + B + C with **one slim context bar** (44–56 px): Breadcrumb · State `Select` · county `Combobox` · data filter `ToggleGroup`/`Select` · Scenario button (with active Badge) · Export `DropdownMenu` · Release Badge.
 - Make the main stage fill the viewport: `h-[calc(100dvh-var(--header-h)-var(--context-bar-h))]`, with the map taking the remaining width beside a right rail (see Section 7).
-- The page already has a global header ("Atlas Explorer"). The in-page headline "Explore county Lyme data" can become a visually-hidden `h1` or live in the context bar; the supporting sentence moves to Docs. *(Owner decision; copy is product-owner approved.)*
+- The page already has a global header ("Atlas Explorer"). The in-page headline "Explore county Lyme data" can become a visually-hidden `h1` or live in the context bar; the supporting sentence moves to Docs. _(Owner decision; copy is product-owner approved.)_
 
 #### A2 · Three equal-weight cards with no focal point (S2)
 
@@ -241,7 +236,7 @@ Each finding lists **Evidence**, **Impact for an epidemiologist**, and **Recomme
 
 **Evidence.** The "What does the score mean?" box inside the hero explains the 0–100 score and that it "does not confirm a surveillance gap or measure personal Lyme disease risk."
 
-**Impact.** The *information* is critical and must stay (constitution). The *placement* is wrong: it is far from the score it qualifies, and once a user has read it, it never changes yet it never goes away.
+**Impact.** The _information_ is critical and must stay (constitution). The _placement_ is wrong: it is far from the score it qualifies, and once a user has read it, it never changes yet it never goes away.
 
 **Recommendation.** Keep a **compact, persistent qualifier attached to the score itself**: a small `Badge` with a Lucide `Info`/`ShieldAlert`-style icon reading **"Review priority · not disease risk"** next to the legend title and in the County Summary Card. Put the full explanation in the existing legend **About** popover (already built) and Docs. This is relocation plus compression, not removal.
 
@@ -254,6 +249,7 @@ Each finding lists **Evidence**, **Impact for an epidemiologist**, and **Recomme
 **Impact.** Reference material competes with decision material. The two cards also use **different type scales** (follow-up body ≈ 11–12 px vs. resources body ≈ 15 px, side by side), which reads as unfinished.
 
 **Recommendation.**
+
 - **Follow-up:** show only when a county is selected, as **checklist cards** (Section 6 B3), inside the rail's County tab, not as a page-bottom band.
 - **Resources:** replace the 8-item card with a `DropdownMenu` or `Popover` ("Official resources", Lucide `BookOpen`) listing the same 8 links with external-link icons. Zero prose; same links.
 - Empty selection: show a **single empty-state** in the rail ("Select a county on the map or from the shortlist", Lucide `MapPin`), not a full card.
@@ -267,6 +263,7 @@ Each finding lists **Evidence**, **Impact for an epidemiologist**, and **Recomme
 **Impact.** Weak hierarchy increases scan time. Sizes below ~12 px hurt readability for a professional audience on laptops.
 
 **Recommendation.**
+
 - Define a **5-step Tailwind v4 type scale** in tokens (e.g. `text-xs` 12 / `text-sm` 14 / `text-base` 16 / `text-xl` / `text-3xl` for county name only) and remove the sub-12 px sizes from body content.
 - Reserve the serif display face for **one** element per view (county name or page title). Section headings become `text-sm font-semibold` labels with a Lucide icon.
 
@@ -295,7 +292,7 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 │ └────────────────────────────────────┘ │
 │ Evidence completeness  ▰▰▰▱▱▱  50%     │  ← Meter/Progress segmented
 │ Human ✔   Tick ✔   Pathogen ◔   Env ✔ │  ← "evidence fingerprint" (icon + label chips)
-│ ⚠ Limited human surveillance           │  ← caveat chips (max 2) + "+1 more" 
+│ ⚠ Limited human surveillance           │  ← caveat chips (max 2) + "+1 more"
 │ [ Open evidence  → ]  ⎘ Compare  ✦ Ask  ⇩ PDF │  ← 1 primary, 3 icon buttons w/ Tooltip labels
 └────────────────────────────────────────┘
 ```
@@ -317,13 +314,13 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 
 **Evidence.** At 1440 px the list column is ~18% wide: **"Bibb Co…", "Cullma…", "Marshal…", "Limesto…"**. Rows show rank, truncated name, and a colored pill with one-decimal score ("29.0"). Each row also carries redundant screen-reader text ("Published score 29. Atlas gap score 29.0") in addition to the visible number.
 
-**Impact.** County *names* are the primary key for an epidemiologist. Truncating them forces hover or click to learn which county a row is. Rank numbers alone give no sense of how far apart scores are.
+**Impact.** County _names_ are the primary key for an epidemiologist. Truncating them forces hover or click to learn which county a row is. Rank numbers alone give no sense of how far apart scores are.
 
 **Recommendation: shortlist table with in-cell bars.**
 
-| # | County | Review priority | Evidence | Signals |
-| --- | --- | --- | --- | --- |
-| 1 | Madison | ▰▰▰▰▰▰▰▰▱▱ 93 | ▰▰▰▱▱ | 🐛 ✔ 🔬 ◔ 👥 ✔ |
+| #   | County  | Review priority | Evidence | Signals        |
+| --- | ------- | --------------- | -------- | -------------- |
+| 1   | Madison | ▰▰▰▰▰▰▰▰▱▱ 93   | ▰▰▰▱▱    | 🐛 ✔ 🔬 ◔ 👥 ✔ |
 
 - Build with shadcn `Table` (exists) + `ScrollArea` (new) with a sticky header; selected row highlighted; `aria-current` preserved.
 - Give the rail ~380–420 px width, or let the user toggle **Map | Split | Table** with a `ToggleGroup` so the table can become full-width for scanning (also the strongest non-map parity story).
@@ -335,24 +332,26 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 
 #### B3 · Suggested follow-up is five blocks of bold imperative + paragraph (S2)
 
-**Evidence** (`CountyActionPlan` via `ExplorerMapFollowUp`): *Human disease surveillance*, *Vector and pathogen surveillance*, *Clinical and laboratory reporting*, *Community context and outreach*, *Coordination and documentation*. Each has a category label, a bold "For a specific question, …" instruction, and a grey explanatory sentence, followed by two `<details>` ("Questions before acting", "Questions, partner roles, and official resources").
+**Evidence** (`CountyActionPlan` via `ExplorerMapFollowUp`): _Human disease surveillance_, _Vector and pathogen surveillance_, _Clinical and laboratory reporting_, _Community context and outreach_, _Coordination and documentation_. Each has a category label, a bold "For a specific question, …" instruction, and a grey explanatory sentence, followed by two `<details>` ("Questions before acting", "Questions, partner roles, and official resources").
 
-**Impact.** The *structure* is good: five domains with a reason. The *presentation* makes every one a paragraph. Every instruction starts "For a specific question, …", so the reader's eye sees five near-identical sentence openings.
+**Impact.** The _structure_ is good: five domains with a reason. The _presentation_ makes every one a paragraph. Every instruction starts "For a specific question, …", so the reader's eye sees five near-identical sentence openings.
 
 **Recommendation: Follow-up checklist.**
+
 - Header: `Conduct targeted follow-up` as a title plus a single `Badge` ("Based on published gap-score category").
 - Five rows with a domain icon (`Users`, `Bug`, `FlaskConical`, `Landmark`/`Building2`-style, `ClipboardList`), a **≤ 12-word action**, and a **status chip** that states the evidence reason in 2–3 words ("No county pathogen record", "29 unallocated cases"). Full rationale is in a `Collapsible`/`Accordion` row.
 - "Questions before acting" and "partner roles" become `Accordion` items, not `<details>`.
 - Keep the governed text verbatim inside the collapsible so nothing is lost; only the default view shrinks.
-- **Verify against #399:** the constitution names two V1 follow-up workflows (*Surveillance Planning*, *Evidence Brief / Communication*). Confirm how the five domain rows relate to those two before restructuring.
+- **Verify against #399:** the constitution names two V1 follow-up workflows (_Surveillance Planning_, _Evidence Brief / Communication_). Confirm how the five domain rows relate to those two before restructuring.
 
 #### B4 · Evidence cards repeat the same text and label/value pairs (S2)
 
-**Evidence.** Each measure card shows value, state Badge, a status sentence ("Published status: No records."), and four label/value pairs (*Source family*, *Observation period*, *Dataset vintage*, *Evidence type*). For an unavailable measure, **"Unavailable" appears five times in one card** (value, badge, observation period, evidence type, plus the prose).
+**Evidence.** Each measure card shows value, state Badge, a status sentence ("Published status: No records."), and four label/value pairs (_Source family_, _Observation period_, _Dataset vintage_, _Evidence type_). For an unavailable measure, **"Unavailable" appears five times in one card** (value, badge, observation period, evidence type, plus the prose).
 
-**Impact.** Repetition adds length without information. It also dilutes the one thing that matters: *this value is absent*.
+**Impact.** Repetition adds length without information. It also dilutes the one thing that matters: _this value is absent_.
 
 **Recommendation.**
+
 - **Show "Unavailable" once**, as the value with a hatched or dashed treatment, and **do not render labelled fields whose value is Unavailable**. (Still satisfies "never guess": absence is stated, not hidden.)
 - Present provenance as **three chips** in one row (source `Database` icon, period `Calendar` icon, type `Tag`-style icon) plus the single **"Inspect provenance"** `Button variant="ghost"` that opens a `Popover` or `Sheet` (one-action inspection per #409).
 - Group measures by **family** (Human, Vector, Pathogen, Environment, Population) in a `Table` with a state icon column rather than one tall card per measure.
@@ -366,16 +365,18 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 **Impact.** Opening it pushes the map **another ~430 px** down (measured: the "Explore county patterns" header moves from ~375 px to ~810 px at 1440×900). It is a powerful expert feature currently presented like a form.
 
 **Recommendation.**
+
 - Open as a **right-side `Sheet`** (Base UI Dialog/Drawer) so the map stays visible while adjusting; sliders remain the existing `Slider` primitive.
 - Each slider: **label + value + one `text-xs` line**. Move longer explanations behind a single "How scenarios work" `Collapsible`.
 - Replace the before/after sentence with a **dumbbell/delta visual**: published score vs. adjusted score on one ramp, plus rank change (`ArrowUp`/`ArrowDown`).
-- **Persistent state indicator** (see C6): a `Badge` "Scenario active · Reset" (Lucide `RotateCcw`) in the context bar *and* on the map header whenever settings differ from published defaults.
+- **Persistent state indicator** (see C6): a `Badge` "Scenario active · Reset" (Lucide `RotateCcw`) in the context bar _and_ on the map header whenever settings differ from published defaults.
 
 #### B6 · Map chrome is spread across five small text elements (S3)
 
 **Evidence.** Section header "Explore county patterns", a "Map layer" label + `Select`, legend title with unit, a legend About icon, "Layer availability" `<details>`, and a release-ID caption ("Release governed-2026-10-06-nlcd-demo-cohort"), plus a sentence about the ranked list staying a review ranking.
 
 **Recommendation.**
+
 - Move **layer choice** onto the map as a floating `ToggleGroup`/`Select` (top-left) with Lucide `Layers`; show only the 3–4 most-used layers inline, the rest in a "More layers" `DropdownMenu`.
 - Make the **legend a compact overlay** (bottom-left) with unit and the priority qualifier Badge; segments stay clickable.
 - Replace the raw release-ID caption with a **Release Badge** in the context bar (see C7).
@@ -388,7 +389,8 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 **Impact.** An epidemiologist exporting a state shortlist gets names and FIPS but **no scores and no provenance**, which is rarely what a decision-support export is for. Disabled controls with explanatory sentences add noise.
 
 **Recommendation.**
-- One **Export** `DropdownMenu` (Lucide `Download`): *County list (CSV)*, *County list with scores and provenance (CSV)*, *County report (PDF)*. Items that need a selection are shown disabled with a one-word reason ("Select a county"), or hidden.
+
+- One **Export** `DropdownMenu` (Lucide `Download`): _County list (CSV)_, _County list with scores and provenance (CSV)_, _County report (PDF)_. Items that need a selection are shown disabled with a one-word reason ("Select a county"), or hidden.
 - Replace the 38-word tooltip with the menu item descriptions (one line each).
 - **Owner decision:** exporting scores requires confirming provenance carries with them (Governance §3: every displayed score must retain source, retrieval date, methodology/version, limitations).
 
@@ -410,11 +412,11 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 
 **Recommendation.** Show whole numbers in the list/card (full precision in the provenance popover). Consider replacing ordinal rank with **priority bands** (e.g. five bands using the ramp, with band labels in words) as the default list grouping, keeping exact order for sort. Requires owner sign-off because "the county list stays a review ranking when one exists" is current behavior.
 
-#### C2 · The page never shows *why* a score is what it is (S1)
+#### C2 · The page never shows _why_ a score is what it is (S1)
 
 **Evidence.** The scores payload includes component signals (`pathogen_signal`, `tick_signal`, `ecological`, `community`, `human_weakness`, `svi_signal`, `rural_signal`, `access_signal`), but the Explorer shows only the composite and a sentence. Components appear only in the scenario panel as abstract sliders.
 
-**Impact.** "Explain" is step three of the epidemiologist loop. Without it, users cannot tell a county flagged for *missing human data* from one flagged for *strong ecological signal*. Those lead to different actions.
+**Impact.** "Explain" is step three of the epidemiologist loop. Without it, users cannot tell a county flagged for _missing human data_ from one flagged for _strong ecological signal_. Those lead to different actions.
 
 **Recommendation.** A **signal-composition bar** in the County Summary Card (and in each Overview tab): a single horizontal stacked or small-multiple bar chart, built from Tailwind + inline SVG, one segment per signal with an icon and a value, ordered consistently. No chart library needed. **Confirm with the methodology owner** that component signals are intended for public display and how to word them without implying risk.
 
@@ -424,7 +426,7 @@ This is the heart of the brief. Each item names what to remove, what visual repl
 
 **Recommendation.** A thin completeness `Meter` as a second column in the shortlist and in the summary card. Keep the three-word labels (Available / Limited / Unavailable) as the accessible text.
 
-#### C4 · "Missing is not zero" is stated but not *shown* (S1)
+#### C4 · "Missing is not zero" is stated but not _shown_ (S1)
 
 **Evidence.** The rule is enforced in logic and expressed in sentences. Visually, an unscored county in the list is separated by a one-line divider; on the map, "Gap score unavailable" is a grey legend swatch.
 
@@ -449,7 +451,7 @@ Add the hatch pattern to map fills for unavailable counties (MapLibre fill-patte
 
 #### C6 · Scenario state can be forgotten (S2)
 
-**Evidence.** Scenario changes recalculate the list and map ("They appear in the county list and Atlas score map but do not change published results"). Per `explorer-what-if-scenario.tsx`, the collapsed bar shows `Published Atlas score 15.0 · No adjustments` at rest and a `15.0 → 22.0 · +7.0` style summary once adjusted, but **only for the selected county, as a line of bar text**. I did not see (in code or in the rendered page) a marker on the map header, the list header, or the exports that says the colors/ranks on screen are scenario values. Treat that as *to be verified with a live adjusted session*.
+**Evidence.** Scenario changes recalculate the list and map ("They appear in the county list and Atlas score map but do not change published results"). Per `explorer-what-if-scenario.tsx`, the collapsed bar shows `Published Atlas score 15.0 · No adjustments` at rest and a `15.0 → 22.0 · +7.0` style summary once adjusted, but **only for the selected county, as a line of bar text**. I did not see (in code or in the rendered page) a marker on the map header, the list header, or the exports that says the colors/ranks on screen are scenario values. Treat that as _to be verified with a live adjusted session_.
 
 **Impact.** A user who adjusts weights, closes the panel, and screenshots the map can present adjusted scores as published ones. For a decision-support tool, this is the highest-consequence misread on the page.
 
@@ -459,7 +461,7 @@ Add the hatch pattern to map fills for unavailable counties (MapLibre fill-patte
 
 **Evidence.** Release appears as a raw ID line under the map; "Score and methodology" and "Release and methodology" are collapsed `<details>` at the bottom; methodology text is rendered as a sentence ("Method atlas-county-review 1.0.0. Release …").
 
-**Impact.** Governance §3 requires an *accessible path* to source, retrieval time, geography, methodology/version, and limitations. It is accessible, but not *glanceable*. The user cannot see at a glance that every number on screen belongs to one release.
+**Impact.** Governance §3 requires an _accessible path_ to source, retrieval time, geography, methodology/version, and limitations. It is accessible, but not _glanceable_. The user cannot see at a glance that every number on screen belongs to one release.
 
 **Recommendation.** A **Release Badge** in the context bar: `Database` icon + short label ("Release Oct 2026"). Click opens a `Popover`/`Sheet` with the layered provenance (Snapshot → Source periods → Methodology → Limitations), linking to **Data Provenance** for the technical layer. This honors "progressive disclosure, not a metadata wall."
 
@@ -469,9 +471,9 @@ Add the hatch pattern to map fills for unavailable counties (MapLibre fill-patte
 
 #### D1 · Four overlapping ways to set geography, no shared display (S2)
 
-**Evidence.** State `Select`, county search `Combobox`, **map drill** (click a state, then a county), and the **list**. Each updates the others, but nothing shows the *current path*.
+**Evidence.** State `Select`, county search `Combobox`, **map drill** (click a state, then a county), and the **list**. Each updates the others, but nothing shows the _current path_.
 
-**Recommendation.** shadcn `Breadcrumb` in the context bar: **United States › Alabama › Bullock County**. Each crumb is clickable and navigates up. Keep the Select and Combobox as inputs. The breadcrumb is the *readout*.
+**Recommendation.** shadcn `Breadcrumb` in the context bar: **United States › Alabama › Bullock County**. Each crumb is clickable and navigates up. Keep the Select and Combobox as inputs. The breadcrumb is the _readout_.
 
 #### D2 · National map's two-stage click is invisible (S2)
 
@@ -487,9 +489,9 @@ Add the hatch pattern to map fills for unavailable counties (MapLibre fill-patte
 
 #### D4 · The data filter's label is hidden and its options are sentences (S3)
 
-**Evidence.** The control's visible text is its *value* ("All included counties"); its name "Available data" is an `aria-label` only. Options: "Tick or pathogen evidence available", "Published Lyme case count available", "Most data fields available".
+**Evidence.** The control's visible text is its _value_ ("All included counties"); its name "Available data" is an `aria-label` only. Options: "Tick or pathogen evidence available", "Published Lyme case count available", "Most data fields available".
 
-**Recommendation.** A **labelled `ToggleGroup`** or `Select` with a leading `ListFilter` icon and an adjacent **result count Badge** ("67 counties"). Options become short with icons: *All*, *Tick/pathogen* (`Bug`), *Cases* (`Users`), *Most complete* (`CircleCheck`). Keep the long phrase as each item's description.
+**Recommendation.** A **labelled `ToggleGroup`** or `Select` with a leading `ListFilter` icon and an adjacent **result count Badge** ("67 counties"). Options become short with icons: _All_, _Tick/pathogen_ (`Bug`), _Cases_ (`Users`), _Most complete_ (`CircleCheck`). Keep the long phrase as each item's description.
 
 #### D5 · Loading is expressed in words and sometimes in place of a number (S3)
 
@@ -641,14 +643,14 @@ Evidence:  grouped table (Human / Vector / Pathogen) — measure · value · sta
 
 | Region | Today (words) | Target | How |
 | --- | --- | --- | --- |
-| Hero | 80 | ~6 (visually-hidden h1 + one tagline, *owner approval*) | Slim context bar |
+| Hero | 80 | ~6 (visually-hidden h1 + one tagline, _owner approval_) | Slim context bar |
 | Export note | 38 | 0 | Menu item descriptions |
 | Scenario (closed / open) | 10 / 130 | ~4 / ~35 | Sheet + Badge |
 | Map header/legend/layer/availability/release | 59 | ~20 | Floating controls, Release Badge |
 | Selected-county preview | 48 | ~15 | Summary Card with chips and meters |
 | Suggested follow-up | 235 | ~70 | Checklist + Accordion |
 | Official resources | 158 | ~0 inline | Menu |
-| **Prose total** | **≈630** | **≈ 130–150 (−75–80%)** | |
+| **Prose total** | **≈630** | **≈ 130–150 (−75–80%)** |  |
 
 (List-row words are data, not prose, and are excluded.)
 
@@ -669,7 +671,7 @@ Effort: S (≤ 2 days) · M (≤ 1 week) · L (> 1 week). Impact reflects the ep
 | Q5 | Move Official resources into a `Collapsible` (default closed) | A4 | S | M |
 | Q6 | Hide the follow-up card until a county is selected | A4 | S | M |
 | Q7 | Add a visible "Scenario active" indicator | C6 | S | **H** |
-| Q8 | Drop one-decimal precision in list/card | C1 | S | M *(Owner)* |
+| Q8 | Drop one-decimal precision in list/card | C1 | S | M _(Owner)_ |
 
 ### Phase 1: Foundation (new shadcn wrappers over installed Base UI)
 
@@ -683,7 +685,7 @@ Effort: S (≤ 2 days) · M (≤ 1 week) · L (> 1 week). Impact reflects the ep
 
 | ID | Change | Findings | Effort |
 | --- | --- | --- | --- |
-| L1 | Slim context bar + Breadcrumb + Release Badge + Export menu; retire hero/scenario band | A1, A3, B7, C7, D1 | M–L *(Owner: hero copy)* |
+| L1 | Slim context bar + Breadcrumb + Release Badge + Export menu; retire hero/scenario band | A1, A3, B7, C7, D1 | M–L _(Owner: hero copy)_ |
 | L2 | Map stage fills viewport; floating layer/legend controls | A1, B6 | M |
 | L3 | Right rail with Tabs; Shortlist table; County Summary Card | A2, B1, B2, C3 | L |
 | L4 | Scenario `Sheet` + delta visual | B5, C6 | M |
@@ -711,7 +713,7 @@ Effort: S (≤ 2 days) · M (≤ 1 week) · L (> 1 week). Impact reflects the ep
 | --- | --- | --- |
 | 1 | "You are planning follow-up in Alabama this season. Which counties would you look at first?" | Time to first selection; whether they use map vs list |
 | 2 | "Why is this county flagged? What would change your mind?" | Can they name a driver without opening a disclosure? |
-| 3 | "How complete is the evidence for this county? What's missing?" | Accuracy; do they confuse *unavailable* with *zero*? |
+| 3 | "How complete is the evidence for this county? What's missing?" | Accuracy; do they confuse _unavailable_ with _zero_? |
 | 4 | "Adjust the weighting, then tell me what the published score is." | **Scenario-vs-published confusion rate** (the highest-risk misread) |
 | 5 | "Share this view with a colleague and export what you need." | Do they find Export? Do they notice scores are missing? |
 | 6 | "Find the same county on a phone." | Task completion on 390 px |
@@ -737,7 +739,7 @@ Effort: S (≤ 2 days) · M (≤ 1 week) · L (> 1 week). Impact reflects the ep
 2. Are component signals (tick, pathogen, ecological, community, human weakness, SVI, rural, access) approved for public display as an explanation of score?
 3. Should exports ever include scores? If yes, what provenance fields must travel with them?
 4. Is the ordinal rank intentionally shown in the state list, or would bands satisfy the "review shortlist, not leaderboard" intent?
-5. How do the five follow-up domain rows relate to the two Reset V1 workflows (*Surveillance Planning*, *Evidence Brief / Communication*) in #399?
+5. How do the five follow-up domain rows relate to the two Reset V1 workflows (_Surveillance Planning_, _Evidence Brief / Communication_) in #399?
 6. May the map ramp be reconsidered for color-vision safety and to avoid green→red risk connotation?
 7. What are the top 3 tasks real epidemiologists perform on this page? (Answer from analytics or interviews will re-rank everything above.)
 

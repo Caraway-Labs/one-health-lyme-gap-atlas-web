@@ -169,6 +169,7 @@ The `/explore` browse view is one map-led stage and a companion rail. The audit 
 - **County summary card**: name, state badge, FIPS, a score ramp with the `Review priority · not disease risk` qualifier, an evidence-completeness `Meter`, a surveillance fingerprint (one `EvidenceStateGlyph` per family, using the state the shared evidence model already derives), the existing four marks, then one primary action and an icon row (follow-up, compare, PDF). The rationale rows sit behind one `Collapsible` (`Evidence behind this review`).
 - **Follow-up**: `CountyActionChecklist` shows one action line per domain with an `Accordion` for the full governed text. It renders only when a county is selected.
 - **Scenario**: a non-modal `Sheet` keeps the map live while sliders move. `Scenario active` and a quick reset sit beside the trigger whenever settings differ from the published defaults.
+
 ### Atlas Explorer layout (WEB #788)
 
 The `/explore` browse view is one map-led stage and a companion rail. The audit behind it is [product/ux-audit-explore-page.md](./product/ux-audit-explore-page.md).
@@ -179,8 +180,7 @@ The `/explore` browse view is one map-led stage and a companion rail. The audit 
 - **Shortlist rows**: each row is one button with rank, full county name, review-priority bar (the same ramp color as the map), and an evidence-completeness `Meter`. Counties with no published score show a hatched `No score` chip. Sort (Priority, Name, Evidence) is a viewing aid; the default order stays the governed ranking.
 - **County summary card**: name, state badge, FIPS, a score ramp with the `Review priority · not disease risk` qualifier, an evidence-completeness `Meter`, a surveillance fingerprint (one `EvidenceStateGlyph` per family, using the state the shared evidence model already derives), the existing four marks, then one primary action and an icon row (follow-up, compare, PDF). The rationale rows sit behind one `Collapsible` (`Evidence behind this review`).
 - **Follow-up**: `CountyActionChecklist` shows one action line per domain with an `Accordion` for the full governed text. It renders only when a county is selected.
-- **Scenario**: a non-modal `Sheet` keeps the map live while sliders move. `Scenario active` and a quick reset sit beside the trigger whenever settings differ from the published defaults.
-Keep scoring, filter, geography, and provenance logic in feature code.
+- **Scenario**: a non-modal `Sheet` keeps the map live while sliders move. `Scenario active` and a quick reset sit beside the trigger whenever settings differ from the published defaults. Keep scoring, filter, geography, and provenance logic in feature code.
 
 ## When custom CSS is acceptable
 

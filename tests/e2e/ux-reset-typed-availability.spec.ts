@@ -415,9 +415,7 @@ test.describe("typed geography and observation availability", () => {
     );
     // The Evidence tab states the request failure in place of a value.
     await expect(
-      page
-        .getByText(/could not be loaded\. That is a request failure/)
-        .first()
+      page.getByText(/could not be loaded\. That is a request failure/).first()
     ).toBeVisible();
     await expect(page.getByTestId("investigate-known-empty")).toHaveCount(0);
     await expect(
