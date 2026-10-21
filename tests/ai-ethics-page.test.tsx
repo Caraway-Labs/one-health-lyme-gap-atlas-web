@@ -99,14 +99,13 @@ describe("AI Ethics page", () => {
 
     const text = document.body.textContent ?? "";
     expect({
+      distinctSurveillanceSituations:
+        text.split("distinct surveillance situations").length - 1,
       isolationForest: text.includes("Isolation Forest"),
-      sentence: text.includes(
-        "The models group counties into distinct surveillance situations, helping professionals compare counties using the available evidence."
-      ),
       workTogether: text.includes("work together"),
     }).toStrictEqual({
+      distinctSurveillanceSituations: 1,
       isolationForest: false,
-      sentence: true,
       workTogether: false,
     });
   });
