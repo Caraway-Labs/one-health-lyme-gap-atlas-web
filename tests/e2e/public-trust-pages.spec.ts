@@ -1,8 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { aiEthicsContent } from "@/lib/ai-ethics-content";
-
 import {
   publicTrustViewports,
   releaseViewportRuns,
@@ -18,7 +16,7 @@ const TRUST_ROUTES = [
     path: "/privacy",
   },
   {
-    heading: "How Atlas approaches AI",
+    heading: "How Atlas uses AI and machine learning",
     path: "/ai-ethics",
   },
 ] as const;
@@ -90,7 +88,7 @@ test("public trust pages reflow at narrow, mobile, and wide widths", async ({
 });
 
 async function keyboardFocus(page: Page, control: Locator) {
-  for (let step = 0; step < 20; step += 1) {
+  for (let step = 0; step < 40; step += 1) {
     if (
       await control.evaluate((element) => element === document.activeElement)
     ) {
@@ -98,51 +96,59 @@ async function keyboardFocus(page: Page, control: Locator) {
     }
     await page.keyboard.press("Tab");
   }
-  throw new Error("Disclosure summary was not reached by keyboard");
+  throw new Error("AI Ethics link was not reached by keyboard");
 }
 
-test("AI Ethics status text and disclosures work from the keyboard", async ({
+test("AI Ethics copy is public and its links are reachable from the keyboard", async ({
   page,
 }) => {
   await page.goto("/ai-ethics");
   await expect(
-    page.locator("[data-slot='badge'][data-status='current']")
-  ).toHaveText("What Atlas does today");
+    page.getByRole("heading", {
+      level: 1,
+      name: "How Atlas uses AI and machine learning",
+    })
+  ).toBeVisible();
   await expect(
-    page.locator("[data-slot='badge'][data-status='approved-architecture']")
-  ).toHaveText("Approved direction; release pending");
+    page.getByRole("heading", { level: 3, name: "Understand the evidence" })
+  ).toBeVisible();
   await expect(
-    page.locator("[data-slot='badge'][data-status='pending-decision']")
-  ).toHaveText("Commitment in development");
+    page.getByRole("heading", {
+      level: 3,
+      name: "Find patterns worth investigating",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 3,
+      name: "Bring evidence into other workflows",
+    })
+  ).toBeVisible();
+  await expect(page.locator("[data-slot='badge']")).toHaveCount(0);
+  await expect(page.locator("details")).toHaveCount(0);
+  await expect(page.getByText("Commitments in development")).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "It is not a trained machine-learning model, and it does not predict disease."
+    )
+  ).toBeVisible();
 
-  const summaries = page.locator("summary", {
-    hasText: "Technical detail and source",
+  const methods = page.getByRole("link", { name: "data and methods" });
+  await keyboardFocus(page, methods);
+  await expect(methods).toBeFocused();
+  const focusCue = await methods.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+    };
   });
-  await expect(summaries).toHaveCount(aiEthicsContent.statements.length);
-
-  for (const [index, statement] of aiEthicsContent.statements.entries()) {
-    const summary = summaries.nth(index);
-    const panel = summary.locator("xpath=ancestor::details[1]");
-    await expect(panel).toHaveJSProperty("open", false);
-    await keyboardFocus(page, summary);
-    await expect(summary).toBeFocused();
-    const focusCue = await summary.evaluate((element) => {
-      const style = getComputedStyle(element);
-      return {
-        outlineStyle: style.outlineStyle,
-        outlineWidth: Number.parseFloat(style.outlineWidth),
-      };
-    });
-    expect(focusCue.outlineStyle).toBe("solid");
-    expect(focusCue.outlineWidth).toBeGreaterThanOrEqual(2);
-    await page.keyboard.press("Enter");
-    await expect(panel).toHaveJSProperty("open", true);
-    await expect(panel.getByText(statement.detail)).toBeVisible();
-    await expect(panel.getByText(`Basis: ${statement.evidence}`)).toBeVisible();
-    await page.keyboard.press("Enter");
-    await expect(panel).toHaveJSProperty("open", false);
-    await expect(panel.getByText(statement.detail)).toBeHidden();
-  }
+  expect(focusCue.outlineStyle).toBe("solid");
+  expect(focusCue.outlineWidth).toBeGreaterThanOrEqual(2);
+  await expect(methods).toHaveAttribute(
+    "href",
+    "/docs/releases-and-methodology"
+  );
 });
 
 test("trust pages keep policy text and reflow at 200% zoom", async ({
@@ -161,9 +167,12 @@ test("trust pages keep policy text and reflow at 200% zoom", async ({
   await page.goto("/ai-ethics");
   await expect(
     page.getByText(
-      "A pending decision is not a policy, safeguard, or promise. Atlas will update this page after each substantive decision is made and reviewed."
+      "Atlas is not a clinical service. It does not diagnose illness or provide treatment advice."
     )
-  ).toHaveCount(1);
+  ).toBeVisible();
+  await expect(
+    page.getByText("Ordinary pull-request review for this initial release.")
+  ).toHaveCount(0);
 
   for (const route of TRUST_ROUTES) {
     await page.goto(route.path);
