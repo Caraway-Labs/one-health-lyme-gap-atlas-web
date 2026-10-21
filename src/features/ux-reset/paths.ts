@@ -228,7 +228,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
       "Manage your account, preferences, and One Health Atlas experience.",
   },
   {
-    description: "Open the canonical Atlas documentation center.",
+    description: "Open the canonical One Health Atlas documentation center.",
     externalHref: DOCS_PATH,
     href: DOCS_PATH,
     icon: FileText,

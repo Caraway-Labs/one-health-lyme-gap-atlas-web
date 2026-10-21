@@ -9,7 +9,7 @@ test("copies the exported page markdown and opens its raw source", async ({
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/docs/what-is-atlas");
   await expect(
-    page.getByRole("heading", { name: "What is Atlas Lyme?" })
+    page.getByRole("heading", { name: "What is One Health Atlas?" })
   ).toBeVisible();
 
   const actions = page.getByRole("group", { name: "Page actions" });
@@ -25,7 +25,7 @@ test("copies the exported page markdown and opens its raw source", async ({
     await page.request.get("/docs/what-is-atlas.md")
   ).text();
   const raw = await (await page.request.get("/docs/what-is-atlas.mdx")).text();
-  expect(exported.startsWith("# What is Atlas Lyme?")).toBeTruthy();
+  expect(exported.startsWith("# What is One Health Atlas?")).toBeTruthy();
   expect(raw.startsWith("---")).toBeTruthy();
   expect(exported).not.toBe(raw);
 
@@ -42,7 +42,7 @@ test("copies the exported page markdown and opens its raw source", async ({
   await sourcePage.waitForLoadState("domcontentloaded");
   expect(new URL(sourcePage.url()).pathname).toBe("/docs/what-is-atlas.mdx");
   expect(await sourcePage.locator("body").innerText()).toContain(
-    "title: What is Atlas Lyme?"
+    "title: What is One Health Atlas?"
   );
   await sourcePage.close();
 

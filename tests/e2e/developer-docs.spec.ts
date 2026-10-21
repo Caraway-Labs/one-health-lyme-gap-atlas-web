@@ -35,7 +35,7 @@ test("renders developer guides with accessible headings", async ({ page }) => {
     ).toBeVisible();
     await expect(page).toHaveTitle(
       new RegExp(
-        `${developerPage.heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\| Atlas documentation`
+        `${developerPage.heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\| One Health Atlas documentation`
       )
     );
     await expect(page.locator(".app-shell")).toHaveCount(0);

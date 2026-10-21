@@ -20,7 +20,7 @@ test("serves a stable llms.txt index and the current full docs export", async ({
   expect(indexResponse.status()).toBe(200);
   expect(indexResponse.headers()["content-type"]).toContain("text/markdown");
   const index = await indexResponse.text();
-  expect(index).toContain("# Atlas documentation");
+  expect(index).toContain("# One Health Atlas documentation");
   expect(index).toContain(
     "](https://onehealthatlas.org/docs/releases-and-methodology)"
   );
@@ -81,7 +81,7 @@ test("serves processed Markdown and current MDX for one page", async ({
 
   const indexPage = await request.get("/docs.md");
   expect(indexPage.status()).toBe(200);
-  expect(await indexPage.text()).toContain("Start with Atlas Lyme");
+  expect(await indexPage.text()).toContain("Start with One Health Atlas");
 
   const missing = await request.get("/docs/not-a-published-page.md");
   expect(missing.status()).toBe(404);

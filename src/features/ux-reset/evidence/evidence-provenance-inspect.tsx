@@ -235,7 +235,7 @@ export function EvidenceProvenanceInspect(
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                Atlas documentation ↗
+                One Health Atlas documentation ↗
               </a>
               , not in the default evidence view.
             </p>
@@ -247,7 +247,7 @@ export function EvidenceProvenanceInspect(
               rel="noopener noreferrer"
               target="_blank"
             >
-              Read evidence and provenance in Atlas documentation ↗
+              Read evidence and provenance in One Health Atlas documentation ↗
             </a>
           </p>
         )}

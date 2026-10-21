@@ -11,12 +11,15 @@ const publicOpenApiManifest = JSON.parse(
 ) as { sourceCommit: string };
 
 const docsPages = [
-  { path: "/docs", heading: "Start with Atlas Lyme" },
-  { path: "/docs/what-is-atlas", heading: "What is Atlas Lyme?" },
-  { path: "/docs/who-is-atlas-for", heading: "Who is Atlas for?" },
+  { path: "/docs", heading: "Start with One Health Atlas" },
+  { path: "/docs/what-is-atlas", heading: "What is One Health Atlas?" },
+  {
+    path: "/docs/who-is-atlas-for",
+    heading: "Who is One Health Atlas for?",
+  },
   {
     path: "/docs/atlas-workflow",
-    heading: "The Atlas decision-support workflow",
+    heading: "The One Health Atlas decision-support workflow",
   },
   {
     path: "/docs/professional-workspace",
@@ -121,7 +124,7 @@ test("renders the public documentation page without the Atlas shell", async ({
   await page.goto("/docs");
 
   await expect(
-    page.getByRole("heading", { name: "Start with Atlas" })
+    page.getByRole("heading", { name: "Start with One Health Atlas" })
   ).toBeVisible();
   const sidebar = page.locator("#nd-sidebar");
   await expect(sidebar).toHaveCount(1);
@@ -133,7 +136,7 @@ test("renders the public documentation page without the Atlas shell", async ({
   await expect(visibleSearch).toHaveCount(1);
   await expect(page.locator(".app-shell")).toHaveCount(0);
   await expect(page).toHaveTitle(
-    /Start with Atlas Lyme \| Atlas documentation/
+    /Start with One Health Atlas \| One Health Atlas documentation/
   );
 
   const results = await new AxeBuilder({ page }).analyze();
@@ -155,7 +158,7 @@ test("keeps every HelpDocs route reachable and accessible", async ({
     ).toBeVisible();
     await expect(page).toHaveTitle(
       new RegExp(
-        `${docsPage.heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\| Atlas documentation`
+        `${docsPage.heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\| One Health Atlas documentation`
       )
     );
 
@@ -443,7 +446,7 @@ test("opens HelpDocs search and finds the evidence guide", async ({
   await dialog.getByPlaceholder("Search").fill("uncertainty");
   await expect(
     dialog.getByRole("button", {
-      name: /Atlas documentation Evidence, provenance, and uncertainty/,
+      name: /One Health Atlas documentation Evidence, provenance, and uncertainty/,
     })
   ).toBeVisible({ timeout: 15_000 });
 });
@@ -491,7 +494,7 @@ test("workspace Docs keeps the analytical URL while search and a heading link su
   await docsPage.waitForLoadState("domcontentloaded");
   await expect(docsPage).toHaveURL(/\/docs\/?$/);
   await expect(
-    docsPage.getByRole("heading", { name: "Start with Atlas" })
+    docsPage.getByRole("heading", { name: "Start with One Health Atlas" })
   ).toBeVisible();
 
   const fullSearch = docsPage.locator("[data-search-full]:visible");

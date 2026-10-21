@@ -12,7 +12,7 @@ import {
   OpenAPIPageProvider,
 } from "@/components/docs-openapi-page";
 import { DocsPageActions } from "@/components/docs-page-actions";
-import { docsCanonicalUrl } from "@/lib/docs-config";
+import { DOCS_SITE_TITLE, docsCanonicalUrl } from "@/lib/docs-config";
 import { docsSource } from "@/lib/docs-source";
 import { openapi } from "@/lib/public-openapi-server";
 
@@ -57,6 +57,6 @@ export async function generateMetadata({
   return {
     alternates: { canonical: docsCanonicalUrl(page.url) },
     description: page.data.description,
-    title: `${page.data.title} | Atlas documentation`,
+    title: `${page.data.title} | ${DOCS_SITE_TITLE}`,
   };
 }

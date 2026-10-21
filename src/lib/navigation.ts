@@ -156,7 +156,7 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "hidden",
   },
   {
-    description: "Open the canonical Atlas documentation center.",
+    description: "Open the canonical One Health Atlas documentation center.",
     external: true,
     group: "reference",
     href: "/docs",

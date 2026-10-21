@@ -429,7 +429,7 @@ describe("ux reset evidence contract", () => {
     fireEvent.click(screen.getByText("Technical reproducibility identifiers"));
 
     const docLinks = screen.getAllByRole("link", {
-      name: /Atlas documentation/,
+      name: /One Health Atlas documentation/,
     });
     for (const link of docLinks) {
       expect(link.getAttribute("href")).toBe(evidenceDocsHref);

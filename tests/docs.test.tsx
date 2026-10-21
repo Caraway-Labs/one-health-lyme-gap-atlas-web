@@ -73,7 +73,7 @@ describe("documentation configuration", () => {
   it("opens the docs link securely in a new tab", () => {
     render(<DocsLink />);
     const link = screen.getByRole("link", {
-      name: "Open Atlas documentation (opens in a new tab)",
+      name: "Open One Health Atlas documentation (opens in a new tab)",
     });
 
     expect(link.getAttribute("href")).toBe("https://onehealthatlas.org/docs");
