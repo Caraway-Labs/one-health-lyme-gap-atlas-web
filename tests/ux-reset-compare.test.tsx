@@ -1232,7 +1232,10 @@ describe("two-county aligned comparison", () => {
     );
     const ask = await screen.findByTestId("compare-ask-atlas");
     expect({
-      ask: ask.getAttribute("href")?.includes("page_ref="),
+      ask: Boolean(
+        ask.getAttribute("href")?.includes("/askatlas") &&
+        !ask.getAttribute("href")?.includes("page_ref=")
+      ),
       first: screen.getByTestId("compare-investigate-08001").textContent,
       floor: floor.textContent?.includes("12"),
       missing: missing.dataset.observation,
@@ -1370,7 +1373,7 @@ describe("published county profile section", () => {
     });
   });
 
-  it("renders a small incidence floor without rounding it to zero", () => {
+  it("renders a small minimum reported incidence without rounding it to zero", () => {
     const detail = compareCountyDetail(COMPARE_LEFT_FIPS);
     detail.incidence_floor_2023 = 0.04;
     renderProfileSection(detail);
@@ -1385,7 +1388,7 @@ describe("published county profile section", () => {
     const section =
       screen.getByTestId("compare-profile-section").textContent ?? "";
     expect(incidence.textContent).toBe(
-      "0.04 cases per 100,000 (published incidence floor)"
+      "At least 0.04 reported cases per 100,000 residents."
     );
     expect(reasons.textContent).toContain(incidence.textContent);
     expect(reasons.textContent).not.toContain("0.0 cases");
@@ -1419,9 +1422,9 @@ describe("published county profile section", () => {
       ),
       incidence: incidence.textContent,
       repeatsRate: section.includes("-4"),
-      showsCount: reasons.textContent?.includes("12 (published count floor)"),
+      showsCount: reasons.textContent?.includes("Reported cases: 12 or more"),
     }).toStrictEqual({
-      count: "12 (published count floor)",
+      count: "Reported cases: 12 or more",
       deniesCount: false,
       incidence: "Unavailable",
       repeatsRate: false,
@@ -1447,9 +1450,9 @@ describe("published county profile section", () => {
     const reasons = screen.getByTestId(
       `compare-profile-cell-review_reasons-${COMPARE_LEFT_FIPS}`
     );
-    expect(count.textContent).toBe("12 (published count floor)");
+    expect(count.textContent).toBe("Reported cases: 12 or more");
     expect(incidence.textContent).toBe("Unavailable");
-    expect(reasons.textContent).toContain("12 (published count floor)");
+    expect(reasons.textContent).toContain("Reported cases: 12 or more");
     expect(reasons.textContent).not.toContain(
       "No county-level 2023 Lyme case count was published"
     );

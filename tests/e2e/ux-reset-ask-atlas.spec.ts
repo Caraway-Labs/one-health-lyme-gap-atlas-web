@@ -1,9 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-import type { AskAtlasInheritedFieldKey } from "@/features/ux-reset/ask-atlas/inherited-context";
-import { readAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/page-reference";
-
 import {
   COMPARE_CASES_MEASURE_ID,
   compareObservation,
@@ -250,64 +247,21 @@ async function openAskAtlasFromSidebar(page: Page) {
   await link.click();
 }
 
-async function readContentAsk(page: Page, testId: string) {
-  const href = await page.getByTestId(testId).getAttribute("href");
+function askAtlasLink(href: string | null) {
   const url = new URL(href ?? "", "http://127.0.0.1");
-  return {
-    state: readAskAtlasPageReference(url.pathname, url.searchParams),
-    url,
-  };
-}
-
-function fieldId(
-  state: ReturnType<typeof readAskAtlasPageReference>,
-  key: AskAtlasInheritedFieldKey
-): string | null {
-  if (state.kind !== "validated") {
-    return null;
-  }
-  const field = state.reference.context.fields[key];
-  return field.state === "validated" ? field.id : null;
-}
-
-function referenceField(page: Page, field: string) {
-  return page.locator(
-    `[data-testid="ask-atlas-page-reference"] [data-field="${field}"]`
-  );
-}
-
-function releaseOnlyBookmark(href: string | null) {
-  const url = new URL(href ?? "", "http://127.0.0.1");
-  const state = readAskAtlasPageReference(url.pathname, url.searchParams);
-  if (state.kind !== "validated") {
-    return {
-      county: url.searchParams.get("county"),
-      geography: null,
-      kind: state.kind,
-      release: null,
-      returnCounty: null,
-    };
-  }
-  const geography = state.reference.context.fields.geography;
-  const release = state.reference.context.fields.release;
   return {
     county: url.searchParams.get("county"),
-    geography: geography.state === "validated" ? geography.id : null,
-    kind: "validated" as const,
-    release: release.state === "validated" ? release.id : null,
-    returnCounty: new URL(
-      state.returnHref,
-      "http://127.0.0.1"
-    ).searchParams.get("county"),
+    dataset: url.searchParams.get("dataset"),
+    pageRef: url.searchParams.get("page_ref"),
+    pathname: url.pathname,
   };
 }
 
-const RELEASE_ONLY_BOOKMARK = {
-  county: null,
-  geography: null,
-  kind: "validated" as const,
-  release: "alpha-2026",
-  returnCounty: null,
+const RELEASE_ONLY_LINK = {
+  county: "08001",
+  dataset: "alpha-2026",
+  pageRef: null,
+  pathname: "/askatlas",
 };
 
 test.describe("Ask Atlas dedicated page", () => {
@@ -348,30 +302,22 @@ test.describe("Ask Atlas dedicated page", () => {
       sidebarAskAtlas(page)
     );
     await expect
-      .poll(async () =>
-        releaseOnlyBookmark(await sidebarAsk.getAttribute("href"))
-      )
-      .toEqual(RELEASE_ONLY_BOOKMARK);
+      .poll(async () => askAtlasLink(await sidebarAsk.getAttribute("href")))
+      .toEqual(RELEASE_ONLY_LINK);
     await expectHeaderWithoutAskAtlas(page);
     await sidebarAsk.click();
     await expect(page).toHaveURL(/\/askatlas/);
     await expect
-      .poll(() => releaseOnlyBookmark(page.url()))
-      .toEqual(RELEASE_ONLY_BOOKMARK);
+      .poll(() => askAtlasLink(page.url()))
+      .toEqual(RELEASE_ONLY_LINK);
     await expect(
       page.getByRole("heading", { level: 1, name: "Ask Atlas" })
     ).toBeVisible();
     await expect(page.getByText("Reviewed literature").first()).toBeVisible();
-    const reference = page.getByTestId("ask-atlas-page-reference");
-    await expect(reference).toHaveAttribute(
-      "data-reference-state",
-      "validated"
-    );
-    await expect(referenceField(page, "release")).toHaveAttribute(
-      "data-field-id",
-      "alpha-2026"
-    );
-    await expect(referenceField(page, "geography")).toHaveCount(0);
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Page reference" })
+    ).toHaveCount(0);
     await expectHeaderWithoutAskAtlas(page);
     await expect(
       page.getByRole("heading", { name: "What would you like to explore?" })
@@ -418,95 +364,66 @@ test.describe("Ask Atlas dedicated page", () => {
     expect(testInfo.project.name.length).toBeGreaterThan(0);
   });
 
-  test("can remove one field and clear an unverified page reference", async ({
+  test("opens Compare and old page_ref links without a reference panel", async ({
     page,
   }) => {
     await installUniformCompareMocks(page);
     await page.goto("/compare?compare=08001,08013&scope=CO");
     await expect(page.getByTestId("compare-workspace")).toBeVisible();
-    await expect
-      .poll(async () =>
-        fieldId(
-          (await readContentAsk(page, "compare-ask-atlas")).state,
-          "geography"
-        )
-      )
-      .toBe("08001,08013");
-    const compareAsk = await readContentAsk(page, "compare-ask-atlas");
+    const compareAsk = page.getByTestId("compare-ask-atlas");
+    await expect(compareAsk).toHaveAttribute("href", /\/askatlas/);
+    await expect(compareAsk).not.toHaveAttribute("href", /page_ref=/);
     await expectHeaderWithoutAskAtlas(page);
-    await page.goto(`${compareAsk.url.pathname}${compareAsk.url.search}`);
-    await page.getByRole("link", { name: "Remove geography" }).click();
-    await expect(referenceField(page, "geography")).toHaveCount(0);
-    await expect(referenceField(page, "release")).toHaveAttribute(
-      "data-field-id",
-      "alpha-2026"
-    );
-    await page.getByRole("link", { name: "Clear page reference" }).click();
-    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
-    await page.goto(
-      "/askatlas?page_ref=not-json&county=08001&dataset=alpha-2026"
-    );
-    const unverified = page.getByTestId("ask-atlas-page-reference");
-    await expect(unverified).toHaveAttribute(
-      "data-reference-state",
-      "unverified"
-    );
-    await expect(unverified).toContainText("could not be verified");
-    await expect(unverified).not.toContainText("08001");
-    await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
-    await page.getByRole("link", { name: "Clear page reference" }).click();
-    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await compareAsk.click();
+    await expect(page).toHaveURL(/\/askatlas/);
     await expect(page).not.toHaveURL(/page_ref=/);
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Page reference" })
+    ).toHaveCount(0);
+    await page.goto(
+      "/askatlas?page_ref=not-json&page_ref=again&county=08001&dataset=alpha-2026"
+    );
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(page.getByText("could not be verified")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Clear page reference" })
+    ).toHaveCount(0);
+    await expect(page).not.toHaveURL(/page_ref=/);
+    await expect(page).toHaveURL(/county=08001/);
+    await expect(page).toHaveURL(/dataset=alpha-2026/);
+    await expect(page.locator("[data-assistant-county-state]")).toHaveCount(0);
   });
 
-  test("keeps an accepted page reference across reload and browser history", async ({
+  test("keeps Ask Atlas navigation working across reload and browser history", async ({
     page,
   }) => {
     await installUniformCompareMocks(page);
     await page.goto("/compare?compare=08001,08013&scope=CO");
     await expect(page.getByTestId("compare-workspace")).toBeVisible();
-    await expect
-      .poll(async () =>
-        fieldId(
-          (await readContentAsk(page, "compare-ask-atlas")).state,
-          "geography"
-        )
-      )
-      .toBe("08001,08013");
+    const compareAsk = page.getByTestId("compare-ask-atlas");
+    await expect(compareAsk).toHaveAttribute("href", /\/askatlas/);
+    await expect(compareAsk).not.toHaveAttribute("href", /page_ref=/);
     await expectHeaderWithoutAskAtlas(page);
-    await page.getByTestId("compare-ask-atlas").click();
-    const reference = page.getByTestId("ask-atlas-page-reference");
-    await expect(reference).toHaveAttribute(
-      "data-reference-state",
-      "validated"
-    );
-    await expect(referenceField(page, "geography")).toHaveAttribute(
-      "data-field-id",
-      "08001,08013"
-    );
+    await compareAsk.click();
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Ask Atlas" })
+    ).toBeVisible();
 
     await page.reload();
-    await expect(reference).toHaveAttribute(
-      "data-reference-state",
-      "validated"
-    );
-    await expect(referenceField(page, "geography")).toHaveAttribute(
-      "data-field-id",
-      "08001,08013"
-    );
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Ask Atlas" })
+    ).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/compare/);
     await page.goForward();
     await expect(page).toHaveURL(/\/askatlas/);
-    await expect(reference).toHaveAttribute(
-      "data-reference-state",
-      "validated"
-    );
-    await expect(referenceField(page, "geography")).toHaveAttribute(
-      "data-field-id",
-      "08001,08013"
-    );
+    await expect(page).not.toHaveURL(/page_ref=/);
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
   });
 
   test("does not publish a county from an Explorer browse bookmark", async ({
@@ -778,41 +695,21 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(page.getByTestId("compare-alignment")).not.toContainText(
       "1999"
     );
-    await expect
-      .poll(async () =>
-        fieldId(
-          (await readContentAsk(page, "compare-ask-atlas")).state,
-          "period"
-        )
-      )
-      .toBe("2023-01-01");
-    await expect
-      .poll(async () =>
-        fieldId(
-          (await readContentAsk(page, "compare-ask-atlas")).state,
-          "geography"
-        )
-      )
-      .toBe("08001,08013");
-    const compare = await readContentAsk(page, "compare-ask-atlas");
-    expect(compare.url.searchParams.get("compare")).toBeNull();
-    expect(compare.url.searchParams.get("period")).toBeNull();
-    if (compare.state.kind === "validated") {
-      expect(compare.state.returnHref).toContain("/compare?");
-      expect(compare.state.returnHref).toContain("compare=08001%2C08013");
-      expect(compare.state.returnHref).toContain("period=2023-01-01");
-      expect(compare.state.returnHref).not.toContain("1999");
-    }
+    const compareAsk = page.getByTestId("compare-ask-atlas");
+    await expect(compareAsk).toHaveAttribute("href", /\/askatlas/);
+    const compareHref = await compareAsk.getAttribute("href");
+    const compareUrl = new URL(compareHref ?? "", "http://127.0.0.1");
+    expect(compareUrl.searchParams.get("compare")).toBeNull();
+    expect(compareUrl.searchParams.get("period")).toBeNull();
+    expect(compareUrl.searchParams.get("page_ref")).toBeNull();
     await expectHeaderWithoutAskAtlas(page);
-    await page.getByTestId("compare-ask-atlas").click();
-    await expect(page.getByTestId("ask-atlas-page-reference")).toContainText(
-      "does not compare these counties"
+    await compareAsk.click();
+    await expect(page).toHaveURL(/\/askatlas/);
+    await expect(page.getByTestId("ask-atlas-page-reference")).toHaveCount(0);
+    await expect(page.getByText("does not compare these counties")).toHaveCount(
+      0
     );
-    await page.getByTestId("ask-atlas-return").click();
-    await expect(page).toHaveURL(/\/compare/);
-    await expect(page).toHaveURL(/compare=08001/);
-    await expect(page).toHaveURL(/period=2023-01-01/);
-    await expect(page).not.toHaveURL(/1999/);
+    await expect(page.getByTestId("ask-atlas-return")).toHaveCount(0);
   });
 
   test("recovers from back, forward, and leaving for sign-in", async ({

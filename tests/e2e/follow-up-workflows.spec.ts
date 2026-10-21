@@ -134,7 +134,7 @@ test.describe("five-category suggested follow-up", () => {
       "Atlas supports professional review, not individual risk measurement"
     );
     await expect(followUp).toContainText(
-      "compare the published county case-count floor"
+      "compare the published minimum reported cases"
     );
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
       "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?"
@@ -145,9 +145,29 @@ test.describe("five-category suggested follow-up", () => {
     const resources = page.getByTestId("explorer-official-resources");
     await expect(resources).toBeVisible();
     await expect(
-      resources.getByRole("heading", { name: "Resources for follow-up" })
+      resources.getByRole("heading", { name: "Official resources" })
     ).toBeVisible();
-    await expect(resources.getByRole("link")).toHaveCount(8);
+    await expect(resources).toContainText(
+      "Authoritative references to support surveillance review, reporting, and public health action."
+    );
+    await expect(resources).not.toContainText("Official resources & guidance");
+    await expect(resources).not.toContainText("Resources for follow-up");
+    for (const topic of [
+      "Lyme disease surveillance",
+      "Tick and vector surveillance",
+      "Clinical testing and reporting",
+    ]) {
+      await expect(
+        resources.getByRole("heading", { name: topic })
+      ).toBeVisible();
+    }
+    await expect(resources.getByRole("link")).toHaveCount(5);
+    await expect(
+      resources.getByRole("link", { name: /Lyme surveillance case definition/ })
+    ).toHaveAttribute(
+      "href",
+      "https://ndc.services.cdc.gov/case-definitions/lyme-disease-2022/"
+    );
     const placement = await page.evaluate(() => {
       const browse = document.querySelector("[data-testid='explorer-browse']");
       const map = document.querySelector(".ux-reset-explorer-map");
@@ -229,7 +249,7 @@ test.describe("five-category suggested follow-up", () => {
       "check whether additional county case information is available"
     );
     await expect(followUp).not.toContainText(
-      "Compare the published county case-count floor"
+      "Compare the published minimum reported cases"
     );
 
     await page.setViewportSize({ height: 850, width: 1792 });
@@ -247,7 +267,7 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
     });
-    await expect(resources.getByRole("link")).toHaveCount(8);
+    await expect(resources.getByRole("link")).toHaveCount(5);
 
     await page.setViewportSize({ height: 900, width: 800 });
     const stacked = await page.evaluate(() => {

@@ -30,9 +30,11 @@ import {
 } from "@/features/ux-reset/review/review-county-preview";
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
+  captureReviewReturnFocusMount,
   consumeReviewReturnFocus,
   markReviewReturnFocus,
-  reviewReturnFocusMatches,
+  resolveReviewReturnFocus,
+  reviewReturnFocusTokenForMount,
 } from "@/features/ux-reset/review/review-return-focus";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { CountyScoreSummary } from "@/generated/models";
@@ -94,6 +96,8 @@ export function ReviewStatePanel({
   const [latchedReturnFips, setLatchedReturnFips] = useState<string | null>(
     null
   );
+  const [returnFocusMount] = useState(captureReviewReturnFocusMount);
+  const mountedReturnToken = reviewReturnFocusTokenForMount(returnFocusMount);
   // The URL county is the selection, including after Back or Forward.
   const selectedFips = useMemo(() => {
     if (county && inScopeFips.has(county)) {
@@ -161,19 +165,16 @@ export function ReviewStatePanel({
   const selectedRank = rankedCounties.findIndex(
     (county) => county.fips === selectedFips
   );
-  const returnFocusMatches =
-    /^\d{5}$/.test(selectedFips) && reviewReturnFocusMatches(selectedFips);
-  if (returnFocusMatches && latchedReturnFips !== selectedFips) {
-    setLatchedReturnFips(selectedFips);
-  } else if (
-    !returnFocusMatches &&
-    latchedReturnFips !== null &&
-    latchedReturnFips !== selectedFips
-  ) {
-    setLatchedReturnFips(null);
+  const returnFocus = resolveReviewReturnFocus({
+    latchedFips: latchedReturnFips,
+    mountedToken: mountedReturnToken,
+    selectedFips,
+    urlCounty: county ?? "",
+  });
+  if (returnFocus.latch !== latchedReturnFips) {
+    setLatchedReturnFips(returnFocus.latch);
   }
-  const focusReturnedCounty =
-    returnFocusMatches || latchedReturnFips === selectedFips;
+  const focusReturnedCounty = returnFocus.focus;
   const showTable =
     showTableOverride ??
     (focusReturnedCounty && selectedRank >= RANKED_COUNTY_SHORTLIST_LENGTH);

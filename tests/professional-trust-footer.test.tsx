@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AnalyticsClient } from "@/components/analytics-client";
 import { PrivacyPreferences } from "@/components/privacy-preferences";
-import { SiteFooter } from "@/components/site-footer";
+import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
 import { atlasAnalytics } from "@/lib/atlas-analytics";
@@ -45,7 +45,7 @@ function LegacyAtlasOrWorkspace() {
   return (
     <>
       <AnalyticsClient />
-      <SiteFooter />
+      <FrontPorchTrustFooter />
     </>
   );
 }

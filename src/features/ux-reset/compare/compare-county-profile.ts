@@ -13,6 +13,14 @@ import {
   publishedValueStateRole,
   type GovernedPublishedState,
 } from "@/features/ux-reset/investigate/published-county-hierarchy";
+import {
+  MINIMUM_REPORTED_CASES_LABEL,
+  MINIMUM_REPORTED_INCIDENCE_LABEL,
+  MINIMUM_REPORTED_INCIDENCE_TOOLTIP,
+  publishedHumanFloorValue,
+  publishedIncidenceExplanation,
+  REPORTED_INCIDENCE_LABEL,
+} from "@/features/ux-reset/review/published-human-case-copy";
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
 import type { CountyDetail, Measure, SourceMetadata } from "@/generated/models";
 import {
@@ -37,7 +45,6 @@ const IDENTITY_MISMATCH =
 const MISSING_FIELD = "This published field was not returned. It is not zero.";
 const SCORE_NOTE =
   "Published score value. Not a rank, a case count, or a calculated difference.";
-const FLOOR_RATE_NOTE = "A floor, not an exact rate.";
 const RUCC_NOTE = "Rural-urban classification code. Not a percentage.";
 const SVI_NOTE = "A percentile, not a count.";
 const UNINSURED_NOTE = "A percent. Not a percentile, and not scaled again.";
@@ -114,9 +121,9 @@ const ROW_LABELS: Record<CompareProfileRowId, string> = {
   burgdorferi_status: "Borrelia burgdorferi status",
   community_component: "Community component",
   ecological_component: "Ecological component",
-  human_case_floor: "Human case-count floor",
+  human_case_floor: MINIMUM_REPORTED_CASES_LABEL,
   human_weakness: "Human-data component",
-  incidence_floor: "Human incidence floor",
+  incidence_floor: MINIMUM_REPORTED_INCIDENCE_LABEL,
   pacificus_status: "Ixodes pacificus status",
   population_2022: "Population",
   published_review_score: "Published review score",
@@ -148,7 +155,7 @@ export function compareProfilePeriodQualification(
   period: string | null
 ): string {
   const base =
-    "Human case and incidence floors are the published 2023 snapshot. A floor is not an exact total. Other rows keep each county record's status and vintage. This section does not calculate a difference or a trend.";
+    "Minimum reported cases and minimum reported incidence are the published 2023 snapshot. A published minimum is not an exact total. Other rows keep each county record's status and vintage. This section does not calculate a difference or a trend.";
   if (!period || period.startsWith("2023-")) {
     return base;
   }
@@ -309,34 +316,15 @@ function scoreCell(
   });
 }
 
-/**
- * A published floor number is usable only with the published-floor status
- * and a finite, non-negative value. Count and incidence are judged separately.
- */
-function acceptedPublishedFloor(
-  status: string,
-  floor: number | null
-): number | null {
-  if (
-    status === "published_count_floor" &&
-    floor !== null &&
-    Number.isFinite(floor) &&
-    floor >= 0
-  ) {
-    return floor;
-  }
-  return null;
-}
-
 function acceptedIncidenceFloor(detail: CountyDetail): number | null {
-  return acceptedPublishedFloor(
+  return publishedHumanFloorValue(
     detail.human_status,
     detail.incidence_floor_2023
   );
 }
 
 function acceptedCaseCountFloor(detail: CountyDetail): number | null {
-  return acceptedPublishedFloor(
+  return publishedHumanFloorValue(
     detail.human_status,
     detail.case_count_floor_2023
   );
@@ -455,10 +443,10 @@ function compareReviewReasons(
   const caseCount = acceptedCaseCountFloor(detail);
   let humanText = NO_PUBLISHED_CASE_REASON;
   if (acceptedIncidenceFloor(detail) !== null) {
-    humanText = `The minimum rate supported by the published 2023 county data was ${incidence.displayValue}.`;
+    humanText = incidence.displayValue;
   } else if (caseCount !== null) {
     const count = reviewHumanFloorEvidence(detail);
-    humanText = `The published 2023 incidence floor is ${incidence.displayValue}. The published case-count floor is ${count.displayValue}.`;
+    humanText = `Reported incidence is ${incidence.displayValue}. ${count.displayValue}.`;
   }
   return [
     {
@@ -470,8 +458,8 @@ function compareReviewReasons(
 }
 
 /**
- * Incidence uses the same published-floor rule as the case-count floor.
- * A missing, suppressed, or non-floor status is never rendered as zero.
+ * Incidence uses the same published lower-bound rule as the case count.
+ * A missing, suppressed, or non-lower-bound status is never rendered as zero.
  */
 export function compareIncidenceFloorEvidence(
   detail: CountyDetail
@@ -488,8 +476,11 @@ export function compareIncidenceFloorEvidence(
   ].includes(humanStatus)
     ? humanStatus
     : "Unavailable";
+  const claimLabel = hasFloor
+    ? MINIMUM_REPORTED_INCIDENCE_LABEL
+    : REPORTED_INCIDENCE_LABEL;
   const state = mapPublishedRow({
-    claimLabel: "Published 2023 human incidence floor",
+    claimLabel,
     inspectAnchor: "compare-incidence-floor",
     sourceNote: source?.note,
     subject: hasFloor
@@ -497,11 +488,13 @@ export function compareIncidenceFloorEvidence(
       : { kind: "status", status: missingStatus },
   });
   const displayValue = hasFloor
-    ? `${formatGovernedEvidenceValue({
-        unit: null,
-        value: floor,
-        valueState: state.valueState,
-      })} cases per 100,000 (published incidence floor)`
+    ? publishedIncidenceExplanation(
+        formatGovernedEvidenceValue({
+          unit: null,
+          value: floor,
+          valueState: state.valueState,
+        })
+      )
     : formatGovernedEvidenceValue({
         unit: null,
         value: null,
@@ -509,7 +502,7 @@ export function compareIncidenceFloorEvidence(
       });
   return {
     availability: state.availability,
-    claimLabel: "Published 2023 human incidence floor",
+    claimLabel,
     displayValue,
     provenance: provenanceFor({
       detail,
@@ -519,7 +512,7 @@ export function compareIncidenceFloorEvidence(
     }),
     reasonCode: state.reasonCode,
     valueNote: hasFloor
-      ? FLOOR_RATE_NOTE
+      ? MINIMUM_REPORTED_INCIDENCE_TOOLTIP
       : `Published status: ${detail.human_status.replaceAll("_", " ")}. Missing, suppressed, or unallocated records are not converted to zero.`,
   };
 }

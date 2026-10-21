@@ -239,7 +239,7 @@ test.describe("two-county Compare", () => {
       "compare-profile-cell-human_case_floor-08001"
     );
     await expect(floor).toContainText("12");
-    await expect(floor).toContainText("floor");
+    await expect(floor).toContainText("or more");
     const suppressed = page
       .getByTestId("compare-profile-cell-incidence_floor-08013")
       .getByTestId("evidence-display-value");
@@ -249,6 +249,10 @@ test.describe("two-county Compare", () => {
       page.getByTestId("compare-profile-row-human_case_floor")
     ).not.toContainText("differ by");
     await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
+      "href",
+      /\/askatlas/
+    );
+    await expect(page.getByTestId("compare-ask-atlas")).not.toHaveAttribute(
       "href",
       /page_ref=/
     );

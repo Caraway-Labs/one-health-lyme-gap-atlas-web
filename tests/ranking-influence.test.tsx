@@ -224,7 +224,7 @@ describe("ranking influence", () => {
       />
     );
     expect({
-      floor: panelText().includes("case-count floor is a human input"),
+      floor: panelText().includes("Minimum reported cases are a human input"),
       missing: panelText().includes("not zero cases"),
     }).toStrictEqual({ floor: true, missing: false });
   });

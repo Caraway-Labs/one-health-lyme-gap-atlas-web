@@ -524,7 +524,7 @@ describe("Explorer map layers", () => {
     });
   });
 
-  it("paints the published incidence floor without turning missing into zero", () => {
+  it("paints the published minimum reported incidence without turning missing into zero", () => {
     const paint = paintExplorerMapLayer({
       counties: [county("08001", { color: "#e9602b" })],
       layerId: "incidence_floor",
