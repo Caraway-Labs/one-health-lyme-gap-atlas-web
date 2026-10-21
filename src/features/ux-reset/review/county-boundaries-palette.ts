@@ -41,7 +41,7 @@ export const COUNTY_BOUNDARIES_LEGEND_DETAIL =
   "Neutral county fill with charcoal county outlines and darker state outlines. Not a score, not disease data, and not a missing value.";
 
 export const COUNTY_BOUNDARIES_NOTE =
-  "County boundaries only. This map is not colored by Atlas gap score. The neutral fill is geography, not disease data and not a missing value.";
+  "Shows county and state boundaries without displaying a data measure. Counties have a neutral fill, with darker lines marking state boundaries.";
 
 export const COUNTY_BOUNDARY_COUNTY_LINE_WIDTH = [
   "interpolate",

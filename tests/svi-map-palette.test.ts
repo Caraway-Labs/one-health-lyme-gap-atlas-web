@@ -179,10 +179,10 @@ describe("Social vulnerability palette", () => {
       ])
     );
     expect([
-      paint.note.includes("RPL_THEMES"),
+      paint.period.includes("2022"),
       paint.note.includes("U.S. counties"),
-      paint.note.includes("2022"),
-      paint.note.includes("not a percent of residents who are vulnerable"),
+      paint.note.includes("not the percentage of residents who are vulnerable"),
+      paint.note.includes("Gray indicates unavailable data"),
     ]).toStrictEqual([true, true, true, true]);
     const model = buildExplorerLegendModel(paint);
     expect({

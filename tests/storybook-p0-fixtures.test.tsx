@@ -38,6 +38,7 @@ import {
   syntheticReleaseId,
 } from "../stories/fixtures/synthetic-county";
 import { tier1StoryView } from "../stories/fixtures/tier1-views";
+import { reviewPreviewQueryClient } from "../stories/support/review-preview-query-client";
 import {
   Tier1StoryQueryProvider,
   tier1SurveillancePriorityQueryOptions,
@@ -485,15 +486,38 @@ describe("Storybook P0 evidence fixtures", () => {
     fetchSpy.mockRestore();
   });
 
+  it("renders surveillance marks from local score and situation fixtures", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const model = reviewPreviewPreset("rationale");
+    render(
+      <QueryClientProvider client={reviewPreviewQueryClient()}>
+        <ReviewCountyPreviewPanel
+          compareHref={model.compareHref}
+          droppedNotes={model.droppedNotes}
+          href={model.href}
+          onOpen={() => {}}
+          preview={model.preview}
+          release={model.release}
+          releaseId={syntheticReleaseId}
+        />
+      </QueryClientProvider>
+    );
+    expect(screen.getByTestId("county-surveillance-intelligence")).toBeTruthy();
+    expect(screen.getByTestId("selected-county-gap-score").textContent).toBe(
+      "70.0"
+    );
+    expect(
+      screen.getByTestId("review-view-county-evidence").dataset.variant
+    ).toBe("primary");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
   it("calls onOpen once per county action with the preview fips", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("rationale");
     render(
-      <QueryClientProvider
-        client={
-          new QueryClient({ defaultOptions: { queries: { retry: false } } })
-        }
-      >
+      <QueryClientProvider client={reviewPreviewQueryClient()}>
         <ReviewCountyPreviewPanel
           compareHref={model.compareHref}
           droppedNotes={model.droppedNotes}
@@ -518,11 +542,7 @@ describe("Storybook P0 evidence fixtures", () => {
     const onOpen = vi.fn<(fips: string) => void>();
     const model = reviewPreviewPreset("long-references");
     render(
-      <QueryClientProvider
-        client={
-          new QueryClient({ defaultOptions: { queries: { retry: false } } })
-        }
-      >
+      <QueryClientProvider client={reviewPreviewQueryClient()}>
         <ReviewCountyPreviewPanel
           compareHref={model.compareHref}
           droppedNotes={model.droppedNotes}
