@@ -10,8 +10,8 @@ type FrontPorchTrustFooterProps = {
 };
 
 /**
- * Anonymous-safe public trust footer. Link targets stay on `/privacy` and
- * `/ai-ethics`. Privacy settings opens the shared consent dialog, so signed-out
+ * Anonymous-safe public trust footer. Link targets stay on `/privacy`,
+ * `/ai-ethics`, and `/data-provenance`. Privacy settings opens the shared consent dialog, so signed-out
  * visitors are not sent to workspace Settings. `extraControls` is for
  * contracted route-specific controls. The Front Porch call site leaves it empty.
  * Docs and the analytical shell reuse this footer.

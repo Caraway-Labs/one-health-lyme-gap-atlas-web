@@ -1,306 +1,169 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { DATA_PROVENANCE_NAV_DESCRIPTION } from "@/features/ux-reset/paths";
-
-import { fulfillCompletedStartingView } from "./completed-starting-view";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
-test.beforeEach(async ({ page }) => {
-  await fulfillCompletedStartingView(page);
-});
+const META_DESCRIPTION =
+  "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.";
 
-const SOURCE_DESCRIPTION = DATA_PROVENANCE_NAV_DESCRIPTION;
+const LEGACY_ANCHORS = [
+  "source-human",
+  "source-tick",
+  "source-pathogen",
+  "source-context_svi",
+  "source-context_rucc",
+  "source-context_nlcd_2025",
+] as const;
 
-async function focusByTab(page: Page, locator: Locator) {
-  for (let step = 0; step < 30; step += 1) {
+async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+}
+
+async function flowItemTops(page: Page) {
+  return page
+    .locator("ol.public-trust-cards--flow > li")
+    .evaluateAll((items) =>
+      items.map((item) => item.getBoundingClientRect().top)
+    );
+}
+
+async function keyboardFocus(page: Page, control: Locator) {
+  for (let step = 0; step < 40; step += 1) {
     if (
-      await locator.evaluate((element) => element === document.activeElement)
+      await control.evaluate((element) => element === document.activeElement)
     ) {
       return;
     }
     await page.keyboard.press("Tab");
   }
-  throw new Error("keyboard focus did not reach the expected control");
+  throw new Error("Data Provenance filter was not reached by keyboard");
 }
 
-async function expectProvenanceTooltip(page: Page) {
-  const tooltip = page.locator("[data-slot='tooltip-content']").filter({
-    hasText: SOURCE_DESCRIPTION,
-  });
-  await expect(tooltip).toBeVisible();
-  await expect(tooltip.locator("span").nth(0)).toHaveText("Data Provenance");
-  await expect(tooltip.locator("span").nth(1)).toHaveText(SOURCE_DESCRIPTION);
-}
-
-function envelope(data: unknown[]) {
-  return {
-    data,
-    links: { self: "/v1/example" },
-    meta: { next_page_token: null },
-  };
-}
-
-async function installCatalog(page: Page) {
-  await page.route("**/v1/sources**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      json: envelope([
-        {
-          dataset_id: "cdc-lyme-dataset",
-          label: "CDC Lyme surveillance",
-          limitations: ["County of residence is not the exposure location."],
-          lineage_source_id: "lineage-cdc-lyme",
-          publisher: "Centers for Disease Control and Prevention",
-          release_version: "release-1",
-          semantic_version: "semantic-1",
-          source_id: "cdc-lyme",
-          source_retrieved_at: "2026-01-15T00:00:00Z",
-          source_url: "https://example.com/cdc-lyme",
-          source_vintage: "2023",
-          upstream_updated_at: "2024-06-01T00:00:00Z",
-        },
-        {
-          dataset_id: "tick-dataset",
-          label: "Tick establishment records",
-          limitations: [],
-          lineage_source_id: "lineage-ticks",
-          publisher: "Illustrative publisher",
-          release_version: "release-1",
-          semantic_version: "semantic-1",
-          source_id: "cdc-ticks",
-          source_vintage: "2024",
-        },
-      ]),
-    });
-  });
-  await page.route("**/v1/measures**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      json: envelope([
-        {
-          definition: "Published county-linked Lyme case information.",
-          indicator_id: "human_disease_burden",
-          label: "Lyme cases",
-          measure_id: "lyme_cases",
-          missingness_semantics:
-            "Missing and suppressed values stay null and are not zero.",
-          semantic_version: "semantic-1",
-          source_ids: ["cdc-lyme"],
-          temporal_semantics: "Annual surveillance year.",
-        },
-        {
-          definition: "Published tick establishment status.",
-          indicator_id: "tick_surveillance",
-          label: "Tick status",
-          measure_id: "tick_status",
-          semantic_version: "semantic-1",
-          source_ids: ["cdc-ticks"],
-        },
-      ]),
-    });
-  });
-  await page.route("**/v1/indicators**", async (route) => {
-    await route.fulfill({
-      contentType: "application/json",
-      json: envelope([
-        {
-          definition: null,
-          domain: "human",
-          indicator_id: "human_disease_burden",
-          label: "Human disease",
-          measure_ids: ["lyme_cases"],
-          semantic_version: "semantic-1",
-        },
-        {
-          definition: null,
-          domain: "vector",
-          indicator_id: "tick_surveillance",
-          label: "Ticks",
-          measure_ids: ["tick_status"],
-          semantic_version: "semantic-1",
-        },
-      ]),
-    });
-  });
-}
-
-test("adds Data Provenance between Feed and Docs", async ({
+test("public data provenance page lists every source and stays indexable", async ({
   page,
-}, testInfo) => {
+}) => {
   await page.setViewportSize({ height: 900, width: 1280 });
-  await page.goto("/explore");
-  const navigation = page.getByRole("navigation", {
-    name: "Professional workspace",
-  });
-  await expect(
-    navigation.getByRole("link", { name: "Atlas Explorer" })
-  ).toBeVisible();
-  await expect(
-    navigation.getByRole("link", { name: "Docs, opens in a new tab" })
-  ).toBeVisible();
-  const labels = await navigation
-    .locator("a")
-    .evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute("aria-label"))
-    );
-  expect(labels).toEqual([
-    "Atlas Explorer",
-    "Compare",
-    "Ask Atlas",
-    "Feed",
-    "Data Provenance",
-    "Settings",
-    "Docs, opens in a new tab",
-  ]);
-  const provenance = navigation.getByRole("link", {
-    exact: true,
-    name: "Data Provenance",
-  });
-  await expect(provenance).toHaveAttribute(
-    "aria-description",
-    SOURCE_DESCRIPTION
-  );
-  await expect(provenance.locator("svg")).toHaveClass(
-    /lucide-fingerprint-pattern/
-  );
-  await page.screenshot({
-    path: testInfo.outputPath("sidebar-expanded.png"),
-  });
-
-  await provenance.hover();
-  await expectProvenanceTooltip(page);
-  await page.screenshot({
-    path: testInfo.outputPath("sidebar-tooltip.png"),
-  });
-
-  await page.getByRole("button", { name: "Hide navigation" }).click();
-  await expect(page.locator("#ux-reset-pro-navigation")).toHaveAttribute(
-    "data-state",
-    "collapsed"
-  );
-  await expect(provenance).toHaveAttribute("aria-label", "Data Provenance");
-  await expect(provenance).toHaveAttribute(
-    "aria-description",
-    SOURCE_DESCRIPTION
-  );
-  // The collapse click is pointer input. Base UI opens the shared tooltip
-  // only for :focus-visible, so the keyboard check has to be a real Tab.
-  await page.mouse.move(1100, 240);
-  await focusByTab(page, provenance);
-  await expect(provenance).toBeFocused();
-  await expectProvenanceTooltip(page);
-
-  await page.keyboard.press("Shift+Tab");
-  await expect(provenance).not.toBeFocused();
-  await page.mouse.move(1100, 240);
-  await expect(
-    page.locator("[data-slot='tooltip-content']").filter({
-      hasText: SOURCE_DESCRIPTION,
-    })
-  ).toBeHidden();
-  await provenance.hover();
-  await expectProvenanceTooltip(page);
-  await page.screenshot({
-    path: testInfo.outputPath("sidebar-collapsed.png"),
-  });
-});
-
-test("opens source cards, deep links, and keeps inline provenance", async ({
-  page,
-}, testInfo) => {
-  await page.setViewportSize({ height: 900, width: 1280 });
-  await installCatalog(page);
   await page.goto("/data-provenance");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Data Provenance" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Where our data comes from" })
-  ).toBeVisible();
-  const pipeline = page.getByRole("list", {
-    name: "Conceptual evidence pipeline",
-  });
-  await expect(pipeline.getByRole("heading").nth(0)).toContainText("Source");
-  await expect(pipeline.getByRole("heading").nth(4)).toContainText("Explore");
-  await expect(
-    page.getByRole("heading", { exact: true, level: 4, name: "Literature" })
-  ).toBeVisible();
-  await expect(page.getByText("not predicted Lyme risk")).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("data-provenance-page.png"),
-  });
-
-  const surveillance = page.locator("#source-cdc-lyme");
-  await page.getByText("CDC Lyme surveillance", { exact: true }).click();
-  await expect(
-    page.getByText("County of residence is not the exposure location.")
-  ).toBeVisible();
-  await expect(page.getByText("Source type: Not provided")).toHaveCount(2);
-  await expect(page).toHaveURL(/#source-cdc-lyme$/);
-  await page.getByText("Tick establishment records", { exact: true }).click();
-  await expect(page.getByText("Human surveillance")).toBeVisible();
-  await expect(page.getByText("Ticks and pathogens")).toBeVisible();
-  await expect(surveillance).toHaveAttribute("open", "");
-  await surveillance.scrollIntoViewIfNeeded();
-  await page.screenshot({
-    path: testInfo.outputPath("data-provenance-source-card.png"),
-  });
-
-  await page.goto("/data-provenance#source-cdc-lyme");
-  await expect(page.locator("#source-cdc-lyme")).toHaveAttribute("open", "");
-  await page.reload();
-  await expect(page.locator("#source-cdc-lyme")).toHaveAttribute("open", "");
-
-  await page.goto("/data-provenance#source-not-a-source");
-  await expect(page.getByTestId("data-provenance-unmatched")).toBeVisible();
-  await expect(page.locator("#source-cdc-lyme")).not.toHaveAttribute(
-    "open",
-    ""
+  await expect(page).not.toHaveURL(/sign-in/);
+  await expect(page).toHaveTitle("Data Provenance | One Health Lyme Gap Atlas");
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    META_DESCRIPTION
   );
-  await page.screenshot({
-    path: testInfo.outputPath("data-provenance-unmatched.png"),
-  });
-
-  await page.goto("/explore");
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Where Atlas evidence comes from",
+    })
+  ).toHaveCount(1);
+  await expect(page.locator("main.public-trust-page")).toBeVisible();
+  await expect(page.getByRole("banner")).toHaveCount(1);
   await expect(
     page
-      .getByRole("navigation", { name: "Professional workspace" })
-      .getByRole("link", {
-        name: "Data Provenance",
-      })
-  ).not.toHaveAttribute("aria-current", "page");
-  await page.goto("/data-provenance");
-  await expect(
-    page.getByRole("link", { exact: true, name: "Data Provenance" })
-  ).toHaveAttribute("aria-current", "page");
+      .locator("footer.ux-reset-trust-footer")
+      .getByRole("link", { name: "Data Provenance" })
+  ).toHaveAttribute("href", "/data-provenance");
+  await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
 
-  const results = await new AxeBuilder({ page })
-    .include(".ux-reset-provenance-page")
-    .analyze();
-  expect(results.violations).toEqual([]);
+  await expect(
+    page.getByRole("heading", { name: "Lyme disease surveillance" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "nClimGrid-Daily county weather" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { exact: true, name: "PubMed" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Morbidity and Mortality Weekly Report (MMWR)",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "WHO Disease Outbreak News" })
+  ).toBeVisible();
+  await expect(page.locator("article[id^='source-']")).toHaveCount(20);
+  await expect(
+    page.getByText(
+      "Tick and pathogen surveillance data are provided by the CDC ArboNET Tick Module, Division of Vector-Borne Diseases."
+    )
+  ).toBeVisible();
+  await expect(page.getByText("Not provided", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Planned", { exact: true })).toHaveCount(0);
+
+  const tops = await flowItemTops(page);
+  expect(tops).toHaveLength(5);
+  expect(Math.abs((tops[0] ?? 0) - (tops[4] ?? 0))).toBeLessThanOrEqual(2);
+  await expectNoHorizontalOverflow(page);
+
+  const bulletins = page.getByRole("button", {
+    name: "Public-health bulletins (10)",
+  });
+  await keyboardFocus(page, bulletins);
+  await expect(bulletins).toBeFocused();
+  const focusCue = await bulletins.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: Number.parseFloat(style.outlineWidth),
+    };
+  });
+  expect(focusCue.outlineWidth).toBeGreaterThan(0);
+  await page.keyboard.press("Enter");
+  await expect(bulletins).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Showing 10 of 20 sources")).toBeVisible();
+  await expect(page.locator("article[id^='source-']")).toHaveCount(10);
+  await expect(
+    page.getByRole("heading", { name: "Lyme disease surveillance" })
+  ).toHaveCount(0);
+  await page.keyboard.press("Shift+Tab");
+  const literature = page.getByRole("button", {
+    name: "Research literature (2)",
+  });
+  if (
+    await literature.evaluate((element) => element === document.activeElement)
+  ) {
+    await page.keyboard.press("Space");
+    await expect(page.getByText("Showing 2 of 20 sources")).toBeVisible();
+  }
+
+  const all = page.getByRole("button", { name: "All (20)" });
+  await all.click();
+  await expect(page.getByText("Showing 20 of 20 sources")).toBeVisible();
+  await expect(page.locator("article[id^='source-']")).toHaveCount(20);
+
+  await page.getByText("Compare all sources in a table").click();
+  const table = page.getByRole("table", { name: "Every source Atlas uses" });
+  await expect(table).toBeVisible();
+  await expect(table.getByRole("columnheader")).toHaveCount(6);
+
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
-test("shows a request failure without hiding the page", async ({
+test("legacy source anchors scroll to the matching card", async ({ page }) => {
+  for (const anchor of LEGACY_ANCHORS) {
+    await page.goto(`/data-provenance#${anchor}`);
+    const card = page.locator(`#${anchor}`);
+    await expect(card).toBeVisible();
+    await expect(card).toBeInViewport();
+  }
+});
+
+test("source cards stack below the desktop flow breakpoint", async ({
   page,
-}, testInfo) => {
-  await page.setViewportSize({ height: 900, width: 1280 });
-  await page.route("**/v1/sources**", async (route) => {
-    await route.fulfill({ status: 503, json: { detail: "unavailable" } });
-  });
+}) => {
+  await page.setViewportSize({ height: 900, width: 768 });
   await page.goto("/data-provenance");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Data Provenance" })
-  ).toBeVisible();
-  await expect(page.locator(".ux-reset-provenance-status")).toContainText(
-    "The source catalog could not be loaded."
-  );
-  await expect(
-    page.getByRole("list", { name: "Conceptual evidence pipeline" })
-  ).toBeVisible();
-  await page.screenshot({
-    path: testInfo.outputPath("data-provenance-error.png"),
-  });
+  const tops = await flowItemTops(page);
+  expect(tops).toHaveLength(5);
+  expect(tops[1] ?? 0).toBeGreaterThan(tops[0] ?? 0);
+  await expectNoHorizontalOverflow(page);
 });
 
 test("keeps a phone layout for the provenance page", async ({
@@ -311,16 +174,16 @@ test("keeps a phone layout for the provenance page", async ({
     "Phone-width Data Provenance checks run on the mobile project."
   );
   await page.setViewportSize({ height: 844, width: 390 });
-  await installCatalog(page);
   await page.goto("/data-provenance");
-  await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(
-    page.getByRole("link", { exact: true, name: "Data Provenance" })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Where Atlas evidence comes from",
+    })
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close navigation" }).click();
-  await expect(
-    page.getByRole("list", { name: "Conceptual evidence pipeline" })
-  ).toBeVisible();
+  const tops = await flowItemTops(page);
+  expect(tops[1] ?? 0).toBeGreaterThan(tops[0] ?? 0);
+  await expectNoHorizontalOverflow(page);
   await page.screenshot({
     path: testInfo.outputPath("data-provenance-phone.png"),
   });

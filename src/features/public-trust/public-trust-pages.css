@@ -283,6 +283,39 @@
   .public-trust-cards--trio {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .public-trust-cards--flow {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .public-trust-cards--flow > li {
+    position: relative;
+  }
+
+  .public-trust-cards--flow > li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 1.4rem;
+    right: calc(var(--space-4) / -2);
+    width: 0.45rem;
+    height: 0.45rem;
+    border-top: 2px solid var(--teal);
+    border-right: 2px solid var(--teal);
+    transform: translateX(50%) rotate(45deg);
+    pointer-events: none;
+  }
+
+  .public-trust-cards--flow > li > article {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .public-trust-cards--flow > li > article > [data-slot="card"] {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

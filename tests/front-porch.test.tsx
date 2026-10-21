@@ -371,14 +371,11 @@ describe("front porch view", () => {
         brandMark: null,
         feedback: null,
         privacySettings: "Privacy settings",
-        trustLinks: [
-          { href: "/privacy", target: null, text: "Privacy" },
-          {
-            href: "/ai-ethics",
-            target: null,
-            text: "AI / Responsible Use",
-          },
-        ],
+        trustLinks: FRONT_PORCH_FOOTER_LINKS.map((item) => ({
+          href: item.href,
+          target: null,
+          text: item.label,
+        })),
       });
     }
   });

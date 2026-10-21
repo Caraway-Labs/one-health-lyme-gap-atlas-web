@@ -134,7 +134,13 @@ test("redirected analytical aliases keep a single professional footer", async ({
 test("public and workspace footers stay single and unchanged", async ({
   page,
 }) => {
-  for (const route of ["/", "/privacy", "/ai-ethics", "/about/caraway-labs"]) {
+  for (const route of [
+    "/",
+    "/privacy",
+    "/ai-ethics",
+    "/about/caraway-labs",
+    "/data-provenance",
+  ]) {
     await page.goto(route);
     await expect(page).not.toHaveURL(/sign-in/);
     await expect(page.getByRole("contentinfo")).toHaveCount(1);
@@ -151,7 +157,6 @@ test("public and workspace footers stay single and unchanged", async ({
     "/askatlas",
     "/explore",
     "/compare",
-    "/data-provenance",
   ]) {
     await page.goto(route);
     await expect(page).not.toHaveURL(/sign-in/);
