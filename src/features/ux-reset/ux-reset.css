@@ -465,9 +465,9 @@
 .county-summary-mark {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0.2rem;
-  width: auto;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
   padding: 0.15rem;
@@ -482,21 +482,19 @@
   cursor: pointer;
 }
 
-.county-summary-mark-cell:nth-child(n + 3) .county-summary-mark {
-  width: 100%;
-}
-
 .county-summary-mark:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
 .county-summary-mark-caption {
+  max-width: 100%;
   color: var(--muted-foreground);
   font-size: 0.65rem;
   font-weight: 650;
   letter-spacing: 0.02em;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .county-summary-marks .ux-reset-ranked-score {
@@ -537,8 +535,10 @@
 
 .county-summary-situation {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
+  max-width: 100%;
   min-width: 0;
 }
 
