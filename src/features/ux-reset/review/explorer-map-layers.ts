@@ -302,8 +302,21 @@ export function explorerMapLayerById(
  */
 export const GAP_REVIEW_SCORE_MENU_LABEL = "Gap review score";
 
+/**
+ * Dropdown name for the incidence-floor layer. The shared layer label
+ * ("Minimum reported Lyme incidence"), legend, tooltips, and `incidence_floor`
+ * id stay on their own copy.
+ */
+export const LYME_DISEASE_INCIDENCE_MENU_LABEL = "Lyme disease incidence";
+
 export function explorerMapLayerMenuLabel(layer: ExplorerMapLayer): string {
-  return layer.id === "gap_score" ? GAP_REVIEW_SCORE_MENU_LABEL : layer.label;
+  if (layer.id === "gap_score") {
+    return GAP_REVIEW_SCORE_MENU_LABEL;
+  }
+  if (layer.id === "incidence_floor") {
+    return LYME_DISEASE_INCIDENCE_MENU_LABEL;
+  }
+  return layer.label;
 }
 
 /** Legend title for this layer. Other layers keep their published labels. */

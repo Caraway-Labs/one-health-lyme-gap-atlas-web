@@ -5,6 +5,7 @@ import { SVI_NO_DATA_COLOR } from "@/features/ux-reset/review/explorer-layer-pal
 import {
   EXPLORER_MAP_LAYERS,
   explorerMapLayerMenuLabel,
+  LYME_DISEASE_INCIDENCE_MENU_LABEL,
   paintExplorerMapLayer,
   parseExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
@@ -153,23 +154,40 @@ const legendSources = [
 ];
 
 describe("Explorer map layers", () => {
-  it("renames only the gap-score menu label", () => {
+  it("renames only the gap-score and incidence dropdown labels", () => {
     const gapScore = EXPLORER_MAP_LAYERS.find(
       (layer) => layer.id === "gap_score"
     );
+    const incidence = EXPLORER_MAP_LAYERS.find(
+      (layer) => layer.id === "incidence_floor"
+    );
     const otherLayers = EXPLORER_MAP_LAYERS.filter(
-      (layer) => layer.id !== "gap_score"
+      (layer) => layer.id !== "gap_score" && layer.id !== "incidence_floor"
     );
     expect({
-      id: gapScore?.id,
-      label: gapScore?.label,
-      menu: gapScore ? explorerMapLayerMenuLabel(gapScore) : null,
+      gap: {
+        id: gapScore?.id,
+        label: gapScore?.label,
+        menu: gapScore ? explorerMapLayerMenuLabel(gapScore) : null,
+      },
+      incidence: {
+        id: incidence?.id,
+        label: incidence?.label,
+        menu: incidence ? explorerMapLayerMenuLabel(incidence) : null,
+      },
       otherMenus: otherLayers.map((layer) => explorerMapLayerMenuLabel(layer)),
       otherLabels: otherLayers.map((layer) => layer.label),
     }).toStrictEqual({
-      id: "gap_score",
-      label: "Atlas gap score",
-      menu: "Gap review score",
+      gap: {
+        id: "gap_score",
+        label: "Atlas gap score",
+        menu: "Gap review score",
+      },
+      incidence: {
+        id: "incidence_floor",
+        label: "Minimum reported Lyme incidence",
+        menu: LYME_DISEASE_INCIDENCE_MENU_LABEL,
+      },
       otherMenus: otherLayers.map((layer) => layer.label),
       otherLabels: otherLayers.map((layer) => layer.label),
     });
@@ -548,12 +566,14 @@ describe("Explorer map layers", () => {
       missing: paint.entries.some((entry) =>
         entry.label.includes("Missing (not zero and not a low value)")
       ),
+      title: paint.title,
       unpainted: paint.colorsByFips.get("08001"),
     }).toStrictEqual({
       alabama: "#D1D5DB",
       gap: false,
       losAngeles: "#E5F5E0",
       missing: true,
+      title: "Minimum reported Lyme incidence",
       unpainted: undefined,
     });
     expect(paint.note).toMatch(/lower bounds/);
