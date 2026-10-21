@@ -40,7 +40,7 @@ These are not workspace destinations and this map does not retarget them:
 | `/` | Front Porch, unless a legacy analytical query is present | Stays the Front Porch. A legacy analytical query is an Overview deep link and maps to Explorer browse. |
 | `/assistant` | Public literature workspace | Stays. It is not the signed-in Ask Atlas route. |
 | `/knowledge-graph` | Already redirects to `/assistant`, preserving `conversation` | Stays that alias. This map does not send it to `/askatlas`. |
-| `/app/ai-responsible-use` | Signed-in trust page | Stays. Not a seventh destination. |
+| `/app/ai-responsible-use` | Permanently redirects to `/ai-ethics` before the auth gate | Retired. Not a workspace destination. |
 | `/account`, `/auth/*`, `/privacy`, `/ai-ethics`, `/about/caraway-labs`, `/design-system`, `/api/search` | Existing utility, trust, and technical routes | Out of scope. |
 | `/variant_1`–`/variant_7` | HTTP 404 since #550, including `/variant_6` | **Retired. Do not revive and do not redirect.** |
 | `/ux-lab/**` | HTTP 404 since #504 | Retired. Do not revive. |

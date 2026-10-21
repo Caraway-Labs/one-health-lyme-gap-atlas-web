@@ -18,6 +18,10 @@ type PendingCookie = {
 
 const WORKSPACE_ROBOTS_TAG = "noindex, nofollow";
 
+/** Retired signed-in trust page. The public page is the only copy (issue 811). */
+const RETIRED_AI_RESPONSIBLE_USE_PATH = "/app/ai-responsible-use";
+const AI_ETHICS_PATH = "/ai-ethics";
+
 function withAccessibleWorkspaceRobots(
   response: NextResponse,
   pathname: string
@@ -28,7 +32,41 @@ function withAccessibleWorkspaceRobots(
   return response;
 }
 
+function normalizePathname(pathname: string): string {
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    return pathname.slice(0, -1);
+  }
+  return pathname;
+}
+
+/**
+ * Permanent redirect for the retired page, including a trailing slash.
+ * Query strings stay on `/ai-ethics`. This runs before session refresh and
+ * the sign-in gate so a signed-out request is not sent to `/auth/sign-in`.
+ */
+function retiredAiResponsibleUseRedirect(
+  request: NextRequest
+): NextResponse | null {
+  if (
+    normalizePathname(request.nextUrl.pathname) !==
+    RETIRED_AI_RESPONSIBLE_USE_PATH
+  ) {
+    return null;
+  }
+  const destination = new URL(AI_ETHICS_PATH, request.url);
+  destination.search = request.nextUrl.search;
+  return withAccessibleWorkspaceRobots(
+    NextResponse.redirect(destination, 308),
+    request.nextUrl.pathname
+  );
+}
+
 export async function middleware(request: NextRequest) {
+  const retiredAiPage = retiredAiResponsibleUseRedirect(request);
+  if (retiredAiPage) {
+    return retiredAiPage;
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const supabaseConfigured = isSupabaseAuthConfigured(url, publishableKey);

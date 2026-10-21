@@ -47,6 +47,18 @@ const nextConfig: NextConfig = {
         permanent: true,
         source: "/:path*",
       },
+      // Retired signed-in trust page (issue 811). This runs before middleware,
+      // so a signed-out visit never reaches the auth gate.
+      {
+        destination: "/ai-ethics",
+        permanent: true,
+        source: "/app/ai-responsible-use",
+      },
+      {
+        destination: "/ai-ethics",
+        permanent: true,
+        source: "/app/ai-responsible-use/",
+      },
     ];
   },
 };

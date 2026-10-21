@@ -224,14 +224,7 @@ describe("sources and canonical evidence documentation", () => {
   });
 
   it("rejects a current-release claim that MCP is smoke tools only", () => {
-    const docsFiles = collectDocFiles(docsRoot);
-    const contentFiles = [
-      ...docsFiles,
-      path.join(
-        process.cwd(),
-        "src/features/ux-reset/ai-responsible-use/content.ts"
-      ),
-    ];
+    const contentFiles = collectDocFiles(docsRoot);
     const bannedPhrases = [
       "Production MCP does not serve",
       "Production Atlas-data MCP is not available",

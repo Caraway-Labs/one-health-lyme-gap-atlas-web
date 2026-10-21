@@ -104,7 +104,7 @@ describe("professional trust footer", () => {
     ).toStrictEqual([
       { href: "/privacy", target: null, text: "Privacy" },
       {
-        href: "/app/ai-responsible-use",
+        href: "/ai-ethics",
         target: null,
         text: "AI / Responsible Use",
       },

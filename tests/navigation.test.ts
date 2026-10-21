@@ -119,8 +119,7 @@ describe("Atlas navigation contract", () => {
       getRouteShell("/compare"),
       getRouteShell("/askatlas"),
       getRouteShell("/assistant"),
-      getRouteShell("/app/ai-responsible-use"),
-    ]).toStrictEqual(["none", "none", "none", "none", "analytical", "none"]);
+    ]).toStrictEqual(["none", "none", "none", "none", "analytical"]);
   });
 
   it("matches exact and nested routes without query sensitivity", () => {

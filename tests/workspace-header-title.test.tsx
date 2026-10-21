@@ -14,7 +14,6 @@ import {
   LEGACY_ASSISTANT_PATH,
   LEGACY_COMPARE_PATH,
   RESET_ACTION_PATH,
-  RESET_AI_RESPONSIBLE_USE_PATH,
   RESET_EXPLORE_PATH,
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
@@ -203,8 +202,8 @@ describe("workspace header title resolution", () => {
   it("uses a fallback for routes outside the six destinations", () => {
     expect(
       titlesFor([
-        RESET_AI_RESPONSIBLE_USE_PATH,
-        `${RESET_AI_RESPONSIBLE_USE_PATH}/detail`,
+        "/app/not-a-destination",
+        "/app/not-a-destination/detail",
         "/",
         "/privacy",
         "/variant_1",
@@ -212,8 +211,8 @@ describe("workspace header title resolution", () => {
       ])
     ).toStrictEqual({
       "/": WORKSPACE_HEADER_FALLBACK,
-      "/app/ai-responsible-use": WORKSPACE_HEADER_FALLBACK,
-      "/app/ai-responsible-use/detail": WORKSPACE_HEADER_FALLBACK,
+      "/app/not-a-destination": WORKSPACE_HEADER_FALLBACK,
+      "/app/not-a-destination/detail": WORKSPACE_HEADER_FALLBACK,
       "/privacy": WORKSPACE_HEADER_FALLBACK,
       "/unknown": WORKSPACE_HEADER_FALLBACK,
       "/variant_1": WORKSPACE_HEADER_FALLBACK,
@@ -295,7 +294,7 @@ describe("workspace header in the professional shell", () => {
     );
     titles.push(headerLabel());
 
-    pathname = RESET_AI_RESPONSIBLE_USE_PATH;
+    pathname = "/app/not-a-destination";
     view.rerender(
       <ResetProfessionalShell>
         <p>Workspace page</p>

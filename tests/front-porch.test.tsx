@@ -346,10 +346,7 @@ describe("front porch view", () => {
       });
       const trust = within(screen.getByRole("navigation", { name: "Trust" }));
       expect({
-        blockedAppLinks: [
-          footer.querySelector('a[href="/app/settings"]'),
-          footer.querySelector('a[href="/app/ai-responsible-use"]'),
-        ],
+        blockedAppLinks: [footer.querySelector('a[href="/app/settings"]')],
         brand: {
           href: brand.getAttribute("href"),
           rel: brand.getAttribute("rel"),
@@ -365,7 +362,7 @@ describe("front porch view", () => {
           text: link.textContent,
         })),
       }).toStrictEqual({
-        blockedAppLinks: [null, null],
+        blockedAppLinks: [null],
         brand: {
           href: ABOUT_CARAWAY_LABS_PATH,
           rel: "noopener noreferrer",
