@@ -17,6 +17,7 @@ import {
   stateReviewResponseForUrl,
 } from "../fixtures/review-operating-picture-fixtures";
 import { installCompareMocks } from "./compare-page-mocks";
+import { showCountyList } from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 async function showAdditionalObservations(page: Page) {
@@ -138,6 +139,8 @@ async function expectOverflowCountyRestored(page: Page, fips: string) {
 
 async function expectConsumedReviewReturn(page: Page, fips: string) {
   await page.goto(`/explore?scope=CO&dataset=alpha-2026&county=${fips}`);
+  // A direct county link opens the County tab, so show the list for the row.
+  await showCountyList(page);
   const row = page.locator(`button[data-fips="${fips}"]`);
   await expect(row).toBeVisible();
   await expect(row).not.toBeFocused();

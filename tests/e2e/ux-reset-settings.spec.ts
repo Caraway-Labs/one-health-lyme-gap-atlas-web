@@ -9,6 +9,7 @@ import {
   reviewScopeMetadataFixture,
   reviewScopeScoresFixture,
 } from "../fixtures/review-scope-api-fixtures";
+import { showCountyList } from "./explorer-rail";
 import { revealProfessionalNavigationLink } from "./professional-shell-ready";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
@@ -283,6 +284,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       "data-rendered-scope",
       "NY"
     );
+    await showCountyList(page);
     await expect(
       page.getByRole("button", { name: /Albany, NY/ })
     ).toBeVisible();

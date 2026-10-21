@@ -1,7 +1,16 @@
 "use client";
 
 import { MapPin, Table2 } from "lucide-react";
-import { type ReactNode, useCallback, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -12,6 +21,40 @@ export type ExplorerRailTab = (typeof EXPLORER_RAIL_TABS)[number];
 
 export function isExplorerRailTab(value: unknown): value is ExplorerRailTab {
   return EXPLORER_RAIL_TABS.some((tab) => tab === value);
+}
+
+type RailTabMemory = {
+  read: () => ExplorerRailTab | null;
+  write: (tab: ExplorerRailTab) => void;
+};
+
+const ExplorerRailTabMemory = createContext<RailTabMemory | null>(null);
+
+/**
+ * Remembers the rail tab while the browse picture remounts (a state review that
+ * refetches, or a return from Compare). Without it a remount would reopen the
+ * County tab and hide the row focus just returned to.
+ */
+export function ExplorerRailTabMemoryProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const last = useRef<ExplorerRailTab | null>(null);
+  const memory = useMemo<RailTabMemory>(
+    () => ({
+      read: () => last.current,
+      write: (tab) => {
+        last.current = tab;
+      },
+    }),
+    []
+  );
+  return (
+    <ExplorerRailTabMemory.Provider value={memory}>
+      {children}
+    </ExplorerRailTabMemory.Provider>
+  );
 }
 
 /**
@@ -34,9 +77,14 @@ export function useExplorerRailTab({
   selectedFips: string;
 }) {
   // A view that mounts while focus is returning to a row starts on the list.
-  const [tab, setTab] = useState<ExplorerRailTab>(
-    selectedFips && explicit && !returnFocus ? "county" : "list"
-  );
+  const memory = useContext(ExplorerRailTabMemory);
+  const [tab, setTab] = useState<ExplorerRailTab>(() => {
+    const remembered = memory?.read() ?? null;
+    if (selectedFips && remembered) {
+      return returnFocus ? "list" : remembered;
+    }
+    return selectedFips && explicit && !returnFocus ? "county" : "list";
+  });
   const [trackedFips, setTrackedFips] = useState(selectedFips);
   const [trackedReturn, setTrackedReturn] = useState(returnFocus);
   let current = tab;
@@ -58,6 +106,9 @@ export function useExplorerRailTab({
       setTab(current);
     }
   }
+  useEffect(() => {
+    memory?.write(current);
+  }, [current, memory]);
   const showCounty = useCallback(() => {
     setTab("county");
   }, []);

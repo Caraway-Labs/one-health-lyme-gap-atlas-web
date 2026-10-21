@@ -972,6 +972,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
     const fresh = new URL(page.url());
     expect(fresh.searchParams.get("county")).not.toBe(rank41.fips);
 
+    await showSelectedCounty(page);
     await page.getByTestId("review-compare").click();
     await expect(page).toHaveURL(/\/compare/);
     const compareUrl = new URL(page.url());

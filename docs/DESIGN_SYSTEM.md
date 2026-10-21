@@ -120,7 +120,7 @@ Rules:
 - Absence is not zero. Only a governed observed zero renders the numeral `0`.
 - Pair every treatment with its word. The icon and pattern support the label and do not replace it.
 
-CSS utility contract (implemented in `src/features/ux-reset/ux-reset.css`; this document is the contract):
+CSS utility contract (implemented in `src/features/ux-reset/evidence/evidence-state.css`; `EvidenceStateGlyph` pairs the icon with the word; this document is the contract):
 
 | Class | Meaning | Treatment |
 | --- | --- | --- |
@@ -158,6 +158,28 @@ These compose primitives and domain CSS. They are not rename-wrappers:
 - `AtlasPriorityBadge` — `Badge` plus `.priority-pill` severity colors
 - `EvidenceObject`, `EvidenceStateStrip`, `EvidenceProvenanceInspect` — UX Reset shared evidence/provenance presentation (`src/features/ux-reset/evidence/`; see [ux-reset-evidence-contract.md](./ux-reset-evidence-contract.md))
 
+### Atlas Explorer layout (WEB #788)
+
+The `/explore` browse view is one map-led stage and a companion rail. The audit behind it is [product/ux-audit-explore-page.md](./product/ux-audit-explore-page.md).
+
+- **Context bar** (`ExplorerCountyToolbar`): a `Breadcrumb` is the single readout of geography (United States > state > county). The State `Select`, county combobox, and Available data `Select` are the inputs. Scenarios (`Sheet`), Official resources (`Popover`), Export (`DropdownMenu`), and the Release badge (`Sheet`) sit in one trailing group. Below 640px the group shows icons with visually hidden labels.
+- **Map stage**: the canvas fills the stage height (`clamp(32rem, 100dvh - 21rem, 60rem)` at 1100px and wider). The layer `Select` floats over the top-left of the map. The legend is a compact strip under the canvas so it never covers a county. A `Scenario colors, not published` badge appears in the map header whenever the colors are browser scenario values.
+- **Rail** (`ExplorerBrowseRail`): `Tabs` switch between **List** and **County**. Choosing a county, from the list, the map, the county search, or the URL, opens County. Clearing it returns to List. Returning from county evidence shows List so focus can land on the county row.
+- **Shortlist rows**: each row is one button with rank, full county name, review-priority bar (the same ramp color as the map), and an evidence-completeness `Meter`. Counties with no published score show a hatched `No score` chip. Sort (Priority, Name, Evidence) is a viewing aid; the default order stays the governed ranking.
+- **County summary card**: name, state badge, FIPS, a score ramp with the `Review priority · not disease risk` qualifier, an evidence-completeness `Meter`, a surveillance fingerprint (one `EvidenceStateGlyph` per family, using the state the shared evidence model already derives), the existing four marks, then one primary action and an icon row (follow-up, compare, PDF). The rationale rows sit behind one `Collapsible` (`Evidence behind this review`).
+- **Follow-up**: `CountyActionChecklist` shows one action line per domain with an `Accordion` for the full governed text. It renders only when a county is selected.
+- **Scenario**: a non-modal `Sheet` keeps the map live while sliders move. `Scenario active` and a quick reset sit beside the trigger whenever settings differ from the published defaults.
+### Atlas Explorer layout (WEB #788)
+
+The `/explore` browse view is one map-led stage and a companion rail. The audit behind it is [product/ux-audit-explore-page.md](./product/ux-audit-explore-page.md).
+
+- **Context bar** (`ExplorerCountyToolbar`): a `Breadcrumb` is the single readout of geography (United States > state > county). The State `Select`, county combobox, and Available data `Select` are the inputs. Scenarios (`Sheet`), Official resources (`Popover`), Export (`DropdownMenu`), and the Release badge (`Sheet`) sit in one trailing group. Below 640px the group shows icons with visually hidden labels.
+- **Map stage**: the canvas fills the stage height (`clamp(32rem, 100dvh - 21rem, 60rem)` at 1100px and wider). The layer `Select` floats over the top-left of the map. The legend is a compact strip under the canvas so it never covers a county. A `Scenario colors, not published` badge appears in the map header whenever the colors are browser scenario values.
+- **Rail** (`ExplorerBrowseRail`): `Tabs` switch between **List** and **County**. Choosing a county, from the list, the map, the county search, or the URL, opens County. Clearing it returns to List. Returning from county evidence shows List so focus can land on the county row.
+- **Shortlist rows**: each row is one button with rank, full county name, review-priority bar (the same ramp color as the map), and an evidence-completeness `Meter`. Counties with no published score show a hatched `No score` chip. Sort (Priority, Name, Evidence) is a viewing aid; the default order stays the governed ranking.
+- **County summary card**: name, state badge, FIPS, a score ramp with the `Review priority · not disease risk` qualifier, an evidence-completeness `Meter`, a surveillance fingerprint (one `EvidenceStateGlyph` per family, using the state the shared evidence model already derives), the existing four marks, then one primary action and an icon row (follow-up, compare, PDF). The rationale rows sit behind one `Collapsible` (`Evidence behind this review`).
+- **Follow-up**: `CountyActionChecklist` shows one action line per domain with an `Accordion` for the full governed text. It renders only when a county is selected.
+- **Scenario**: a non-modal `Sheet` keeps the map live while sliders move. `Scenario active` and a quick reset sit beside the trigger whenever settings differ from the published defaults.
 Keep scoring, filter, geography, and provenance logic in feature code.
 
 ## When custom CSS is acceptable

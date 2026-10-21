@@ -784,3 +784,40 @@ All screenshots use test fixtures, not live Atlas data. Grey map fills are a fix
 - No product code, configuration, or tests were modified.
 - The only files created are this report and `ux-audit-assets/explore/*.png`.
 - The rendering harness was a temporary copy outside the repository; it was removed after capture. No credentials, tokens, or Snowflake access were used or needed.
+
+---
+
+## 11. Implementation status (WEB #788)
+
+Added after the audit was approved. The audit above is unchanged. The implementation lives on branch `feat/788-explorer-visual-first`. Baseline and after captures are in `docs/evidence/web-788/`. The capture harness is `scripts/explorer-ux-capture.mjs`.
+
+Note: the audit measured `main` at the time. `main` had moved before implementation started (county summary marks, rationale rows, scenario rewrite, legend About), so the measured "before" in `docs/evidence/web-788/before/` is the later `main`.
+
+| ID | Status | Notes |
+| --- | --- | --- |
+| Q1 duplicate County evidence link | Done | The candidate preview no longer renders `County evidence`. `View Full County Evidence` is the single route, still built from the governed handoff URL. |
+| Q2 full county names | Done | Shortlist rows wrap the full name in a wider rail. |
+| Q3 de-duplicate Unavailable | Done | Evidence cards state Unavailable once and draw no chips for all-Unavailable provenance. |
+| Q4 type scale | Done | Sub-12px body sizes in the Explorer were raised to 12px. The 5-step scale is documented in `DESIGN_SYSTEM.md`. |
+| Q5 resources collapsed | Done | Official resources are a closed popover in the context bar. Same references. |
+| Q6 follow-up only with a county | Done | `ExplorerMapFollowUp` renders nothing until a county is selected. |
+| Q7 scenario indicator | Done | `Scenario active` badge and quick reset beside the trigger, `Scenario scores` on the list, `Scenario colors, not published` on the map, and a delta on the summary card. |
+| Q8 whole-number scores | Not done | Owner decision (C1). One decimal stays. |
+| F1 primitives | Done | Tabs, ToggleGroup, Collapsible, Accordion, Sheet, Drawer, Breadcrumb, Combobox, InputGroup, Textarea, ScrollArea, Separator, Meter, HoverCard, Spinner, with gallery and Storybook specimens and unit tests. |
+| F2 icon vocabulary and state grammar | Done | `DESIGN_SYSTEM.md`, `EvidenceStateGlyph`, `evidence-state.css`. |
+| F3 type and spacing tokens | Done (docs) | Scale documented and applied to the new Explorer CSS. |
+| L1 context bar | Done | Breadcrumb, filters with count, Scenario, Resources, Export, Release badge. The hero banner stays (G5). |
+| L2 map stage | Done | Map fills the stage height. Layer select floats on the map. The legend is a compact strip below the canvas (an overlay hid counties). |
+| L3 rail, shortlist, summary card | Done | List and County tabs, sortable bar rows, summary card. |
+| L4 scenario sheet | Done | Non-modal right sheet. The before and after figures stay in the impact block. |
+| L5 follow-up checklist | Done | `CountyActionChecklist`. Governed text is kept verbatim behind accordions. |
+| L6 evidence view | Done | Sticky header, five tabs, grouped evidence, provenance chips. |
+| L7 mobile | Partly | Map first, compact controls, icon-only actions. The bottom Drawer with snap points is not built. |
+| G1 signal-composition bars | Not done | Needs owner and methodology sign-off. |
+| G2 new ramp and map hatch | Not done | Domain tokens. Needs owner approval. |
+| G3 priority bands instead of rank | Not done | Changes governed list behavior. |
+| G4 export with scores and provenance | Not done | Needs a provenance decision. The Export menu offers the county list (no scores) and the county report. |
+| G5 condensed hero copy | Not done | Product-owner copy. |
+| Combobox swap (E1) | Not done | The primitive exists. The county search keeps its tested keyboard contract. |
+| Map hover readout (D2 PreviewCard) | Not done | Needs a hover API from the map component. The stage chip (Step 1 and Step 2) is done. |
+| Map, Split, Table toggle (B2) | Not done | Optional in the audit. |

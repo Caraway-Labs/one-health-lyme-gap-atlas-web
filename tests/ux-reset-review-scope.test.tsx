@@ -1482,8 +1482,7 @@ describe("Reset Review scope UI", () => {
           .querySelector(`a[aria-label="${label}"]`)
           ?.getAttribute("href") ?? "";
       const investigate =
-        screen
-          .getByTestId("review-county-preview").dataset.target ?? "";
+        screen.getByTestId("review-county-preview").dataset.target ?? "";
       const compare =
         screen.getByTestId("review-compare").getAttribute("href") ?? "";
       const ask = shellHref("Ask Atlas");
@@ -2243,8 +2242,7 @@ describe("Reset Review scope UI", () => {
       );
       expect({
         albany: screen.queryByText("Albany"),
-        handoff: screen
-          .getByTestId("review-county-preview").dataset.target,
+        handoff: screen.getByTestId("review-county-preview").dataset.target,
         list: candidateText(),
         loading: screen.queryByText("Loading review scope…"),
         rendered: screen.getByTestId("review-scope-results").dataset
@@ -2393,14 +2391,12 @@ describe("Reset Review scope UI", () => {
       pending.find((entry) => entry.state === "CO")?.resolve();
       await waitFor(() =>
         expect(
-          screen
-            .getByTestId("review-county-preview").dataset.target
+          screen.getByTestId("review-county-preview").dataset.target
         ).toContain("scope=NY")
       );
       expect({
         denver: screen.queryByText("Denver"),
-        handoff: screen
-          .getByTestId("review-county-preview").dataset.target,
+        handoff: screen.getByTestId("review-county-preview").dataset.target,
         list: screen.getByTestId("review-candidate").textContent,
         map: screen.getByTestId("mock-atlas-map").dataset.mapScoreFips,
         rendered: screen.getByTestId("review-scope-results").dataset
@@ -2821,8 +2817,7 @@ describe("Reset Review scope UI", () => {
       )
     );
     const preview = screen.getByTestId("review-county-preview");
-    const href = screen
-      .getByTestId("review-county-preview").dataset.target;
+    const href = screen.getByTestId("review-county-preview").dataset.target;
     expect({
       caveat: preview.dataset.caveat ?? "",
       dossier:
@@ -3013,8 +3008,7 @@ describe("Reset Review scope UI", () => {
       )
     );
     const href =
-      screen.getByTestId("review-county-preview").dataset.target ??
-      "";
+      screen.getByTestId("review-county-preview").dataset.target ?? "";
     const url = new URL(href, "http://localhost");
     expect({
       compare: url.searchParams.get("compare"),

@@ -21,6 +21,7 @@ import {
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { resetRouteById } from "@/features/ux-reset/paths";
+import { ExplorerRailTabMemoryProvider } from "@/features/ux-reset/review/explorer-browse-rail";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 import {
   downloadExplorerCountyList,
@@ -977,7 +978,9 @@ export function ResetReviewExperience() {
         <AtlasStatusMessage tone="loading">Loading review…</AtlasStatusMessage>
       }
     >
-      <ResetReviewExperienceInner />
+      <ExplorerRailTabMemoryProvider>
+        <ResetReviewExperienceInner />
+      </ExplorerRailTabMemoryProvider>
     </Suspense>
   );
 }

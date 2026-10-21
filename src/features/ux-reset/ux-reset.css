@@ -407,14 +407,10 @@
   }
 }
 
-
-
 .ux-reset-review-scope-field {
   display: grid;
   gap: var(--space-2);
 }
-
-
 
 .ux-reset-review-results {
   display: grid;
@@ -572,22 +568,6 @@
   display: block;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .response-tier-pill {
   display: inline-flex;
   width: max-content;
@@ -681,8 +661,6 @@
   font-weight: 500;
   text-decoration: none;
 }
-
-
 
 .ux-reset-pro-main a.ux-reset-review-open[data-variant="primary"] {
   color: var(--primary-foreground);
@@ -982,16 +960,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 .ux-reset-investigate-header,
 .ux-reset-investigate-toolbar,
@@ -1886,8 +1854,6 @@
   background: transparent;
 }
 
-
-
 .ux-reset-explorer-heading p,
 .ux-reset-compare-header p {
   margin: 0.25rem 0 0;
@@ -2116,8 +2082,6 @@
   min-width: 0;
 }
 
-
-
 /* Match the State and Available data select size (h-8 / --spacing * 8). */
 .ux-reset-explorer-toolbar [data-slot="select-trigger"],
 .ux-reset-explorer-toolbar [data-slot="button"],
@@ -2260,10 +2224,6 @@
   background: var(--card);
 }
 
-
-
-
-
 .ux-reset-explorer-map {
   width: 100%;
   min-height: 20rem;
@@ -2315,20 +2275,13 @@
   background: transparent;
 }
 
-
-
-
-
 /* Official resources card. Sizes are the desktop targets at the default
    browser font size, scoped so Suggested follow-up keeps its own type. */
-
 
 .ux-reset-explorer-resources-intro {
   display: grid;
   gap: var(--space-2);
 }
-
-
 
 .ux-reset-pro-main .ux-reset-explorer-resources-intro p {
   margin: 0;
@@ -2350,8 +2303,6 @@
   padding-top: var(--space-5);
   border-top: 1px solid var(--line);
 }
-
-
 
 .ux-reset-explorer-resource-list {
   display: grid;
@@ -2399,8 +2350,6 @@
   font-weight: 400;
   line-height: 1.5;
 }
-
-
 
 .ux-reset-explorer-map .map-wrap {
   position: relative;
@@ -2617,8 +2566,6 @@
   appearance: none;
 }
 
-
-
 .ux-reset-ranked-counties {
   display: flex;
   flex: 1 1 auto;
@@ -2720,20 +2667,6 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .ux-reset-ml-priority.priority-pill[data-tier="unavailable"],
 .ux-reset-ml-priority.priority-pill[data-tier="loading"] {
@@ -3279,10 +3212,6 @@
   background: color-mix(in srgb, var(--mint) 72%, white);
 }
 
-
-
-
-
 .ux-reset-pro-main a.ux-reset-review-open[data-variant="outline"] {
   color: var(--foreground);
 }
@@ -3292,8 +3221,6 @@
      An extra section margin left a vacant band above Surveillance evidence. */
   margin-top: 0;
 }
-
-
 
 .ux-reset-review-rationale h3 {
   margin: 0.85rem 0 0.45rem;
@@ -3713,24 +3640,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   border-radius: 999px;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .ux-reset-evidence-columns {
   display: grid;
   gap: 1rem;
@@ -3746,19 +3655,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     min-height: 0;
   }
 
-  
-
-  
-
-  
-
-  
-
   /* At 18% the published-category sentence wraps taller than the list.
      Keep the full sentence in the button name and show two lines. */
-  
-
-  
 
   .ux-reset-explorer-map {
     display: flex;
@@ -3797,18 +3695,10 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     padding: 0.35rem 0.9rem 0.75rem;
   }
 
-  
-
-  
-
   .ux-reset-explorer-map {
     grid-column: 2;
     grid-row: 1;
   }
-
-  
-
-  
 
   /* State orientation keeps the map and state list in one column. The
      national picture's fixed row would crush that list under the map. */
@@ -3819,15 +3709,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     min-height: 0;
   }
 
-  
-
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
     > .ux-reset-review-state-nav {
     grid-column: 1;
     grid-row: 1;
   }
-
-  
 
   .ux-reset-evidence-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3852,12 +3738,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     grid-column: 1 / -1;
     grid-row: 1;
   }
-
-  
-
-  
-
-  
 }
 
 @media (max-width: 799px) {
@@ -3869,12 +3749,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   .ux-reset-explorer-map {
     order: 1;
   }
-
-  
-
-  
-
-  
 
   .ux-reset-explorer-map .map-wrap {
     min-height: 20rem;
@@ -3945,20 +3819,6 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   font-size: 0.75rem;
   font-weight: 500;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .ux-reset-explorer-scenario-body {
   display: grid;
