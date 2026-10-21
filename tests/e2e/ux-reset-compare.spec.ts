@@ -239,7 +239,7 @@ test.describe("two-county Compare", () => {
       "compare-profile-cell-human_case_floor-08001"
     );
     await expect(floor).toContainText("12");
-    await expect(floor).toContainText("floor");
+    await expect(floor).toContainText("or more");
     const suppressed = page
       .getByTestId("compare-profile-cell-incidence_floor-08013")
       .getByTestId("evidence-display-value");

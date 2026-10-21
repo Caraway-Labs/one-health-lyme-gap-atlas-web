@@ -491,7 +491,7 @@ export const UNSUPPORTED_EVIDENCE_RULES = [
   {
     id: "apparent-change-in-reported-cases",
     requirement:
-      "A comparable within-county time series. The published county record used here has a 2023 floor only, so no county-specific trend explanation is emitted.",
+      "A comparable within-county time series. The published county record used here has only the 2023 minimum reported cases snapshot, so no county-specific trend explanation is emitted.",
   },
 ] as const;
 
@@ -702,16 +702,16 @@ function pathogenWithLowIncidence(
 function pathogenTickWhy(evidence: SuggestedFollowUpEvidence): string {
   const observedZero =
     evidence.caseCountFloor2023 === 0
-      ? " The published case-count floor is zero, which is an observed zero and is distinct from a missing record."
+      ? " Minimum reported cases are zero, which is an observed zero and is distinct from a missing record."
       : "";
-  return `Observed finding: the published Lyme-pathogen status is Present, and the published incidence floor is below the existing follow-up reference of 10 per 100,000.${observedZero} Missing information: collection timing and sampling location are not in this county record. Question for local verification: confirm the tick record’s timing and location before treating it as current countywide evidence.`;
+  return `Observed finding: the published Lyme-pathogen status is Present, and the minimum reported incidence is below the existing follow-up reference of 10 per 100,000.${observedZero} Missing information: collection timing and sampling location are not in this county record. Question for local verification: confirm the tick record’s timing and location before treating it as current countywide data.`;
 }
 
 function pathogenHumanWhy(evidence: SuggestedFollowUpEvidence): string {
   const observedCount =
     evidence.caseCountFloor2023 === 0
-      ? "Observed finding: the published case-count floor is zero."
-      : "Observed finding: a published incidence floor is available.";
+      ? "Observed finding: minimum reported cases are zero."
+      : "Observed finding: a minimum reported incidence is available.";
   return `${observedCount} It is below the existing follow-up reference of 10 per 100,000, alongside a documented Lyme-pathogen record. Question for local verification: review the human reporting context and available exposure information. This does not establish local transmission.`;
 }
 
@@ -741,7 +741,7 @@ function missingPublishedHumanCases(
 
 function missingHumanWhy(evidence: SuggestedFollowUpEvidence): string {
   const assumption = missingHumanAssumptionApplies(evidence)
-    ? " The published scoring formula uses the missing-human assumption when a county-linked incidence floor is unavailable. That assumption is not an observed case count."
+    ? " The published scoring formula uses the missing-human assumption when a county-linked minimum reported incidence is unavailable. That assumption is not an observed case count."
     : "";
   return `Missing information: no published county-linked case count is available. A missing record is distinct from zero reported cases. Question for local verification: check source completeness, county assignment, and local records.${assumption}`;
 }

@@ -41,7 +41,7 @@ describe("AI Ethics page", () => {
       text: version.textContent,
     }).toStrictEqual({
       tag: "DIV",
-      text: expect.stringContaining("Last updated September 7, 2026"),
+      text: expect.stringContaining("Last updated October 21, 2026"),
     });
   });
 

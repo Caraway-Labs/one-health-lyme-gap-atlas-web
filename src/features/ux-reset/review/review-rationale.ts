@@ -1,3 +1,4 @@
+import { publishedLymeCasePresentation } from "@/features/ux-reset/review/published-human-case-copy";
 import type { CountyDetail } from "@/generated/models";
 
 export type ReviewRationaleGroup = "surveillance" | "community";
@@ -81,59 +82,8 @@ function pathogenSentence(detail: CountyDetail): string {
   return `The published B. burgdorferi status is ${detail.burgdorferi_status}.`;
 }
 
-function publishedFloorCount(detail: CountyDetail): number | null {
-  if (
-    detail.human_status !== "published_count_floor" ||
-    !finite(detail.case_count_floor_2023) ||
-    detail.case_count_floor_2023 < 0
-  ) {
-    return null;
-  }
-  return detail.case_count_floor_2023;
-}
-
-function publishedFloorRate(detail: CountyDetail): string | null {
-  if (
-    detail.human_status !== "published_count_floor" ||
-    !finite(detail.incidence_floor_2023)
-  ) {
-    return null;
-  }
-  return detail.incidence_floor_2023.toLocaleString("en-US", {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 1,
-  });
-}
-
 function humanSentence(detail: CountyDetail): string {
-  const status = detail.human_status.trim().toLowerCase();
-  if (status === "suppressed") {
-    return "The 2023 county Lyme case count is suppressed.";
-  }
-  if (status === "missing") {
-    return "The 2023 county Lyme case count is missing.";
-  }
-  if (status === "no_county_linked_record") {
-    return "No county-linked 2023 Lyme case record is available.";
-  }
-  const count = publishedFloorCount(detail);
-  const rate = publishedFloorRate(detail);
-  if (count === null && rate === null) {
-    if (status === "published_count_floor") {
-      return "A 2023 case-count floor was published, but the count and rate are unavailable.";
-    }
-    return "No county-level 2023 Lyme case count is available.";
-  }
-  const parts: string[] = [];
-  if (count !== null) {
-    parts.push(
-      `The published 2023 case-count floor is ${count.toLocaleString("en-US")}.`
-    );
-  }
-  if (rate !== null) {
-    parts.push(`The published 2023 minimum rate is ${rate} cases per 100,000.`);
-  }
-  return parts.join(" ");
+  return publishedLymeCasePresentation(detail).text;
 }
 
 function sviSentence(detail: CountyDetail): string {

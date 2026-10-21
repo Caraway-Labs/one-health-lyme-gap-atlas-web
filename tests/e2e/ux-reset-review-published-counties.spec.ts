@@ -117,7 +117,9 @@ test.describe("Published Review county exploration", () => {
     const rows = page.locator("button.ux-reset-ranked-row");
     await expect(rows).toHaveCount(67);
     await choose(page, "01003");
-    await expect(page.getByText(/case-count floor is 5/)).toBeVisible();
+    await expect(
+      page.getByText(/At least 5 Lyme disease cases were reported in 2023/)
+    ).toBeVisible();
     await expect(page.getByText(/A published floor is a minimum/)).toHaveCount(
       0
     );

@@ -112,7 +112,7 @@ describe("Investigation Workspace county decision support", () => {
 
     render(<CountyEvidencePanel detail={observedZero} />);
 
-    expect(screen.getByText("0 published county-linked cases")).toBeTruthy();
+    expect(screen.getByText("Reported cases: 0 or more")).toBeTruthy();
     expect(screen.getAllByText("Observed or published")).toHaveLength(3);
     expect(screen.queryByText("No county-linked published record")).toBeNull();
   });

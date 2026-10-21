@@ -151,6 +151,9 @@ describe("geographic explorer state and comparisons", () => {
     expect(
       new Set(STATE_GRID.map((item) => `${item.row},${item.column}`)).size
     ).toBe(51);
+    expect(evidenceLabel("published_count_floor")).toBe(
+      "Minimum reported cases"
+    );
     expect(evidenceLabel("no_county_linked_record")).toBe(
       "No county-linked record"
     );

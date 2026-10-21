@@ -7,8 +7,8 @@
  * public-facing text changes.
  */
 export const aiEthicsContent = {
-  version: "0.1.0",
-  lastUpdated: "2026-09-07",
+  version: "0.2.0",
+  lastUpdated: "2026-10-21",
   maintenance: {
     review: "Ordinary pull-request review for this initial release.",
     updateRule:
@@ -26,10 +26,11 @@ export const aiEthicsContent = {
       status: "current" as const,
       title: "Atlas prioritizes transparent, non-predictive scoring",
       summary:
-        "The current Atlas score is a transparent, adjustable follow-up-priority calculation. It is not a predictive model.",
+        "The current Atlas score is a transparent, adjustable follow-up-priority calculation. It is not a predictive model. Signed-in Atlas Explorer can also show a separate model-assisted surveillance review priority when that tier's release matches the selected evidence release.",
       detail:
-        "The score helps users inspect where published surveillance information and other public evidence may warrant a closer look. It does not diagnose Lyme disease, predict an individual's risk, establish disease burden, or prove what caused an outcome.",
-      evidence: "Current Atlas scoring UI and methodology language.",
+        "The rules-based score helps users inspect where published surveillance information and other public evidence may warrant a closer look. It does not diagnose Lyme disease, predict an individual's risk, establish disease burden, or prove what caused an outcome. The model-assisted priority is a persisted HIGH, MEDIUM, or LOW review tier returned by the API. Atlas shows that tier only when its release matches the selected evidence release. Atlas withholds the tier when the returned release differs from the evidence on screen, and when the governed release for the page is not known. A withheld, missing, or not-estimable result is not shown as LOW. The tier is review prioritization, not disease risk, predicted incidence, a diagnosis, or an autonomous decision. Forecasts and anomaly candidates are not released.",
+      evidence:
+        "Current Atlas scoring UI and methodology language. Model-assisted surveillance review priority: web issue 457 production acceptance, including pull request 470 and deploy run 37717195860. The tier is shown only for a matching evidence release (present-tier1-surveillance-priority.ts release check; web issue 570).",
     },
     {
       status: "approved-architecture" as const,
