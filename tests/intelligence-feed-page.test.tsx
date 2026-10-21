@@ -6,19 +6,50 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
+import type { ReadonlyURLSearchParams } from "next/navigation";
+import { NuqsTestingAdapter } from "nuqs/adapters/testing";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const searchParamsHolder = vi.hoisted(() => ({
+  value: new URLSearchParams(),
+}));
+
+vi.mock(import("next/navigation"), async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    useSearchParams: () =>
+      searchParamsHolder.value as unknown as ReadonlyURLSearchParams,
+  };
+});
+
+import { publishedFromForPreset } from "@/features/ux-reset/feed/feed-filters";
 import { IntelligenceFeedExperience } from "@/features/ux-reset/feed/intelligence-feed-page";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
   intelligenceFeedEnvelope,
+  intelligenceSourcesEnvelope,
   mixedIntelligenceFeedItems,
 } from "./fixtures/intelligence-feed-fixtures";
 
 const listIntelligenceFeed = vi.hoisted(() =>
+  vi.fn<
+    (
+      params?: {
+        page_token?: string;
+        published_from?: string;
+        source_id?: string;
+      },
+      options?: unknown
+    ) => Promise<{ data: unknown; headers: Headers; status: number }>
+  >()
+);
+
+const listIntelligenceSources = vi.hoisted(() =>
   vi.fn<
     (
       params?: { page_token?: string },
@@ -27,28 +58,64 @@ const listIntelligenceFeed = vi.hoisted(() =>
   >()
 );
 
+const trackFeedFilterApplied = vi.hoisted(() =>
+  vi.fn<(dimension: string, value: string, count: number) => void>()
+);
+const trackFeedFilterCleared = vi.hoisted(() =>
+  vi.fn<(scope: string, count: number) => void>()
+);
+
 vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
     listIntelligenceFeed:
       listIntelligenceFeed as unknown as typeof actual.listIntelligenceFeed,
+    listIntelligenceSources:
+      listIntelligenceSources as unknown as typeof actual.listIntelligenceSources,
+  };
+});
+
+vi.mock(import("@/lib/atlas-analytics"), async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    trackFeedFilterApplied,
+    trackFeedFilterCleared,
   };
 });
 
 const SCRIPT_URL = ["java", "script:alert(1)"].join("");
 
-function renderFeed() {
+function renderFeed(search = "") {
+  searchParamsHolder.value = new URLSearchParams(search);
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const urlUpdates: string[] = [];
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    <QueryClientProvider client={client}>
+      <NuqsTestingAdapter
+        hasMemory
+        onUrlUpdate={(event) => {
+          searchParamsHolder.value = event.searchParams;
+          urlUpdates.push(`${event.options.history}:${event.queryString}`);
+        }}
+        searchParams={search}
+      >
+        {children}
+      </NuqsTestingAdapter>
+    </QueryClientProvider>
   );
   return {
     client,
+    urlUpdates,
     ...render(<IntelligenceFeedExperience />, { wrapper }),
   };
+}
+
+function catalogRows() {
+  return mixedIntelligenceFeedItems.map((item) => item.source);
 }
 
 function succeed(data: ReturnType<typeof intelligenceFeedEnvelope>) {
@@ -107,9 +174,20 @@ function mockNextPageFailure(
 }
 
 describe("intelligence feed page", () => {
+  beforeEach(() => {
+    listIntelligenceSources.mockResolvedValue({
+      data: intelligenceSourcesEnvelope(catalogRows()),
+      headers: new Headers(),
+      status: 200,
+    });
+  });
+
   afterEach(() => {
     cleanup();
     listIntelligenceFeed.mockReset();
+    listIntelligenceSources.mockReset();
+    trackFeedFilterApplied.mockReset();
+    trackFeedFilterCleared.mockReset();
   });
 
   it("lists a realistic source mix and quiet missing dates", async () => {
@@ -261,7 +339,10 @@ describe("intelligence feed page", () => {
     expect(titles[0]).toContain("Lyme disease surveillance update");
     expect(titles[1]).toContain("County-level Lyme reporting, a review");
     expect(listIntelligenceFeed).toHaveBeenCalledWith(
-      { page_token: "page-2" },
+      {
+        page_token: "page-2",
+        published_from: publishedFromForPreset("30d", new Date()),
+      },
       expect.anything()
     );
   });
@@ -431,5 +512,264 @@ describe("intelligence feed page", () => {
     expect(
       screen.getByRole("heading", { name: /Lyme disease surveillance update/ })
     ).toBeTruthy();
+  });
+
+  it("requests the default date, chips, clear, and an empty filtered result", async () => {
+    succeed(intelligenceFeedEnvelope([]));
+    renderFeed("?published=7d&source=cdc-lyme");
+
+    await screen.findByRole("heading", {
+      name: "No items match these filters",
+    });
+    expect({
+      chip: Boolean(
+        screen.getByRole("button", {
+          name: "Remove filter Published: Past 7 days",
+        })
+      ),
+      defaultEmpty: screen.queryByRole("heading", { name: "No new items" }),
+      help: screen.getByText(
+        "Items without a publication date appear under All dates."
+      ).textContent,
+      summary: screen.getByText("Showing 0 items").textContent,
+      wider: Boolean(
+        screen.getByText("Try another source or a wider date range.")
+      ),
+    }).toStrictEqual({
+      chip: true,
+      defaultEmpty: null,
+      help: "Items without a publication date appear under All dates.",
+      summary: "Showing 0 items",
+      wider: true,
+    });
+    await waitFor(() => {
+      expect(listIntelligenceFeed).toHaveBeenCalledWith(
+        {
+          published_from: publishedFromForPreset("7d", new Date()),
+          source_id: "cdc-lyme",
+        },
+        expect.anything()
+      );
+    });
+  });
+
+  it("clears filters, records analytics, and returns focus to the filter bar", async () => {
+    succeed(intelligenceFeedEnvelope([]));
+    const { urlUpdates } = renderFeed("?published=7d");
+
+    await screen.findByRole("heading", {
+      name: "No items match these filters",
+    });
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Clear filters" })[0]
+    );
+    await waitFor(() => {
+      expect({
+        cleared: screen.queryByRole("button", { name: "Clear filters" }),
+        focus: document.activeElement,
+        pushed: urlUpdates.some((update) => update.startsWith("push:")),
+        tracked: trackFeedFilterCleared.mock.calls,
+      }).toStrictEqual({
+        cleared: null,
+        focus: screen.getByRole("group", { name: "Feed filters" }),
+        pushed: true,
+        tracked: [["all", 0]],
+      });
+    });
+  });
+
+  it("shows too many items separately from a failed request", async () => {
+    listIntelligenceFeed.mockRejectedValue(
+      new AtlasApiError(
+        "Narrow the source or publication dates.",
+        "/v1/intelligence/feed",
+        400,
+        "req-broad",
+        null,
+        {
+          code: "QUERY_TOO_BROAD",
+          detail: "Narrow the source or publication dates.",
+        }
+      )
+    );
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: "Too many items to show at once",
+    });
+    expect({
+      failed: screen.queryByRole("heading", {
+        name: "Intelligence feed request failed",
+      }),
+      guidance: Boolean(
+        screen.getByText("Choose a source or a shorter date range.")
+      ),
+      publishedDisabled: screen
+        .getByRole("combobox", { name: "Published" })
+        .hasAttribute("disabled"),
+      sourceDisabled: screen
+        .getByRole("combobox", { name: "Source" })
+        .hasAttribute("disabled"),
+      state: screen.getByTestId("intelligence-feed").dataset.feedState,
+    }).toStrictEqual({
+      failed: null,
+      guidance: true,
+      publishedDisabled: false,
+      sourceDisabled: false,
+      state: "too-broad",
+    });
+  });
+
+  it("keeps the feed usable when the source catalog fails", async () => {
+    succeed(intelligenceFeedEnvelope(mixedIntelligenceFeedItems));
+    listIntelligenceSources.mockRejectedValue(
+      new AtlasApiError(
+        "failed",
+        "/v1/intelligence/sources",
+        500,
+        "req-sources"
+      )
+    );
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    expect(screen.getByText("Sources couldn't load")).toBeTruthy();
+    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
+      "ready"
+    );
+    fireEvent.click(
+      within(screen.getByRole("status")).getByRole("button", {
+        name: "Try again",
+      })
+    );
+    await waitFor(() => {
+      expect(listIntelligenceSources.mock.calls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it("restarts the current filter once when Show more has a stale token", async () => {
+    const [first, second] = mixedIntelligenceFeedItems;
+    let bareCalls = 0;
+    listIntelligenceFeed.mockImplementation(async (params) => {
+      if (params?.page_token) {
+        throw new AtlasApiError(
+          "Projection changed; restart pagination.",
+          "/v1/intelligence/feed",
+          400,
+          "req-stale",
+          null,
+          { detail: "Projection changed; restart pagination." }
+        );
+      }
+      bareCalls += 1;
+      if (bareCalls === 1) {
+        return {
+          data: intelligenceFeedEnvelope([first], "page-2"),
+          headers: new Headers(),
+          status: 200,
+        };
+      }
+      return {
+        data: intelligenceFeedEnvelope([second]),
+        headers: new Headers(),
+        status: 200,
+      };
+    });
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", {
+      name: /County-level Lyme reporting, a review/,
+    });
+    expect(
+      screen.queryByRole("heading", { name: "More items could not be loaded" })
+    ).toBeNull();
+    expect(
+      screen.queryByRole("heading", {
+        name: /Lyme disease surveillance update/,
+      })
+    ).toBeNull();
+    expect(bareCalls).toBe(2);
+  });
+
+  it("shows the next-page failure when a stale-token restart also fails", async () => {
+    const [first] = mixedIntelligenceFeedItems;
+    let bareCalls = 0;
+    listIntelligenceFeed.mockImplementation(async (params) => {
+      if (params?.page_token) {
+        throw new AtlasApiError(
+          "Projection changed; restart pagination.",
+          "/v1/intelligence/feed",
+          400,
+          "req-stale",
+          null,
+          { detail: "Projection changed; restart pagination." }
+        );
+      }
+      bareCalls += 1;
+      if (bareCalls > 1) {
+        throw new AtlasApiError(
+          "failed",
+          "/v1/intelligence/feed",
+          500,
+          "req-restart"
+        );
+      }
+      return {
+        data: intelligenceFeedEnvelope([first], "page-2"),
+        headers: new Headers(),
+        status: 200,
+      };
+    });
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", {
+      name: "More items could not be loaded",
+    });
+    expect(
+      screen.getByRole("heading", { name: /Lyme disease surveillance update/ })
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Intelligence feed request failed",
+      })
+    ).toBeNull();
+  });
+
+  it("applies a source from the catalog without sending the source id to analytics", async () => {
+    succeed(intelligenceFeedEnvelope(mixedIntelligenceFeedItems));
+    renderFeed();
+    await screen.findByRole("combobox", { name: "Source" });
+    fireEvent.click(screen.getByRole("combobox", { name: "Source" }));
+    const cdc = await screen.findByRole("option", {
+      name: "Centers for Disease Control and Prevention",
+    });
+    fireEvent.pointerDown(cdc, { button: 0, pointerId: 1 });
+    fireEvent.pointerUp(cdc, { button: 0, pointerId: 1 });
+    fireEvent.click(cdc);
+    await waitFor(() => {
+      expect(listIntelligenceFeed).toHaveBeenCalledWith(
+        expect.objectContaining({ source_id: "cdc-lyme" }),
+        expect.anything()
+      );
+    });
+    expect(trackFeedFilterApplied).toHaveBeenCalledWith(
+      "feed_source",
+      "source_selected",
+      1
+    );
+    expect(JSON.stringify(trackFeedFilterApplied.mock.calls)).not.toContain(
+      "cdc-lyme"
+    );
+    expect(screen.getByText("Showing 3 items")).toBeTruthy();
   });
 });

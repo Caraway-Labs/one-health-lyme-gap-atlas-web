@@ -1,14 +1,32 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import type { ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
+import { useQueryStates } from "nuqs";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import type { FeedEntry } from "@/generated/models/feedEntry";
+import {
+  trackFeedFilterApplied,
+  trackFeedFilterCleared,
+} from "@/lib/atlas-analytics";
 
+import {
+  activeFeedFilterCount,
+  DEFAULT_FEED_PUBLISHED,
+  feedResultSummary,
+  feedSearchParams,
+  feedSourceOptions,
+  isFeedPublishedPreset,
+  isFeedQueryTooBroad,
+  isFeedSourceId,
+  type FeedFilterState,
+  type FeedPublishedPreset,
+} from "./feed-filters";
 import {
   FEED_EXTERNAL_LINK_REL,
   FEED_EXTERNAL_LINK_TARGET,
@@ -18,11 +36,17 @@ import {
   feedPublisherLabel,
   feedRequestFailure,
 } from "./feed-presentation";
+import { IntelligenceFeedFilters } from "./intelligence-feed-filters";
 import { useIntelligenceFeed } from "./use-intelligence-feed";
+import { useIntelligenceSources } from "./use-intelligence-sources";
 
 const EMPTY_TITLE = "No new items";
 const EMPTY_BODY =
   "Approved trusted sources have no items in this feed right now.";
+const FILTERED_EMPTY_TITLE = "No items match these filters";
+const FILTERED_EMPTY_BODY = "Try another source or a wider date range.";
+const TOO_BROAD_TITLE = "Too many items to show at once";
+const TOO_BROAD_BODY = "Choose a source or a shorter date range.";
 
 function FeedLimitations({ limitations }: { limitations: readonly string[] }) {
   if (limitations.length === 0) {
@@ -108,16 +132,63 @@ function FeedRetry({ onRetry }: { onRetry: () => Promise<unknown> }) {
 
 export function IntelligenceFeedExperience() {
   const route = resetRouteById("feed");
-  const feed = useIntelligenceFeed();
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const [urlState, setUrlState] = useQueryStates(feedSearchParams, {
+    history: "push",
+    scroll: false,
+    shallow: true,
+  });
+  const filters: FeedFilterState = {
+    published: urlState.published,
+    sourceId: urlState.source,
+  };
+  const sources = useIntelligenceSources();
+  const sourceOptions = useMemo(
+    () => feedSourceOptions(sources.data ?? []),
+    [sources.data]
+  );
+  const sourceIsKnown = filters.sourceId
+    ? sourceOptions.some((option) => option.sourceId === filters.sourceId)
+    : false;
+  const waitForCatalog = Boolean(filters.sourceId) && sources.isPending;
+  const sourceRejected =
+    Boolean(filters.sourceId) && sources.isSuccess && !sourceIsKnown;
+  const feed = useIntelligenceFeed(filters, !waitForCatalog && !sourceRejected);
+  const rawSource = searchParams.get("source");
+  const rawPublished = searchParams.get("published");
+
+  useEffect(() => {
+    const patch: { published?: null; source?: null } = {};
+    if (
+      rawPublished !== null &&
+      (!isFeedPublishedPreset(rawPublished) ||
+        rawPublished === DEFAULT_FEED_PUBLISHED)
+    ) {
+      patch.published = null;
+    }
+    const sourceIsAbsent =
+      Boolean(rawSource) &&
+      isFeedSourceId(rawSource ?? "") &&
+      sources.isSuccess &&
+      !sourceOptions.some((option) => option.sourceId === rawSource);
+    if ((rawSource !== null && !isFeedSourceId(rawSource)) || sourceIsAbsent) {
+      patch.source = null;
+    }
+    if (patch.published === undefined && patch.source === undefined) {
+      return;
+    }
+    void setUrlState(patch, { history: "replace", scroll: false });
+  }, [rawPublished, rawSource, setUrlState, sourceOptions, sources.isSuccess]);
+
   const pages = feed.data?.pages ?? [];
   const items = pages.flatMap((page) => page.data);
   const limitations = pages[0]?.meta.limitations ?? [];
-  // TanStack Query keeps feed.data when a later fetch fails and sets isError.
-  // A failed "Show more" is also isFetchNextPageError. A window-focus, remount,
-  // or explicit refetch is isRefetchError. Replace the page only when no items
-  // have loaded; otherwise keep the list and show the failure beside it.
+  const narrowed = activeFeedFilterCount(filters) > 0;
+  const tooBroad =
+    items.length === 0 && feed.isError && isFeedQueryTooBroad(feed.error);
   const nextPageFailure =
-    items.length > 0 && feed.isFetchNextPageError
+    items.length > 0 && feed.isFetchNextPageError && !feed.isRestartingPage
       ? feedRequestFailure(feed.error)
       : null;
   const refreshFailure =
@@ -125,10 +196,82 @@ export function IntelligenceFeedExperience() {
       ? feedRequestFailure(feed.error)
       : null;
   const failure =
-    items.length === 0 && feed.isError ? feedRequestFailure(feed.error) : null;
+    items.length === 0 && feed.isError && !tooBroad
+      ? feedRequestFailure(feed.error)
+      : null;
+
+  const replaceFilters = (
+    next: Partial<FeedFilterState>,
+    history: "push" | "replace"
+  ) => {
+    const published = next.published ?? filters.published;
+    const sourceId =
+      next.sourceId === undefined ? filters.sourceId : next.sourceId;
+    void setUrlState(
+      {
+        published: published === DEFAULT_FEED_PUBLISHED ? null : published,
+        source: sourceId,
+      },
+      { history, scroll: false }
+    );
+  };
+
+  const applySource = (sourceId: string | null) => {
+    if (sourceId === filters.sourceId) {
+      return;
+    }
+    const next = { ...filters, sourceId };
+    replaceFilters({ sourceId }, "push");
+    trackFeedFilterApplied(
+      "feed_source",
+      sourceId ? "source_selected" : "all",
+      activeFeedFilterCount(next)
+    );
+  };
+
+  const applyPublished = (published: FeedPublishedPreset) => {
+    if (published === filters.published) {
+      return;
+    }
+    const next = { ...filters, published };
+    replaceFilters({ published }, "push");
+    trackFeedFilterApplied(
+      "feed_published",
+      published,
+      activeFeedFilterCount(next)
+    );
+  };
+
+  const removeSource = () => {
+    const next = { ...filters, sourceId: null };
+    replaceFilters({ sourceId: null }, "push");
+    trackFeedFilterCleared("single", activeFeedFilterCount(next));
+  };
+
+  const removePublished = () => {
+    const next = { ...filters, published: DEFAULT_FEED_PUBLISHED };
+    replaceFilters({ published: DEFAULT_FEED_PUBLISHED }, "push");
+    trackFeedFilterCleared("single", activeFeedFilterCount(next));
+  };
+
+  const clearFilters = () => {
+    replaceFilters(
+      { published: DEFAULT_FEED_PUBLISHED, sourceId: null },
+      "push"
+    );
+    trackFeedFilterCleared("all", 0);
+    filterBarRef.current?.focus({ preventScroll: true });
+  };
 
   let body: ReactNode;
-  let state: "empty" | "error" | "loading" | "ready" | "unavailable";
+  let state:
+    | "empty"
+    | "error"
+    | "filtered-empty"
+    | "loading"
+    | "ready"
+    | "too-broad"
+    | "unavailable";
   if (feed.isPending) {
     state = "loading";
     body = (
@@ -138,6 +281,13 @@ export function IntelligenceFeedExperience() {
         tone="loading"
       >
         Reading trusted-source items.
+      </AtlasStatusMessage>
+    );
+  } else if (tooBroad) {
+    state = "too-broad";
+    body = (
+      <AtlasStatusMessage title={TOO_BROAD_TITLE} titleAs="h2" tone="empty">
+        {TOO_BROAD_BODY}
       </AtlasStatusMessage>
     );
   } else if (failure === "unavailable") {
@@ -165,12 +315,28 @@ export function IntelligenceFeedExperience() {
       </AtlasStatusMessage>
     );
   } else if (items.length === 0) {
-    state = "empty";
+    state = narrowed ? "filtered-empty" : "empty";
     body = (
       <>
         <FeedLimitations limitations={limitations} />
-        <AtlasStatusMessage title={EMPTY_TITLE} titleAs="h2" tone="empty">
-          {EMPTY_BODY}
+        <AtlasStatusMessage
+          action={
+            narrowed ? (
+              <Button
+                className="ux-reset-feed-clear"
+                onClick={clearFilters}
+                type="button"
+                variant="outline"
+              >
+                Clear filters
+              </Button>
+            ) : null
+          }
+          title={narrowed ? FILTERED_EMPTY_TITLE : EMPTY_TITLE}
+          titleAs="h2"
+          tone="empty"
+        >
+          {narrowed ? FILTERED_EMPTY_BODY : EMPTY_BODY}
         </AtlasStatusMessage>
       </>
     );
@@ -221,19 +387,26 @@ export function IntelligenceFeedExperience() {
         ) : null}
         {feed.hasNextPage ? (
           <Button
-            disabled={feed.isFetchingNextPage}
+            disabled={feed.isFetchingNextPage || feed.isRestartingPage}
             onClick={() => {
               void feed.fetchNextPage();
             }}
             type="button"
             variant="outline"
           >
-            {feed.isFetchingNextPage ? "Loading more items" : "Show more items"}
+            {feed.isFetchingNextPage || feed.isRestartingPage
+              ? "Loading more items"
+              : "Show more items"}
           </Button>
         ) : null}
       </>
     );
   }
+
+  const summary =
+    state === "ready" || state === "empty" || state === "filtered-empty"
+      ? feedResultSummary(items.length, Boolean(feed.hasNextPage))
+      : "";
 
   return (
     <section
@@ -246,6 +419,27 @@ export function IntelligenceFeedExperience() {
         <h1 id="intelligence-feed-heading">{route.label}</h1>
         <p className="type-body">{route.description}</p>
       </header>
+      <IntelligenceFeedFilters
+        filterBarRef={filterBarRef}
+        filters={filters}
+        onClear={clearFilters}
+        onPublishedChange={applyPublished}
+        onRemovePublished={removePublished}
+        onRemoveSource={removeSource}
+        onRetrySources={() => {
+          void sources.refetch();
+        }}
+        onSourceChange={applySource}
+        sourceOptions={sourceOptions}
+        sourcesError={sources.isError}
+      />
+      <p
+        aria-atomic="true"
+        aria-live="polite"
+        className="type-small ux-reset-feed-summary"
+      >
+        {summary}
+      </p>
       {body}
     </section>
   );

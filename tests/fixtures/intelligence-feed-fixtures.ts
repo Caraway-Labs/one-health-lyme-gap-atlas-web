@@ -1,6 +1,8 @@
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
 import type { FeedEntry } from "@/generated/models/feedEntry";
 import type { FeedEntryPublicationDateState } from "@/generated/models/feedEntryPublicationDateState";
+import type { FeedSource } from "@/generated/models/feedSource";
+import type { FeedSources } from "@/generated/models/feedSources";
 import type { MetadataFeed } from "@/generated/models/metadataFeed";
 
 const SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -101,6 +103,22 @@ export const mixedIntelligenceFeedItems: FeedEntry[] = [
     trust: BriefingSourceReviewedTrustClassification.reviewed_other,
   }),
 ];
+
+export function intelligenceSourcesEnvelope(
+  data: FeedSource[],
+  nextPageToken: string | null = null
+): FeedSources {
+  return {
+    data,
+    meta: {
+      limitations: [...FEED_META_LIMITATIONS],
+      next_page_token: nextPageToken,
+      projection_version: "intelligence-feed-read-v2",
+      source_health_available: false,
+    },
+    source_catalog_complete: false,
+  };
+}
 
 export function intelligenceFeedEnvelope(
   data: FeedEntry[],

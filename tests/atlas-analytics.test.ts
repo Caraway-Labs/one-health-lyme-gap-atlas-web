@@ -12,7 +12,10 @@ import {
   isValidScoreValue,
   routeIdForPathname,
   routeIds,
+  trackFeedFilterApplied,
+  trackFeedFilterCleared,
   uiControlIds,
+  atlasAnalytics,
 } from "../src/lib/atlas-analytics";
 
 describe("Atlas Amplitude boundary", () => {
@@ -76,6 +79,7 @@ describe("Atlas Amplitude boundary", () => {
       knowledgeGraph: routeIdForPathname("/knowledge-graph"),
       knownFrontPorch: routeIds.includes("front_porch"),
       knownVariant: routeIds.includes("atlas_variant"),
+      feed: routeIdForPathname("/app/feed"),
       overview: routeIdForPathname("/overview"),
       privacy: routeIdForPathname("/privacy"),
       retiredVariant: routeIdForPathname("/variant_1"),
@@ -91,11 +95,70 @@ describe("Atlas Amplitude boundary", () => {
       knowledgeGraph: "knowledge_graph",
       knownFrontPorch: true,
       knownVariant: true,
+      feed: "intelligence_feed",
       overview: "atlas_home",
       privacy: "privacy",
       retiredVariant: "atlas_variant",
       retiredVariantSeven: "atlas_variant",
     });
+  });
+
+  it("emits closed Intelligence Feed filter values and drops raw source ids", () => {
+    const track = vi.spyOn(atlasAnalytics, "track");
+    trackFeedFilterApplied("feed_source", "source_selected", 1);
+    trackFeedFilterApplied("feed_published", "7d", 2);
+    trackFeedFilterCleared("single", 1);
+    trackFeedFilterCleared("all", 0);
+    trackFeedFilterApplied("feed_source", "cdc-lyme" as "all", 1);
+    trackFeedFilterApplied("feed_published", "30d", 11);
+    trackFeedFilterCleared("all", -1);
+
+    expect(track.mock.calls).toStrictEqual([
+      [
+        {
+          eventType: "atlas_filter_applied",
+          properties: {
+            active_filter_count: 1,
+            filter_dimension: "feed_source",
+            filter_value: "source_selected",
+            route_id: "intelligence_feed",
+          },
+        },
+      ],
+      [
+        {
+          eventType: "atlas_filter_applied",
+          properties: {
+            active_filter_count: 2,
+            filter_dimension: "feed_published",
+            filter_value: "7d",
+            route_id: "intelligence_feed",
+          },
+        },
+      ],
+      [
+        {
+          eventType: "atlas_filter_cleared",
+          properties: {
+            active_filter_count: 1,
+            clear_scope: "single",
+            route_id: "intelligence_feed",
+          },
+        },
+      ],
+      [
+        {
+          eventType: "atlas_filter_cleared",
+          properties: {
+            active_filter_count: 0,
+            clear_scope: "all",
+            route_id: "intelligence_feed",
+          },
+        },
+      ],
+    ]);
+    expect(JSON.stringify(track.mock.calls)).not.toContain("cdc-lyme");
+    track.mockRestore();
   });
 
   it("uses unique typed route and control allowlists", () => {
