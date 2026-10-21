@@ -1,50 +1,19 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { humanDate } from "@/features/public-trust/human-date";
 import {
   PublicTrustActions,
   PublicTrustIntro,
   PublicTrustPage,
 } from "@/features/public-trust/public-trust-page";
+import { TrustCard } from "@/features/public-trust/trust-card";
 
 import "@/features/ux-reset/trust-footer.css";
 import { aiEthicsContent } from "@/lib/ai-ethics-content";
 import { ATLAS_OVERVIEW_PATH, pageMetadataForRoute } from "@/lib/navigation";
 
 export const metadata = pageMetadataForRoute("/ai-ethics");
-
-function humanDate(isoDate: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${isoDate}T00:00:00Z`));
-}
-
-function TrustCard({
-  children,
-  kicker,
-  title,
-}: {
-  children: ReactNode;
-  kicker?: string;
-  title: string;
-}) {
-  return (
-    <article>
-      <Card className="overflow-visible">
-        <CardHeader>
-          {kicker ? <p className="eyebrow">{kicker}</p> : null}
-          <h3>{title}</h3>
-        </CardHeader>
-        <CardContent className="grid gap-(--space-3)">{children}</CardContent>
-      </Card>
-    </article>
-  );
-}
 
 function FeedbackParagraph() {
   const { before, between, emphasis, links } = aiEthicsContent.feedback;
