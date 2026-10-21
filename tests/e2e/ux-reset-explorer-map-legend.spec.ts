@@ -575,6 +575,28 @@ test.describe("Atlas Explorer layer legends", () => {
     await page.setViewportSize({ height: 1000, width: 1440 });
   });
 
+  test("shows Lyme disease incidence for the incidence floor layer id", async ({
+    page,
+  }) => {
+    await page.goto("/explore?scope=ALL&layer=incidence_floor");
+    const control = page.getByTestId("explorer-map-layer");
+    const legend = page.getByTestId("explorer-map-legend");
+    await expect(control).toContainText("Lyme disease incidence");
+    await expect(page).toHaveURL(/layer=incidence_floor/);
+    await expect(legend).toContainText("Minimum reported incidence");
+    await expect(legend).not.toContainText("Lyme disease incidence");
+    await control.click();
+    await expect(
+      page.getByRole("option", { exact: true, name: "Lyme disease incidence" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("option", {
+        exact: true,
+        name: "Minimum reported incidence",
+      })
+    ).toHaveCount(0);
+  });
+
   test("explains every national gap-score color, then stays accurate across state and layer changes", async ({
     page,
   }) => {
@@ -763,7 +785,7 @@ test.describe("Atlas Explorer layer legends", () => {
         swatchOpacity: "0",
       });
 
-    await chooseLayer(page, "Minimum reported incidence");
+    await chooseLayer(page, "Lyme disease incidence");
     const ramp = legend.getByRole("button", {
       name: /Lower published incidence/,
     });
@@ -812,7 +834,7 @@ test.describe("Atlas Explorer layer legends", () => {
       0
     );
 
-    await chooseLayer(page, "Minimum reported incidence");
+    await chooseLayer(page, "Lyme disease incidence");
     await expect(legend).toContainText("Minimum reported incidence");
     await expect(legend).toContainText("per 100,000 residents");
     await expect(legend).toContainText("Lower published incidence");
@@ -912,7 +934,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-rucc.png"),
     });
-    await chooseLayer(page, "Minimum reported incidence");
+    await chooseLayer(page, "Lyme disease incidence");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-incidence.png"),
