@@ -76,7 +76,7 @@ describe("five-category follow-up workflows", () => {
         "not evidence of transmission or underreporting"
       ),
       human: rowText(workflow, "human-disease-surveillance").includes(
-        "compare the published county case-count floor"
+        "compare the published minimum reported cases"
       ),
       labels: workflow.rows.map((entry) => entry.label),
       title: workflow.level.title,

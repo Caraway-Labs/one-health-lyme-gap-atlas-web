@@ -1,3 +1,4 @@
+import { publishedHumanFloorValue } from "@/features/ux-reset/review/published-human-case-copy";
 import type { CountyDetail } from "@/generated/models";
 import {
   SUGGESTED_FOLLOW_UP_BY_COLOR,
@@ -393,29 +394,32 @@ function joinDetail(parts: (string | null)[]): string | null {
 
 function humanRecommendation(county: CountyDetail): FollowUpCopy {
   const unallocated = unallocatedSentence(county);
-  if (humanPublished(county)) {
-    const observedZero = county.case_count_floor_2023 === 0;
-    if (observedZero) {
-      return {
-        action:
-          "Compare the published observed zero with local surveillance records.",
-        detail: joinDetail([
-          "An observed zero is not a missing record and does not establish that transmission is absent.",
-          unallocated,
-        ]),
-        verifyQuestion:
-          "Do local records agree with this published observed zero, including travel-associated exposure where those notes already exist?",
-      };
-    }
+  const reportedCases = publishedHumanFloorValue(
+    county.human_status,
+    county.case_count_floor_2023
+  );
+  if (reportedCases === 0) {
     return {
       action:
-        "Compare the published county case-count floor with state or local surveillance records.",
+        "Compare the published observed zero with local surveillance records.",
+      detail: joinDetail([
+        "An observed zero is not a missing record and does not establish that transmission is absent.",
+        unallocated,
+      ]),
+      verifyQuestion:
+        "Do local records agree with this published observed zero, including travel-associated exposure where those notes already exist?",
+    };
+  }
+  if (reportedCases !== null) {
+    return {
+      action:
+        "Compare the published minimum reported cases with state or local surveillance records.",
       detail: joinDetail([
         "Include reporting completeness and residence-versus-exposure differences where investigation notes already exist.",
         unallocated,
       ]),
       verifyQuestion:
-        "Do local surveillance records, including exposure location where it was collected, agree with this published county floor?",
+        "Do local surveillance records, including exposure location where it was collected, agree with these minimum reported cases?",
     };
   }
   return {

@@ -236,7 +236,7 @@ export function pageOf<T>(items: T[], page: number, size = 20) {
   };
 }
 export function evidenceLabel(value: string) {
-  if (value === "published_count_floor") return "Published county count floor";
+  if (value === "published_count_floor") return "Minimum reported cases";
   if (value === "no_county_linked_record") return "No county-linked record";
   return value.replaceAll("_", " ");
 }

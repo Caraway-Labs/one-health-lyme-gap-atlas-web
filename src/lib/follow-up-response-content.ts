@@ -40,7 +40,7 @@ const VERIFY: FollowUpResponseCopy = {
   explanation:
     "Reconcile published surveillance information with locally held evidence.",
   questions: [
-    "Do locally held case records agree with the published county count or minimum case-count floor?",
+    "Do locally held case records agree with the published county count or minimum reported cases?",
     "Could travel or likely exposure locations explain differences between residence-based cases and local vector evidence?",
     "Are newer or unpublished tick and pathogen surveillance records available?",
     "Does verification identify a substantive concern, or does the published pattern have a reasonable local explanation?",
