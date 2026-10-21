@@ -730,7 +730,7 @@ describe("Explorer map legend", () => {
       };
     };
     expect({
-      gap: shape("Atlas gap score map legend"),
+      gap: shape("Gap review score map legend"),
       incidence: shape("Lyme incidence floor map legend"),
       pathogen: shape("B. burgdorferi status map legend"),
       tick: shape("Blacklegged tick status map legend"),
@@ -755,5 +755,37 @@ describe("Explorer map legend", () => {
       ...pathogenLegend.querySelectorAll<HTMLElement>("[data-legend-segment]"),
     ].map((segment) => segment.querySelector("span")?.style.background);
     expect(colors).toStrictEqual(buttonColors);
+  });
+
+  it("draws the county boundaries key on the visible pill", () => {
+    const paint = paintExplorerMapLayer({
+      counties: [county("08001")],
+      layerId: "boundaries",
+      scoresStatus: "ready",
+    });
+    render(<ExplorerMapLegend paint={paint} />);
+    const legend = screen.getByRole("region", {
+      name: "County boundaries map legend",
+    });
+    const visible = legend.querySelector<HTMLElement>(
+      ".ux-reset-explorer-legend-pill [data-legend-pill-segment]"
+    );
+    const shadow = visible?.style.boxShadow ?? "";
+    const shadowColor = /rgb\([^)]+\)|#[0-9A-Fa-f]{6}/.exec(shadow)?.[0] ?? "";
+    // jsdom serializes the authored #F3F4F6 fill and #4B5563 inset stroke as rgb().
+    expect({
+      disclosure: legend.querySelector("[data-legend-disclosure]") !== null,
+      fill: sameColor(visible?.style.background ?? "", "#F3F4F6"),
+      missing: legend.querySelector("[data-legend-role='missing']") !== null,
+      stroke:
+        sameColor(shadowColor, "#4B5563") &&
+        /inset/.test(shadow) &&
+        shadow.includes("2px"),
+    }).toStrictEqual({
+      disclosure: false,
+      fill: true,
+      missing: false,
+      stroke: true,
+    });
   });
 });

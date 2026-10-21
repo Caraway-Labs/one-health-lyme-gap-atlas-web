@@ -2830,13 +2830,16 @@
   border-radius: 999px;
 }
 
+/* The painted span is hidden once the pill shows that color. The ring stays
+   on the button so unlabeled segments keep a visible :focus-visible indicator. */
 .ux-reset-explorer-legend-segment:focus-visible {
-  outline: none;
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .ux-reset-explorer-legend-segment:focus-visible > span {
-  outline: var(--focus-ring-width) solid var(--ring);
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Rurality only. Other layers keep the unlabeled swatch strip. */
@@ -2959,21 +2962,6 @@
   color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 400;
-}
-
-.ux-reset-explorer-legend-segment:has(
-    .ux-reset-explorer-legend-segment-label
-  ):focus-visible {
-  outline: var(--focus-ring-width) solid var(--ring);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-.ux-reset-explorer-legend-segment:has(
-    .ux-reset-explorer-legend-segment-label
-  ):focus-visible
-  > span {
-  outline: none;
 }
 
 .ux-reset-explorer-legend-strip[data-legend-fill="full"]

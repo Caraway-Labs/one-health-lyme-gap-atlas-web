@@ -54,6 +54,13 @@ function LegendDisclosure({
 
 const REFERENCE_PILL_SEGMENTS = 7;
 
+type LegendPillItem = {
+  background: string;
+  id: string;
+  outline?: string;
+  role: string;
+};
+
 function segmentBackground(
   gradient?: ExplorerLegendGradient,
   segment?: ExplorerLegendSegment
@@ -66,6 +73,13 @@ function segmentBackground(
   return segment?.color ?? "transparent";
 }
 
+function segmentOutlineShadow(outline: string | undefined): string | undefined {
+  if (!outline) {
+    return undefined;
+  }
+  return `inset 0 0 0 2px ${outline}`;
+}
+
 function LegendStrip({
   children,
   fill,
@@ -73,7 +87,7 @@ function LegendStrip({
 }: {
   children: ReactNode;
   fill: "count" | "full";
-  items: readonly { background: string; id: string; role: string }[];
+  items: readonly LegendPillItem[];
 }) {
   const count = Math.max(items.length, 1);
   const style: CSSProperties & { "--legend-count": number } = {
@@ -92,7 +106,10 @@ function LegendStrip({
             data-legend-pill-role={item.role}
             data-legend-pill-segment=""
             key={item.id}
-            style={{ background: item.background }}
+            style={{
+              background: item.background,
+              boxShadow: segmentOutlineShadow(item.outline),
+            }}
           />
         ))}
       </div>
@@ -151,9 +168,7 @@ function LegendSegmentButton({
           aria-hidden="true"
           style={{
             background,
-            boxShadow: segment?.outline
-              ? `inset 0 0 0 2px ${segment.outline}`
-              : undefined,
+            boxShadow: segmentOutlineShadow(segment?.outline),
           }}
         />
         {segment?.visibleLines?.map((line) => (
@@ -211,6 +226,7 @@ function RuralityLegendScale({
             items={classes.map((segment) => ({
               background: segment.color,
               id: segment.id,
+              outline: segment.outline,
               role: segment.role ?? "class",
             }))}
           >
@@ -283,6 +299,7 @@ function LegendScale({
     ...segments.map((segment) => ({
       background: segment.color,
       id: segment.id,
+      outline: segment.outline,
       role: segment.role ?? "class",
     })),
     ...(gradient

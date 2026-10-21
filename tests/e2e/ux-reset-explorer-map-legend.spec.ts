@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import {
   PATHOGEN_STATUS_EXTRA_COLORS,
@@ -547,6 +547,28 @@ async function chooseLayer(page: Page, name: string) {
   await page.getByRole("option", { name, exact: true }).click();
 }
 
+async function visibleFocusRing(segment: Locator) {
+  return segment.evaluate((element) => {
+    if (element instanceof HTMLElement) {
+      const focusWithRing = element.focus.bind(element) as (
+        options?: FocusOptions & { focusVisible?: boolean }
+      ) => void;
+      focusWithRing({ focusVisible: true });
+    }
+    const button = getComputedStyle(element);
+    const swatch = element.querySelector("span");
+    const swatchStyle = swatch ? getComputedStyle(swatch) : null;
+    const width = Number.parseFloat(button.outlineWidth);
+    return {
+      buttonOpacity: button.opacity,
+      outlineColor: button.outlineColor,
+      outlineStyle: button.outlineStyle,
+      outlineVisible: button.outlineStyle !== "none" && width > 0,
+      swatchOpacity: swatchStyle?.opacity ?? "",
+    };
+  });
+}
+
 test.describe("Atlas Explorer layer legends", () => {
   test.beforeEach(async ({ page }) => {
     await installLegendApi(page);
@@ -723,6 +745,47 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(
       legend.getByRole("button", { name: "County boundary" })
     ).toHaveCount(0);
+  });
+
+  test("keeps a visible focus ring on unlabeled legend segments", async ({
+    page,
+  }) => {
+    await page.goto("/explore?scope=ALL");
+    const legend = page.getByTestId("explorer-map-legend");
+    const gapBand = legend.getByRole("button", { name: /0 to <20/ });
+    await expect(gapBand).toBeVisible();
+    await expect
+      .poll(() => visibleFocusRing(gapBand))
+      .toMatchObject({
+        buttonOpacity: "1",
+        outlineStyle: "solid",
+        outlineVisible: true,
+        swatchOpacity: "0",
+      });
+
+    await chooseLayer(page, "Lyme incidence floor");
+    const ramp = legend.getByRole("button", {
+      name: /Lower published incidence/,
+    });
+    await expect
+      .poll(() => visibleFocusRing(ramp))
+      .toMatchObject({
+        buttonOpacity: "1",
+        outlineStyle: "solid",
+        outlineVisible: true,
+        swatchOpacity: "0",
+      });
+
+    await chooseLayer(page, "Rurality");
+    const ruralClass = legend.locator("[data-legend-role='class']").first();
+    await expect
+      .poll(() => visibleFocusRing(ruralClass))
+      .toMatchObject({
+        buttonOpacity: "1",
+        outlineStyle: "solid",
+        outlineVisible: true,
+        swatchOpacity: "0",
+      });
   });
 
   test("keeps the latest layer after rapid switches and leaves unsupported layers unpainted", async ({
