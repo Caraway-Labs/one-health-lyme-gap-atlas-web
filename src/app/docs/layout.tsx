@@ -4,8 +4,10 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { DocsAccessibility } from "@/components/docs-accessibility";
-import { SiteFooter } from "@/components/site-footer";
+import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 import { docsSource } from "@/lib/docs-source";
+
+import "@/features/ux-reset/trust-footer.css";
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
@@ -32,7 +34,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           {children}
         </DocsLayout>
       </div>
-      <SiteFooter />
+      <div className="atlas-anonymous-trust">
+        <FrontPorchTrustFooter />
+      </div>
     </RootProvider>
   );
 }
