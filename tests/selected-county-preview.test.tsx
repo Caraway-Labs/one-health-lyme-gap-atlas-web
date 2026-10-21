@@ -111,7 +111,7 @@ describe("selected county preview", () => {
         .textContent,
       compareVariant: screen.getByRole("link", { name: "Compare This County" })
         .dataset.variant,
-      evidence: screen.queryByTestId("review-view-county-evidence"),
+      evidence: screen.getByTestId("review-view-county-evidence").textContent,
       fips,
       followUp: screen.getByRole("button", { name: "View County Follow-Up" })
         .textContent,
@@ -133,7 +133,7 @@ describe("selected county preview", () => {
       canonical: null,
       community: "Community context",
       compareVariant: "outline",
-      evidence: null,
+      evidence: "View Full County Evidence",
       fips: "FIPS 01003",
       followUp: "View County Follow-Up",
       influenceAfterEvidence: true,
@@ -335,7 +335,7 @@ describe("selected county preview", () => {
     expect(availability).not.toHaveBeenCalled();
   });
 
-  it("keeps one response-tier pill and drops the legacy priority badge", async () => {
+  it("drops the response-tier pill and the legacy priority badge", async () => {
     const cases = [
       "Priority 1 — Urgent follow-up",
       "Priority 2 — Review",
@@ -347,27 +347,23 @@ describe("selected county preview", () => {
       "Not assessed",
       "Priority 10",
     ] as const;
-    const readings: { legacyBadge: boolean; pills: number; title: string }[] =
-      [];
+    const readings: { legacyBadge: boolean; pills: number }[] = [];
     for (const priority of cases) {
       cleanup();
       renderPublished({ ...baldwin, priority });
-      await screen.findByTestId("selected-county-response-tier");
+      await screen.findByTestId("county-surveillance-intelligence");
       const card = screen.getByTestId("review-published-county-preview");
       readings.push({
         legacyBadge: card.querySelector(".priority-pill") !== null,
         pills: card.querySelectorAll(
           "[data-testid='selected-county-response-tier']"
         ).length,
-        title:
-          card.querySelector(".response-tier-pill-title")?.textContent ?? "",
       });
     }
     expect(readings).toStrictEqual(
       cases.map(() => ({
         legacyBadge: false,
-        pills: 1,
-        title: "Moderate review priority",
+        pills: 0,
       }))
     );
     expect(

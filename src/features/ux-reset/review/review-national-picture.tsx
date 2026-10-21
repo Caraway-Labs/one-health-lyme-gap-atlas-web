@@ -102,6 +102,7 @@ type ReviewNationalPictureProps = {
   onCountyChange: (fips: string | null, history: "push" | "replace") => void;
   onMapFocusChange?: (state: string | null) => void;
   onMapLayerChange: (layerId: ExplorerMapLayerId) => void;
+  onViewCountyEvidence?: (fips: string) => void;
   period: string | null;
   releaseId: string;
   /** Browser what-if. Defaults leave governed county colors in place. */
@@ -138,7 +139,8 @@ export function ReviewNationalPicture({
   releaseId,
   scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   sources = NO_LEGEND_SOURCES,
-  tierRelease: _tierRelease,
+  tierRelease,
+  onViewCountyEvidence,
 }: ReviewNationalPictureProps) {
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
@@ -680,8 +682,10 @@ export function ReviewNationalPicture({
           <ReviewPublishedCountyPreview
             compareHref={handoff.compareHref}
             county={selectedIdentity}
+            release={tierRelease}
             releaseId={releaseId}
             onOpen={markReviewReturnFocus}
+            onViewCountyEvidence={onViewCountyEvidence}
           />
         ) : (
           <>

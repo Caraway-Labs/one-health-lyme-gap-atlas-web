@@ -3519,11 +3519,13 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=alpha-2026");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
       ).toBe("HIGH")
     );
     expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.sufficiency
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .dataset.sufficiency
     ).toBe("SUFFICIENT");
   });
 
@@ -3536,10 +3538,13 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=historical-2024");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.state
       ).toBe("release-unaligned")
     );
-    const region = screen.getByTestId("tier1-surveillance-priority");
+    const region = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
       reason: region.dataset.releaseReason,
@@ -3564,13 +3569,16 @@ describe("Reset Review scope UI", () => {
     });
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
       ).toBe("HIGH")
     );
     reviewReleaseControls.metadataReleaseId = "historical-2024";
     view.rerenderSearch("?scope=NY&county=36001&dataset=historical-2024");
     await waitFor(() => {
-      const region = screen.getByTestId("tier1-surveillance-priority");
+      const region = screen.getByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      );
       if (
         region.dataset.state !== "release-unaligned" ||
         region.dataset.tier === "HIGH"
@@ -3579,10 +3587,12 @@ describe("Reset Review scope UI", () => {
       }
     });
     expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .dataset.releaseReason
     ).toBe("mismatch");
     expect(
-      screen.getByTestId("tier1-surveillance-priority").textContent
+      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+        .textContent
     ).not.toMatch(/\bLOW\b|\bHIGH\b/);
   });
 
@@ -3620,7 +3630,10 @@ describe("Reset Review scope UI", () => {
     });
     renderReview("?scope=NY&county=36001&dataset=alpha-2026", { client });
     await waitFor(() =>
-      expect(screen.getByTestId("tier1-priority-tier").textContent).toBe("HIGH")
+      expect(
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
+      ).toBe("HIGH")
     );
 
     reviewReleaseControls.metadataStatus = 503;
@@ -3630,7 +3643,8 @@ describe("Reset Review scope UI", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.state
       ).toBe("release-unaligned")
     );
     const legend =
@@ -3641,9 +3655,12 @@ describe("Reset Review scope UI", () => {
       insufficient: /\bINSUFFICIENT\b/.test(pageText),
       low: /\bLOW\b/.test(pageText),
       medium: /\bMEDIUM\b/.test(pageText),
-      panels: screen.getAllByTestId("tier1-surveillance-priority").length,
-      reason: screen.getByTestId("tier1-surveillance-priority").dataset
-        .releaseReason,
+      panels: screen.getAllByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      ).length,
+      reason: screen.getByTestId(
+        "surveillance-intelligence-card-ml-review-priority"
+      ).dataset.releaseReason,
       sufficiency: screen.queryByTestId("tier1-evidence-sufficiency"),
       tier: screen.queryByTestId("tier1-priority-tier"),
     }).toStrictEqual({
