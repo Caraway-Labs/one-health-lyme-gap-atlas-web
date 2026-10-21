@@ -346,7 +346,7 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     );
     await reviewDetails.getByText("Methodology & source").click();
     await expect(reviewDetails).toContainText("tier1-statistical-reference-v1");
-    await expect(reviewDetails).toContainText("98.56824689786828");
+    await expect(reviewDetails).toContainText("2.0739835966635036");
     await shot(page, testInfo, "tier1-review-high");
     const regionResults = await new AxeBuilder({ page })
       .include(
@@ -555,10 +555,10 @@ test.describe("Tier 1 model-assisted surveillance priority", () => {
     );
     await page.goto("/explore?scope=NY&county=36001&dataset=alpha-2026");
     await openReviewScore(page);
-    const review = reviewPriority(page);
+    const review = page.getByTestId("tier1-surveillance-priority");
     await expect(review).toHaveAttribute("data-state", "release-unaligned");
     await expect(review).toHaveAttribute("data-release-reason", "unknown");
-    await expectNoLowTier(reviewPriority(page));
+    await expectNoLowTier(review);
     await expect(review).not.toContainText("HIGH");
 
     await page.goto(

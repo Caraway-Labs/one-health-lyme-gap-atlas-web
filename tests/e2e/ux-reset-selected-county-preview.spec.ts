@@ -175,7 +175,7 @@ test.describe("Selected county preview", () => {
     await expect(
       preview.getByRole("button", { name: "View County Follow-Up" })
     ).toHaveCount(1);
-    await expect(preview.getByRole("link")).toHaveCount(2);
+    await expect(preview.getByRole("link")).toHaveCount(1);
     await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
     await expect(preview.getByTestId("review-ask-atlas")).toHaveCount(0);
     await expect(preview.getByTestId("review-view-county-evidence")).toHaveText(

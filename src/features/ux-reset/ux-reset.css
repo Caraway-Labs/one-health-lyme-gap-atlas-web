@@ -3265,12 +3265,13 @@
   gap: 0.5rem;
 }
 
-.ux-reset-review-preview-actions a,
-.ux-reset-review-preview-actions button {
+.ux-reset-review-preview-actions :is(a, button) {
   flex: 1 1 11.5rem;
   width: auto;
+  max-width: 100%;
   min-width: min(100%, 11.5rem);
   justify-content: center;
+  white-space: normal;
 }
 
 .ux-reset-pro-main a.ux-reset-review-open[data-variant="outline"] {

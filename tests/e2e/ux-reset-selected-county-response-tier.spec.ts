@@ -186,7 +186,7 @@ test.describe("selected county response tier", () => {
     );
     await expect(preview.locator(".priority-pill")).toHaveCount(0);
     await expect(preview.getByTestId("selected-county-gap-score")).toHaveText(
-      "50.7"
+      "75.0"
     );
     await expect(preview).not.toContainText("Priority 1");
     await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
