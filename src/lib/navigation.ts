@@ -206,7 +206,7 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     label: "AI Ethics",
     match: "exact",
     pageDescription:
-      "How One Health Lyme Gap Atlas uses AI today, the evidence boundaries it follows, and the commitments still being decided.",
+      "How One Health Atlas uses generative AI, machine learning, and AI interoperability to support public-health investigation, and the responsible-use commitments that guide them.",
     pageTitle: "AI Ethics | One Health Lyme Gap Atlas",
     placement: "footer",
     shell: "public",

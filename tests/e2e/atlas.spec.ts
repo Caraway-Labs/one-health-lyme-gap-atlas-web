@@ -220,7 +220,7 @@ test("TC01–TC05 and TC09: public entry, explorer navigation, and trust pages",
   for (const [path, heading] of [
     ["/docs", "Start with One Health Atlas"],
     ["/privacy", "Privacy without the fine print."],
-    ["/ai-ethics", "How Atlas approaches AI"],
+    ["/ai-ethics", "How Atlas uses AI and machine learning"],
   ] as const) {
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);

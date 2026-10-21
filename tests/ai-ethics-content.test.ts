@@ -1,62 +1,72 @@
 import { describe, expect, it } from "vitest";
 
 import { aiEthicsContent } from "../src/lib/ai-ethics-content";
+import { pageMetadataForRoute } from "../src/lib/navigation";
 
-describe("AI Ethics content baseline", () => {
-  it("keeps version and update metadata with the public content", () => {
-    expect(aiEthicsContent.version).toMatch(/^\d+\.\d+\.\d+$/);
+const RETIRED_COPY = [
+  "planned",
+  "pending",
+  "in development",
+  "experimental",
+  "release pending",
+] as const;
+
+function publishedCopy() {
+  return JSON.stringify(aiEthicsContent);
+}
+
+describe("AI Ethics content", () => {
+  it("keeps a versioned public document and the approved meta description", () => {
+    expect(aiEthicsContent.version).toBe("1.0.0");
     expect(aiEthicsContent.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(aiEthicsContent.maintenance.updateRule).toContain("version");
-    expect(aiEthicsContent.maintenance.updateRule).toContain("last-updated");
+    expect(pageMetadataForRoute("/ai-ethics")).toStrictEqual({
+      description:
+        "How One Health Atlas uses generative AI, machine learning, and AI interoperability to support public-health investigation, and the responsible-use commitments that guide them.",
+      title: "AI Ethics | One Health Lyme Gap Atlas",
+    });
   });
 
-  it("keeps current behavior, approved architecture, and pending decisions distinct", () => {
+  it("names the three AI uses and keeps the Gap Score out of machine learning", () => {
+    expect(aiEthicsContent.hero.title).toBe(
+      "How Atlas uses AI and machine learning"
+    );
+    expect(aiEthicsContent.pillars.map((pillar) => pillar.title)).toStrictEqual(
+      [
+        "Understand the evidence",
+        "Find patterns worth investigating",
+        "Bring evidence into other workflows",
+      ]
+    );
     expect(
-      new Set(aiEthicsContent.statements.map((statement) => statement.status))
-    ).toStrictEqual(
-      new Set(["current", "approved-architecture", "pending-decision"])
-    );
-
-    expect(aiEthicsContent.openCommitments).toHaveLength(6);
+      aiEthicsContent.otherCapabilities.find((capability) =>
+        capability.term.startsWith("Surveillance Gap Score")
+      )?.description
+    ).toContain("not a trained machine-learning model");
   });
 
-  it("retains the public-health interpretation boundaries", () => {
-    expect(aiEthicsContent.boundaries.join(" ")).toMatch(
-      /not a clinical service/i
-    );
-    expect(aiEthicsContent.boundaries.join(" ")).toMatch(
-      /not present its score as a disease-risk prediction/i
-    );
-    expect(aiEthicsContent.statements[0].summary).toMatch(
-      /not a predictive model/i
-    );
+  it("keeps the clinical and disease-risk limits and the public links", () => {
+    const limits = aiEthicsContent.limitations.join(" ");
+    expect(limits).toMatch(/not a clinical service/);
+    expect(limits).toMatch(/do not predict disease risk/);
+    expect(
+      aiEthicsContent.feedback.links.map((link) => link.href)
+    ).toStrictEqual([
+      "/docs/releases-and-methodology",
+      "/docs/api-mcp-and-access",
+      "/privacy",
+    ]);
   });
 
-  it("shows the model-assisted tier only when its release matches", () => {
-    const current = aiEthicsContent.statements.find(
-      (statement) => statement.status === "current"
-    );
-    const copy = `${current?.summary ?? ""} ${current?.detail ?? ""}`;
-
-    expect(copy).toMatch(/follow-up-priority/i);
-    expect(copy).toMatch(/matches the selected evidence release/i);
-    expect(copy).toMatch(/withholds the tier/i);
-    expect(copy).toMatch(/not shown as LOW/);
-    expect(copy).toMatch(
-      /not disease risk, predicted incidence[\s\S]*Forecasts and anomaly candidates are not released/
-    );
-  });
-
-  it("does not turn unresolved commitments into privacy promises", () => {
-    const pendingStatement = aiEthicsContent.statements.find(
-      (statement) => statement.status === "pending-decision"
-    );
-
-    expect(pendingStatement?.detail).toMatch(
-      /not a policy, safeguard, or promise/i
-    );
-    expect(aiEthicsContent.relatedWork[0].detail).toMatch(
-      /must not make new privacy promises/i
-    );
+  it("does not publish maturity labels or internal tracking references", () => {
+    const copy = publishedCopy();
+    expect({
+      issueReferences: copy.match(/#\d+/g),
+      retiredPhrases: RETIRED_COPY.filter((phrase) =>
+        copy.toLowerCase().includes(phrase)
+      ),
+    }).toStrictEqual({
+      issueReferences: null,
+      retiredPhrases: [],
+    });
   });
 });
