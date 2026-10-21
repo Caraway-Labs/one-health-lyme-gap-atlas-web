@@ -15,8 +15,9 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { DataDictionaryDialog } from "@/components/data-dictionary-dialog";
 import { FeedbackTrigger } from "@/components/feedback-dialog";
-import { SiteFooter } from "@/components/site-footer";
 import { Badge } from "@/components/ui/badge";
+
+import "@/features/ux-reset/trust-footer.css";
 import {
   Sidebar,
   SidebarContent,
@@ -31,6 +32,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 import { analyticalNavigationHref } from "@/lib/analytical-navigation-handoff";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import {
@@ -149,7 +151,9 @@ function AppShellContent({
   };
 
   return (
-    <div className={`app-shell ${focusModeActive ? "app-shell-focus" : ""}`}>
+    <div
+      className={`app-shell atlas-anonymous-trust ${focusModeActive ? "app-shell-focus" : ""}`}
+    >
       <Sidebar
         id="atlas-primary-navigation"
         ref={sidebarRef}
@@ -253,7 +257,7 @@ function AppShellContent({
           </div>
         </header>
         <div className="app-content">{children}</div>
-        <SiteFooter />
+        <FrontPorchTrustFooter />
       </SidebarInset>
     </div>
   );

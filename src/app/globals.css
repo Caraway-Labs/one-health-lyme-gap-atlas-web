@@ -1957,22 +1957,10 @@ footer {
   background: #061d36;
   color: white;
 }
-.footer p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.68rem;
-}
-.footer a,
-.footer-link,
-footer > a {
+.footer-link {
   color: #79d4c9;
   font-size: 0.72rem;
   font-weight: 750;
-}
-.footer-links {
-  display: flex;
-  justify-content: end;
-  gap: 1rem;
 }
 
 .chat-launcher-dock {
@@ -3760,12 +3748,6 @@ select:focus-visible {
   }
 }
 
-@media (max-width: 760px) {
-  .footer-links {
-    justify-content: start;
-  }
-}
-
 .design-system-gallery {
   max-width: var(--layout-content-max);
   margin: auto;
@@ -3830,13 +3812,6 @@ select:focus-visible {
 }
 .feedback-actions {
   flex-wrap: wrap;
-}
-.footer-links .footer-feedback {
-  min-height: 2.75rem;
-  padding: 0;
-  color: inherit;
-  font: inherit;
-  font-weight: inherit;
 }
 .design-system-swatch-chip {
   flex: 1;
