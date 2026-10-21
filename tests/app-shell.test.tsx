@@ -103,19 +103,60 @@ describe("Atlas application shell", () => {
       </AppShell>
     );
 
+    const footer = screen.getByRole("contentinfo");
+    const trust = screen.getByRole("navigation", { name: "Trust" });
+    expect({
+      account: screen
+        .getByRole("link", { name: "Account" })
+        .getAttribute("href"),
+      backToAtlas: screen.queryByRole("link", { name: "Back to Atlas ↑" }),
+      content: screen.getByText("Route content").textContent,
+      docs: {
+        href: screen.getByRole("link", { name: "Docs" }).getAttribute("href"),
+        target: screen
+          .getByRole("link", { name: "Docs" })
+          .getAttribute("target"),
+      },
+      ethics: trust.querySelector('a[href="/ai-ethics"]')?.textContent,
+      legacy: screen.queryByText(/Independent Caraway Labs prototype/),
+      privacyInTrust: trust.contains(
+        screen.getByRole("link", { name: "Privacy" })
+      ),
+      privacySettings: screen.getByRole("button", { name: "Privacy settings" })
+        .textContent,
+      trustFooter: footer.classList.contains("ux-reset-trust-footer"),
+    }).toStrictEqual({
+      account: "/account",
+      backToAtlas: null,
+      content: "Route content",
+      docs: {
+        href: "https://onehealthatlas.org/docs",
+        target: "_blank",
+      },
+      ethics: "AI / Responsible Use",
+      legacy: null,
+      privacyInTrust: true,
+      privacySettings: "Privacy settings",
+      trustFooter: true,
+    });
+  });
+
+  it("keeps the anonymous trust footer when Assistant is Coming Soon", () => {
+    renderShell(
+      <AppShell>
+        <p>Coming soon route</p>
+      </AppShell>
+    );
+
+    expect(screen.getAllByText("Coming Soon")).toHaveLength(1);
     expect(
-      screen.getByRole("link", { name: "Docs" }).getAttribute("href")
-    ).toBe("https://onehealthatlas.org/docs");
-    expect(
-      screen.getByRole("link", { name: "Docs" }).getAttribute("target")
-    ).toBe("_blank");
-    expect(
-      screen.getByRole("link", { name: "Account" }).getAttribute("href")
-    ).toBe("/account");
-    expect(
-      screen.getByRole("navigation", { name: "Footer navigation" }).innerHTML
-    ).toContain("Privacy");
-    expect(screen.getByText("Route content")).toBeTruthy();
+      screen
+        .getByRole("link", {
+          name: "One Health Atlas by Caraway Labs (opens in a new tab)",
+        })
+        .getAttribute("href")
+    ).toBe("/about/caraway-labs");
+    expect(screen.queryByRole("link", { name: "Privacy settings" })).toBeNull();
   });
 
   it("exposes a Feedback control next to Account in the header", () => {

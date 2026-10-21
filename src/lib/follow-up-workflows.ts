@@ -203,79 +203,48 @@ export type OfficialFollowUpResource = {
   label: string;
 };
 
-/** Curated references for the Explorer resources card. URLs come from the
- * approved follow-up catalog or existing Atlas documentation routes. */
+/** Curated references for the Explorer resources card. Destinations stay on
+ * the approved follow-up catalog; visible labels are the shorter card copy. */
 export const OFFICIAL_FOLLOW_UP_RESOURCES = [
   {
     category: "Lyme disease surveillance",
-    description:
-      "National surveillance case definition used for public-health reporting.",
+    description: "Reporting criteria for Lyme disease.",
     external: true,
     href: RESOURCES.caseDefinition.href,
     id: RESOURCES.caseDefinition.id,
-    label: RESOURCES.caseDefinition.label,
+    label: "Lyme surveillance case definition",
   },
   {
     category: "Lyme disease surveillance",
-    description:
-      "How published county case counts relate to residence and exposure.",
+    description: "How residence and exposure affect county counts.",
     external: true,
     href: RESOURCES.countyCaseData.href,
     id: RESOURCES.countyCaseData.id,
-    label: RESOURCES.countyCaseData.label,
+    label: "County case data and limitations",
   },
   {
     category: "Tick and vector surveillance",
-    description:
-      "Definitions and limitations for published tick and pathogen records.",
+    description: "How to interpret published records.",
     external: true,
     href: RESOURCES.tickRecords.href,
     id: RESOURCES.tickRecords.id,
-    label: RESOURCES.tickRecords.label,
+    label: "Tick and pathogen record definitions",
   },
   {
     category: "Tick and vector surveillance",
-    description:
-      "CDC guidance for blacklegged tick surveillance and interpretation.",
+    description: "CDC guidance for surveillance and interpretation.",
     external: true,
     href: RESOURCES.blackleggedTickGuidance.href,
     id: RESOURCES.blackleggedTickGuidance.id,
-    label: RESOURCES.blackleggedTickGuidance.label,
+    label: "Blacklegged tick surveillance guidance",
   },
   {
     category: "Clinical testing and reporting",
-    description:
-      "CDC guidance on laboratory testing used in Lyme disease diagnosis.",
+    description: "CDC guidance on laboratory diagnosis.",
     external: true,
     href: RESOURCES.clinicalTesting.href,
     id: RESOURCES.clinicalTesting.id,
-    label: RESOURCES.clinicalTesting.label,
-  },
-  {
-    category: "Prevention and outreach",
-    description:
-      "CDC prevention information for public-health education and outreach.",
-    external: true,
-    href: RESOURCES.prevention.href,
-    id: RESOURCES.prevention.id,
-    label: RESOURCES.prevention.label,
-  },
-  {
-    category: "Atlas data and methodology",
-    description:
-      "Published sources, measures, and the limits of the evidence Atlas shows.",
-    external: false,
-    href: "/docs/sources-and-canonical-evidence",
-    id: "atlas-sources",
-    label: "Sources and canonical evidence",
-  },
-  {
-    category: "Atlas data and methodology",
-    description: "How published releases and scores are produced.",
-    external: false,
-    href: "/docs/releases-and-methodology",
-    id: "atlas-methodology",
-    label: "Releases and methodology",
+    label: "Clinical testing guidance",
   },
 ] as const satisfies readonly OfficialFollowUpResource[];
 

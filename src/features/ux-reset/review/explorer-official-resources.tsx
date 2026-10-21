@@ -2,43 +2,82 @@ import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
-import { OFFICIAL_FOLLOW_UP_RESOURCES } from "@/lib/follow-up-workflows";
+import {
+  OFFICIAL_FOLLOW_UP_RESOURCES,
+  type OfficialFollowUpResource,
+} from "@/lib/follow-up-workflows";
+
+const OFFICIAL_RESOURCES_INTRO =
+  "Authoritative references to support surveillance review, reporting, and public health action.";
+
+type OfficialResourceGroup = {
+  category: string;
+  resources: OfficialFollowUpResource[];
+};
+
+function groupOfficialResources(
+  resources: readonly OfficialFollowUpResource[]
+): OfficialResourceGroup[] {
+  const groups: OfficialResourceGroup[] = [];
+  for (const resource of resources) {
+    const current = groups.at(-1);
+    if (current?.category === resource.category) {
+      current.resources.push(resource);
+      continue;
+    }
+    groups.push({ category: resource.category, resources: [resource] });
+  }
+  return groups;
+}
+
+function OfficialResourceLink({
+  resource,
+}: {
+  resource: OfficialFollowUpResource;
+}) {
+  if (resource.external) {
+    return (
+      <a
+        aria-label={`${resource.label} (opens in a new tab)`}
+        href={resource.href}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span>{resource.label}</span>
+        <ExternalLink aria-hidden="true" />
+      </a>
+    );
+  }
+  return <Link href={resource.href}>{resource.label}</Link>;
+}
 
 export function ExplorerOfficialResources() {
+  const groups = groupOfficialResources(OFFICIAL_FOLLOW_UP_RESOURCES);
+
   return (
     <Card
-      className="ux-reset-explorer-resources gap-3 p-4"
+      className="ux-reset-explorer-resources ring-0"
       data-testid="explorer-official-resources"
     >
-      <div>
-        <p className="eyebrow">Official resources & guidance</p>
-        <h3>Resources for follow-up</h3>
-        <p className="type-body">
-          Authoritative references to support surveillance review, reporting,
-          and public-health action.
-        </p>
+      <div className="ux-reset-explorer-resources-intro">
+        <h3>Official resources</h3>
+        <p>{OFFICIAL_RESOURCES_INTRO}</p>
       </div>
-      <ul className="ux-reset-explorer-resource-list">
-        {OFFICIAL_FOLLOW_UP_RESOURCES.map((resource) => (
-          <li key={resource.id}>
-            <p className="type-small">{resource.category}</p>
-            {resource.external ? (
-              <a
-                aria-label={`${resource.label} (opens in a new tab)`}
-                href={resource.href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {resource.label}
-                <ExternalLink aria-hidden="true" />
-              </a>
-            ) : (
-              <Link href={resource.href}>{resource.label}</Link>
-            )}
-            <p className="type-body">{resource.description}</p>
-          </li>
+      <div className="ux-reset-explorer-resource-groups">
+        {groups.map((group) => (
+          <section key={group.category}>
+            <h4>{group.category}</h4>
+            <ul className="ux-reset-explorer-resource-list">
+              {group.resources.map((resource) => (
+                <li key={resource.id}>
+                  <OfficialResourceLink resource={resource} />
+                  <p>{resource.description}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
     </Card>
   );
 }

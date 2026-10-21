@@ -1,6 +1,9 @@
+/* `.atlas-anonymous-trust` is the docs layout and the analytical shell.
+   Signed-in workspace height stays on `.ux-reset-pro-app` only. */
 .ux-reset-pro-app .ux-reset-trust-footer,
 .front-porch .ux-reset-trust-footer,
-.public-layout .ux-reset-trust-footer {
+.public-layout .ux-reset-trust-footer,
+.atlas-anonymous-trust .ux-reset-trust-footer {
   display: block;
   flex: none;
   margin-top: auto;
@@ -68,7 +71,9 @@
 .front-porch .ux-reset-trust-footer a,
 .front-porch .ux-reset-trust-footer a:visited,
 .public-layout .ux-reset-trust-footer a,
-.public-layout .ux-reset-trust-footer a:visited {
+.public-layout .ux-reset-trust-footer a:visited,
+.atlas-anonymous-trust .ux-reset-trust-footer a,
+.atlas-anonymous-trust .ux-reset-trust-footer a:visited {
   display: inline-flex;
   align-items: center;
   min-height: 1.5rem;
@@ -88,7 +93,8 @@
 
 .ux-reset-pro-app .ux-reset-trust-footer a:hover,
 .front-porch .ux-reset-trust-footer a:hover,
-.public-layout .ux-reset-trust-footer a:hover {
+.public-layout .ux-reset-trust-footer a:hover,
+.atlas-anonymous-trust .ux-reset-trust-footer a:hover {
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
@@ -96,7 +102,8 @@
 /* Public consent stays a dialog trigger until Settings exposes it (issues 427 and 527). */
 .front-porch .ux-reset-trust-footer .footer-link,
 .public-layout .ux-reset-trust-footer .footer-link,
-.public-layout .ux-reset-trust-footer .footer-feedback {
+.public-layout .ux-reset-trust-footer .footer-feedback,
+.atlas-anonymous-trust .ux-reset-trust-footer .footer-link {
   height: auto;
   min-height: 1.5rem;
   padding: var(--space-1) 0;
@@ -114,7 +121,8 @@
 
 .front-porch .ux-reset-trust-footer .footer-link:hover,
 .public-layout .ux-reset-trust-footer .footer-link:hover,
-.public-layout .ux-reset-trust-footer .footer-feedback:hover {
+.public-layout .ux-reset-trust-footer .footer-feedback:hover,
+.atlas-anonymous-trust .ux-reset-trust-footer .footer-link:hover {
   background: transparent;
   color: var(--white);
   text-decoration: underline;
@@ -130,7 +138,9 @@
 .front-porch .ux-reset-trust-footer a:focus-visible,
 .front-porch .ux-reset-trust-footer button:focus-visible,
 .public-layout .ux-reset-trust-footer a:focus-visible,
-.public-layout .ux-reset-trust-footer button:focus-visible {
+.public-layout .ux-reset-trust-footer button:focus-visible,
+.atlas-anonymous-trust .ux-reset-trust-footer a:focus-visible,
+.atlas-anonymous-trust .ux-reset-trust-footer button:focus-visible {
   /* --ring on --navy is 2.75:1. White on navy is 14.5:1 (WCAG 2.2 non-text). */
   border-color: transparent;
   outline: 2px solid var(--white);
@@ -183,7 +193,8 @@
    public trust pages. */
 @container trust-footer (max-width: 72rem) {
   .front-porch .ux-reset-trust-footer-bar,
-  .public-layout .ux-reset-trust-footer-bar {
+  .public-layout .ux-reset-trust-footer-bar,
+  .atlas-anonymous-trust .ux-reset-trust-footer-bar {
     align-items: start;
     justify-items: start;
     min-height: 0;
@@ -194,7 +205,9 @@
   .front-porch .ux-reset-trust-brand,
   .front-porch .ux-reset-trust-links,
   .public-layout .ux-reset-trust-brand,
-  .public-layout .ux-reset-trust-links {
+  .public-layout .ux-reset-trust-links,
+  .atlas-anonymous-trust .ux-reset-trust-brand,
+  .atlas-anonymous-trust .ux-reset-trust-links {
     grid-row: auto;
     grid-column: 1;
     justify-self: start;
@@ -202,12 +215,14 @@
   }
 
   .front-porch .ux-reset-trust-brand,
-  .public-layout .ux-reset-trust-brand {
+  .public-layout .ux-reset-trust-brand,
+  .atlas-anonymous-trust .ux-reset-trust-brand {
     white-space: normal;
   }
 
   .front-porch .ux-reset-trust-links,
-  .public-layout .ux-reset-trust-links {
+  .public-layout .ux-reset-trust-links,
+  .atlas-anonymous-trust .ux-reset-trust-links {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: var(--space-3) var(--space-5);
@@ -217,7 +232,9 @@
   .front-porch .ux-reset-trust-footer .footer-link,
   .public-layout .ux-reset-trust-footer a,
   .public-layout .ux-reset-trust-footer .footer-link,
-  .public-layout .ux-reset-trust-footer .footer-feedback {
+  .public-layout .ux-reset-trust-footer .footer-feedback,
+  .atlas-anonymous-trust .ux-reset-trust-footer a,
+  .atlas-anonymous-trust .ux-reset-trust-footer .footer-link {
     min-height: var(--control-height);
   }
 }
