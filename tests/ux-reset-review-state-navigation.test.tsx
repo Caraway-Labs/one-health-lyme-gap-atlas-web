@@ -124,6 +124,7 @@ const mapEngine = vi.hoisted(() => {
       this.states += 1;
     }
 
+    triggerRepaint() {}
     remove() {
       this.removed = true;
     }
