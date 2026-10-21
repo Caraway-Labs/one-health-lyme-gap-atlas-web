@@ -94,20 +94,25 @@ async function installPublishedReview(page: Page) {
 }
 
 async function expectFollowUpInView(page: Page) {
+  // The County tab scrolls inside the rail, so "in view" means the card sits at
+  // the top of its panel and is visible there.
   await expect
     .poll(async () =>
       page.locator("#explorer-map-follow-up").evaluate((element) => {
+        const panel = element.closest(
+          "[data-testid='explorer-rail-panel-county']"
+        );
+        const bounds = panel
+          ? panel.getBoundingClientRect()
+          : { bottom: window.innerHeight, top: 0 };
         const rect = element.getBoundingClientRect();
         const visibleHeight =
-          Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-        return (
-          visibleHeight > 0 && rect.top < window.innerHeight && rect.top <= 80
-        );
+          Math.min(rect.bottom, bounds.bottom) - Math.max(rect.top, bounds.top);
+        return visibleHeight > 0 && rect.top <= bounds.top + 80;
       })
     )
     .toBe(true);
 }
-
 async function expectActionLayout(
   page: Page,
   preview: ReturnType<Page["getByTestId"]>
@@ -312,6 +317,8 @@ test.describe("Selected county preview", () => {
       .toBeGreaterThan(0);
     const afterEvidence = hits.length;
     await page.getByTestId("explorer-back-to-map").click();
+    // Focus returns to the county row, so the list shows first.
+    await showSelectedCounty(page);
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toBeVisible();

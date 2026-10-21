@@ -33,8 +33,9 @@ export function useExplorerRailTab({
   returnFocus: boolean;
   selectedFips: string;
 }) {
+  // A view that mounts while focus is returning to a row starts on the list.
   const [tab, setTab] = useState<ExplorerRailTab>(
-    selectedFips && explicit ? "county" : "list"
+    selectedFips && explicit && !returnFocus ? "county" : "list"
   );
   const [trackedFips, setTrackedFips] = useState(selectedFips);
   const [trackedReturn, setTrackedReturn] = useState(returnFocus);
@@ -51,6 +52,7 @@ export function useExplorerRailTab({
   }
   if (trackedReturn !== returnFocus) {
     setTrackedReturn(returnFocus);
+    // Focus is about to return to a list row, so the list has to be on screen.
     if (returnFocus && selectedFips) {
       current = "list";
       setTab(current);

@@ -515,9 +515,20 @@ async function readHydrationTrace(page: Page) {
 
 async function expectBrowseCounty(
   page: Page,
-  expected: { county: string; fips: string; scope: string }
+  expected: {
+    county: string;
+    fips: string;
+    /** Check focus before any tab click moves it. */
+    rowFocused?: boolean;
+    scope: string;
+  }
 ) {
   await expect(page.getByTestId("review-scope-results")).toBeVisible();
+  if (expected.rowFocused) {
+    await expect(
+      page.locator(`button[data-fips="${expected.fips}"]`)
+    ).toBeFocused();
+  }
   const url = new URL(page.url());
   expect(url.pathname).toBe("/explore");
   expect(url.searchParams.get("county")).toBe(expected.fips);
@@ -525,6 +536,9 @@ async function expectBrowseCounty(
   expect(url.searchParams.get("dataset")).toBe(RELEASE_ID);
   expect(url.searchParams.get("period")).toBe(PERIOD);
   expect(url.searchParams.get("mode")).toBeNull();
+  // Returning to the map shows the list first, so open the County tab to read
+  // the summary and then return to the list for the row state.
+  await showSelectedCounty(page);
   const preview = page.locator(
     "[data-testid='review-county-preview'], [data-testid='review-published-county-preview']"
   );
@@ -533,9 +547,12 @@ async function expectBrowseCounty(
     expected.county
   );
   await expect(page.getByText(`FIPS ${expected.fips}`).first()).toBeVisible();
+  await showCountyList(page);
   await expect(
     page.locator(`button[data-fips="${expected.fips}"]`)
   ).toHaveAttribute("aria-current", "true");
+  // Leave the County tab showing for the actions that follow.
+  await showSelectedCounty(page);
 }
 
 async function stampDocument(page: Page) {
@@ -886,12 +903,10 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
     await expectBrowseCounty(page, {
       county: rank41.county,
       fips: rank41.fips,
+      rowFocused: true,
       scope: "GA",
     });
     await expect(page).toHaveURL(/layer=boundaries/);
-    await expect(
-      page.locator(`button[data-fips="${rank41.fips}"]`)
-    ).toBeFocused();
     await expect(page.locator('button[data-rank="1"]')).not.toHaveAttribute(
       "aria-current",
       "true"
@@ -1244,13 +1259,14 @@ test.describe("Explorer evidence-state accessibility", () => {
       .filter({ hasText: "Borrelia burgdorferi status" });
     // An Unavailable measure states Unavailable once, as its value, and does
     // not repeat labelled provenance fields whose value is Unavailable.
-    await expect(pathogen).toContainText("Source family");
+    await expect(pathogen).toContainText("Inspect provenance");
     await expect(pathogen.getByTestId("evidence-display-value")).toHaveText(
       "Unavailable"
     );
-    await expect(
-      pathogen.getByTestId("evidence-provenance-chips")
-    ).not.toContainText("Unavailable");
+    // No chips are drawn for fields that are all Unavailable.
+    await expect(pathogen.getByTestId("evidence-provenance-chips")).toHaveCount(
+      0
+    );
     await expect(pathogen).not.toContainText("Observation period");
     await expect(unavailable.getByText("Limited", { exact: true })).toHaveCount(
       0

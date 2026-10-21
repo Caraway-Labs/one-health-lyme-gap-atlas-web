@@ -183,6 +183,7 @@ async function expectCard(
   }
   const preview = page.getByTestId("review-published-county-preview");
   await expect(preview).toHaveAttribute("data-fips", fips);
+  await openEvidenceDisclosure(page);
   await expect(
     preview.getByTestId("selected-county-response-tier")
   ).toHaveCount(0);
@@ -366,8 +367,8 @@ test.describe("selected county summary card", () => {
     await installIndiana(page);
     await page.setViewportSize({ height: 1100, width: 1440 });
     await page.goto(`/explore?scope=IN&dataset=${release}&county=18057`);
-    await expectCard(page, "18057", "49.8", "#87b982");
     await openEvidenceDisclosure(page);
+    await expectCard(page, "18057", "49.8", "#87b982");
     const provenance = page
       .getByTestId("review-published-county-preview")
       .locator(".ux-reset-evidence-provenance")

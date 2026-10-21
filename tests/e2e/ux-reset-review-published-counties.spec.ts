@@ -126,6 +126,7 @@ test.describe("Published Review county exploration", () => {
     await expect(page.getByText(/A published floor is a minimum/)).toHaveCount(
       0
     );
+    await showCountyList(page);
     await rankedRow(page, "01003").focus();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Enter");

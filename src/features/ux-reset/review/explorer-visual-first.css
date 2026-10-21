@@ -306,17 +306,18 @@
   list-style: none;
 }
 
+/* The legend is a compact strip under the canvas. It never covers counties,
+   so every county stays clickable. */
 .ux-reset-explorer-page .ux-reset-explorer-map .ux-reset-explorer-legend {
-  position: absolute;
-  bottom: 0.75rem;
-  left: 0.75rem;
-  z-index: 6;
-  width: min(26rem, calc(100% - 1.5rem));
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--card) 95%, transparent);
-  box-shadow: 0 1px 4px color-mix(in srgb, var(--foreground) 16%, transparent);
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+  padding: 0.5rem 0.75rem 0.625rem;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--card);
+  box-shadow: none;
 }
 
 .ux-reset-explorer-page .ux-reset-explorer-legend-head {
@@ -356,9 +357,14 @@
 
 .ux-reset-explorer-rail-tabs [data-slot="tabs-trigger"] {
   flex: 0 0 auto;
+  color: var(--muted-foreground);
   height: 2.5rem;
   padding: 0 0.75rem;
   font-size: 0.875rem;
+}
+
+.ux-reset-explorer-rail-tabs [data-slot="tabs-trigger"][aria-selected="true"] {
+  color: var(--foreground);
 }
 
 .ux-reset-explorer-rail-tabs [data-slot="tabs-trigger"]::after {
@@ -1178,4 +1184,9 @@ div.action-checklist-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
+}
+
+/* Dark navy text on the orange end of the review ramp needs 4.5:1. */
+.county-summary-marks .ux-reset-ranked-score:not(.is-unavailable) {
+  color: color-mix(in srgb, var(--navy) 65%, black);
 }

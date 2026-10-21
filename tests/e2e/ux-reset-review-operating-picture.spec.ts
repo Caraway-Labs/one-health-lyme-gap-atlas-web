@@ -638,6 +638,17 @@ test.describe("Review operating picture", () => {
       expect(results.violations).toEqual([]);
     }
 
+    await showSelectedCounty(page);
+    const countyMethodology = page
+      .getByTestId("review-county-preview")
+      .locator("summary", { hasText: "Score and methodology" });
+    if (
+      await countyMethodology.evaluate(
+        (element) => element.parentElement?.hasAttribute("open") !== true
+      )
+    ) {
+      await countyMethodology.click();
+    }
     const qualification = page.getByTestId("review-preview-qualification");
     await qualification.getByText("Inspect provenance").click();
     await expect(qualification).toContainText(`source as of ${sourceAsOf}`);

@@ -654,6 +654,9 @@ function ResetReviewExperienceInner() {
       if (!county) {
         return;
       }
+      // Leaving for county evidence is a return trip. Mark the county so
+      // focus comes back to its list row, as it does for Back to map.
+      markReviewReturnFocus(county);
       // The state review was loaded for this release. Pin it so county
       // evidence does not request a newer current release.
       void setUrlState(

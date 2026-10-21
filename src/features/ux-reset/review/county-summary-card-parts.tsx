@@ -64,7 +64,7 @@ export function CountySummaryHeader({
   stateName: string;
 }) {
   return (
-    <header className="county-summary-header">
+    <header className="county-summary-header ux-reset-selected-county-header">
       <h2 data-testid="review-preview-title">
         {county}, {stateName}
       </h2>

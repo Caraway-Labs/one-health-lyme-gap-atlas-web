@@ -590,6 +590,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     await installOutlineApi(page);
     await page.setViewportSize({ height: 900, width: 768 });
     await page.goto("/explore?scope=ALL&county=16001");
+    await showCountyList(page);
     await expect(page.getByRole("button", { name: /Ada, ID/ })).toHaveAttribute(
       "aria-current",
       "true"
@@ -624,6 +625,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     await installOutlineApi(page);
     await page.setViewportSize({ height: 844, width: 390 });
     await page.goto("/explore?scope=ALL&county=16001");
+    await showCountyList(page);
     await expect(page.getByRole("button", { name: /Ada, ID/ })).toHaveAttribute(
       "aria-current",
       "true"

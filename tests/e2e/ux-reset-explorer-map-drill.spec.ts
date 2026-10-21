@@ -326,6 +326,7 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toContainText("Ada");
+    await showCountyList(page);
     await expect(page.getByRole("button", { name: /Ada, ID/ })).toHaveAttribute(
       "aria-current",
       "true"

@@ -10,6 +10,7 @@ import {
   buildStateReview,
   reviewCandidate,
 } from "../fixtures/review-operating-picture-fixtures";
+import { clickCsvExport } from "./explorer-rail";
 
 const releaseId = "alpha-2026";
 
@@ -246,14 +247,18 @@ test.describe("Explorer and Compare introductions", () => {
     );
     await expect(page.getByTestId("page-introduction-compare")).toHaveCount(0);
     await expect(page.getByTestId("explorer-county-toolbar")).toBeVisible();
-    await page.getByTestId("explorer-download-help").focus();
-    await expect(
-      page.getByTestId("explorer-county-export-tooltip")
-    ).toContainText(EXPLORER_COUNTY_EXPORT_NOTE);
+    // The open scenario sheet covers the right edge, so close it first.
     await page.keyboard.press("Escape");
-    await expect(
-      page.getByTestId("explorer-county-export-tooltip")
-    ).toHaveCount(0);
+    // The export scope note stays for assistive technology; the menu shows a
+    // one-line description instead of a tooltip.
+    await expect(page.getByTestId("explorer-county-export-note")).toHaveText(
+      EXPLORER_COUNTY_EXPORT_NOTE
+    );
+    await page.getByTestId("explorer-export-menu").click();
+    await expect(page.getByTestId("explorer-download-counties")).toContainText(
+      "No scores."
+    );
+    await page.keyboard.press("Escape");
     await expect(page.getByTestId("explorer-browse")).toBeVisible();
     await page.screenshot({
       path: "/opt/cursor/artifacts/after-explorer-1440.png",
@@ -292,7 +297,7 @@ test.describe("Explorer and Compare introductions", () => {
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.getByTestId("explorer-download-counties").click(),
+      clickCsvExport(page),
     ]);
     expect(download.suggestedFilename()).toBe("atlas-explorer-counties-al.csv");
     const downloadPath = await download.path();

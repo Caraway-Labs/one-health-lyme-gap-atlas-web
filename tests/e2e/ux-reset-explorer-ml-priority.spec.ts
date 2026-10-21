@@ -173,6 +173,8 @@ test("desktop county rows show labeled ML surveillance priority", async ({
   await expect(boulder).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/county=08013/);
+  // Choosing a county opens the County tab. The row stays marked in the list.
+  await showCountyList(page);
   await expect(boulder).toHaveAttribute("aria-current", "true");
 
   const accessibility = await new AxeBuilder({ page })

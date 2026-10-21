@@ -99,6 +99,7 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-review-priority")).toContainText(
       "Highest review priority"
     );
+    await page.getByRole("tab", { name: "Follow-up" }).click();
     const resource = page
       .getByRole("button", {
         name: "Questions, partner roles, and official resources",
@@ -114,6 +115,7 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-summary-limitation")).toHaveCount(
       0
     );
+    await page.getByRole("tab", { name: "Evidence" }).click();
     await expect(
       page.getByRole("tab", { name: "Evidence", selected: true })
     ).toBeVisible();

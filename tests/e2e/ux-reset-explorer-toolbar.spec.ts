@@ -9,7 +9,11 @@ import {
   buildStateReview,
   reviewCandidate,
 } from "../fixtures/review-operating-picture-fixtures";
-import { showCountyList, showSelectedCounty } from "./explorer-rail";
+import {
+  showCountyList,
+  showSelectedCounty,
+  clickCsvExport,
+} from "./explorer-rail";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 const releaseId = "alpha-2026";
@@ -173,10 +177,7 @@ async function rankedFips(page: Page) {
 async function downloadCountyFips(page: Page) {
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    (async () => {
-      await page.getByTestId("explorer-export-menu").click();
-      await page.getByTestId("explorer-download-counties").click();
-    })(),
+    clickCsvExport(page),
   ]);
   const csv = await readFile((await download.path()) ?? "", "utf8");
   return [...csv.matchAll(/"(\d{5})"/g)].map((match) => match[1] ?? "");
@@ -294,23 +295,22 @@ test.describe("Explorer county toolbar", () => {
       path: "/opt/cursor/artifacts/explorer-page-after-1440.png",
     });
 
-    const help = page.getByTestId("explorer-download-help");
-    const exportTooltip = page.getByTestId("explorer-county-export-tooltip");
-    await help.focus();
-    await expect(exportTooltip).toContainText(EXPLORER_COUNTY_EXPORT_NOTE);
-    await page.keyboard.press("Escape");
-    await expect(exportTooltip).toHaveCount(0);
-    await help.hover();
-    await expect(exportTooltip).toContainText(
-      "Columns are five-digit FIPS, county name, and state. Scores are not included."
+    // The scope note is spoken by the Export button and stays out of the row.
+    await expect(page.getByTestId("explorer-export-menu")).toHaveAttribute(
+      "aria-describedby",
+      "explorer-county-export-note"
+    );
+    await expect(page.getByTestId("explorer-county-export-note")).toHaveText(
+      EXPLORER_COUNTY_EXPORT_NOTE
+    );
+    await page.getByTestId("explorer-export-menu").click();
+    await expect(page.getByTestId("explorer-download-counties")).toContainText(
+      "Counties in the current filters. No scores."
     );
     await page.keyboard.press("Escape");
-    await expect(exportTooltip).toHaveCount(0);
-    await help.click();
-    await expect(exportTooltip).toBeVisible();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.getByTestId("explorer-download-counties").click(),
+      clickCsvExport(page),
     ]);
     expect(download.suggestedFilename()).toBe("atlas-explorer-counties-al.csv");
     const csv = await readFile((await download.path()) ?? "", "utf8");
