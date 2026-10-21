@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils";
 
 export function ResponseTierPill({
   className,
+  compact = false,
   context,
   detail,
 }: {
   className?: string;
+  compact?: boolean;
   context?: FollowUpReviewContext;
   detail: CountyDetail;
 }) {
@@ -43,7 +45,9 @@ export function ResponseTierPill({
       data-tier={tier.title}
     >
       <span className="response-tier-pill-title">{tier.title}</span>
-      <span className="response-tier-pill-detail">{tier.detail}</span>
+      <span className={compact ? "sr-only" : "response-tier-pill-detail"}>
+        {tier.detail}
+      </span>
     </Badge>
   );
 }

@@ -168,7 +168,9 @@ test.describe("Explorer county surveillance intelligence", () => {
     await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/mode=evidence/);
     await expect(page).toHaveURL(/county=08001/);
-    const section = page.getByTestId("county-surveillance-intelligence");
+    const section = page
+      .getByTestId("explorer-county-evidence")
+      .getByTestId("county-surveillance-intelligence");
     await expect(section).toBeVisible();
     await expect(section.getByRole("heading", { level: 3 })).toHaveCount(4);
     await expect(
@@ -213,7 +215,7 @@ test.describe("Explorer county surveillance intelligence", () => {
         height: viewport.height,
         width: viewport.width,
       });
-      const template = await page
+      const template = await section
         .getByTestId("surveillance-intelligence-grid")
         .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
       const columnCount = template.split(" ").filter(Boolean).length;
@@ -223,7 +225,9 @@ test.describe("Explorer county surveillance intelligence", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await expect(gap).toHaveClass(/motion-reduce:transition-none/);
     const results = await new AxeBuilder({ page })
-      .include('[data-testid="county-surveillance-intelligence"]')
+      .include(
+        '[data-testid="explorer-county-evidence"] [data-testid="county-surveillance-intelligence"]'
+      )
       .analyze();
     expect(results.violations).toEqual([]);
 
