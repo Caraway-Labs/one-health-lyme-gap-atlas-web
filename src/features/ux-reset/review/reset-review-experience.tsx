@@ -367,6 +367,28 @@ function ResetReviewExperienceInner() {
     null
   );
   const nationalChoiceGenerationRef = useRef(0);
+  const returnToUsView = useCallback(() => {
+    const alreadyNational =
+      scope === "ALL" &&
+      urlState.county === null &&
+      urlState.focus === null &&
+      urlState.selection === null;
+    if (alreadyNational) {
+      return;
+    }
+    // A temporary map action. Mark the choice so startup does not replace it
+    // with the saved starting view, and do not write that preference.
+    userChoseScopeRef.current = true;
+    setUserChoseScope(true);
+    nationalChoiceGenerationRef.current += 1;
+    setChosenNationalFips(null);
+    void setUrlState({
+      county: null,
+      focus: null,
+      scope: "ALL",
+      selection: null,
+    });
+  }, [scope, setUrlState, urlState.county, urlState.focus, urlState.selection]);
   if (scope !== "ALL" && chosenNationalFips !== null) {
     setChosenNationalFips(null);
   }
@@ -833,6 +855,7 @@ function ResetReviewExperienceInner() {
                 onViewCountyEvidence={openCountyEvidence}
                 onMapFocusChange={setMapFocus}
                 onMapLayerChange={setMapLayer}
+                onReturnToUsView={returnToUsView}
               />
             ) : null}
             {reviewReady && stateReview.review ? (
@@ -854,6 +877,7 @@ function ResetReviewExperienceInner() {
                 tierRelease={tierRelease}
                 onCountyChange={setCounty}
                 onMapLayerChange={setMapLayer}
+                onReturnToUsView={returnToUsView}
                 onViewCountyEvidence={openCountyEvidence}
               />
             ) : null}

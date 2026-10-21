@@ -335,13 +335,14 @@ test.describe("P0 evidence catalog", () => {
     await expect(page.getByTestId("preview-action")).toHaveText(
       "Last preview action: None"
     );
-    await page.getByText("Model and as-of details").click();
-    const details = page.getByTestId("tier1-model-details");
-    await expect(details).toContainText("alpha-2026");
-    await expect(details).not.toContainText("governed-2026-09-18");
+    await page.getByRole("button", { name: /ML Review Priority/ }).click();
+    const disclosure = page.getByTestId("surveillance-intelligence-disclosure");
+    await disclosure.getByText("Methodology & source").click();
+    await expect(disclosure).toContainText("alpha-2026");
+    await expect(disclosure).not.toContainText("governed-2026-09-18");
     await openStory(page, `${preview}--dropped-context`);
     await expect(
-      page.getByTestId("tier1-surveillance-priority")
+      page.getByTestId("surveillance-intelligence-card-ml-review-priority")
     ).toHaveAttribute("data-tier", "HIGH");
     await expect(page.getByText("not low priority")).toHaveCount(0);
     expect(traffic.blocked).toEqual([]);

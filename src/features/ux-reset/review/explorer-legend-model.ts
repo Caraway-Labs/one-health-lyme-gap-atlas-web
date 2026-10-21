@@ -8,6 +8,14 @@ import {
   UNINSURED_POPULATION_HIGH_LABEL,
   UNINSURED_POPULATION_LOW_LABEL,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
+import {
+  approvedSegmentTooltip,
+  type ExplorerLegendAboutSection,
+  explorerLegendAboutSections,
+  GAP_NO_SCORE_INFO,
+  gapLegendCopyForMinimum,
+  quantityColorSentence,
+} from "@/features/ux-reset/review/explorer-legend-info-copy";
 import { mixExplorerScaleColor } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import type {
   ExplorerLegendScale,
@@ -20,18 +28,17 @@ import {
   RURALITY_MORE_URBAN_LABEL,
 } from "@/features/ux-reset/review/rurality-palette";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
-import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 const NO_PUBLISHED_VALUE = "No published value";
 const GAP_SCORE_UNAVAILABLE_LABEL = "Gap score unavailable";
 
 /**
- * Gray has no score band. Colored bands use the same two-line response-tier
- * wording and published color as the Selected County pill.
+ * Gray has no score band. Colored bands use the approved review category
+ * and follow-up, which agree with the INFO table.
  */
 const GAP_SCORE_UNAVAILABLE_DISCLOSURE = {
-  action: "Insufficient data to calculate a score",
-  category: null,
+  action: GAP_NO_SCORE_INFO.action,
+  category: GAP_NO_SCORE_INFO.category,
   title: GAP_SCORE_UNAVAILABLE_LABEL,
 } as const;
 
@@ -70,11 +77,6 @@ const GRADIENT_STOP_PERCENTS = [
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
   100,
 ] as const;
-
-export type ExplorerLegendAboutSection = {
-  heading: string;
-  paragraphs: readonly string[];
-};
 
 export type ExplorerLegendModel = {
   aboutLabel: string;
@@ -160,15 +162,13 @@ function gapScoreDisclosure(
   const band = SCORE_COLOR_BANDS.find(
     (entry) => scoreBandThreshold(entry) === label
   );
-  const presentation = band
-    ? responseTierPresentationForColor(band.color)
-    : null;
-  if (!(band && presentation)) {
+  const copy = band ? gapLegendCopyForMinimum(band.minInclusive) : null;
+  if (!(band && copy)) {
     return null;
   }
   return {
-    action: presentation.detail,
-    category: presentation.title,
+    action: copy.action,
+    category: copy.category,
     title: gapScoreRangeTitle(band),
   };
 }
@@ -180,6 +180,8 @@ function toSegment(
 ): ExplorerLegendSegment {
   const methodology = methodologyCopy(entry);
   const disclosure = gapScoreDisclosure(layerId, entry.label);
+  const approved =
+    layerId && !disclosure ? approvedSegmentTooltip(layerId, entry) : null;
   const accessibleName = disclosure
     ? disclosureAccessibleName(disclosure)
     : methodology;
@@ -191,7 +193,7 @@ function toSegment(
     label: entry.label,
     outline: entry.outline,
     role: entry.role,
-    tooltip: accessibleName,
+    tooltip: approved ?? accessibleName,
     visibleLines: entry.visibleLines,
   };
 }
@@ -281,7 +283,7 @@ function quantityPhrase(layerId: ExplorerMapLayerId): {
       highLabel: LYME_INCIDENCE_HIGH_LABEL,
       lowLabel: LYME_INCIDENCE_LOW_LABEL,
       scaleSentence:
-        "Color runs from pale green to deep green between these published ends. Palette anchors are not new epidemiologic cutoffs.",
+        "Darker green means higher reported incidence. Gray indicates unavailable data. A reported zero remains separate from missing data.",
     };
   }
   if (layerId === "uninsured") {
@@ -289,7 +291,7 @@ function quantityPhrase(layerId: ExplorerMapLayerId): {
       highLabel: UNINSURED_POPULATION_HIGH_LABEL,
       lowLabel: UNINSURED_POPULATION_LOW_LABEL,
       scaleSentence:
-        "Color runs from pale rose to deep burgundy on the 0 to 100 percent scale. Palette anchors are not new percentage cutoffs.",
+        "Darker burgundy means a higher uninsured percentage. Gray indicates unavailable data; 0% means a reported uninsured percentage of zero.",
     };
   }
   if (layerId === "svi") {
@@ -297,20 +299,10 @@ function quantityPhrase(layerId: ExplorerMapLayerId): {
       highLabel: SVI_HIGH_LABEL,
       lowLabel: SVI_LOW_LABEL,
       scaleSentence:
-        "National county percentile rank among U.S. counties in the 2022 CDC/ATSDR SVI, not a percent of residents. Color runs from pale peach to burnt orange.",
+        "Higher values and darker orange indicate greater social vulnerability relative to other U.S. counties. The value is a county ranking, not the percentage of residents who are vulnerable. Gray indicates unavailable data.",
     };
   }
   return null;
-}
-
-function endpointPhraseCopy(
-  entry: ExplorerMapLegendEntry,
-  phrase: string
-): string {
-  const number = endpointCaption(entry.label);
-  const detail = entry.detail?.trim();
-  const base = `${phrase} (${number})`;
-  return detail ? `${base}. ${detail}` : base;
 }
 
 function constantNumericSwatch(
@@ -324,15 +316,12 @@ function constantNumericSwatch(
   const value = endpointCaption(low.label);
   const displayUnit = legendUnit(paint);
   const unit = displayUnit ? ` ${displayUnit}` : "";
-  const detail = low.detail?.trim();
   const phrase = quantityPhrase(paint.layerId);
-  const text = phrase
-    ? detail
-      ? `${phrase.lowLabel} ${value}${unit}. ${detail}`
-      : `${phrase.lowLabel} ${value}${unit}.`
-    : detail
-      ? `${value}${unit}. ${detail}`
-      : `${value}${unit}.`;
+  const color = quantityColorSentence(paint.layerId);
+  const lead = phrase
+    ? `${phrase.lowLabel} ${value}${unit}.`
+    : `${value}${unit}.`;
+  const text = color ? `${lead} ${color}` : lead;
   const swatch = toSegment(low, missing.length, paint.layerId);
   return {
     gradient: null,
@@ -376,17 +365,17 @@ function gradientModel(
   }
   const unit = legendUnit(paint);
   const unitSuffix = unit ? ` ${unit}` : "";
-  const zero =
-    low.detail && low.label.includes("observed zero") ? ` ${low.detail}` : "";
   const highest = note
-    ? ` ${note.label}. ${note.detail ?? "Not a separate class."}`
+    ? ` Highest published value in this view: ${endpointCaption(note.label)}.`
     : "";
   const phrase = quantityPhrase(paint.layerId);
   const lowNumber = endpointCaption(low.label);
   const highNumber = endpointCaption(high.label);
-  const tooltip = phrase
-    ? `${phrase.lowLabel} ${lowNumber} to ${phrase.highLabel} ${highNumber}${unitSuffix}. ${phrase.scaleSentence}${zero}${highest} Missing is not drawn as zero.`
-    : `${lowNumber} to ${highNumber}${unitSuffix}. Color is mixed between these ends.${zero}${highest} Missing is not drawn as zero.`;
+  const color = phrase?.scaleSentence ?? quantityColorSentence(paint.layerId);
+  const range = phrase
+    ? `${phrase.lowLabel} ${lowNumber} to ${phrase.highLabel} ${highNumber}${unitSuffix}.`
+    : `${lowNumber} to ${highNumber}${unitSuffix}.`;
+  const tooltip = `${range}${color ? ` ${color}` : ""}${highest}`;
   return {
     gradient: {
       accessibleName: tooltip,
@@ -401,38 +390,6 @@ function gradientModel(
   };
 }
 
-function aboutSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
-  const sections: ExplorerLegendAboutSection[] = [];
-  const note = paint.note.trim();
-  if (note) {
-    sections.push({ heading: "How to read this layer", paragraphs: [note] });
-  }
-  const period = paint.period.trim();
-  if (period) {
-    sections.push({ heading: "Period and sources", paragraphs: [period] });
-  }
-  const classes = paint.entries
-    .filter((entry) => entry.role !== "note")
-    .map((entry) => {
-      const phrase = quantityPhrase(paint.layerId);
-      if (phrase && entry.role === "endpoint-low") {
-        return endpointPhraseCopy(entry, phrase.lowLabel);
-      }
-      if (phrase && entry.role === "endpoint-high") {
-        return endpointPhraseCopy(entry, phrase.highLabel);
-      }
-      return methodologyCopy(entry);
-    });
-  if (classes.length > 0) {
-    sections.push({ heading: "Colors", paragraphs: classes });
-  }
-  const selection = paint.selection?.trim();
-  if (selection) {
-    sections.push({ heading: "Selected county", paragraphs: [selection] });
-  }
-  return sections;
-}
-
 export function buildExplorerLegendModel(
   paint: ExplorerMapPaint
 ): ExplorerLegendModel {
@@ -440,7 +397,7 @@ export function buildExplorerLegendModel(
   const unitLabel = unitText.length > 0 ? unitText : null;
   const base = {
     aboutLabel: `About ${paint.title}`,
-    aboutSections: aboutSections(paint),
+    aboutSections: explorerLegendAboutSections(paint),
     title: paint.title,
     unitLabel,
   };

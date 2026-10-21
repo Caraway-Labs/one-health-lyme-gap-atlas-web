@@ -20,7 +20,7 @@ import {
   buildPathogenStatusLegend,
   pathogenStatusClassId,
 } from "@/features/ux-reset/review/pathogen-status-contract";
-import { MINIMUM_REPORTED_INCIDENCE_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
+import { MINIMUM_REPORTED_LYME_INCIDENCE_LAYER_LABEL } from "@/features/ux-reset/review/published-human-case-copy";
 import { SCORE_COLOR_BANDS } from "@/features/ux-reset/review/suggested-follow-up-content";
 import {
   buildTickStatusLegend,
@@ -43,7 +43,7 @@ export const EXPLORER_MAP_LAYERS = [
   },
   {
     id: "incidence_floor",
-    label: MINIMUM_REPORTED_INCIDENCE_LABEL,
+    label: MINIMUM_REPORTED_LYME_INCIDENCE_LAYER_LABEL,
     needsScores: false,
     selectable: true,
     unavailableReason: null,
@@ -674,7 +674,7 @@ function gapScorePaint(input: PaintInput): ExplorerMapPaint {
     entries,
     kind: "choropleth",
     layerId: layer.id,
-    note: "Colors are the published score colors. Every governed band stays on the legend. A band keeps its numeric range only when every score painted in that color already falls inside it. Priority labels can span more than one color. The county list stays the review ranking.",
+    note: "Helps prioritize counties for closer surveillance review by combining reported Lyme disease, tick and pathogen data, and community characteristics.",
     period: legendPeriod(input, layer.id),
     scale: "segments",
     title: explorerLegendTitle(layer),
@@ -707,7 +707,7 @@ function tickStatusPaint(input: PaintInput): ExplorerMapPaint {
     })),
     kind: "categorical",
     layerId: layer.id,
-    note: "Colors are separate published status categories, not a continuous risk gradient or a severity ranking. An observed zero stays distinct from a missing status.",
+    note: "Shows whether blacklegged ticks have been documented in each county.",
     period: legendPeriod(input, layer.id),
     scale: "segments",
     title: layer.label,
@@ -742,7 +742,7 @@ function pathogenStatusPaint(input: PaintInput): ExplorerMapPaint {
     })),
     kind: "categorical",
     layerId: layer.id,
-    note: "Colors are separate published status categories, not a continuous risk gradient or a severity ranking. An observed zero stays distinct from a missing status.",
+    note: "Shows whether Borrelia burgdorferi, the bacterium that causes Lyme disease, has been documented in ticks from the county.",
     period: legendPeriod(input, layer.id),
     scale: "segments",
     title: layer.label,
