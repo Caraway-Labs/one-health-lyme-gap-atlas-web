@@ -543,4 +543,75 @@ test.describe("Review national geographic navigation", () => {
     await page.setViewportSize({ height: 1000, width: 1920 });
     await expectNationalExtentsVisible(page);
   });
+
+  test("returns to the full US view from a state county without saving a starting view", async ({
+    page,
+  }) => {
+    const profileMethods = await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=CO&county=08013&layer=boundaries&eco=55");
+    const usView = page.getByRole("button", { name: "US view" });
+    const fit = page.getByTestId("explorer-fit-scope");
+    await expect(usView).toBeVisible();
+    await expect(fit).toBeVisible();
+    const usBox = await usView.boundingBox();
+    const fitBox = await fit.boundingBox();
+    expect(usBox).not.toBeNull();
+    expect(fitBox).not.toBeNull();
+    if (usBox && fitBox) {
+      expect(usBox.x + usBox.width).toBeLessThanOrEqual(fitBox.x + 1);
+      expect(Math.abs(usBox.height - fitBox.height)).toBeLessThanOrEqual(1);
+    }
+    await expect(usView.locator("svg path")).toHaveCount(1);
+    await expect(usView.locator("svg")).toHaveAttribute("fill", "currentColor");
+    await usView.hover();
+    await expect(page.locator("[data-slot='tooltip-content']")).toHaveText(
+      "Return to the full US map"
+    );
+    await usView.focus();
+    await expect(usView).toBeFocused();
+    const focusRing = await usView.evaluate(
+      (element) => getComputedStyle(element).boxShadow
+    );
+    expect(focusRing).not.toBe("none");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/scope=ALL/);
+    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/eco=55/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expect(page).not.toHaveURL(/focus=/);
+    await expect(page.getByTestId("review-scope-select")).toContainText(
+      "United States"
+    );
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expectNationalExtentsVisible(page);
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "County boundaries"
+    );
+    expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
+      []
+    );
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("refits the full US view from a zoomed national map", async ({
+    page,
+  }) => {
+    await installReviewApi(page);
+    await page.setViewportSize({ height: 1000, width: 1280 });
+    await page.goto("/explore?scope=ALL&layer=boundaries");
+    await expect(page.getByTestId("explorer-us-view")).toBeVisible();
+    await expectNationalExtentsVisible(page);
+    const overview = await readNationalCamera(page);
+    await page.getByLabel("Zoom in").click();
+    await waitForStableZoom(page);
+    const zoomed = await readNationalCamera(page);
+    expect(zoomed.zoom).toBeGreaterThan(overview.zoom + 0.4);
+    await page.getByRole("button", { name: "US view" }).click();
+    await expectNationalExtentsVisible(page);
+    await expect(page).toHaveURL(/layer=boundaries/);
+    await page.getByTestId("explorer-fit-national").click();
+    await expectNationalExtentsVisible(page);
+    await expectNoHorizontalOverflow(page);
+  });
 });

@@ -3,13 +3,25 @@
 import { Scan } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
+import { ContiguousUsSilhouette } from "@/features/ux-reset/review/contiguous-us-silhouette";
+
+export const EXPLORER_US_VIEW_LABEL = "US view";
+export const EXPLORER_US_VIEW_TOOLTIP = "Return to the full US map";
 
 type ExplorerMapSectionHeaderProps = {
   fitLabel: string;
   fitPlaceName: string;
   fitTestId?: string;
   onFit: () => void;
+  onUsView: () => void;
+  usViewTestId?: string;
 };
 
 export function explorerFitAccessibleName(
@@ -24,21 +36,45 @@ export function ExplorerMapSectionHeader({
   fitPlaceName,
   fitTestId,
   onFit,
+  onUsView,
+  usViewTestId = "explorer-us-view",
 }: ExplorerMapSectionHeaderProps) {
   return (
     <div className="ux-reset-explorer-map-heading">
       <h2>{EXPLORER_MAP_SECTION_HEADING}</h2>
-      <Button
-        aria-label={explorerFitAccessibleName(fitLabel, fitPlaceName)}
-        data-testid={fitTestId}
-        size="sm"
-        type="button"
-        variant="secondary"
-        onClick={onFit}
-      >
-        <Scan aria-hidden="true" data-icon="inline-start" />
-        {fitLabel}
-      </Button>
+      <div className="ux-reset-explorer-map-actions">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  aria-label={EXPLORER_US_VIEW_LABEL}
+                  data-testid={usViewTestId}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                  onClick={onUsView}
+                />
+              }
+            >
+              <ContiguousUsSilhouette />
+              {EXPLORER_US_VIEW_LABEL}
+            </TooltipTrigger>
+            <TooltipContent>{EXPLORER_US_VIEW_TOOLTIP}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <Button
+          aria-label={explorerFitAccessibleName(fitLabel, fitPlaceName)}
+          data-testid={fitTestId}
+          size="sm"
+          type="button"
+          variant="secondary"
+          onClick={onFit}
+        >
+          <Scan aria-hidden="true" data-icon="inline-start" />
+          {fitLabel}
+        </Button>
+      </div>
     </div>
   );
 }
