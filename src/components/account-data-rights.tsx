@@ -2,7 +2,7 @@
 
 import { QueryClientContext } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useContext, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { endLocalAtlasSession } from "@/features/ux-reset/profile/end-local-session";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
 import {
   runWorkspaceSignOut,
@@ -24,9 +25,28 @@ import {
   downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet,
 } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
-import { safeReturnPath } from "@/lib/auth/return-path";
+import {
+  accessTokenIssuedAtMs,
+  beginPrivacyReauthResume,
+  claimPrivacyReauthChallenge,
+  clearPrivacyReauthChallenge,
+  endPrivacyReauthResume,
+  previousIssuedAtForReauth,
+  PRIVACY_REAUTH_CONTINUE_NOTICE,
+  privacyReauthChallengeExpired,
+  privacyReauthSatisfied,
+  readPrivacyReauthChallenge,
+  savePrivacyReauthChallenge,
+  type PrivacyReauthChallenge,
+  type PrivacySessionStamp,
+} from "@/lib/auth/privacy-reauth";
+import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
+import { createClient } from "@/lib/supabase/client";
 
-type PrivacyAction = "export" | "deletion";
+type PrivacyAction = PrivacyReauthChallenge["action"];
+
+const PRIVACY_REQUEST_FAILURE =
+  "We could not complete that privacy request. Please try again later.";
 
 const confirmationCopy: Record<
   PrivacyAction,
@@ -67,72 +87,160 @@ export function AccountDataRights({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  async function runRequest(action: PrivacyAction) {
-    setBusy(true);
-    setNotice(null);
-    try {
-      const created = await createPrivacyRequestV1MePrivacyRequestsPost({
-        action,
-      });
-      if (created.status !== 200) {
-        throw new Error("Privacy request was not accepted.");
-      }
-      const confirmed =
-        await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
-          created.data.request_id,
-          { nonce: created.data.confirmation_nonce }
-        );
-      if (confirmed.status !== 200) {
-        throw new Error("Privacy request confirmation failed.");
-      }
-      if (confirmed.data.state === "needs_support") {
-        setNotice(
-          `This request needs support. Public Atlas exploration remains available. Reference: ${created.data.request_id}.`
-        );
-        return;
-      }
-      if (action === "export") {
-        const file =
-          await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
-            created.data.request_id
-          );
-        if (file.status !== 200) {
-          throw new Error("Export download failed.");
+  const readSessionStamp =
+    useCallback(async (): Promise<PrivacySessionStamp> => {
+      try {
+        const { data, error } = await createClient().auth.getSession();
+        if (error || !data.session) {
+          return { issuedAtMs: null, present: false };
         }
-        downloadJson(file.data);
-        setNotice("Your data export downloaded.");
-        return;
+        const accessToken = data.session.access_token;
+        return {
+          issuedAtMs: accessToken ? accessTokenIssuedAtMs(accessToken) : null,
+          present: true,
+        };
+      } catch {
+        return { issuedAtMs: null, present: false };
       }
-      const result = await runWorkspaceSignOut(queryClient);
-      if (result === null) {
-        return;
-      }
-      if (!result.ok) {
-        setNotice(result.notice);
-        return;
-      }
-      followWorkspaceHref("/");
-    } catch (error) {
-      if (error instanceof AtlasApiError && error.status === 401) {
-        if (!workspaceSignOutSuppressesExpiryRedirect()) {
-          router.push(
-            `/auth/sign-in?next=${encodeURIComponent(safeReturnPath(returnPath))}`
-          );
+    }, []);
+
+  const executeRequest = useCallback(
+    async (action: PrivacyAction) => {
+      setBusy(true);
+      setNotice(null);
+      try {
+        const created = await createPrivacyRequestV1MePrivacyRequestsPost({
+          action,
+        });
+        if (created.status !== 200) {
+          throw new Error("Privacy request was not accepted.");
         }
-        return;
+        const confirmed =
+          await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
+            created.data.request_id,
+            { nonce: created.data.confirmation_nonce }
+          );
+        if (confirmed.status !== 200) {
+          throw new Error("Privacy request confirmation failed.");
+        }
+        if (confirmed.data.state === "needs_support") {
+          setNotice(
+            `This request needs support. Public Atlas exploration remains available. Reference: ${created.data.request_id}.`
+          );
+          return;
+        }
+        if (action === "export") {
+          const file =
+            await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
+              created.data.request_id
+            );
+          if (file.status !== 200) {
+            throw new Error("Export download failed.");
+          }
+          downloadJson(file.data);
+          setNotice("Your data export downloaded.");
+          return;
+        }
+        const result = await runWorkspaceSignOut(queryClient);
+        if (result === null) {
+          return;
+        }
+        if (!result.ok) {
+          setNotice(result.notice);
+          return;
+        }
+        followWorkspaceHref("/");
+      } catch (error) {
+        if (error instanceof AtlasApiError && error.status === 401) {
+          if (!workspaceSignOutSuppressesExpiryRedirect()) {
+            router.push(signInHrefForReturnPath(returnPath));
+          }
+          return;
+        }
+        const reference =
+          error instanceof AtlasApiError && error.requestId
+            ? ` Reference: ${error.requestId}.`
+            : "";
+        setNotice(`${PRIVACY_REQUEST_FAILURE}${reference}`);
+      } finally {
+        setBusy(false);
+        setPending(null);
       }
-      const reference =
-        error instanceof AtlasApiError && error.requestId
-          ? ` Reference: ${error.requestId}.`
-          : "";
-      setNotice(
-        `We could not complete that privacy request. Please try again later.${reference}`
-      );
-    } finally {
-      setBusy(false);
-      setPending(null);
-    }
-  }
+    },
+    [queryClient, returnPath, router]
+  );
+
+  const requireFreshSignIn = useCallback(
+    async (action: PrivacyAction) => {
+      setBusy(true);
+      setNotice(null);
+      const nowMs = Date.now();
+      let challenge: PrivacyReauthChallenge | null = null;
+      try {
+        const stamp = await readSessionStamp();
+        challenge = {
+          action,
+          challengedAtMs: nowMs,
+          nonce: crypto.randomUUID(),
+          previousIssuedAtMs: previousIssuedAtForReauth(stamp, nowMs),
+        };
+        savePrivacyReauthChallenge(challenge);
+        if (stamp.present) {
+          const signedOut = await endLocalAtlasSession(queryClient);
+          if (!signedOut.ok) {
+            clearPrivacyReauthChallenge();
+            setNotice(signedOut.notice);
+            return;
+          }
+        }
+        setNotice(PRIVACY_REAUTH_CONTINUE_NOTICE);
+        router.push(signInHrefForReturnPath(returnPath));
+      } catch {
+        if (challenge) clearPrivacyReauthChallenge();
+        setNotice(PRIVACY_REQUEST_FAILURE);
+      } finally {
+        setBusy(false);
+        setPending(null);
+      }
+    },
+    [queryClient, readSessionStamp, returnPath, router]
+  );
+
+  const executeRequestRef = useRef(executeRequest);
+  const readSessionStampRef = useRef(readSessionStamp);
+  useEffect(() => {
+    executeRequestRef.current = executeRequest;
+    readSessionStampRef.current = readSessionStamp;
+  }, [executeRequest, readSessionStamp]);
+
+  useEffect(() => {
+    const challenge = readPrivacyReauthChallenge();
+    if (!challenge || !beginPrivacyReauthResume(challenge.nonce)) return;
+    let ignore = false;
+    const resume = async () => {
+      try {
+        const stamp = await readSessionStampRef.current();
+        if (ignore) return;
+        const nowMs = Date.now();
+        if (privacyReauthChallengeExpired(challenge, nowMs)) {
+          clearPrivacyReauthChallenge();
+          return;
+        }
+        if (!privacyReauthSatisfied(challenge, stamp.issuedAtMs, nowMs)) {
+          return;
+        }
+        const claimed = claimPrivacyReauthChallenge(challenge.nonce);
+        if (!claimed) return;
+        await executeRequestRef.current(claimed.action);
+      } finally {
+        endPrivacyReauthResume(challenge.nonce);
+      }
+    };
+    void resume();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const copy = pending ? confirmationCopy[pending] : null;
 
@@ -195,7 +303,7 @@ export function AccountDataRights({
                   variant={pending === "deletion" ? "destructive" : "default"}
                   disabled={busy}
                   onClick={() => {
-                    if (pending) void runRequest(pending);
+                    if (pending) void requireFreshSignIn(pending);
                   }}
                 >
                   {busy ? "Working…" : copy.confirm}
