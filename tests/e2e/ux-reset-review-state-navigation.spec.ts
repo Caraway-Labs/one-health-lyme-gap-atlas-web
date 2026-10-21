@@ -247,7 +247,7 @@ test.describe("Review national geographic navigation", () => {
     await page.getByRole("button", { name: "About Gap review score" }).click();
     await expect(
       page.getByRole("dialog", { name: "About Gap review score" })
-    ).toContainText("published score colors");
+    ).toContainText("closer surveillance review");
     await page.keyboard.press("Escape");
     await expect(
       page

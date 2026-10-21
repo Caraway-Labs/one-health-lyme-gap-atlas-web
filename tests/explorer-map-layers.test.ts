@@ -230,7 +230,7 @@ describe("Explorer map layers", () => {
     });
     expect(paint.note).not.toMatch(/not zero/);
     expect(paint.note).not.toMatch(/not personal disease risk/);
-    expect(paint.note).toMatch(/published score colors/);
+    expect(paint.note).toMatch(/closer surveillance review/);
     expect(paint.entries.map((entry) => entry.label)).toContain(
       "Gap score unavailable"
     );
@@ -347,7 +347,7 @@ describe("Explorer map layers", () => {
     expect(paint.entries.map((entry) => entry.label)).toContain(
       "No records (not zero, not confirmed absence)"
     );
-    expect(paint.note).toMatch(/not a continuous risk gradient/);
+    expect(paint.note).toMatch(/documented in each county/);
   });
 
   it("keeps an observed zero distinct from no records", () => {
@@ -430,12 +430,12 @@ describe("Explorer map layers", () => {
           outline: "#4B5563",
         },
       ],
-      note: expect.stringMatching(/not a missing value/),
+      note: expect.stringMatching(/without displaying a data measure/),
       period: expect.stringMatching(/not an evidence layer/),
       ramp: undefined,
       scale: "segments",
     });
-    expect(boundaries.note).toMatch(/not colored by Atlas gap score/);
+    expect(boundaries.note).toMatch(/neutral fill/);
   });
 
   it("says the source vintage is unavailable instead of inventing one", () => {
@@ -556,10 +556,10 @@ describe("Explorer map layers", () => {
       missing: true,
       unpainted: undefined,
     });
-    expect(paint.note).toMatch(/minimums/);
-    expect(paint.note).toMatch(/not all infections/);
-    expect(paint.note).toMatch(/not an exact total incidence/);
-    expect(paint.note).toMatch(/review ranking/);
+    expect(paint.note).toMatch(/lower bounds/);
+    expect(paint.note).toMatch(/reported totals may be higher/);
+    expect(paint.note).toMatch(/county of residence/);
+    expect(paint.note).not.toMatch(/review ranking/);
   });
 
   it("does not invent a numeric endpoint when every published value is missing", () => {
@@ -641,9 +641,19 @@ describe("Explorer map layers", () => {
     expect(paint.colorsByFips.get("01001")).not.toBe(
       paint.colorsByFips.get("08001")
     );
-    expect(paint.colorsByFips.has("08013")).toBeFalsy();
-    expect(paint.note).toMatch(/does not recompute/);
-    expect(paint.note).toMatch(/uninsured percentile/);
+    expect({
+      comprehensive: /does not mean surveillance is comprehensive/.test(
+        paint.note
+      ),
+      findings: /positive tick and pathogen findings/.test(paint.note),
+      recomputed: /does not recompute/.test(paint.note),
+      unpainted: paint.colorsByFips.has("08013"),
+    }).toStrictEqual({
+      comprehensive: true,
+      findings: true,
+      recomputed: false,
+      unpainted: false,
+    });
     expect(paint.entries.map((entry) => entry.label)).toStrictEqual([
       "50",
       "67",

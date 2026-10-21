@@ -3313,8 +3313,25 @@
   margin: 0;
 }
 
-.ux-reset-explorer-legend-about p + p {
+.ux-reset-explorer-legend-about p + p,
+.ux-reset-explorer-legend-about ul,
+.ux-reset-explorer-legend-about ol,
+.ux-reset-explorer-legend-about [data-slot="table-container"] {
   margin-top: 0.35rem;
+}
+
+.ux-reset-explorer-legend-about ul,
+.ux-reset-explorer-legend-about ol {
+  margin-bottom: 0;
+  padding-left: 1.15rem;
+}
+
+.ux-reset-explorer-legend-about li + li {
+  margin-top: 0.25rem;
+}
+
+.ux-reset-explorer-legend-about [data-slot="table-container"] {
+  max-width: 100%;
 }
 
 .ux-reset-explorer-legend-tip {
