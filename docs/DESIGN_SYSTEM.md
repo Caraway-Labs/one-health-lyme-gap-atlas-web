@@ -60,7 +60,91 @@ Prefer `--space-1` (4px) through `--space-12` (48px) and `--control-height` (44p
 
 ## Canonical primitives
 
-`src/components/ui` owns Button, Badge, Card, Dialog, DropdownMenu, Input, Popover, Progress, Select, Slider, Table, and Tooltip. Search there before creating a control. Do not add a second component framework. Slider is a native range input (`data-slot="slider"`) for shared assumption controls. Popover is the click, keyboard, and touch disclosure; Tooltip stays hover and focus only.
+`src/components/ui` owns Button, Badge, Card, Dialog, DropdownMenu, Input, Popover, Progress, Select, Slider, Table, and Tooltip. Search there before creating a control. Do not add a second component framework. Slider is a native range input (`data-slot="slider"`) for shared assumption controls. Popover is the click, keyboard, and touch disclosure; Tooltip stays hover and focus only. The visual-first primitives added for the Explorer are listed in the next subsection.
+
+### Visual-first primitives (WEB #788)
+
+These shadcn (`base-nova`) wrappers over Base UI also live in `src/components/ui`. Each has a `/design-system` specimen and a Storybook story (`Primitives/*`).
+
+| Primitive | Use it for | Choose it over |
+| --- | --- | --- |
+| `Tabs` | Switch sibling panels in one place (Shortlist / County). Arrow keys move focus, Enter or Space selects. | Anchors, which navigate to a different page or section. Tabs never change the URL by themselves. |
+| `ToggleGroup` / `Toggle` | One choice from a short set (Map / Split / Table, evidence filter) or an on/off option. Exposes `aria-pressed`. | `Select` for long option lists. `Tabs` when each choice owns a panel. |
+| `Meter` | A value inside a known range (0-100 score, evidence completeness). Exposes `role="meter"` with min, max, and now. | `Progress`, which stays for task progress (loading, upload, steps). Meter never animates severity. |
+| `Collapsible` / `Accordion` | Progressive disclosure. A single `Collapsible` or a grouped `Accordion` replaces each native `<details>` in the Explorer. Triggers expose `aria-expanded`. | Native `<details>` in the Explorer. Native `<details>` remains acceptable outside it. |
+| `Sheet` | Edge-anchored secondary panel on desktop (scenario controls, provenance). Built on the Base UI dialog: focus trap, Escape, focus return, and a named Close button. | `Dialog` for short blocking confirmations or forms. `Drawer` for touch swipe. |
+| `Drawer` | Touch-first swipe-to-dismiss panel on mobile (shortlist). Always keep a Close button. | `Sheet` when swipe is not needed. |
+| `Breadcrumb` | Geography readout: United States > Alabama > Bullock County. The last item is `aria-current="page"`. | A text path built by hand. |
+| `Combobox` | Searchable single-choice picker (county search). | A hand-rolled `role="combobox"` with a custom list. |
+| `HoverCard` | Optional hover or focus preview (map readout). Wraps Base UI Preview Card. | `Tooltip` for a one-line label. `Popover` when a click must open it. A preview never holds the only copy of a fact. |
+| `ScrollArea` | A bounded scroll region (shortlist, rail) with a focusable viewport. | Raw `overflow-auto` on a bespoke wrapper. |
+| `Separator` | A thin divider with `role="separator"` and an orientation. | Per-card borders. |
+| `Spinner` | Neutral loading (`role="status"`, name "Loading"). Stops spinning under reduced motion. | A value-shaped skeleton, which can read as a real value. |
+| `InputGroup`, `Textarea` | Input with inline icons, buttons, or text. A shared multi-line field. | Bespoke input wrappers. |
+
+Compose these with Atlas meaning in `src/components/atlas-*` or feature code. Do not add scoring or provenance logic to `src/components/ui`.
+
+## Atlas icon vocabulary
+
+Use Lucide only, and use one icon per concept everywhere. Icons always accompany a text label or an accessible name. Never use an icon alone to carry meaning.
+
+| Concept | Icon | Concept | Icon |
+| --- | --- | --- | --- |
+| Human surveillance | `Users` | Tick / vector | `Bug` |
+| Pathogen | `Microscope` | Environment | `TreePine` |
+| Available | `CircleCheck` | Limited | `CircleDashed` |
+| Unavailable | `CircleOff` | Caveat / warning | `TriangleAlert` |
+| Compare | `GitCompareArrows` | Ask Atlas | `Sparkles` |
+| Export | `Download` / `FileDown` | Release / source | `Database` |
+| Period | `Calendar` | Scenario | `SlidersHorizontal` |
+| Layers | `Layers` | Map / Table views | `Map` / `Table2` |
+| Follow-up checklist | `ListChecks` | Resources | `BookOpen` |
+| Reset | `RotateCcw` | Loading | `LoaderCircle` |
+
+Decorative icons use `aria-hidden="true"` beside a visible label. An icon-only control needs an accessible name, for example `aria-label` or a visually hidden label.
+
+## Evidence-state visual grammar
+
+The evidence states keep the governed words **Available**, **Limited**, and **Unavailable**. The words come only from API metadata (see [ux-reset-evidence-contract.md](./ux-reset-evidence-contract.md)). Visual treatment adds a second and third cue (icon and pattern) so state never depends on color alone (WCAG color-independence).
+
+| State | Icon | Treatment | Never |
+| --- | --- | --- | --- |
+| **Available** | `CircleCheck` | Solid fill | n/a |
+| **Limited** | `CircleDashed` | Solid fill plus an outline ring | Tinted as a warning red |
+| **Unavailable** | `CircleOff` | Diagonal hatch plus a dashed border | `0`, a bare dash, or a grey that reads as a low value |
+| **Observed zero** | `CircleCheck` plus the value `0` | Solid and numeric | Hatched |
+
+Rules:
+
+- Loading and error are **not** Unavailable. Show a neutral `Spinner`, never a value-shaped skeleton or placeholder.
+- Absence is not zero. Only a governed observed zero renders the numeral `0`.
+- Pair every treatment with its word. The icon and pattern support the label and do not replace it.
+
+CSS utility contract (implemented in `src/features/ux-reset/ux-reset.css`; this document is the contract):
+
+| Class | Meaning | Treatment |
+| --- | --- | --- |
+| `.atlas-state-available` | Available | Solid fill, no pattern |
+| `.atlas-state-limited` | Limited | Solid fill plus an outline ring. Not a warning-red tint |
+| `.atlas-state-unavailable` | Unavailable | Diagonal hatch (`repeating-linear-gradient`) plus a dashed border |
+
+Use semantic or documented evidence tokens in these utilities, with no new hardcoded hex outside the files `scripts/check-design-system.mjs` allows. Map fills for unavailable counties use the matching hatch pattern.
+
+## Explorer type scale
+
+The Explorer uses five type steps. Sub-12px text is removed from body content.
+
+| Step | Class | Size | Use |
+| --- | --- | --- | --- |
+| 1 | `text-xs` | 12px (0.75rem) | Captions, units, dense table meta. The minimum for any body text. |
+| 2 | `text-sm` | 14px (0.875rem) | Default UI and table text, section labels. |
+| 3 | `text-base` | 16px (1rem) | Primary reading text, key values. |
+| 4 | `text-xl` | 20px (1.25rem) | Panel and card titles. |
+| 5 | `text-3xl` | 30px (1.875rem) | The county name only. |
+
+- No body text below 12px. Do not add arbitrary sizes such as `text-[10.4px]`.
+- Reserve the serif display face (`--font-display`) for **one** element per view: the county name or the page title.
+- Section headings are `text-sm font-semibold` labels with a Lucide icon from the vocabulary above, not large serif headings.
 
 ## Atlas domain patterns
 

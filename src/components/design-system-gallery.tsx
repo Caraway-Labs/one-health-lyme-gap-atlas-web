@@ -5,6 +5,7 @@ import { AtlasMapLegend } from "@/components/atlas-map-legend";
 import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
+import { DesignSystemVisualFirstSpecimens } from "@/components/design-system-visual-first-specimens";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,6 +185,8 @@ export function DesignSystemGallery() {
           </Card>
         </div>
       </section>
+
+      <DesignSystemVisualFirstSpecimens />
 
       <section aria-labelledby="patterns-heading">
         <h2 className="type-page" id="patterns-heading">
