@@ -257,4 +257,56 @@ describe("explorer map publication identity", () => {
     expect(openRevision).not.toBe(subsetRevision);
     expect(unresolved).toBeNull();
   });
+
+  it("publishes a terminal unavailable frame and ignores it until geometry is ready", () => {
+    const ready = {
+      frameReady: true,
+      frameSignature: "2:08001::36001:",
+      layerId: "gap_score",
+      releaseId: "alpha-2026",
+      scope: "US",
+    };
+    expect(
+      explorerMapPaintRevision({ ...ready, paintKind: "unavailable" })
+    ).toBe("US:alpha-2026:gap_score:unavailable:2:08001::36001:");
+    expect(
+      explorerMapPaintRevision({ ...ready, paintKind: "loading" })
+    ).toBeNull();
+    expect(
+      explorerMapPaintRevision({
+        ...ready,
+        frameReady: false,
+        paintKind: "unavailable",
+      })
+    ).toBeNull();
+  });
+
+  it("does not treat another layer's settled revision as an unavailable frame", () => {
+    const neutral = "US:alpha-2026:gap_score:unavailable:2:08001::36001:";
+    const previous =
+      "US:alpha-2026:svi:choropleth:2:08001:#FEEBE2:36001:#A63603";
+    const shared = {
+      confirmedEmptyFrame: false,
+      deferToOtherLoader: false,
+      geometryFailed: false,
+      geometryPending: false,
+      layerFailed: false,
+      mapFailed: false,
+      paintKind: "unavailable",
+    };
+    expect(
+      explorerMapLoadingMode({
+        ...shared,
+        publishedRevision: neutral,
+        settledRevision: previous,
+      })
+    ).toBe("pending");
+    expect(
+      explorerMapLoadingMode({
+        ...shared,
+        publishedRevision: neutral,
+        settledRevision: neutral,
+      })
+    ).toBe("idle");
+  });
 });

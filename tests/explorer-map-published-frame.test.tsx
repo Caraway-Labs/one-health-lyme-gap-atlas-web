@@ -15,18 +15,24 @@ import {
   EXPLORER_AVAILABLE_DATA_EMPTY,
   type ExplorerAvailableDataGate,
 } from "@/features/ux-reset/review/explorer-county-reference";
+import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { EXPLORER_MAP_LOADING_DELAY_MS } from "@/features/ux-reset/review/explorer-map-loading";
+import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import { usePublishedExplorerMapFrame } from "@/features/ux-reset/review/use-explorer-map-loading";
 import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
-import type { CountyScoreSummary } from "@/generated/models";
+import { ValueState, type CountyScoreSummary } from "@/generated/models";
 import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
 
 import { buildStateReview } from "./fixtures/review-operating-picture-fixtures";
 
 const recorded = vi.hoisted(() => ({
-  paints: [] as { fips: string[]; revision: string | undefined }[],
+  paints: [] as {
+    colors: string[];
+    fips: string[];
+    revision: string | undefined;
+  }[],
 }));
 
 const geometryRequest = vi.hoisted(() => {
@@ -61,9 +67,10 @@ vi.mock(import("@/components/atlas-map"), async () => {
     }: {
       onIdle?: () => void;
       paintRevision?: string;
-      scores: readonly { fips: string }[];
+      scores: readonly { color?: string; fips: string }[];
     }) => {
       recorded.paints.push({
+        colors: scores.map((county) => county.color ?? ""),
         fips: scores.map((county) => county.fips),
         revision: paintRevision,
       });
@@ -165,7 +172,11 @@ function picture(gate: ExplorerAvailableDataGate) {
   );
 }
 
-function latestPaint(): { fips: string[]; revision: string | undefined } {
+function latestPaint(): {
+  colors: string[];
+  fips: string[];
+  revision: string | undefined;
+} {
   const paint = recorded.paints.at(-1);
   if (!paint) {
     throw new Error("AtlasMap has not received a frame.");
@@ -204,6 +215,46 @@ describe("published explorer map frame", () => {
     });
     expect(result.current.frame).toStrictEqual(["08001", "36001"]);
     expect(result.current.revision).toBe("gap:08001,36001");
+  });
+
+  it("holds the previous frame only while the next revision is unresolved", () => {
+    const { result, rerender } = renderHook(
+      ({
+        frame,
+        revision,
+      }: {
+        frame: readonly { color: string; fips: string }[];
+        revision: string | null;
+      }) => usePublishedExplorerMapFrame(revision, frame),
+      {
+        initialProps: {
+          frame: [{ color: "#FEEBE2", fips: "08001" }],
+          revision: "svi:painted" as string | null,
+        },
+      }
+    );
+    rerender({
+      frame: [{ color: "", fips: "08001" }],
+      revision: null,
+    });
+    expect(result.current).toMatchObject({
+      frame: [{ color: "#FEEBE2", fips: "08001" }],
+      revision: "svi:painted",
+    });
+    rerender({
+      frame: [
+        { color: "", fips: "08001" },
+        { color: "", fips: "36001" },
+      ],
+      revision: "gap:unavailable",
+    });
+    expect(result.current).toMatchObject({
+      frame: [
+        { color: "", fips: "08001" },
+        { color: "", fips: "36001" },
+      ],
+      revision: "gap:unavailable",
+    });
   });
 
   it("keeps the previous map while geometry is unresolved, then publishes the rendered counties", async () => {
@@ -379,5 +430,252 @@ describe("confirmed empty explorer map frames", () => {
     expect(
       screen.getByTestId("review-state-map-region").getAttribute("aria-busy")
     ).toBe("false");
+  });
+});
+
+function sviRow(fips: string, numeric: number): ExplorerMapNumericRow {
+  const raw = String(numeric);
+  return {
+    categoryLabel: null,
+    fips,
+    numeric,
+    provenance: {
+      atlasAcquiredAt: null,
+      evidence: {
+        provenance_ref: "prov",
+        resource_id: "resource",
+        resource_type: "observation",
+      },
+      limitations: [],
+      measureId: "svi_percentile_2022",
+      methodology: null,
+      methodologyId: null,
+      methodologyVersion: "svi_numeric_projection_v2",
+      observationId: `obs-${fips}`,
+      periodEnd: "2022-12-31",
+      periodStart: "2018-01-01",
+      provenanceRef: "prov",
+      publishedValue: raw,
+      releaseId: RELEASE_ID,
+      semanticVersion: "1.0.0",
+      sourceId: "context_svi",
+      sourceLabel: "CDC/ATSDR Social Vulnerability Index",
+      sourcePublishedAt: null,
+      sourceUrl: null,
+      sourceVintage: "2022 (2018-2022 ACS)",
+      temporalGrain: "PERIOD",
+      unit: "percentile",
+    },
+    raw,
+    valueState: numeric === 0 ? ValueState.ZERO : ValueState.OBSERVED,
+  };
+}
+
+function seedEmptyScoreLayer(
+  client: QueryClient,
+  observationFips: readonly string[]
+): void {
+  client.setQueryData(
+    ["ux-reset-review-scores", RELEASE_ID, EXPLORER_SCORE_SETTINGS],
+    {
+      counties: [],
+      methodology_version: "1",
+      release_id: RELEASE_ID,
+      settings: EXPLORER_SCORE_SETTINGS,
+    }
+  );
+  client.setQueryData(
+    [
+      "ux-reset-explorer-map-observations",
+      RELEASE_ID,
+      "svi",
+      observationFips.join(","),
+    ],
+    {
+      knownEmptySelection: null,
+      omitted: 0,
+      period: "Social vulnerability vintage 2022.",
+      rows: observationFips.map((fips, index) =>
+        sviRow(fips, index === 0 ? 0 : 1)
+      ),
+      sourceLabel: "CDC/ATSDR Social Vulnerability Index",
+      unit: "percentile",
+    }
+  );
+}
+
+function nationalLayerPicture(
+  mapLayer: ExplorerMapLayerId,
+  client: QueryClient
+) {
+  return (
+    <QueryClientProvider client={client}>
+      <ReviewNationalPicture
+        availableDataGate={{ kind: "open" }}
+        counties={[]}
+        countiesError={false}
+        countiesLoading={false}
+        county={null}
+        countyQuery=""
+        mapLayer={mapLayer}
+        period={null}
+        releaseId={RELEASE_ID}
+        tierRelease={{ status: "unknown" }}
+        onCountyChange={() => {}}
+        onMapLayerChange={() => {}}
+      />
+    </QueryClientProvider>
+  );
+}
+
+function stateLayerPicture(mapLayer: ExplorerMapLayerId, client: QueryClient) {
+  return (
+    <QueryClientProvider client={client}>
+      <ReviewOperatingPicture
+        availableDataGate={{ kind: "open" }}
+        mapLayer={mapLayer}
+        review={buildStateReview({ state: "CO" })}
+        scopeCode="CO"
+        stateName="Colorado"
+        onMapLayerChange={() => {}}
+      />
+    </QueryClientProvider>
+  );
+}
+
+async function expectNeutralBoundaryFrame(
+  regionTestId: string,
+  revisionMarker: string
+): Promise<void> {
+  await waitFor(() => {
+    expect(latestPaint().revision ?? "").toContain(revisionMarker);
+  });
+  const neutral = latestPaint();
+  const legend = screen.getByTestId("explorer-map-legend");
+  expect({
+    colors: neutral.colors.join(" "),
+    kind: legend.dataset.legendKind,
+    note: legend.textContent ?? "",
+  }).toStrictEqual({
+    colors: expect.not.stringMatching(/#FEEBE2|#A63603/),
+    kind: "unavailable",
+    note: expect.stringContaining("The map shows county boundaries only."),
+  });
+  await delay(EXPLORER_MAP_LOADING_DELAY_MS + 50);
+  expect({
+    busy: screen.getByTestId(regionTestId).getAttribute("aria-busy"),
+    error: screen.queryByTestId("explorer-map-loading-error"),
+    loading: screen.queryByTestId("explorer-map-loading"),
+    revision: latestPaint().revision ?? "",
+  }).toStrictEqual({
+    busy: "false",
+    error: null,
+    loading: null,
+    revision: expect.stringContaining(revisionMarker),
+  });
+}
+
+describe("terminal unavailable score frames", () => {
+  beforeEach(() => {
+    recorded.paints.length = 0;
+    geometryRequest.reset();
+    geometryRequest.resolve(geometry());
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("replaces a painted observation layer when a score layer has no scores", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    seedEmptyScoreLayer(client, ["08001", "36001"]);
+    const view = render(nationalLayerPicture("svi", client));
+    await waitFor(() => {
+      expect(latestPaint().colors).toStrictEqual(["#FEEBE2", "#A63603"]);
+    });
+    const observationRevision = latestPaint().revision;
+
+    for (const layerId of [
+      "gap_score",
+      "tick_status",
+      "pathogen_status",
+    ] as const) {
+      view.rerender(nationalLayerPicture(layerId, client));
+      await expectNeutralBoundaryFrame(
+        "review-national-map-region",
+        `:${layerId}:unavailable:`
+      );
+    }
+    expect(latestPaint()).toMatchObject({
+      fips: ["08001", "36001"],
+    });
+    expect(latestPaint().revision).not.toBe(observationRevision);
+
+    view.rerender(nationalLayerPicture("svi", client));
+    await waitFor(() => {
+      expect(latestPaint()).toMatchObject({
+        colors: ["#FEEBE2", "#A63603"],
+        revision: observationRevision,
+      });
+    });
+    expect({
+      busy: screen
+        .getByTestId("review-national-map-region")
+        .getAttribute("aria-busy"),
+      loading: screen.queryByTestId("explorer-map-loading"),
+    }).toStrictEqual({ busy: "false", loading: null });
+  });
+
+  it("replaces a painted state observation layer when a score layer has no scores", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    seedEmptyScoreLayer(client, ["08001"]);
+    client.setQueryData(
+      ["ux-reset-review-county-directory", RELEASE_ID],
+      [
+        {
+          county: "Adams",
+          fips: "08001",
+          state: "CO",
+          stateName: "Colorado",
+        },
+      ]
+    );
+    const view = render(stateLayerPicture("svi", client));
+    await waitFor(() => {
+      expect(latestPaint().colors).toStrictEqual(["#FEEBE2"]);
+    });
+    const observationRevision = latestPaint().revision;
+
+    for (const layerId of [
+      "gap_score",
+      "tick_status",
+      "pathogen_status",
+    ] as const) {
+      view.rerender(stateLayerPicture(layerId, client));
+      await expectNeutralBoundaryFrame(
+        "review-state-map-region",
+        `:${layerId}:unavailable:`
+      );
+    }
+    expect(latestPaint()).toMatchObject({ fips: ["08001"] });
+    expect(latestPaint().revision).not.toBe(observationRevision);
+
+    view.rerender(stateLayerPicture("svi", client));
+    await waitFor(() => {
+      expect(latestPaint()).toMatchObject({
+        colors: ["#FEEBE2"],
+        revision: observationRevision,
+      });
+    });
+    expect({
+      busy: screen
+        .getByTestId("review-state-map-region")
+        .getAttribute("aria-busy"),
+      loading: screen.queryByTestId("explorer-map-loading"),
+    }).toStrictEqual({ busy: "false", loading: null });
   });
 });

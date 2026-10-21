@@ -305,11 +305,9 @@ export function explorerMapPaintRevision(input: {
   releaseId: string;
   scope: string;
 }): string | null {
-  if (
-    !input.frameReady ||
-    input.paintKind === "loading" ||
-    input.paintKind === "unavailable"
-  ) {
+  // Loading has no colors yet, so the previous frame stays up under the
+  // overlay. Unavailable is a finished boundary frame and must replace it.
+  if (!input.frameReady || input.paintKind === "loading") {
     return null;
   }
   return `${input.scope}:${input.releaseId}:${input.layerId}:${input.paintKind}:${input.frameSignature}`;
