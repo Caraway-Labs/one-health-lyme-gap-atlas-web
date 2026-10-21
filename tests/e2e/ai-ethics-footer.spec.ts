@@ -76,7 +76,9 @@ test("public trust pages share the unauthenticated footer", async ({
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/ai-ethics$/);
   await expect(
-    page.getByRole("heading", { name: "How Atlas approaches AI" })
+    page.getByRole("heading", {
+      name: "How Atlas uses AI and machine learning",
+    })
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();

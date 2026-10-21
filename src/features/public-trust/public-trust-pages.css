@@ -153,47 +153,20 @@
   height: 100%;
 }
 
-/* Status color only. Size, padding, border, and radius come from Badge. */
-.public-trust-status[data-status="current"] {
-  border-color: var(--teal);
-  background: var(--mint);
-  color: var(--teal-dark);
-}
-
-.public-trust-status[data-status="approved-architecture"] {
-  border-color: var(--teal-dark);
-  background: var(--card);
-  color: var(--navy);
-}
-
-.public-trust-status[data-status="pending-decision"] {
-  border-color: var(--border);
-  background: var(--muted);
-  color: var(--navy);
-}
-
-.public-trust-page details {
-  margin-top: var(--space-4);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--border);
-}
-
-.public-trust-page summary {
-  color: var(--teal-dark);
-  cursor: pointer;
-  font-weight: 750;
-}
-
-.public-trust-evidence {
-  color: var(--muted-foreground);
-  font-size: var(--type-small-size);
-}
-
 .public-trust-prose > ul {
   display: grid;
   margin: 0;
   padding-left: var(--space-5);
   gap: var(--space-3);
+}
+
+.public-trust-prose > ol {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.public-trust-prose > ol > li + li {
+  margin-top: var(--space-3);
 }
 
 .public-trust-split {

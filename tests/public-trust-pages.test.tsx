@@ -1,16 +1,10 @@
-import { cleanup, fireEvent, render, within } from "@testing-library/react";
+import { cleanup, render, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import AboutCarawayLabsPage from "@/app/about/caraway-labs/page";
 import { AiEthicsPage } from "@/app/ai-ethics/page";
 import PrivacyPage from "@/app/privacy/page";
 import { aiEthicsContent } from "@/lib/ai-ethics-content";
-
-const STATUS_LABELS = {
-  current: "What Atlas does today",
-  "approved-architecture": "Approved direction; release pending",
-  "pending-decision": "Commitment in development",
-} as const;
 
 function compact(element: HTMLElement) {
   const parts: string[] = [];
@@ -141,104 +135,75 @@ describe("public trust page family", () => {
     );
   });
 
-  it("renders every AI Ethics source string and status in text", () => {
+  it("renders the approved AI Ethics copy in reading order", () => {
     render(<AiEthicsPage />);
     const main = document.querySelector("main");
-    const parts = [
-      "Trust, evidence, and accountability",
-      aiEthicsContent.introduction.title,
-      aiEthicsContent.introduction.summary,
-      aiEthicsContent.introduction.audienceNote,
-      "Clear about the status of our work",
-      "What is true today, planned, and undecided",
+    const { feedback } = aiEthicsContent;
+    const [methods, access, privacy] = feedback.links;
+    const parts: string[] = [
+      aiEthicsContent.hero.eyebrow,
+      aiEthicsContent.hero.title,
+      aiEthicsContent.hero.lead,
+      aiEthicsContent.hero.note,
+      aiEthicsContent.approach.eyebrow,
+      aiEthicsContent.approach.title,
+      aiEthicsContent.approach.intro,
     ];
-    for (const statement of aiEthicsContent.statements) {
-      parts.push(
-        STATUS_LABELS[statement.status],
-        statement.title,
-        statement.summary,
-        "Technical detail and source",
-        statement.detail,
-        `Basis: ${statement.evidence}`
-      );
+    for (const pillar of aiEthicsContent.pillars) {
+      parts.push(pillar.name, pillar.title, pillar.does, pillar.matters);
     }
-    parts.push("What Atlas AI is not for", ...aiEthicsContent.boundaries);
     parts.push(
-      "Open questions",
-      "Commitments in development",
-      "These questions are public on purpose. They are not policies or promises until product decisions are reviewed and recorded."
+      aiEthicsContent.otherCapabilitiesIntro.title,
+      aiEthicsContent.otherCapabilitiesIntro.intro
     );
-    for (const commitment of aiEthicsContent.openCommitments) {
-      parts.push(commitment.topic, commitment.question);
-    }
-    parts.push("Related trust work");
-    for (const work of aiEthicsContent.relatedWork) {
-      parts.push(work.topic, work.detail);
+    for (const capability of aiEthicsContent.otherCapabilities) {
+      parts.push(capability.term, capability.description);
     }
     parts.push(
+      aiEthicsContent.architecture.title,
+      aiEthicsContent.architecture.intro
+    );
+    for (const layer of aiEthicsContent.architectureLayers) {
+      parts.push(layer.term, layer.description);
+    }
+    parts.push(aiEthicsContent.architecture.closing);
+    parts.push(
+      aiEthicsContent.commitmentsIntro.eyebrow,
+      aiEthicsContent.commitmentsIntro.title
+    );
+    for (const commitment of aiEthicsContent.commitments) {
+      parts.push(commitment.title, commitment.text);
+    }
+    parts.push(
+      aiEthicsContent.limitationsIntro.title,
+      aiEthicsContent.limitationsIntro.intro,
+      ...aiEthicsContent.limitations,
+      feedback.title,
+      feedback.before.trim(),
+      feedback.emphasis,
+      feedback.between.trim(),
+      methods.label,
+      ",",
+      access.label,
+      ", and",
+      privacy.label,
+      ".",
       `Version ${aiEthicsContent.version} · Last updated October 21, 2026`,
-      aiEthicsContent.maintenance.review,
-      aiEthicsContent.maintenance.updateRule,
       "Return to the Atlas"
     );
-    const statuses = [
-      ...(main?.querySelectorAll<HTMLElement>(
-        "[data-slot='badge'][data-status]"
-      ) ?? []),
-    ];
     expect(main).toBeInstanceOf(HTMLElement);
-    expect(compact(main as HTMLElement)).toBe(parts.join(" "));
     expect({
-      labels: statuses.map((status) => status.textContent),
-      slots: statuses.map((status) => status.dataset.slot),
-      statuses: statuses.map((status) => status.dataset.status),
-      uniqueLabels: new Set(statuses.map((status) => status.textContent)).size,
+      badges: main?.querySelector("[data-slot='badge']"),
+      details: main?.querySelector("details"),
+      h1: main?.querySelectorAll("h1").length,
+      h3: main?.querySelectorAll("h3").length,
+      text: compact(main as HTMLElement),
     }).toStrictEqual({
-      labels: [
-        STATUS_LABELS.current,
-        STATUS_LABELS["approved-architecture"],
-        STATUS_LABELS["pending-decision"],
-      ],
-      slots: ["badge", "badge", "badge"],
-      statuses: ["current", "approved-architecture", "pending-decision"],
-      uniqueLabels: 3,
+      badges: null,
+      details: null,
+      h1: 1,
+      h3: aiEthicsContent.pillars.length + aiEthicsContent.commitments.length,
+      text: parts.join(" "),
     });
-  });
-
-  it("opens each AI Ethics disclosure from the keyboard without hiding its text", () => {
-    render(<AiEthicsPage />);
-    const details = [...document.querySelectorAll("details")];
-    expect(details).toHaveLength(aiEthicsContent.statements.length);
-
-    for (const [index, detail] of details.entries()) {
-      const statement = aiEthicsContent.statements[index];
-      const summary = detail.querySelector("summary");
-      expect({
-        detail: detail.textContent?.includes(statement?.detail ?? ""),
-        evidence: detail.textContent?.includes(statement?.evidence ?? ""),
-        open: detail.open,
-        role: summary?.getAttribute("role") ?? null,
-        tabIndex: (summary?.tabIndex ?? -1) >= 0,
-      }).toStrictEqual({
-        detail: true,
-        evidence: true,
-        open: false,
-        role: null,
-        tabIndex: true,
-      });
-
-      summary?.focus();
-      fireEvent.keyDown(summary as HTMLElement, { key: "Enter" });
-      fireEvent.click(summary as HTMLElement);
-      expect({
-        active: document.activeElement,
-        basis: detail.textContent?.includes("Basis:"),
-        open: detail.open,
-      }).toStrictEqual({
-        active: summary,
-        basis: true,
-        open: true,
-      });
-    }
   });
 });
