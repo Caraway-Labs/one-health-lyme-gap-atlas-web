@@ -134,7 +134,7 @@ test.describe("five-category suggested follow-up", () => {
       "Atlas supports professional review, not individual risk measurement"
     );
     await expect(followUp).toContainText(
-      "compare the published county case-count floor"
+      "compare the published minimum reported cases"
     );
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
       "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?"
@@ -249,7 +249,7 @@ test.describe("five-category suggested follow-up", () => {
       "check whether additional county case information is available"
     );
     await expect(followUp).not.toContainText(
-      "Compare the published county case-count floor"
+      "Compare the published minimum reported cases"
     );
 
     await page.setViewportSize({ height: 850, width: 1792 });

@@ -1,10 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock(import("../src/components/site-footer"), () => ({
-  SiteFooter: () => <footer />,
-}));
-
 import { AiEthicsPage } from "../src/app/ai-ethics/page";
 import { aiEthicsContent } from "../src/lib/ai-ethics-content";
 

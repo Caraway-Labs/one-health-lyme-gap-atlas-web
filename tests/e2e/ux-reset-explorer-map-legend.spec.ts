@@ -749,8 +749,8 @@ test.describe("Atlas Explorer layer legends", () => {
       0
     );
 
-    await chooseLayer(page, "Lyme incidence floor");
-    await expect(legend).toContainText("Lyme incidence floor");
+    await chooseLayer(page, "Minimum reported incidence");
+    await expect(legend).toContainText("Minimum reported incidence");
     await expect(legend).toContainText("per 100,000 residents");
     await expect(legend).toContainText("Lower published incidence");
     await expect(legend).toContainText("Higher published incidence");
@@ -849,7 +849,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-rucc.png"),
     });
-    await chooseLayer(page, "Lyme incidence floor");
+    await chooseLayer(page, "Minimum reported incidence");
     await expect(legend).toHaveAttribute("data-legend-scale", "gradient");
     await legend.screenshot({
       path: testInfo.outputPath("legend-after-incidence.png"),

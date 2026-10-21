@@ -52,7 +52,7 @@ export const EXPLORER_SCENARIO_RATE_NOTE =
   "Smooth attenuation k; the published v1.1 default is 50.";
 
 export const EXPLORER_SCENARIO_RATE_TOOLTIP =
-  "The human term is 100 / (1 + I / k), using the published 2023 minimum incidence floor. At I=k the term is 50; higher incidence reduces it smoothly. The governed default is k=50. Scenario adjustments do not change published results.";
+  "The human term is 100 / (1 + I / k), using the published 2023 minimum reported incidence. At I=k the term is 50; higher incidence reduces it smoothly. The governed default is k=50. Scenario adjustments do not change published results.";
 
 export const EXPLORER_SCENARIO_MISSING_NOTE =
   "Used when a county has no published case count.";
