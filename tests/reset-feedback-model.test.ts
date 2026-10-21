@@ -94,11 +94,6 @@ describe("reset feedback model", () => {
       pageLabel: "Settings",
       routeId: "account",
     });
-    expect(resetFeedbackPage("/app/ai-responsible-use")).toMatchObject({
-      includeGeography: false,
-      pageLabel: "AI responsible use",
-      routeId: "ai_ethics",
-    });
   });
 
   it("keeps allowlisted geography and drops search text, period, Alaska, and Hawaii", () => {

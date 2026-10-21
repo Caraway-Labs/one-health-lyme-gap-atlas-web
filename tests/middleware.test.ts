@@ -174,6 +174,78 @@ describe("front porch session middleware", () => {
     expect(response.cookies.get("sb-access")?.value).toBe("refreshed");
   });
 
+  it("permanently redirects the retired AI page before the auth gate", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
+    vi.stubEnv("ATLAS_E2E", "0");
+    vi.stubEnv("NODE_ENV", "production");
+
+    const visits = [
+      {
+        path: "/app/ai-responsible-use",
+        signedIn: false,
+        target: "http://localhost/ai-ethics",
+      },
+      {
+        path: "/app/ai-responsible-use/",
+        signedIn: false,
+        target: "http://localhost/ai-ethics",
+      },
+      {
+        path: "/app/ai-responsible-use?from=bookmark",
+        signedIn: false,
+        target: "http://localhost/ai-ethics?from=bookmark",
+      },
+      {
+        path: "/app/ai-responsible-use/?from=bookmark",
+        signedIn: false,
+        target: "http://localhost/ai-ethics?from=bookmark",
+      },
+      {
+        path: "/app/ai-responsible-use",
+        signedIn: true,
+        target: "http://localhost/ai-ethics",
+      },
+      {
+        path: "/app/ai-responsible-use?from=workspace",
+        signedIn: true,
+        target: "http://localhost/ai-ethics?from=workspace",
+      },
+    ] as const;
+
+    const observed = [];
+    for (const visit of visits) {
+      getUser.mockResolvedValue({
+        data: { user: visit.signedIn ? { id: "user-1" } : null },
+      });
+      createServerClient.mockReturnValue({ auth: { getUser } });
+      const response = await middleware(atlasRequest(visit.path));
+      observed.push({
+        location: response.headers.get("location"),
+        path: visit.path,
+        robots: response.headers.get("x-robots-tag"),
+        signedIn: visit.signedIn,
+        status: response.status,
+      });
+      expect(createServerClient).not.toHaveBeenCalled();
+      createServerClient.mockClear();
+      getUser.mockClear();
+    }
+
+    expect(observed).toStrictEqual(
+      visits.map((visit) => ({
+        location: visit.target,
+        path: visit.path,
+        robots: "noindex, nofollow",
+        signedIn: visit.signedIn,
+        status: 308,
+      }))
+    );
+    expect(
+      observed.every((visit) => !visit.location?.includes("sign-in"))
+    ).toBeTruthy();
+  });
+
   it("serves the public About page without a sign-in redirect", async () => {
     expect(middlewareConfig.matcher).toStrictEqual([
       "/",
