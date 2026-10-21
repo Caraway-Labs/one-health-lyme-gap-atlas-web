@@ -118,6 +118,8 @@ type ReviewNationalPictureProps = {
   onCountyChange: (fips: string | null, history: "push" | "replace") => void;
   onMapFocusChange?: (state: string | null) => void;
   onMapLayerChange: (layerId: ExplorerMapLayerId) => void;
+  /** Clears geographic scope in the URL. The map still refits locally. */
+  onReturnToUsView?: () => void;
   onViewCountyEvidence?: (fips: string) => void;
   period: string | null;
   releaseId: string;
@@ -151,6 +153,7 @@ export function ReviewNationalPicture({
   onCountyChange,
   onMapFocusChange,
   onMapLayerChange,
+  onReturnToUsView,
   period,
   releaseId,
   scenarioSettings = SCENARIO_SCORE_DEFAULTS,
@@ -476,6 +479,23 @@ export function ReviewNationalPicture({
     }
     setPickedState(null);
   };
+  const returnToUsView = () => {
+    // A focused state already refits when the frame clears. Bumping the fit
+    // signal in that same turn would fit the state that is about to leave.
+    if (mapFocus === null) {
+      setFitSignal((value) => value + 1);
+    }
+    if (onReturnToUsView) {
+      onReturnToUsView();
+      return;
+    }
+    onCountyChange(null, "push");
+    if (onMapFocusChange) {
+      onMapFocusChange(null);
+      return;
+    }
+    setPickedState(null);
+  };
   const chooseCounty = (fips: string) => {
     const postal = postalForFips(fips);
     if (!postal || !identityFor(fips)) {
@@ -572,6 +592,7 @@ export function ReviewNationalPicture({
           fitPlaceName="United States"
           fitTestId="explorer-fit-national"
           onFit={returnToNationalExtent}
+          onUsView={returnToUsView}
         />
         <div className="ux-reset-explorer-map-layer">
           <ExplorerMapLayerControl
