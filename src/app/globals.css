@@ -46,6 +46,9 @@
   --map-ramp-5: #f49a32;
   --map-ramp-6: #e9602b;
   --explorer-boundary: #e4e9ea;
+  /* Explorer geography toolbar (#830): subtle tint above the assumptions bar. */
+  --explorer-toolbar-surface: color-mix(in srgb, var(--mint) 52%, var(--white));
+  --explorer-toolbar-border: color-mix(in srgb, var(--teal) 32%, var(--line));
   /* Map-viewport loader. Supporting text is darker than the #658079 preview so it stays above 4.5:1 on the surface. */
   --explorer-map-loading-surface: #f6faf7;
   --explorer-map-loading-icon: #356c56;
