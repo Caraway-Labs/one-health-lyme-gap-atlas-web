@@ -34,7 +34,9 @@ export function ExplorerRankedCountyList({
   return (
     <div className="ux-reset-ranked-counties">
       <header className="ux-reset-ranked-counties-header">
-        <h2 data-testid="explorer-counties-heading">Counties</h2>
+        <h2 className="eyebrow" data-testid="explorer-counties-heading">
+          Ranked counties
+        </h2>
       </header>
       {note ? (
         <p

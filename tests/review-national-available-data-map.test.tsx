@@ -282,7 +282,7 @@ describe("national available-data map source", () => {
     });
     render(nationalPicture("all", client));
     const card = document.querySelector(".ux-reset-explorer-list");
-    const heading = screen.getByRole("heading", { name: "Counties" });
+    const heading = screen.getByRole("heading", { name: "Ranked counties" });
     expect({
       browseLabel: screen.queryByText("Browse a state"),
       browseState: screen.queryByTestId("national-browse-state"),
