@@ -2412,6 +2412,10 @@
   outline-offset: 2px;
 }
 
+.ux-reset-layer-availability-release {
+  color: var(--atlas-muted-text);
+}
+
 @media (max-width: 640px) {
   .ux-reset-explorer-map-layer .ux-reset-review-scope-field {
     flex-wrap: wrap;
@@ -2467,7 +2471,8 @@
 
 .ux-reset-explorer-list > .gap-0 {
   min-height: 0;
-  padding-top: 0.75rem;
+  /* Same 1rem top inset as the Selected county card. */
+  padding-top: 1rem;
 }
 
 .ux-reset-explorer-list [data-testid="explorer-national-shortlist-note"] {
@@ -2879,11 +2884,8 @@
 
 .ux-reset-ranked-counties-header h2 {
   margin: 0;
-  color: var(--navy);
   font-family: var(--font-sans);
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.3;
+  line-height: inherit;
 }
 
 .ux-reset-ranked-county-list {
@@ -3614,59 +3616,127 @@
   margin-top: 0;
 }
 
-.ux-reset-review-rationale ol {
+.ux-reset-review-rationale-group {
   display: flex;
-  margin: 0;
-  padding: 0;
   flex-direction: column;
-  gap: 0.75rem;
-  list-style: none;
+  gap: 0;
+  margin-bottom: 0.35rem;
 }
 
-.ux-reset-review-rationale li {
-  display: grid;
-  grid-template-columns: 1.65rem minmax(0, 1fr);
-  gap: 0.65rem;
-  align-items: start;
-  padding-bottom: 0.65rem;
+.ux-reset-review-rationale-measure {
+  padding: 0.55rem 0 0.65rem;
   border-bottom: 1px solid var(--line);
 }
 
-.ux-reset-review-rationale ol li:last-child {
+.ux-reset-review-rationale-group .ux-reset-review-rationale-measure:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }
 
-.ux-reset-review-rationale li > span {
-  display: grid;
-  width: 1.65rem;
-  height: 1.65rem;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--mint);
-  color: var(--teal-dark);
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-
-.ux-reset-review-rationale h3 + ol {
-  margin-bottom: 0.35rem;
-}
-
-.ux-reset-review-rationale li h4 {
-  margin: 0.05rem 0 0.2rem;
+.ux-reset-review-rationale-measure-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
   color: var(--navy);
-  font-size: 0.84rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0;
+  line-height: 1.3;
   text-transform: none;
 }
 
-.ux-reset-review-rationale li p {
+.ux-reset-review-rationale-measure-help {
+  display: inline-flex;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ux-reset-review-rationale-measure-help:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ux-reset-review-rationale-rows {
+  display: grid;
+  gap: 0.2rem;
   margin: 0;
+}
+
+.ux-reset-review-rationale-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 28rem) {
+  .ux-reset-review-rationale-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+}
+
+.ux-reset-review-rationale-row dt {
+  margin: 0;
+  color: var(--atlas-muted-text);
+  font-weight: 400;
+}
+
+.ux-reset-review-rationale-row dd {
+  margin: 0;
+  color: var(--navy);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+@media (max-width: 28rem) {
+  .ux-reset-review-rationale-row dd {
+    text-align: left;
+  }
+}
+
+.ux-reset-review-rationale-value-neutral {
+  color: var(--atlas-muted-text);
+  font-weight: 500;
+}
+
+.ux-reset-review-rationale-secondary {
+  margin: 0.25rem 0 0;
+  color: var(--atlas-muted-text);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.ux-reset-review-rationale-footnote {
+  margin: 0.75rem 0 0;
   color: var(--atlas-muted-text);
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.ux-reset-review-rationale-source-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ux-reset-review-rationale-source-heading {
+  margin: 0 0 0.35rem;
+  color: var(--navy);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .ux-reset-review-rationale .ux-reset-evidence-provenance {
@@ -3675,6 +3745,7 @@
 
 .ux-reset-review-rationale .ux-reset-evidence-provenance summary {
   color: var(--muted-foreground);
+  font-size: 0.75rem;
   font-weight: 400;
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
@@ -4412,8 +4483,8 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-body {
   display: grid;
-  gap: 1rem;
-  padding: 0 1.625rem 1.5rem;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
 }
 
 .ux-reset-explorer-scenario-body p {
@@ -4422,7 +4493,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-intro {
   color: var(--foreground);
-  font-size: 0.9375rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .ux-reset-explorer-scenario-settings {
@@ -4430,13 +4503,12 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
+  gap: 0.5rem 1rem;
 }
 
 .ux-reset-explorer-scenario-settings p {
-  color: var(--atlas-muted-text);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+  font-size: 0.875rem;
 }
 
 .ux-reset-explorer-scenario-controls {
@@ -4445,10 +4517,10 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem);
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
   align-items: center;
-  gap: 0.75rem 1.75rem;
-  padding: 1.25rem 0;
+  gap: 0.75rem 1.25rem;
+  padding: 0.75rem 0;
   background: transparent;
 }
 
@@ -4465,26 +4537,32 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-control-copy label {
   color: var(--navy);
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .ux-reset-explorer-scenario-control-copy p,
-.ux-reset-explorer-scenario-quiet {
+.ux-reset-explorer-scenario-quiet,
+.ux-reset-explorer-scenario-value-note {
   color: var(--atlas-muted-text);
+  font-family: var(--font-sans);
   font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .ux-reset-explorer-scenario-value {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.35rem 0.75rem;
+  gap: 0.25rem 0.75rem;
 }
 
 .ux-reset-explorer-scenario-value strong {
   color: var(--navy);
-  font-size: 1.0625rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
@@ -4591,46 +4669,53 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-impact {
   display: grid;
-  gap: 0.55rem;
-  padding: 1rem 1.15rem;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
   border: 0;
-  border-radius: 8px;
-  background: var(--navy);
-  color: var(--white);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans);
 }
 
-.ux-reset-explorer-scenario-impact h3,
+.ux-reset-explorer-scenario-impact-empty {
+  border-bottom: 0;
+  padding-block: 0.25rem 0;
+}
+
 .ux-reset-explorer-scenario-impact-county,
 .ux-reset-explorer-scenario-impact-summary,
 .ux-reset-explorer-scenario-impact p {
   margin: 0;
-  color: var(--white);
-}
-
-.ux-reset-explorer-scenario-impact h3 {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 500;
+  color: var(--foreground);
 }
 
 .ux-reset-explorer-scenario-impact-county,
 .ux-reset-explorer-scenario-impact-cell dt,
 .ux-reset-explorer-scenario-impact-cell span {
-  color: var(--pale);
+  color: var(--atlas-muted-text);
   font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .ux-reset-explorer-scenario-impact-summary {
-  font-size: 0.9375rem;
+  color: var(--atlas-muted-text);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.ux-reset-explorer-scenario-impact-empty
+  .ux-reset-explorer-scenario-impact-summary {
+  font-weight: 400;
 }
 
 .ux-reset-explorer-scenario-impact-scores {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 0.75rem 1.25rem;
+  gap: 0.35rem 0.75rem;
   align-items: end;
 }
 
@@ -4640,8 +4725,8 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-impact-arrow {
   align-self: center;
-  color: var(--white);
-  font-size: 1.35rem;
+  color: var(--atlas-muted-text);
+  font-size: 1rem;
   line-height: 1;
 }
 
@@ -4661,17 +4746,18 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-impact-cell strong {
   display: block;
-  color: var(--white);
-  font-size: 1.75rem;
+  color: var(--navy);
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 @media (max-width: 800px) {
   .ux-reset-explorer-scenario > summary,
   .ux-reset-explorer-scenario-body {
-    padding-inline: 1.15rem;
+    padding-inline: 1rem;
   }
 
   .ux-reset-explorer-scenario-control,

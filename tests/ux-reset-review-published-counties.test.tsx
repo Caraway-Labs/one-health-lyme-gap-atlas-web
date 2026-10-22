@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -128,7 +129,7 @@ describe("Published Review county exploration", () => {
 
   it("keeps all 67 published AL counties mouse-selectable with zero candidates", async () => {
     picture();
-    await screen.findByRole("heading", { name: "Counties" });
+    await screen.findByRole("heading", { name: "Ranked counties" });
     await waitFor(() => {
       expect(document.querySelectorAll(".ux-reset-ranked-row")).toHaveLength(
         67
@@ -223,7 +224,7 @@ describe("Published Review county exploration", () => {
     picture("01003");
     await screen.findByText(/Published county evidence could not be loaded/);
     expect(
-      screen.queryByText(/At least 5 Lyme disease cases were reported in 2023/)
+      screen.queryByText("At least 5", { exact: false })
     ).not.toBeInTheDocument();
     cleanup();
     vi.mocked(loadInvestigateCountyRecord).mockResolvedValue(null);
@@ -233,9 +234,7 @@ describe("Published Review county exploration", () => {
 
   it("renders captured production floor, null and pathogen no-record semantics", async () => {
     picture("01003");
-    await screen.findByText(
-      /At least 5 Lyme disease cases were reported in 2023/
-    );
+    await screen.findByText("At least 5");
     expect(
       screen.queryByText(/A published floor is a minimum/)
     ).not.toBeInTheDocument();
@@ -243,9 +242,7 @@ describe("Published Review county exploration", () => {
       screen.queryByText(/does not establish pathogen absence/)
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText(
-        /No county-level B. burgdorferi detection record is available/
-      )
+      within(screen.getByTestId("review-rationale-3")).getByText("No records")
     ).toBeInTheDocument();
     expect(screen.getByTestId("review-rationale")).toBeInTheDocument();
     for (const detail of [autauga, barbour]) {
@@ -260,25 +257,19 @@ describe("Published Review county exploration", () => {
 
   it("withholds cached facts when a profile refresh fails", async () => {
     const view = picture("01003");
-    await screen.findByText(
-      /At least 5 Lyme disease cases were reported in 2023/
-    );
+    await screen.findByText("At least 5");
     vi.mocked(loadInvestigateCountyRecord).mockRejectedValue(new Error("503"));
     await view.client.invalidateQueries({
       queryKey: ["ux-reset-review-published-county"],
     });
     await screen.findByText(/Published county evidence could not be loaded/);
-    expect(
-      screen.queryByText(/At least 5 Lyme disease cases were reported in 2023/)
-    ).toBeNull();
+    expect(screen.queryByText("At least 5", { exact: false })).toBeNull();
     expect(onCountyChange).not.toHaveBeenCalled();
   });
 
   it("withholds cached identities after directory refresh failure without clearing URL", async () => {
     const view = picture("01003");
-    await screen.findByText(
-      /At least 5 Lyme disease cases were reported in 2023/
-    );
+    await screen.findByText("At least 5");
     vi.mocked(fetchExploreCountyDirectory).mockRejectedValue(new Error("503"));
     await view.client.invalidateQueries({
       queryKey: ["ux-reset-review-county-directory"],

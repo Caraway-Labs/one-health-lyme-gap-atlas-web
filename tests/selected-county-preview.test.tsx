@@ -95,7 +95,7 @@ describe("selected county preview", () => {
     );
     renderPublished(baldwin);
     await expect(
-      screen.findByText(/At least 5 Lyme disease cases were reported in 2023/)
+      screen.findByText("At least 5", { exact: false })
     ).resolves.toBeInTheDocument();
     const labels = [1, 2, 3, 4, 5, 6].map(
       (number) =>
@@ -125,8 +125,10 @@ describe("selected county preview", () => {
       labels,
       sourcesClosed: sources.hasAttribute("open"),
       sourcesRelease: sources.textContent,
+      footnote: screen.getByText("No record does not mean absent or zero.")
+        .textContent,
       surveillance: screen.getByRole("heading", {
-        name: "Surveillance evidence",
+        name: "Disease and tick data",
       }).textContent,
     }).toStrictEqual({
       askAtlas: null,
@@ -140,18 +142,19 @@ describe("selected county preview", () => {
       influenceClosed: false,
       investigate: null,
       labels: [
-        "Published Lyme case data",
+        "Reported Lyme disease",
         "Tick presence",
         "Borrelia burgdorferi detection",
         "Social vulnerability",
-        "Health insurance coverage",
+        "Uninsured population",
         "Rurality",
       ],
       sourcesClosed: false,
       sourcesRelease: expect.stringContaining(
         "governed-2026-10-06-nlcd-demo-cohort"
       ),
-      surveillance: "Surveillance evidence",
+      footnote: "No record does not mean absent or zero.",
+      surveillance: "Disease and tick data",
     });
     expect(fips).not.toContain("Release");
     fireEvent.click(
@@ -166,28 +169,33 @@ describe("selected county preview", () => {
     });
   });
 
-  it("keeps an Inspect provenance trigger on each numbered rationale row", async () => {
+  it("keeps a Source details disclosure on each measure", async () => {
     renderPublished(baldwin);
-    await screen.findByText(
-      /At least 5 Lyme disease cases were reported in 2023/
-    );
+    await screen.findByText("At least 5", { exact: false });
     expect(
       [1, 2, 3, 4, 5, 6].map(
         (number) =>
           within(screen.getByTestId(`review-rationale-${number}`)).getAllByText(
-            /^Inspect provenance for /
+            "Source details"
           ).length
       )
-    ).toStrictEqual([2, 2, 1, 1, 1, 1]);
-    expect(
+    ).toStrictEqual([1, 1, 1, 1, 1, 1]);
+    fireEvent.click(
       within(screen.getByTestId("review-rationale-1")).getByText(
-        "Inspect provenance for Minimum reported cases"
+        "Source details"
       )
+    );
+    expect(
+      within(screen.getByTestId("review-rationale-1")).getByRole("heading", {
+        level: 5,
+        name: "Minimum reported cases",
+      })
     ).toBeInTheDocument();
     expect(
-      within(screen.getByTestId("review-rationale-1")).getByText(
-        "Inspect provenance for Minimum reported incidence"
-      )
+      within(screen.getByTestId("review-rationale-1")).getByRole("heading", {
+        level: 5,
+        name: "Minimum reported incidence",
+      })
     ).toBeInTheDocument();
   });
 
@@ -197,17 +205,19 @@ describe("selected county preview", () => {
     const pathogenUrl = tickUrl;
     const fieldValue = (view: ReturnType<typeof within>, field: string) =>
       view.getByTestId(field).querySelector("dd")?.textContent ?? "";
-    const claim = (item: HTMLElement, summary: string) => {
-      fireEvent.click(within(item).getByText(summary));
-      const inspect = within(item)
-        .getAllByTestId("evidence-provenance-inspect")
-        .find(
-          (element) => element.querySelector("summary")?.textContent === summary
-        );
-      if (!inspect) {
-        throw new Error(`Missing provenance disclosure: ${summary}`);
+    const claim = (item: HTMLElement, claimLabel: string) => {
+      fireEvent.click(within(item).getByText("Source details"));
+      const heading = within(item).queryByRole("heading", {
+        level: 5,
+        name: claimLabel,
+      });
+      if (heading) {
+        const section = heading.closest("section");
+        if (section) {
+          return within(section);
+        }
       }
-      return within(inspect);
+      return within(within(item).getByTestId("evidence-provenance-inspect"));
     };
     const sourceHref = (view: ReturnType<typeof within>) =>
       view
@@ -221,19 +231,11 @@ describe("selected county preview", () => {
         ?.getAttribute("href") ?? null;
 
     renderPublished(baldwin);
-    await screen.findByText(
-      /At least 5 Lyme disease cases were reported in 2023/
-    );
+    await screen.findByText("At least 5", { exact: false });
     const tick = screen.getByTestId("review-rationale-2");
     const pathogen = screen.getByTestId("review-rationale-3");
-    const tickClaim = claim(
-      tick,
-      "Inspect provenance for Ixodes scapularis status"
-    );
-    const pathogenClaim = claim(
-      pathogen,
-      "Inspect provenance for Borrelia burgdorferi status"
-    );
+    const tickClaim = claim(tick, "Ixodes scapularis status");
+    const pathogenClaim = claim(pathogen, "Borrelia burgdorferi status");
     expect({
       pathogenHref: sourceHref(pathogenClaim),
       pathogenLimitations: pathogenClaim.queryByTestId(
@@ -242,8 +244,7 @@ describe("selected county preview", () => {
       pathogenPeriod: fieldValue(pathogenClaim, "evidence-provenance-period"),
       pathogenReason: fieldValue(pathogenClaim, "evidence-provenance-state"),
       pathogenReleaseHref: releaseHref("pathogen"),
-      tickClaims: within(tick).getAllByTestId("evidence-provenance-inspect")
-        .length,
+      tickClaims: within(tick).getAllByRole("heading", { level: 5 }).length,
       tickFreshness: fieldValue(tickClaim, "evidence-provenance-freshness"),
       tickHref: sourceHref(tickClaim),
       tickLimitations: tickClaim.queryByTestId(
@@ -279,16 +280,14 @@ describe("selected county preview", () => {
         ),
       },
     });
-    await screen.findByText(
-      /At least 5 Lyme disease cases were reported in 2023/
-    );
+    await screen.findByText("At least 5", { exact: false });
     const unknownTick = claim(
       screen.getByTestId("review-rationale-2"),
-      "Inspect provenance for Ixodes scapularis status"
+      "Ixodes scapularis status"
     );
     const unknownPathogen = claim(
       screen.getByTestId("review-rationale-3"),
-      "Inspect provenance for Borrelia burgdorferi status"
+      "Borrelia burgdorferi status"
     );
     expect({
       pathogenFreshness: fieldValue(
@@ -312,9 +311,9 @@ describe("selected county preview", () => {
 
   it("keeps a missing case count distinct from zero", async () => {
     renderPublished(autauga);
-    await expect(
-      screen.findByText("No county-linked 2023 Lyme case record is available.")
-    ).resolves.toBeInTheDocument();
+    const humanMeasure = await screen.findByTestId("review-rationale-1");
+    expect(within(humanMeasure).getByText("County record")).toBeInTheDocument();
+    expect(within(humanMeasure).getByText("Unavailable")).toBeInTheDocument();
     expect(screen.queryByText(/At least 0 Lyme disease cases/)).toBeNull();
   });
 
@@ -389,7 +388,7 @@ describe("selected county preview", () => {
   });
 
   it("renders status-specific published Lyme case rows", () => {
-    const row = (
+    const values = (
       humanStatus: string,
       count: number | null,
       rate: number | null
@@ -410,33 +409,27 @@ describe("selected county preview", () => {
       expect(
         rowElement.querySelector("[data-slot='tooltip-trigger']")
       ).toBeNull();
-      expect(
-        within(rowElement).queryByRole("button", {
-          name: /Minimum reported/,
-        })
-      ).toBeNull();
-      return rowElement.querySelector("p")?.textContent ?? "";
+      const rows = rowElement.querySelector(".ux-reset-review-rationale-rows");
+      return [...(rows?.querySelectorAll("dd") ?? [])].map(
+        (node) => node.textContent ?? ""
+      );
     };
     expect({
-      absent: row("published_count_floor", null, null),
-      countOnly: row("published_count_floor", 4, null),
-      missing: row("missing", null, null),
-      noCountyRecord: row("no_county_linked_record", null, null),
-      publishedZero: row("published_count_floor", 0, 0),
-      rateOnly: row("published_count_floor", null, 2.14),
-      suppressed: row("suppressed", null, null),
+      absent: values("published_count_floor", null, null),
+      countOnly: values("published_count_floor", 4, null),
+      missing: values("missing", null, null),
+      noCountyRecord: values("no_county_linked_record", null, null),
+      publishedZero: values("published_count_floor", 0, 0),
+      rateOnly: values("published_count_floor", null, 2.14),
+      suppressed: values("suppressed", null, null),
     }).toStrictEqual({
-      absent:
-        "A 2023 minimum reported case count was published, but the count and rate are unavailable.",
-      countOnly:
-        "Minimum reported cases: At least 4 Lyme disease cases were reported in 2023. The published data establish a minimum number of reported cases. The actual reported total may be higher.",
-      missing: "The 2023 county Lyme case count is missing.",
-      noCountyRecord: "No county-linked 2023 Lyme case record is available.",
-      publishedZero:
-        "Minimum reported cases: At least 0 Lyme disease cases were reported in 2023. The published data establish a minimum number of reported cases. The actual reported total may be higher. Minimum reported incidence: At least 0.0 reported cases per 100,000 residents. The published data establish a minimum reported incidence. The actual reported rate may be higher.",
-      rateOnly:
-        "Minimum reported incidence: At least 2.1 reported cases per 100,000 residents. The published data establish a minimum reported incidence. The actual reported rate may be higher.",
-      suppressed: "The 2023 county Lyme case count is suppressed.",
+      absent: ["Unavailable", "2023"],
+      countOnly: ["At least 4", "2023"],
+      missing: ["Missing", "2023"],
+      noCountyRecord: ["Unavailable", "2023"],
+      publishedZero: ["At least 0", "At least 0.0 per 100,000", "2023"],
+      rateOnly: ["At least 2.1 per 100,000", "2023"],
+      suppressed: ["Suppressed", "2023"],
     });
   });
 });

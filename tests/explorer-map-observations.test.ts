@@ -203,10 +203,10 @@ describe("Explorer map observations", () => {
       "3. metro area of fewer than 250,000",
       "4. urban population of 20,000 or more, adjacent to a metro area",
       "5. urban population of 20,000 or more, not adjacent to a metro area",
-      "6. urban population of 2,500 to 19,999, adjacent to a metro area",
-      "7. urban population of 2,500 to 19,999, not adjacent to a metro area",
-      "8. completely rural or less than 2,500 urban population, adjacent to a metro area",
-      "9. completely rural or less than 2,500 urban population, not adjacent to a metro area",
+      "6. urban population of 5,000 to 20,000, adjacent to a metro area",
+      "7. urban population of 5,000 to 20,000, not adjacent to a metro area",
+      "8. urban population of fewer than 5,000, adjacent to a metro area",
+      "9. urban population of fewer than 5,000, not adjacent to a metro area",
     ]);
     expect(paint.period).toMatch(/No observation dates/);
     expect(paint.note).toMatch(/equal step in rurality/);

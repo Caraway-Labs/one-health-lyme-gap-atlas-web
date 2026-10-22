@@ -93,7 +93,7 @@ test.describe("Review operating picture", () => {
       ).toHaveCount(0);
       await expect(page.getByTestId("review-county-preview")).toHaveCount(0);
       await expect(
-        page.getByRole("heading", { exact: true, name: "Counties" })
+        page.getByRole("heading", { exact: true, name: "Ranked counties" })
       ).toBeVisible();
     }
   });
@@ -147,7 +147,7 @@ test.describe("Review operating picture", () => {
 
     await page.goto("/app/investigate?scope=CO&county=nope");
     await expect(
-      page.getByRole("heading", { exact: true, name: "Counties" })
+      page.getByRole("heading", { exact: true, name: "Ranked counties" })
     ).toBeVisible();
     await expect(page.getByTestId("review-candidate")).toHaveCount(3);
     const invalid = new URL(page.url());
