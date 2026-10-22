@@ -1,6 +1,6 @@
 "use client";
 
-import { dataProvenanceHref } from "@/features/ux-reset/data-provenance/catalog";
+import { dataProvenanceHref } from "@/features/ux-reset/data-provenance/links";
 import type { ContentSurface } from "@/lib/atlas-analytics";
 import { trackProvenanceOpened } from "@/lib/atlas-analytics";
 import {

@@ -73,6 +73,7 @@ describe("Atlas navigation contract", () => {
     expect(FOOTER_NAVIGATION_ITEMS.map((item) => item.href)).toStrictEqual([
       "/privacy",
       "/ai-ethics",
+      "/data-provenance",
     ]);
     expect(findRouteMetadata("/account/settings")?.placement).toBe("utility");
     expect(findRouteMetadata("/design-system")?.shell).toBe("none");
@@ -187,7 +188,7 @@ describe("Atlas navigation contract", () => {
       route: findRouteMetadata("/about/caraway-labs"),
       shell: getRouteShell("/about/caraway-labs"),
     }).toMatchObject({
-      footer: ["/privacy", "/ai-ethics"],
+      footer: ["/privacy", "/ai-ethics", "/data-provenance"],
       route: {
         placement: "none",
         shell: "public",

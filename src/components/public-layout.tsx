@@ -7,7 +7,11 @@ import { BrandMark } from "@/components/brand-mark";
 import { FeedbackTrigger } from "@/components/feedback-dialog";
 import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 
-const FOOTER_FEEDBACK_ROUTES = new Set(["/privacy", "/ai-ethics"]);
+const FOOTER_FEEDBACK_ROUTES = new Set([
+  "/privacy",
+  "/ai-ethics",
+  "/data-provenance",
+]);
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
