@@ -4,8 +4,8 @@
  * Update the version and last-updated date when substantive public-facing copy changes.
  */
 export const privacyContent = {
-  version: "1.0.0",
-  lastUpdated: "2026-10-21",
+  version: "1.0.1",
+  lastUpdated: "2026-10-22",
   versionLabel: "Privacy policy version",
   versionPrefix: "Version",
   updatedPrefix: "Last updated",

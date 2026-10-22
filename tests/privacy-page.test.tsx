@@ -156,14 +156,14 @@ describe("public privacy page", () => {
       "Feedback",
       "Feedback",
       "Feedback",
-      "Version 1.0.0",
+      "Version 1.0.1",
     ]);
     expect(
       document
         .querySelector("[aria-label='Privacy policy version']")
         ?.textContent?.replaceAll(/\s+/g, " ")
         .trim()
-    ).toBe("Version 1.0.0 · Last updated October 21, 2026");
+    ).toBe("Version 1.0.1 · Last updated October 22, 2026");
   });
 
   it("does not publish the retired privacy summary", () => {

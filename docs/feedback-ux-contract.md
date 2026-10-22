@@ -93,7 +93,7 @@ Signed-in UI copy must state that the report is linked to the visitor's Atlas ac
 
 ## Privacy and PHI guidance
 
-Near the message field, the UI must tell the visitor not to submit medical details or other sensitive personal information. Feedback is voluntary product input, not a clinical channel and not a data-rights request form. Data-rights export and deletion remain on the account surface governed by [data-rights-workflow.md](data-rights-workflow.md).
+Near the message field, the UI must tell the visitor not to submit medical details or other sensitive personal information. Feedback is voluntary product input, not a clinical channel. A visitor may use Feedback to ask a privacy question or make a privacy request, and should include an email address so we can reply. Export and deletion still go through the account page's re-authenticated flow governed by [data-rights-workflow.md](data-rights-workflow.md).
 
 ## User-visible states
 
