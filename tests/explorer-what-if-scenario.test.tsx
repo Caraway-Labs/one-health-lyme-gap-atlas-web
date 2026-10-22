@@ -14,6 +14,9 @@ import {
   EXPLORER_SCENARIO_HEADING,
   EXPLORER_SCENARIO_INTRO,
   EXPLORER_SCENARIO_MISSING_INACTIVE,
+  EXPLORER_SCENARIO_NO_COUNTY,
+  explorerIncidenceHalfReductionNote,
+  explorerIncidenceSettingLabel,
   EXPLORER_SCENARIO_UNCHANGED_STATUS,
   ExplorerWhatIfScenario,
   applyGapScoreScenarioColors,
@@ -103,10 +106,10 @@ describe(ExplorerWhatIfScenario, () => {
 
     const text = panel.textContent ?? "";
     expect({
-      missing: text.includes("75"),
-      rate: text.includes("50 per 100,000"),
+      missing: text.includes("75 / 100"),
+      rate: text.includes(explorerIncidenceSettingLabel(50)),
       scoring: text.includes("Scoring calculation"),
-      twenty: text.includes("20 per 100,000"),
+      twenty: text.includes(explorerIncidenceSettingLabel(20)),
     }).toStrictEqual({
       missing: true,
       rate: true,
@@ -129,7 +132,7 @@ describe(ExplorerWhatIfScenario, () => {
     expect(
       sliders.map((slider) => slider.getAttribute("aria-label"))
     ).toStrictEqual([
-      "Tick and pathogen weight",
+      "Tick / pathogen weight",
       "Effect of reported incidence",
       "Missing county case data",
     ]);
@@ -176,14 +179,10 @@ describe(ExplorerWhatIfScenario, () => {
 
     expect(
       screen.getByTestId("explorer-scenario-impact-summary").textContent
-    ).toBe(
-      "Select a county to compare its published Atlas score with the score using your changes."
-    );
+    ).toBe(EXPLORER_SCENARIO_NO_COUNTY);
     expect(
       screen.getByTestId("explorer-scenario-impact").textContent
-    ).toContain(
-      "Select a county to compare its published Atlas score with the score using your changes."
-    );
+    ).toContain(EXPLORER_SCENARIO_NO_COUNTY);
     const text =
       screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
     expect({
@@ -218,9 +217,7 @@ describe(ExplorerWhatIfScenario, () => {
     fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
     const impact = screen.getByTestId("explorer-scenario-impact").textContent;
     expect({
-      county:
-        impact?.includes("Gap review score") &&
-        impact.includes("Conejos County"),
+      county: impact?.includes("Conejos County"),
       delta: impact?.includes("points") || impact?.includes("→"),
       priority: impact?.includes("Lower Atlas priority") ?? false,
       published:
@@ -277,7 +274,7 @@ describe(ExplorerWhatIfScenario, () => {
       baseline: impact.includes("No adjustments"),
       priority: impact.includes("Follow-up category unchanged"),
       share: screen
-        .getByRole("slider", { name: "Tick and pathogen weight" })
+        .getByRole("slider", { name: "Tick / pathogen weight" })
         .getAttribute("value"),
       summary: screen.getByTestId("explorer-scenario-impact-summary")
         .textContent,
@@ -500,9 +497,7 @@ describe(ExplorerWhatIfScenario, () => {
     const impact =
       screen.getByTestId("explorer-scenario-impact").textContent ?? "";
     expect({
-      heading:
-        impact.includes("Gap review score") &&
-        impact.includes("Autauga County"),
+      heading: impact.includes("Autauga County"),
       previous: impact.includes("Conejos") || impact.includes("22.9"),
     }).toStrictEqual({
       heading: true,
@@ -723,7 +718,7 @@ describe(ExplorerWhatIfScenario, () => {
       points: limited.includes("points"),
       rate: screen
         .getByTestId("explorer-what-if-scenario")
-        .textContent?.includes("20 per 100,000"),
+        .textContent?.includes(explorerIncidenceSettingLabel(20)),
       reset: onChange.mock.lastCall?.[0],
       unavailable: limited.includes("Unavailable"),
     }).toStrictEqual({
@@ -767,7 +762,7 @@ describe(ExplorerWhatIfScenario, () => {
       footer: EXPLORER_SCENARIO_FOOTER,
       formula: true,
       legacyCategory: false,
-      methodsOpen: true,
+      methodsOpen: false,
       notes: 0,
       safety: false,
       sharing: true,
@@ -775,7 +770,6 @@ describe(ExplorerWhatIfScenario, () => {
     });
 
     fireEvent.click(equation.querySelector("summary") as HTMLElement);
-    fireEvent.click(methods.querySelector("summary") as HTMLElement);
     expect(onChange).not.toHaveBeenCalled();
     expect((equation as HTMLDetailsElement).open).toBeTruthy();
     expect((methods as HTMLDetailsElement).open).toBeFalsy();
@@ -796,7 +790,7 @@ describe(ExplorerWhatIfScenario, () => {
       note: screen.queryByTestId("explorer-scenario-missing-applicability"),
       support: screen
         .getByTestId("explorer-what-if-scenario")
-        .textContent?.includes("Can affect other counties and their rankings."),
+        .textContent?.includes("This is not a case estimate."),
     }).toStrictEqual({
       note: null,
       support: true,
@@ -855,10 +849,61 @@ describe(ExplorerWhatIfScenario, () => {
       max: incidence.getAttribute("max"),
       min: incidence.getAttribute("min"),
     }).toStrictEqual({
-      ends: "Stronger reductionGentler reduction",
+      ends: "Lowers it fasterLowers it more gradually",
       max: "200",
       min: "5",
     });
+  });
+
+  it("uses the compact approved copy and a dynamic incidence half-reduction note", () => {
+    const onChange = vi.fn<(next: ScoreSettings) => void>();
+    const view = renderScenario(SCENARIO_SCORE_DEFAULTS, NO_COUNTY, onChange);
+    fireEvent.click(screen.getByTestId("explorer-what-if-summary"));
+    const text =
+      screen.getByTestId("explorer-what-if-scenario").textContent ?? "";
+    const css = readFileSync("src/features/ux-reset/ux-reset.css", "utf-8")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    expect({
+      community: text.includes("35% community"),
+      defaultMissing: text.includes("Default: 75"),
+      ends: text.includes("More community") && text.includes("Lower component"),
+      half: text.includes(explorerIncidenceHalfReductionNote(50)),
+      intro: text.includes(EXPLORER_SCENARIO_INTRO),
+      missing: text.includes("This is not a case estimate."),
+      navy: css.includes(
+        ".ux-reset-explorer-scenario-impact { display: grid; gap: 0.35rem; padding: 0.75rem 0; border: 0; border-top: 1px solid var(--line);"
+      ),
+      summary: screen.queryByTestId("explorer-scenario-settings"),
+      weight: text.includes(
+        "Balance tick and pathogen data against community context."
+      ),
+    }).toStrictEqual({
+      community: true,
+      defaultMissing: true,
+      ends: true,
+      half: true,
+      intro: true,
+      missing: true,
+      navy: true,
+      summary: null,
+      weight: true,
+    });
+
+    fireEvent.change(
+      screen.getByRole("slider", { name: "Effect of reported incidence" }),
+      { target: { value: "20" } }
+    );
+    view.rerender(
+      <ExplorerWhatIfScenario
+        impact={NO_COUNTY}
+        settings={{ ...SCENARIO_SCORE_DEFAULTS, smooth_k: 20 }}
+        onChange={onChange}
+      />
+    );
+    expect(
+      screen.getByTestId("explorer-what-if-scenario").textContent
+    ).toContain(explorerIncidenceHalfReductionNote(20));
   });
 });
 
@@ -1244,8 +1289,7 @@ describe(resolveExplorerWhatIfImpact, () => {
         priorityText: `Follow-up category changed: ${REVIEW} → ${INVESTIGATE}`,
       },
       none: {
-        collapsed:
-          "Select a county to compare its published Atlas score with the score using your changes.",
+        collapsed: EXPLORER_SCENARIO_NO_COUNTY,
         kind: "placeholder",
         placeholder: "none",
       },
