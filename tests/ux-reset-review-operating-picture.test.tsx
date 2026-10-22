@@ -282,9 +282,17 @@ describe("Review operating picture state", () => {
       node.ownerDocument.body.innerHTML.indexOf(node.outerHTML)
     );
     fireEvent.click(screen.getByText("Layer availability"));
+    const availabilityText = availability.textContent ?? "";
     expect({
-      availabilityNote: availability.textContent?.includes(
-        "Changing the layer does not rank counties by this measure."
+      availabilityNote: availabilityText.includes(
+        "Changing the map layer does not change the county review ranking."
+      ),
+      availabilityRelease: availabilityText.includes("Release alpha-2026"),
+      allAvailable: availabilityText.includes(
+        "All listed map layers are available in this release. County-level data may still be missing."
+      ),
+      limited: availabilityText.includes(
+        "Lyme disease incidence. County shapes are still loading, so this layer cannot be checked against the release."
       ),
       fitLabel: fit.textContent?.includes(visibleLabel),
       headingOmitsRelease:
@@ -292,14 +300,23 @@ describe("Review operating picture state", () => {
       headingOmitsSource:
         heading.parentElement?.textContent?.includes("Source periods"),
       labelFor: screen.getByText("Map layer").getAttribute("for"),
+      oldLayerName: availabilityText.includes("Atlas gap score"),
+      oldParagraph: availabilityText.includes(
+        "Available from the published collection"
+      ),
       order,
       provenance: provenance.textContent,
     }).toStrictEqual({
+      allAvailable: false,
       availabilityNote: true,
+      limited: true,
+      availabilityRelease: true,
       fitLabel: true,
       headingOmitsRelease: false,
       headingOmitsSource: false,
       labelFor: "explorer-map-layer",
+      oldLayerName: false,
+      oldParagraph: false,
       order: [...order].toSorted((left, right) => left - right),
       provenance: "Release alpha-2026",
     });
