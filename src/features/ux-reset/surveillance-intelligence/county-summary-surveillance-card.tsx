@@ -134,9 +134,6 @@ function markTooltip(perspective: IntelligencePerspectiveView): string {
       return perspective.reviewCategory ?? "Published score";
     }
     case "ml-review-priority": {
-      if (perspective.releaseReason) {
-        return "Not on this release";
-      }
       if (perspective.tier) {
         const percentile = perspective.track?.valueText;
         if (perspective.track?.value !== null && percentile) {
@@ -301,10 +298,7 @@ export function CountySummarySurveillanceCard({
       className="county-summary-mark-cell"
       data-kind={perspective.kind}
       data-perspective={perspective.id}
-      data-release-reason={perspective.releaseReason ?? undefined}
-      data-state={
-        perspective.releaseReason ? "release-unaligned" : perspective.kind
-      }
+      data-state={perspective.kind}
       data-sufficiency={perspective.sufficiency ?? undefined}
       data-testid={`surveillance-intelligence-card-${perspective.id}`}
       data-tier={perspective.tier ?? undefined}

@@ -10,8 +10,6 @@ import {
 
 import { tier1LowInsufficientFixture } from "./fixtures/tier1-surveillance-priority";
 
-const releaseId = tier1LowInsufficientFixture.release_id;
-
 function countyFips(count: number): string[] {
   return Array.from({ length: count }, (_, index) =>
     String(48_001 + index).padStart(5, "0")
@@ -53,7 +51,7 @@ describe("Explorer ML priority fetch window", () => {
   it("starts only a few lower-48 requests and skips settled rows", () => {
     const directory = ["02013", ...countyFips(30)];
     const client = new QueryClient();
-    const first = explorerMlPriorityFetchTargets(directory, client, releaseId);
+    const first = explorerMlPriorityFetchTargets(directory, client);
     expect(first.size).toBe(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
     expect(first.has("02013")).toBeFalsy();
     const settled = directory[1];
@@ -61,10 +59,10 @@ describe("Explorer ML priority fetch window", () => {
       throw new TypeError("Directory must include a Texas county.");
     }
     client.setQueryData(
-      ["ux-reset-tier1-surveillance-priority", settled, releaseId],
+      ["ux-reset-tier1-surveillance-priority", settled],
       tier1LowInsufficientFixture
     );
-    const next = explorerMlPriorityFetchTargets(directory, client, releaseId);
+    const next = explorerMlPriorityFetchTargets(directory, client);
     expect(next.has(settled)).toBeFalsy();
     expect(next.has("02013")).toBeFalsy();
     expect(next.size).toBe(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
@@ -82,15 +80,11 @@ describe("Explorer ML priority fetch window", () => {
     await client
       .fetchQuery({
         queryFn: () => Promise.reject(new Error("503")),
-        queryKey: ["ux-reset-tier1-surveillance-priority", failed, releaseId],
+        queryKey: ["ux-reset-tier1-surveillance-priority", failed],
         retry: false,
       })
       .catch(() => {});
-    const targets = explorerMlPriorityFetchTargets(
-      directory,
-      client,
-      releaseId
-    );
+    const targets = explorerMlPriorityFetchTargets(directory, client);
     expect(targets.has(failed)).toBeFalsy();
     expect(targets.size).toBe(EXPLORER_ML_PRIORITY_FETCH_LIMIT);
   });

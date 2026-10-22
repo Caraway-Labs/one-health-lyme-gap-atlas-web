@@ -23,6 +23,8 @@ function priorityToneClass(tier: ExplorerMlListTier): string | undefined {
       return "lower";
     }
     case "unavailable":
+    case "not-estimable":
+    case "unverified":
     case "loading":
     case "failed": {
       return undefined;

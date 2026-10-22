@@ -62,8 +62,7 @@ const stories: { id: string; text: string }[] = [
   { id: `${tier1}--loading`, text: "Loading model-assisted" },
   { id: `${tier1}--failed`, text: "not low priority" },
   { id: `${tier1}--stale`, text: "not low priority" },
-  { id: `${tier1}--release-unknown`, text: "not low priority" },
-  { id: `${tier1}--release-mismatch`, text: "not low priority" },
+  { id: `${tier1}--unverified`, text: "Response could not be verified" },
   { id: `${hierarchy}--representative`, text: "What we know" },
   { id: `${hierarchy}--zero-suppression`, text: "Suppressed" },
   { id: `${hierarchy}--coverage-limitation`, text: "What we know" },
@@ -338,8 +337,8 @@ test.describe("P0 evidence catalog", () => {
     await page.getByRole("button", { name: /ML Review Priority/ }).click();
     const disclosure = page.getByTestId("surveillance-intelligence-disclosure");
     await disclosure.getByText("Methodology & source").click();
-    await expect(disclosure).toContainText("alpha-2026");
-    await expect(disclosure).not.toContainText("governed-2026-09-18");
+    await expect(disclosure).toContainText("Model input release");
+    await expect(disclosure).toContainText("governed-2026-09-18");
     await openStory(page, `${preview}--dropped-context`);
     await expect(
       page.getByTestId("surveillance-intelligence-card-ml-review-priority")
@@ -373,21 +372,19 @@ test.describe("P0 evidence catalog", () => {
     expect(traffic.errors).toEqual([]);
   });
 
-  test("normal tier and provenance use alpha-2026 while mismatch stays withheld", async ({
-    page,
-  }) => {
+  test("returned tier keeps the captured model release", async ({ page }) => {
     await openStory(page, `${tier1}--high-sufficient`);
     await expect(page.getByTestId("tier1-synthetic-notice")).toContainText(
-      "relabeled"
+      "model input release"
     );
     await page.getByText("Model and as-of details").click();
     const details = page.getByTestId("tier1-model-details");
-    await expect(details).toContainText("alpha-2026");
-    await expect(details).not.toContainText("governed-2026-09-18");
-    await openStory(page, `${tier1}--release-mismatch`);
-    const mismatch = page.getByTestId("tier1-surveillance-priority");
-    await expect(mismatch).toContainText("not low priority");
-    await expect(mismatch).not.toHaveAttribute("data-tier", "LOW");
+    await expect(details).toContainText("Model input release");
+    await expect(details).toContainText("governed-2026-09-18");
+    await expect(details).not.toContainText("alpha-2026");
+    await expect(
+      page.getByTestId("tier1-surveillance-priority")
+    ).toHaveAttribute("data-tier", "HIGH");
     await openStory(page, `${provenance}--full-reason`);
     await page.getByText("Inspect provenance").click();
     await page.getByText("Technical reproducibility identifiers").click();
@@ -398,6 +395,9 @@ test.describe("P0 evidence catalog", () => {
     ).toBeVisible();
     await page.getByText("Model and as-of details").click();
     await expect(page.getByTestId("tier1-model-details")).toContainText(
+      "governed-2026-09-18"
+    );
+    await expect(page.getByTestId("tier1-model-details")).not.toContainText(
       "alpha-2026"
     );
   });
