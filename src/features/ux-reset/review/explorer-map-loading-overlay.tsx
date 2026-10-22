@@ -29,7 +29,13 @@ export function ExplorerMapLoadingOverlay({
 
   useEffect(() => {
     if (view === "hidden") {
-      if (movedFocus.current) {
+      const active = document.activeElement;
+      const focusStillOnOverlay =
+        movedFocus.current &&
+        (active === overlayRef.current ||
+          active === document.body ||
+          active === document.documentElement);
+      if (focusStillOnOverlay) {
         surfaceRef.current?.querySelector<HTMLElement>("canvas")?.focus();
       }
       movedFocus.current = false;
@@ -146,7 +152,11 @@ export function ExplorerMapSurface({
       if (cancelled || node.querySelector("canvas")) {
         return;
       }
-      if (node.querySelector("[data-testid='mock-atlas-map']")) {
+      if (
+        node.querySelector(
+          "[data-testid='mock-atlas-map'], [data-testid='atlas-map-stub']"
+        )
+      ) {
         onPaintSettled(revision);
       }
     };

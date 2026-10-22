@@ -9,7 +9,10 @@ import {
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { ExplorerAvailableDataGate } from "@/features/ux-reset/review/explorer-county-reference";
+import {
+  EXPLORER_AVAILABLE_DATA_EMPTY,
+  type ExplorerAvailableDataGate,
+} from "@/features/ux-reset/review/explorer-county-reference";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { usePublishedExplorerMapFrame } from "@/features/ux-reset/review/use-explorer-map-loading";
 import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
@@ -21,27 +24,17 @@ const recorded = vi.hoisted(() => ({
 }));
 
 const geometryRequest = vi.hoisted(() => {
-  const state: {
-    promise: Promise<CountyDisplayGeometryFeatureCollection>;
-    resolve: (value: CountyDisplayGeometryFeatureCollection) => void;
-  } = {
-    promise: Promise.resolve({
-      features: [],
-      type: "FeatureCollection",
-    }),
-    resolve: () => {},
-  };
+  let deferred =
+    Promise.withResolvers<CountyDisplayGeometryFeatureCollection>();
   return {
     get promise() {
-      return state.promise;
+      return deferred.promise;
     },
     reset: () => {
-      state.promise = new Promise((resolve) => {
-        state.resolve = resolve;
-      });
+      deferred = Promise.withResolvers();
     },
     resolve: (value: CountyDisplayGeometryFeatureCollection) => {
-      state.resolve(value);
+      deferred.resolve(value);
     },
   };
 });
@@ -230,6 +223,36 @@ describe("published explorer map frame", () => {
     });
     expect(latestPaint().revision).not.toBe(subsetA);
     expect(latestPaint().revision).not.toBe(openRevision);
+  });
+
+  it("explains an initially empty Available data result without a spinner", async () => {
+    geometryRequest.resolve(geometry());
+    render(picture({ kind: "ready", fips: new Set(["99999"]) }));
+    await waitFor(() => {
+      expect(screen.getByText(EXPLORER_AVAILABLE_DATA_EMPTY)).toBeTruthy();
+    });
+    const region = screen.getByTestId("review-national-map-region");
+    expect(screen.queryByTestId("explorer-map-loading")).toBeNull();
+    expect(region.getAttribute("aria-busy")).toBe("false");
+  });
+
+  it("hides the loader for an empty filter and restores the open counties", async () => {
+    geometryRequest.resolve(geometry());
+    const view = render(picture({ kind: "open" }));
+    await waitFor(() => {
+      expect(latestPaint().fips).toStrictEqual(["08001", "36001"]);
+    });
+
+    view.rerender(picture({ kind: "ready", fips: new Set(["99999"]) }));
+    await waitFor(() => {
+      expect(screen.getByText(EXPLORER_AVAILABLE_DATA_EMPTY)).toBeTruthy();
+    });
+    expect(screen.queryByTestId("explorer-map-loading")).toBeNull();
+
+    view.rerender(picture({ kind: "open" }));
+    await waitFor(() => {
+      expect(latestPaint().fips).toStrictEqual(["08001", "36001"]);
+    });
   });
 
   it("restores the open county frame after a filtered publication", async () => {

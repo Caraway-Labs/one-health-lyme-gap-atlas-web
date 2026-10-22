@@ -99,10 +99,13 @@ const engine = vi.hoisted(() => {
       if (!callbacks) {
         return;
       }
-      this.handlers.set(
-        event,
-        callbacks.filter((callback) => callback !== handler)
-      );
+      const remaining: ((event?: unknown) => void)[] = [];
+      for (const listener of callbacks) {
+        if (listener !== handler) {
+          remaining.push(listener);
+        }
+      }
+      this.handlers.set(event, remaining);
     }
     addControl() {
       this.layers.add("navigation-control");
@@ -172,7 +175,9 @@ const engine = vi.hoisted(() => {
         style: { cursor: this.removed ? "" : "" },
       };
     }
-    triggerRepaint() {}
+    triggerRepaint = () => {
+      this.handlers.get("render");
+    };
     remove() {
       this.removed = true;
     }

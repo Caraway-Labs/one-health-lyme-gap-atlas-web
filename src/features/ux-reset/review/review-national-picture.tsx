@@ -526,6 +526,7 @@ export function ReviewNationalPicture({
         availableDataGate.kind === "error",
       geometryFailed: geometryError,
       geometryPending,
+      emptyReadyFrame: paintRevision !== null && mapCounties.length === 0,
       layerFailed,
       mapFailed,
       paintKind: mapPaint.kind,

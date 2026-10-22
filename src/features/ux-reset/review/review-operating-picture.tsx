@@ -649,6 +649,7 @@ export function ReviewOperatingPicture({
         availableDataGate.kind === "error",
       geometryFailed: geometryQuery.isError,
       geometryPending: Boolean(releaseId) && geometryQuery.isPending,
+      emptyReadyFrame: paintRevision !== null && mapCounties.length === 0,
       layerFailed,
       mapFailed: false,
       paintKind: mapPaint.kind,

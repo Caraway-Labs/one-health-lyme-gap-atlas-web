@@ -164,6 +164,7 @@ describe("explorer map loading lifecycle", () => {
         deferToOtherLoader: false,
         geometryFailed: false,
         geometryPending: false,
+        emptyReadyFrame: false,
         layerFailed: false,
         mapFailed: false,
         paintKind: "choropleth",
@@ -174,6 +175,7 @@ describe("explorer map loading lifecycle", () => {
     expect(
       explorerMapLoadingMode({
         deferToOtherLoader: true,
+        emptyReadyFrame: false,
         geometryFailed: false,
         geometryPending: true,
         layerFailed: false,
@@ -225,5 +227,21 @@ describe("explorer map publication identity", () => {
     });
     expect(openRevision).not.toBe(subsetRevision);
     expect(unresolved).toBeNull();
+  });
+
+  it("treats a confirmed empty frame as complete without waiting for a canvas", () => {
+    expect(
+      explorerMapLoadingMode({
+        deferToOtherLoader: false,
+        emptyReadyFrame: true,
+        geometryFailed: false,
+        geometryPending: false,
+        layerFailed: false,
+        mapFailed: false,
+        paintKind: "choropleth",
+        publishedRevision: "gap:0",
+        settledRevision: null,
+      })
+    ).toBe("idle");
   });
 });

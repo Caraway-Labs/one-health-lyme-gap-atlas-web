@@ -226,6 +226,7 @@ export function explorerMapLoadingMode(input: {
   layerFailed: boolean;
   mapFailed: boolean;
   paintKind: string;
+  emptyReadyFrame: boolean;
   publishedRevision: string | null;
   settledRevision: string | null;
 }): "error" | "idle" | "pending" {
@@ -238,7 +239,8 @@ export function explorerMapLoadingMode(input: {
   if (
     input.geometryPending ||
     input.paintKind === "loading" ||
-    (input.publishedRevision !== null &&
+    (!input.emptyReadyFrame &&
+      input.publishedRevision !== null &&
       input.publishedRevision !== input.settledRevision)
   ) {
     return "pending";

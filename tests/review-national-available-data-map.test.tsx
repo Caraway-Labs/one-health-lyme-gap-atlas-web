@@ -60,12 +60,16 @@ const engine = vi.hoisted(() => {
     }
     off(event: string, handler: (event?: unknown) => void) {
       for (const [key, callbacks] of this.handlers) {
-        if (key === event) {
-          this.handlers.set(
-            key,
-            callbacks.filter((callback) => callback !== handler)
-          );
+        if (key !== event) {
+          continue;
         }
+        const remaining: ((event?: unknown) => void)[] = [];
+        for (const listener of callbacks) {
+          if (listener !== handler) {
+            remaining.push(listener);
+          }
+        }
+        this.handlers.set(key, remaining);
       }
     }
     addControl() {
@@ -118,7 +122,7 @@ const engine = vi.hoisted(() => {
     getCanvas() {
       return { style: { cursor: this.removed ? "" : "" } };
     }
-    triggerRepaint() {}
+    triggerRepaint = () => this.removed;
     remove() {
       this.removed = true;
     }
