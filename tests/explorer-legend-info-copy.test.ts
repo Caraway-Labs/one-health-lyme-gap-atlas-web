@@ -267,11 +267,6 @@ describe("Explorer legend INFO copy", () => {
       },
       scoresStatus: "ready",
     });
-    const boundaries = paintExplorerMapLayer({
-      counties: [],
-      layerId: "boundaries",
-      scoresStatus: "ready",
-    });
     const layers = [
       aboutText(incidence),
       aboutText(svi),
@@ -279,16 +274,11 @@ describe("Explorer legend INFO copy", () => {
       aboutText(pathogen),
       aboutText(uninsured),
       aboutText(rurality),
-      aboutText(boundaries),
     ];
     const incidenceText = aboutText(incidence);
     const undatedText = aboutText(undated);
     const sviText = aboutText(svi);
     expect({
-      boundaries: aboutText(boundaries).includes(
-        "Shows county and state boundaries without displaying a data measure."
-      ),
-      boundariesOld: aboutText(boundaries).includes("not an evidence layer"),
       incidenceRange: incidenceText.includes(
         "Published values in this view run from 1.2 to 8 per 100,000."
       ),
@@ -323,8 +313,6 @@ describe("Explorer legend INFO copy", () => {
         "0% means a reported uninsured percentage of zero."
       ),
     }).toStrictEqual({
-      boundaries: true,
-      boundariesOld: false,
       incidenceRange: true,
       incidenceYear: true,
       pathogen: true,

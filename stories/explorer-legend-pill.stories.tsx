@@ -62,19 +62,12 @@ const gapScore = paintExplorerMapLayer({
   scoresStatus: "ready",
 });
 
-const boundaries = paintExplorerMapLayer({
-  counties: [county("08001")],
-  layerId: "boundaries",
-  scoresStatus: "ready",
-});
-
 function PillCompare() {
   return (
     <div className="grid max-w-xl gap-4">
       <ExplorerMapLegend paint={pathogen} />
       <ExplorerMapLegend paint={tick} />
       <ExplorerMapLegend paint={gapScore} />
-      <ExplorerMapLegend paint={boundaries} />
     </div>
   );
 }
@@ -87,7 +80,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Shared Explorer pill. Two pathogen categories and three tick categories are shorter than the seven-color Gap review score pill, with the same bar height and rounded outer ends. County boundaries keeps its neutral fill and charcoal inset stroke on that pill.",
+          "Shared Explorer pill. Two pathogen categories and three tick categories are shorter than the seven-color Gap review score pill, with the same bar height and rounded outer ends.",
       },
     },
   },
