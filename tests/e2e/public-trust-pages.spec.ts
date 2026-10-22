@@ -179,8 +179,20 @@ test("trust pages keep policy text and reflow at 200% zoom", async ({
 }) => {
   await page.goto("/privacy");
   await expect(
+    page.getByRole("heading", { name: "What we collect and why" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Service providers we use" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "How long we keep information" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Your rights and controls" })
+  ).toBeVisible();
+  await expect(
     page.getByText(
-      "We do not sell, rent, or share personal data for advertising, audience targeting, or commercial behavioral profiling."
+      "We do not sell or rent personal information, and we do not share it for advertising, audience targeting, or behavioral profiling."
     )
   ).toBeVisible();
   await expect(

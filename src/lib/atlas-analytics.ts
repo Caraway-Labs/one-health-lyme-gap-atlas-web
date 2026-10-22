@@ -22,6 +22,7 @@ export const routeIds = [
   "assistant",
   "geographic_explorer",
   "ai_ethics",
+  "intelligence_feed",
 ] as const;
 
 export type RouteId = (typeof routeIds)[number];
@@ -44,6 +45,7 @@ export const uiControlIds = [
   "footer_privacy",
   "footer_back_to_atlas",
   "page_retry",
+  "feed_sources_retry",
   "nav_data_dictionary_close",
   "results_table_county_select",
   "methods_source_open",
@@ -161,14 +163,31 @@ type AnalyticsEvent =
   | {
       eventType: "atlas_filter_applied";
       properties: {
-        route_id: "atlas_home";
-        filter_dimension: "state" | "evidence";
+        route_id: "atlas_home" | "intelligence_feed";
+        filter_dimension:
+          | "state"
+          | "evidence"
+          | "feed_source"
+          | "feed_published";
         filter_value:
           | "all"
           | "ecological"
           | "human"
           | "complete"
-          | "state_selected";
+          | "state_selected"
+          | "source_selected"
+          | "7d"
+          | "30d"
+          | "90d";
+        active_filter_count?: number;
+      };
+    }
+  | {
+      eventType: "atlas_filter_cleared";
+      properties: {
+        route_id: "intelligence_feed";
+        clear_scope: "single" | "all";
+        active_filter_count: number;
       };
     }
   | {
@@ -233,6 +252,7 @@ export function routeIdForPathname(pathname: string): RouteId {
   }
   if (pathname === "/geographic_explorer") return "geographic_explorer";
   if (pathname === "/ai-ethics") return "ai_ethics";
+  if (pathname === "/app/feed") return "intelligence_feed";
   return "atlas_home";
 }
 
@@ -337,6 +357,89 @@ export function trackUiInteraction(
       route_id: routeIdForPathname(pathname),
       control_id: controlId,
       action: "activated",
+    },
+  });
+}
+
+const FEED_SOURCE_FILTER_VALUES = ["all", "source_selected"] as const;
+const FEED_PUBLISHED_FILTER_VALUES = ["7d", "30d", "90d", "all"] as const;
+const FEED_CLEAR_SCOPES = ["single", "all"] as const;
+
+export type FeedSourceFilterValue = (typeof FEED_SOURCE_FILTER_VALUES)[number];
+export type FeedPublishedFilterValue =
+  (typeof FEED_PUBLISHED_FILTER_VALUES)[number];
+export type FeedClearScope = (typeof FEED_CLEAR_SCOPES)[number];
+
+function isActiveFilterCount(value: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value <= 10;
+}
+
+function isFeedSourceFilterValue(
+  value: string
+): value is FeedSourceFilterValue {
+  return FEED_SOURCE_FILTER_VALUES.some((item) => item === value);
+}
+
+function isFeedPublishedFilterValue(
+  value: string
+): value is FeedPublishedFilterValue {
+  return FEED_PUBLISHED_FILTER_VALUES.some((item) => item === value);
+}
+
+export function trackFeedFilterApplied(
+  dimension: "feed_source",
+  filterValue: FeedSourceFilterValue,
+  activeFilterCount: number
+): void;
+export function trackFeedFilterApplied(
+  dimension: "feed_published",
+  filterValue: FeedPublishedFilterValue,
+  activeFilterCount: number
+): void;
+export function trackFeedFilterApplied(
+  dimension: "feed_source" | "feed_published",
+  filterValue: FeedSourceFilterValue | FeedPublishedFilterValue,
+  activeFilterCount: number
+): void {
+  if (!isActiveFilterCount(activeFilterCount)) {
+    return;
+  }
+  if (dimension === "feed_source" && !isFeedSourceFilterValue(filterValue)) {
+    return;
+  }
+  if (
+    dimension === "feed_published" &&
+    !isFeedPublishedFilterValue(filterValue)
+  ) {
+    return;
+  }
+  atlasAnalytics.track({
+    eventType: "atlas_filter_applied",
+    properties: {
+      active_filter_count: activeFilterCount,
+      filter_dimension: dimension,
+      filter_value: filterValue,
+      route_id: "intelligence_feed",
+    },
+  });
+}
+
+export function trackFeedFilterCleared(
+  clearScope: FeedClearScope,
+  activeFilterCount: number
+): void {
+  if (!FEED_CLEAR_SCOPES.includes(clearScope)) {
+    return;
+  }
+  if (!isActiveFilterCount(activeFilterCount)) {
+    return;
+  }
+  atlasAnalytics.track({
+    eventType: "atlas_filter_cleared",
+    properties: {
+      active_filter_count: activeFilterCount,
+      clear_scope: clearScope,
+      route_id: "intelligence_feed",
     },
   });
 }

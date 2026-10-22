@@ -2,7 +2,7 @@
 
 import { QueryClientContext } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useContext, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { endLocalAtlasSession } from "@/features/ux-reset/profile/end-local-session";
 import { followWorkspaceHref } from "@/features/ux-reset/workspace-navigation";
 import {
   runWorkspaceSignOut,
@@ -24,9 +25,28 @@ import {
   downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet,
 } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
-import { safeReturnPath } from "@/lib/auth/return-path";
+import {
+  accessTokenIssuedAtMs,
+  beginPrivacyReauthResume,
+  claimPrivacyReauthChallenge,
+  clearPrivacyReauthChallenge,
+  endPrivacyReauthResume,
+  previousIssuedAtForReauth,
+  PRIVACY_REAUTH_CONTINUE_NOTICE,
+  privacyReauthResumeDisposition,
+  privacyReauthSubjectId,
+  readPrivacyReauthChallenge,
+  savePrivacyReauthChallenge,
+  type PrivacyReauthChallenge,
+  type PrivacySessionSnapshot,
+} from "@/lib/auth/privacy-reauth";
+import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
+import { createClient } from "@/lib/supabase/client";
 
-type PrivacyAction = "export" | "deletion";
+type PrivacyAction = PrivacyReauthChallenge["action"];
+
+const PRIVACY_REQUEST_FAILURE =
+  "We could not complete that privacy request. Please try again later.";
 
 const confirmationCopy: Record<
   PrivacyAction,
@@ -43,6 +63,12 @@ const confirmationCopy: Record<
     confirm: "Remove all data",
   },
 };
+
+function privacyRequestHeaders(accessToken: string): {
+  headers: { Authorization: string };
+} {
+  return { headers: { Authorization: `Bearer ${accessToken}` } };
+}
 
 function downloadJson(payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -66,75 +92,228 @@ export function AccountDataRights({
   const [pending, setPending] = useState<PrivacyAction | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const operationGenerationRef = useRef(0);
 
-  async function runRequest(action: PrivacyAction) {
-    setBusy(true);
-    setNotice(null);
-    try {
-      const created = await createPrivacyRequestV1MePrivacyRequestsPost({
-        action,
-      });
-      if (created.status !== 200) {
-        throw new Error("Privacy request was not accepted.");
-      }
-      const confirmed =
-        await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
-          created.data.request_id,
-          { nonce: created.data.confirmation_nonce }
-        );
-      if (confirmed.status !== 200) {
-        throw new Error("Privacy request confirmation failed.");
-      }
-      if (confirmed.data.state === "needs_support") {
-        setNotice(
-          `This request needs support. Public Atlas exploration remains available. Reference: ${created.data.request_id}.`
-        );
-        return;
-      }
-      if (action === "export") {
-        const file =
-          await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
-            created.data.request_id
-          );
-        if (file.status !== 200) {
-          throw new Error("Export download failed.");
+  const readSessionStamp =
+    useCallback(async (): Promise<PrivacySessionSnapshot> => {
+      try {
+        const { data, error } = await createClient().auth.getSession();
+        if (error || !data.session) {
+          return {
+            accessToken: null,
+            issuedAtMs: null,
+            present: false,
+            userId: null,
+          };
         }
-        downloadJson(file.data);
-        setNotice("Your data export downloaded.");
-        return;
+        const accessToken = data.session.access_token;
+        const boundToken =
+          typeof accessToken === "string" && accessToken.length > 0
+            ? accessToken
+            : null;
+        return {
+          accessToken: boundToken,
+          issuedAtMs: boundToken ? accessTokenIssuedAtMs(boundToken) : null,
+          present: true,
+          userId: privacyReauthSubjectId(data.session.user?.id),
+        };
+      } catch {
+        return {
+          accessToken: null,
+          issuedAtMs: null,
+          present: false,
+          userId: null,
+        };
       }
-      const result = await runWorkspaceSignOut(queryClient);
-      if (result === null) {
-        return;
-      }
-      if (!result.ok) {
-        setNotice(result.notice);
-        return;
-      }
-      followWorkspaceHref("/");
-    } catch (error) {
-      if (error instanceof AtlasApiError && error.status === 401) {
-        if (!workspaceSignOutSuppressesExpiryRedirect()) {
-          router.push(
-            `/auth/sign-in?next=${encodeURIComponent(safeReturnPath(returnPath))}`
-          );
-        }
-        return;
-      }
-      const reference =
-        error instanceof AtlasApiError && error.requestId
-          ? ` Reference: ${error.requestId}.`
-          : "";
-      setNotice(
-        `We could not complete that privacy request. Please try again later.${reference}`
-      );
-    } finally {
-      setBusy(false);
-      setPending(null);
-    }
-  }
+    }, []);
 
-  const copy = pending ? confirmationCopy[pending] : null;
+  const accessTokenForSubject = useCallback(
+    async (subjectId: string): Promise<string | null> => {
+      const stamp = await readSessionStamp();
+      if (stamp.userId !== subjectId) return null;
+      return stamp.accessToken;
+    },
+    [readSessionStamp]
+  );
+
+  const executeRequest = useCallback(
+    async (action: PrivacyAction, subjectId: string) => {
+      operationGenerationRef.current += 1;
+      const generation = operationGenerationRef.current;
+      const operationCurrent = () =>
+        operationGenerationRef.current === generation;
+      // `undefined` means this mount or a newer operation ended while the read was in flight.
+      const liveSubject = async (): Promise<string | null | undefined> => {
+        const stamp = await readSessionStamp();
+        if (!operationCurrent()) return undefined;
+        return stamp.userId;
+      };
+      const sameAccount = async () => (await liveSubject()) === subjectId;
+
+      const createToken = await accessTokenForSubject(subjectId);
+      if (!createToken || !operationCurrent()) return;
+      setBusy(true);
+      setNotice(null);
+      try {
+        const created = await createPrivacyRequestV1MePrivacyRequestsPost(
+          { action },
+          privacyRequestHeaders(createToken)
+        );
+        if (!operationCurrent()) return;
+        if (created.status !== 200) {
+          throw new Error("Privacy request was not accepted.");
+        }
+        const confirmToken = await accessTokenForSubject(subjectId);
+        if (!confirmToken || !operationCurrent()) return;
+        const confirmed =
+          await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
+            created.data.request_id,
+            { nonce: created.data.confirmation_nonce },
+            privacyRequestHeaders(confirmToken)
+          );
+        if (!(await sameAccount())) return;
+        if (confirmed.status !== 200) {
+          throw new Error("Privacy request confirmation failed.");
+        }
+        if (confirmed.data.state === "needs_support") {
+          setNotice(
+            `This request needs support. Public Atlas exploration remains available. Reference: ${created.data.request_id}.`
+          );
+          return;
+        }
+        if (action === "export") {
+          const downloadToken = await accessTokenForSubject(subjectId);
+          if (!downloadToken || !operationCurrent()) return;
+          const file =
+            await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
+              created.data.request_id,
+              privacyRequestHeaders(downloadToken)
+            );
+          if (!(await sameAccount())) return;
+          if (file.status !== 200) {
+            throw new Error("Export download failed.");
+          }
+          downloadJson(file.data);
+          setNotice("Your data export downloaded.");
+          return;
+        }
+        const result = await runWorkspaceSignOut(queryClient);
+        const userId = await liveSubject();
+        const replacementAccount =
+          userId !== null && userId !== undefined && userId !== subjectId;
+        if (userId === undefined || replacementAccount) return;
+        if (result === null) return;
+        if (!result.ok) {
+          if (userId === subjectId) setNotice(result.notice);
+          return;
+        }
+        followWorkspaceHref("/");
+      } catch (error) {
+        if (!(await sameAccount())) return;
+        if (error instanceof AtlasApiError && error.status === 401) {
+          if (!workspaceSignOutSuppressesExpiryRedirect()) {
+            router.push(signInHrefForReturnPath(returnPath));
+          }
+          return;
+        }
+        const reference =
+          error instanceof AtlasApiError && error.requestId
+            ? ` Reference: ${error.requestId}.`
+            : "";
+        setNotice(`${PRIVACY_REQUEST_FAILURE}${reference}`);
+      } finally {
+        if (operationCurrent()) {
+          setBusy(false);
+          setPending(null);
+        }
+      }
+    },
+    [accessTokenForSubject, queryClient, readSessionStamp, returnPath, router]
+  );
+
+  const requireFreshSignIn = useCallback(
+    async (action: PrivacyAction) => {
+      setBusy(true);
+      setNotice(null);
+      const nowMs = Date.now();
+      let challenge: PrivacyReauthChallenge | null = null;
+      try {
+        const stamp = await readSessionStamp();
+        if (stamp.userId === null) {
+          if (stamp.present) {
+            setNotice(PRIVACY_REQUEST_FAILURE);
+            return;
+          }
+          setNotice(PRIVACY_REAUTH_CONTINUE_NOTICE);
+          router.push(signInHrefForReturnPath(returnPath));
+          return;
+        }
+        challenge = {
+          action,
+          challengedAtMs: nowMs,
+          nonce: crypto.randomUUID(),
+          previousIssuedAtMs: previousIssuedAtForReauth(stamp, nowMs),
+          subjectId: stamp.userId,
+        };
+        savePrivacyReauthChallenge(challenge);
+        const signedOut = await endLocalAtlasSession(queryClient);
+        if (!signedOut.ok) {
+          clearPrivacyReauthChallenge();
+          setNotice(signedOut.notice);
+          return;
+        }
+        setNotice(PRIVACY_REAUTH_CONTINUE_NOTICE);
+        router.push(signInHrefForReturnPath(returnPath));
+      } catch {
+        if (challenge) clearPrivacyReauthChallenge();
+        setNotice(PRIVACY_REQUEST_FAILURE);
+      } finally {
+        setBusy(false);
+        setPending(null);
+      }
+    },
+    [queryClient, readSessionStamp, returnPath, router]
+  );
+
+  const executeRequestRef = useRef(executeRequest);
+  const readSessionStampRef = useRef(readSessionStamp);
+  useEffect(() => {
+    executeRequestRef.current = executeRequest;
+    readSessionStampRef.current = readSessionStamp;
+  }, [executeRequest, readSessionStamp]);
+
+  useEffect(() => {
+    const challenge = readPrivacyReauthChallenge();
+    if (!challenge || !beginPrivacyReauthResume(challenge.nonce)) return;
+    let ignore = false;
+    const resume = async () => {
+      try {
+        const stamp = await readSessionStampRef.current();
+        if (ignore) return;
+        const disposition = privacyReauthResumeDisposition(
+          challenge,
+          stamp,
+          Date.now()
+        );
+        if (disposition === "clear") {
+          clearPrivacyReauthChallenge();
+          return;
+        }
+        if (disposition === "wait") return;
+        disposition satisfies "run";
+        const claimed = claimPrivacyReauthChallenge(challenge.nonce);
+        if (!claimed || ignore) return;
+        await executeRequestRef.current(claimed.action, claimed.subjectId);
+      } finally {
+        endPrivacyReauthResume(challenge.nonce);
+      }
+    };
+    void resume();
+    return () => {
+      ignore = true;
+      operationGenerationRef.current += 1;
+    };
+  }, []);
 
   return (
     <section className="mt-10 space-y-4" aria-labelledby="data-rights-heading">
@@ -173,13 +352,15 @@ export function AccountDataRights({
         }}
       >
         <DialogContent aria-labelledby="data-rights-confirm-title">
-          {copy ? (
+          {pending === null ? null : (
             <>
               <DialogHeader>
                 <DialogTitle id="data-rights-confirm-title">
-                  {copy.title}
+                  {confirmationCopy[pending].title}
                 </DialogTitle>
-                <DialogDescription>{copy.body}</DialogDescription>
+                <DialogDescription>
+                  {confirmationCopy[pending].body}
+                </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button
@@ -195,14 +376,14 @@ export function AccountDataRights({
                   variant={pending === "deletion" ? "destructive" : "default"}
                   disabled={busy}
                   onClick={() => {
-                    if (pending) void runRequest(pending);
+                    void requireFreshSignIn(pending);
                   }}
                 >
-                  {busy ? "Working…" : copy.confirm}
+                  {busy ? "Working…" : confirmationCopy[pending].confirm}
                 </Button>
               </DialogFooter>
             </>
-          ) : null}
+          )}
         </DialogContent>
       </Dialog>
     </section>

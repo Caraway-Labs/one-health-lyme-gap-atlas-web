@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
 import { DataProvenanceCatalog } from "@/features/public-trust/data-provenance-catalog";
+import { humanDate } from "@/features/public-trust/human-date";
 import {
   PublicTrustActions,
   PublicTrustIntro,
@@ -12,15 +13,6 @@ import { TrustCard } from "@/features/public-trust/trust-card";
 import "@/features/ux-reset/trust-footer.css";
 import { dataProvenanceContent } from "@/lib/data-provenance-content";
 import { ATLAS_OVERVIEW_PATH } from "@/lib/navigation";
-
-function humanDate(isoDate: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${isoDate}T00:00:00Z`));
-}
 
 export function DataProvenancePage() {
   const content = dataProvenanceContent;
