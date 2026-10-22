@@ -4667,7 +4667,7 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   }
 }
 
-/* Compare county picker, pinned pair, and calm status (Web #829) */
+/* Compare county picker, pinned pair, and calm status. */
 .ux-reset-compare > .ux-reset-compare-pair .ux-reset-compare-slots {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
