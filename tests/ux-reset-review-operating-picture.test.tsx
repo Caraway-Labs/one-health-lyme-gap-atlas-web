@@ -1472,12 +1472,14 @@ describe("Review operating picture state", () => {
       </QueryClientProvider>
     );
     const rows = await screen.findAllByTestId("review-candidate");
-    const heading = screen.getByRole("heading", { name: "Counties" });
+    const heading = screen.getByRole("heading", { name: "Ranked counties" });
     const list = document.querySelector(".ux-reset-explorer-list");
     const rowList = list?.querySelector(".ux-reset-ranked-county-list");
     expect({
       asksForChoice:
-        heading.textContent === "Counties" && heading.tagName === "H2",
+        heading.textContent === "Ranked counties" &&
+        heading.tagName === "H2" &&
+        heading.classList.contains("eyebrow"),
       eyebrow: list?.querySelector(".ux-reset-ranked-counties-eyebrow") ?? null,
       firstHeading: list?.querySelector("h1, h2, h3")?.textContent ?? "",
       headingOutsideRows: rowList?.contains(heading) ?? null,
@@ -1490,7 +1492,7 @@ describe("Review operating picture state", () => {
     }).toStrictEqual({
       asksForChoice: true,
       eyebrow: null,
-      firstHeading: "Counties",
+      firstHeading: "Ranked counties",
       headingOutsideRows: false,
       current: [null, null],
       fips: ["08001", "08013"],
