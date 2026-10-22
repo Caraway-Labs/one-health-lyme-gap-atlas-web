@@ -148,7 +148,7 @@ test("adds Data Provenance between Feed and Docs", async ({
     "Atlas Explorer",
     "Compare",
     "Ask Atlas",
-    "Feed",
+    "Research & News",
     "Data Provenance",
     "Settings",
     "Docs, opens in a new tab",

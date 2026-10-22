@@ -140,7 +140,7 @@ const WORKSPACE_NAV_LABELS = [
   "Atlas Explorer",
   "Compare",
   "Ask Atlas",
-  "Feed",
+  "Research & News",
   "Data Provenance",
   "Settings",
   "Docs",

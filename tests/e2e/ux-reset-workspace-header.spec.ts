@@ -46,7 +46,11 @@ const CANONICAL_DESTINATIONS = [
 const SIDEBAR_TRANSITIONS = [
   { name: "Compare", pathname: "/compare", title: "Compare Counties" },
   { name: "Ask Atlas", pathname: "/askatlas", title: "Ask Atlas" },
-  { name: "Feed", pathname: "/app/feed", title: "Intelligence Feed" },
+  {
+    name: "Research & News",
+    pathname: "/app/feed",
+    title: "Intelligence Feed",
+  },
   {
     name: "Data Provenance",
     pathname: "/data-provenance",

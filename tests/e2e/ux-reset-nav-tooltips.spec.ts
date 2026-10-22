@@ -14,6 +14,7 @@ import {
   RESET_ACCESS_NAV,
   RESET_FEEDBACK_ACTION,
   RESET_WORKSPACE_NAV,
+  resetNavigationLabel,
 } from "@/features/ux-reset/paths";
 
 import { fulfillCompletedStartingView } from "./completed-starting-view";
@@ -27,9 +28,11 @@ const DESKTOP = { height: 900, width: 1440 };
 const DESTINATIONS = [...RESET_WORKSPACE_NAV, ...RESET_ACCESS_NAV].map(
   (route) => ({
     accessibleName:
-      route.id === "docs" ? "Docs, opens in a new tab" : route.label,
+      route.id === "docs"
+        ? "Docs, opens in a new tab"
+        : resetNavigationLabel(route),
     description: route.tooltipDetail ?? "",
-    title: route.tooltipTitle ?? route.label,
+    title: route.tooltipTitle ?? resetNavigationLabel(route),
   })
 );
 
@@ -171,24 +174,32 @@ test("shows approved two-line tooltips on hover and keyboard focus", async ({
   );
   await dismissTooltip(page);
 
-  const feed = nav.getByRole("link", { exact: true, name: "Feed" });
+  const feed = nav.getByRole("link", {
+    exact: true,
+    name: "Research & News",
+  });
+  await saveNavTooltipScreenshot(
+    page,
+    testInfo,
+    "sidebar-research-news-expanded.png"
+  );
   await feed.hover();
   await expectNavTooltip(
     page,
-    "Intelligence Feed",
+    "Research & News",
     "Track new findings and updates that may inform Lyme surveillance and research."
   );
   await saveNavTooltipScreenshot(
     page,
     testInfo,
-    "nav-tooltip-intelligence-feed-expanded.png"
+    "sidebar-research-news-tooltip.png"
   );
   await page.mouse.move(1100, 240);
   await focusByTab(page, feed);
   await expect(feed).toBeFocused();
   await expectNavTooltip(
     page,
-    "Intelligence Feed",
+    "Research & News",
     "Track new findings and updates that may inform Lyme surveillance and research."
   );
   await expect(page).toHaveURL(/\/explore$/);
@@ -278,12 +289,12 @@ test("wraps nav tooltips inside a narrow desktop viewport at 200% zoom", async (
   await page.goto("/explore");
   const feed = (await navigation(page)).getByRole("link", {
     exact: true,
-    name: "Feed",
+    name: "Research & News",
   });
   await feed.hover();
   await expectNavTooltip(
     page,
-    "Intelligence Feed",
+    "Research & News",
     "Track new findings and updates that may inform Lyme surveillance and research."
   );
   await page.evaluate(() => {
