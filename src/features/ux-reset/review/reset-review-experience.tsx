@@ -88,6 +88,7 @@ import { ReviewReleaseEvidence } from "@/features/ux-reset/review/review-release
 import { markReviewReturnFocus } from "@/features/ux-reset/review/review-return-focus";
 import {
   reviewSearchParams,
+  retiredExplorerLayerSearchParamPatch,
   scenarioSearchParamPatch,
 } from "@/features/ux-reset/review/review-search-params";
 import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
@@ -188,6 +189,13 @@ function ResetReviewExperienceInner() {
   );
   useEffect(() => {
     const patch = scenarioSearchParamPatch(searchParams);
+    if (!patch) {
+      return;
+    }
+    void setUrlState(patch, { history: "replace" });
+  }, [searchParams, setUrlState]);
+  useEffect(() => {
+    const patch = retiredExplorerLayerSearchParamPatch(searchParams);
     if (!patch) {
       return;
     }

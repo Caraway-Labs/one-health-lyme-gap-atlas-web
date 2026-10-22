@@ -106,8 +106,8 @@ describe("public trust page family", () => {
         'This policy covers onehealthatlas.org, the Atlas Assistant, Ask Atlas, Atlas accounts, and in-product feedback. One Health Atlas is a project of Caraway Labs. In this policy, "we" and "us" mean Caraway Labs.',
         "Our commitments",
         "Use less data. Explain it clearly.",
-        "Public exploration stays public",
-        "You can browse, filter, compare, and download public Atlas results without an account. Sign-in is required only for the professional workspace, and this policy is always public.",
+        "Public information stays public",
+        "You can read about Atlas, its data sources, its methods, and this policy without an account. Signing in is required for the Atlas workspace, where you explore the map and compare counties.",
         "No ads or data sales",
         "We do not sell or rent personal information, and we do not share it for advertising, audience targeting, or behavioral profiling.",
         "Purpose before collection",
@@ -190,7 +190,7 @@ describe("public trust page family", () => {
         "When we change this policy, we update the version and date at the bottom of this page. If a change significantly affects how we handle your information, we will say so clearly on this page before the change takes effect.",
         "Questions and requests",
         "If you have a question about this policy or want to make a privacy request, use Feedback at the bottom of this page and include an email address if you would like a reply. We review every report. You can also read how Atlas uses AI and machine learning and about Caraway Labs .",
-        "Version 1.0.0 · Last updated October 21, 2026",
+        "Version 1.0.1 · Last updated October 22, 2026",
         "Return to the Atlas",
       ].join(" ")
     );

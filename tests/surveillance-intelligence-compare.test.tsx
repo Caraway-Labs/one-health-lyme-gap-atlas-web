@@ -307,7 +307,7 @@ describe("Compare County Surveillance Intelligence", () => {
         screen.getByTestId(`compare-surveillance-cell-gap-score-${LEFT}`)
       ).toHaveTextContent("36.6");
     });
-    const rows = within(table).getAllByRole("row").slice(1);
+    const rows = within(table).getAllByRole("listitem");
     expect(rows.map((row) => row.dataset.perspective)).toStrictEqual([
       ...SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
     ]);
@@ -391,9 +391,9 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     await screen.findByText("Pathogen not recorded");
-    expect(
-      screen.getByTestId("surveillance-intelligence-guide")
-    ).toHaveTextContent(SURVEILLANCE_INTELLIGENCE_GUIDE);
+    expect(screen.getByTestId("compare-intelligence-guide")).toHaveTextContent(
+      SURVEILLANCE_INTELLIGENCE_GUIDE
+    );
     expect(
       screen.getByTestId("compare-surveillance-intelligence")
     ).not.toHaveTextContent(
@@ -761,12 +761,8 @@ describe("Compare County Surveillance Intelligence", () => {
       screen.getByTestId(`compare-surveillance-cell-gap-score-${LEFT}`)
     ).toHaveAttribute("data-county", "County A, County A 01001");
     expect(
-      screen.getAllByRole("columnheader").map((header) => header.textContent)
-    ).toStrictEqual([
-      "Perspective",
-      expect.stringMatching(/County A/),
-      expect.stringMatching(/County B/),
-    ]);
+      screen.getByTestId(`compare-surveillance-cell-gap-score-${RIGHT}`)
+    ).toHaveAttribute("data-county", expect.stringMatching(/County B/));
   });
 
   it("drops an in-flight county when the section unmounts", async () => {

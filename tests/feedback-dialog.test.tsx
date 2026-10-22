@@ -139,6 +139,14 @@ describe("feedback dialog", () => {
       (screen.getByLabelText(/Contact email/i) as HTMLInputElement).value
     ).toBe("");
     expect(trackOpened).toHaveBeenCalledWith("general");
+    expect(screen.getByLabelText("Feedback category").textContent).toContain(
+      "General"
+    );
+    expect(
+      screen.getByText(
+        /Feedback is voluntary product input, not a clinical channel\. For a privacy request, include an email address so we can reply\./
+      )
+    ).toBeTruthy();
   });
 
   it("presets data_issue from the explorer entry point", () => {
@@ -147,6 +155,9 @@ describe("feedback dialog", () => {
       screen.getByRole("button", { name: "Report a data issue" })
     );
     expect(trackOpened).toHaveBeenCalledWith("data_issue");
+    expect(screen.getByLabelText("Feedback category").textContent).toContain(
+      "Data issue"
+    );
   });
 
   it("keeps typed text on validation errors and does not call the API", async () => {

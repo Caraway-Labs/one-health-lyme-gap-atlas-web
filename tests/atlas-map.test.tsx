@@ -1611,6 +1611,34 @@ describe("AtlasMap county camera", () => {
     }).not.toThrow();
   });
 
+  it("keeps the county fill outline on thematic layers", () => {
+    stubPrefersReducedMotion(false);
+    const view = render(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={vi.fn<(fips: string, surface: string) => void>()}
+      />
+    );
+    const map = loadMap();
+    expect({
+      boundaryLines: map?.layers.has("county-boundary-lines"),
+      fillOutline: map?.paint.get("counties-fill")?.["fill-outline-color"],
+      palette: view.container.querySelector<HTMLElement>(
+        "[data-boundary-palette]"
+      )?.dataset.boundaryPalette,
+      selectedCounty: map?.paint.get("selected-outline"),
+    }).toStrictEqual({
+      boundaryLines: false,
+      fillOutline: "rgba(255,255,255,.9)",
+      palette: undefined,
+      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+    });
+  });
+
   it("draws neutral county boundaries without recoloring the shared county stroke", () => {
     stubPrefersReducedMotion(false);
     const onSelect = vi.fn<(fips: string, surface: string) => void>();

@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { mapFeatureCompleteness } from "@/components/atlas-map";
 import { SVI_NO_DATA_COLOR } from "@/features/ux-reset/review/explorer-layer-palettes";
 import {
+  DEFAULT_EXPLORER_MAP_LAYER_ID,
   EXPLORER_MAP_LAYERS,
+  explorerMapLayerById,
   explorerMapLayerMenuLabel,
   LYME_DISEASE_INCIDENCE_MENU_LABEL,
   paintExplorerMapLayer,
@@ -191,10 +193,58 @@ describe("Explorer map layers", () => {
       otherMenus: otherLayers.map((layer) => layer.label),
       otherLabels: otherLayers.map((layer) => layer.label),
     });
+    expect(otherLayers.map((layer) => layer.label)).not.toContain(
+      "County boundaries"
+    );
+  });
+
+  it("offers thematic layers and falls back when boundaries is requested", () => {
+    expect(
+      EXPLORER_MAP_LAYERS.map((layer) => explorerMapLayerMenuLabel(layer))
+    ).toStrictEqual([
+      "Gap review score",
+      LYME_DISEASE_INCIDENCE_MENU_LABEL,
+      "Blacklegged tick status",
+      "B. burgdorferi status",
+      "Social vulnerability",
+      "Uninsured population",
+      "Rurality",
+      "Evidence completeness",
+    ]);
+    expect({
+      boundaries: parseExplorerMapLayerId("boundaries"),
+      defaultId: DEFAULT_EXPLORER_MAP_LAYER_ID,
+      fallback: explorerMapLayerById("boundaries").id,
+      missing: explorerMapLayerById(null).id,
+      unknown: parseExplorerMapLayerId("not-a-layer"),
+    }).toStrictEqual({
+      boundaries: null,
+      defaultId: "gap_score",
+      fallback: "gap_score",
+      missing: "gap_score",
+      unknown: null,
+    });
+    const thematic = paintExplorerMapLayer({
+      counties: [county("08001", { color: "#a9d2db" })],
+      layerId: "gap_score",
+      scoresStatus: "ready",
+    });
+    expect({
+      boundaryKey: thematic.entries.some(
+        (entry) => entry.label === "County boundary"
+      ),
+      color: thematic.colorsByFips.get("08001"),
+      title: thematic.title,
+    }).toStrictEqual({
+      boundaryKey: false,
+      color: "#a9d2db",
+      title: "Gap review score",
+    });
   });
 
   it("keeps governed layer ids in the URL and does not paint them before they validate", () => {
     expect({
+      boundaries: parseExplorerMapLayerId("boundaries"),
       completeness: parseExplorerMapLayerId("completeness"),
       gap: parseExplorerMapLayerId("gap_score"),
       incidence: parseExplorerMapLayerId("incidence_floor"),
@@ -203,6 +253,7 @@ describe("Explorer map layers", () => {
       svi: parseExplorerMapLayerId("svi"),
       uninsured: parseExplorerMapLayerId("uninsured"),
     }).toStrictEqual({
+      boundaries: null,
       completeness: "completeness",
       gap: "gap_score",
       incidence: "incidence_floor",
@@ -422,38 +473,6 @@ describe("Explorer map layers", () => {
     });
     expect(gap.period).toContain("Release alpha-2026");
     expect(gap.period).toContain("CDC Lyme surveillance 2023");
-  });
-
-  it("does not attach an evidence vintage to county boundaries", () => {
-    const boundaries = paintExplorerMapLayer({
-      counties: [county("08001")],
-      layerId: "boundaries",
-      releaseId: "alpha-2026",
-      scoresStatus: "ready",
-      sources: legendSources,
-    });
-    expect({
-      entries: boundaries.entries,
-      note: boundaries.note,
-      period: boundaries.period,
-      ramp: boundaries.ramp,
-      scale: boundaries.scale,
-    }).toStrictEqual({
-      entries: [
-        {
-          color: "#F3F4F6",
-          detail:
-            "Neutral county fill with charcoal county outlines and darker state outlines. Not a score, not disease data, and not a missing value.",
-          label: "County boundary",
-          outline: "#4B5563",
-        },
-      ],
-      note: expect.stringMatching(/without displaying a data measure/),
-      period: expect.stringMatching(/not an evidence layer/),
-      ramp: undefined,
-      scale: "segments",
-    });
-    expect(boundaries.note).toMatch(/neutral fill/);
   });
 
   it("says the source vintage is unavailable instead of inventing one", () => {

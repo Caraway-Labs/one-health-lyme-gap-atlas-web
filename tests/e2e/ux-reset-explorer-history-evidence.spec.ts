@@ -655,12 +655,12 @@ test.describe("Explorer same-route history during hydration", () => {
 
     await stampDocument(page);
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "County boundaries" }).click();
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await page.getByRole("option", { name: "Blacklegged tick status" }).click();
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page).toHaveURL(new RegExp(`county=${BOULDER}`));
     await expectDocumentStamp(page);
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "County boundaries"
+      "Blacklegged tick status"
     );
 
     const compare = page.getByTestId("review-compare");
@@ -854,8 +854,8 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
     await expect(page.getByTestId("review-view-county-evidence")).toBeVisible();
 
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "County boundaries" }).click();
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await page.getByRole("option", { name: "Blacklegged tick status" }).click();
+    await expect(page).toHaveURL(/layer=tick_status/);
 
     await page.getByTestId("review-view-county-evidence").click();
     await expect(page).toHaveURL(/\/explore/);
@@ -864,7 +864,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
     await expect(page).toHaveURL(/scope=GA/);
     await expect(page).toHaveURL(new RegExp(`dataset=${RELEASE_ID}`));
     await expect(page).toHaveURL(new RegExp(`period=${PERIOD}`));
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page.getByTestId("explorer-county-evidence")).toHaveAttribute(
       "data-county",
       rank41.fips
@@ -884,7 +884,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
       fips: rank41.fips,
       scope: "GA",
     });
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(
       page.locator(`button[data-fips="${rank41.fips}"]`)
     ).toBeFocused();
@@ -901,7 +901,7 @@ test.describe("Explorer evidence beyond the initial rank window", () => {
       fips: rank41.fips,
       scope: "GA",
     });
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page.locator('button[data-rank="1"]')).not.toHaveAttribute(
       "aria-current",
       "true"
