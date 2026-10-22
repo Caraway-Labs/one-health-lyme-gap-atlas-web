@@ -68,11 +68,8 @@ function publishedStatusLabel(raw: string): string {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
-function speciesStatusValue(status: string | null): string {
-  if (status === null || status.trim() === "") {
-    return "Unavailable";
-  }
-  return publishedStatusLabel(status);
+function blankStatus(status: string | null): boolean {
+  return status === null || status.trim() === "";
 }
 
 function humanCountyRecordValue(detail: CountyDetail): string {
@@ -125,19 +122,34 @@ function lymeDiseaseRows(detail: CountyDetail): ReviewRationaleCompactRow[] {
   return rows;
 }
 
+function tickStatusRow(
+  label: string,
+  status: string | null
+): ReviewRationaleCompactRow {
+  const blank = blankStatus(status);
+  return {
+    label,
+    value: blank ? "Unavailable" : publishedStatusLabel(status ?? ""),
+    valueTone: blank ? "neutral" : "default",
+  };
+}
+
 function tickPresenceRows(detail: CountyDetail): ReviewRationaleCompactRow[] {
-  return [
-    {
-      label: "Ixodes scapularis",
-      value: speciesStatusValue(detail.scapularis_status),
-      valueTone: detail.scapularis_status === null ? "neutral" : "default",
-    },
-    {
-      label: "Ixodes pacificus",
-      value: speciesStatusValue(detail.pacificus_status),
-      valueTone: detail.pacificus_status === null ? "neutral" : "default",
-    },
+  const rows = [
+    tickStatusRow("Ixodes scapularis", detail.scapularis_status),
+    tickStatusRow("Ixodes pacificus", detail.pacificus_status),
   ];
+  // Species fields can be unpublished while tick_status still carries the
+  // county aggregate. Keep both species rows, and add that aggregate only
+  // when neither species has its own published status.
+  if (
+    blankStatus(detail.scapularis_status) &&
+    blankStatus(detail.pacificus_status) &&
+    !blankStatus(detail.tick_status)
+  ) {
+    rows.push(tickStatusRow("County record", detail.tick_status));
+  }
+  return rows;
 }
 
 function pathogenDetectionRows(

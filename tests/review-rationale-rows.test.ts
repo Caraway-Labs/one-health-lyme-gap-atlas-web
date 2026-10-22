@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  RUCC_2023_COMPACT_CLASSIFICATIONS,
+  RUCC_2023_LABELS,
+} from "@/features/ux-reset/review/review-rationale";
+import {
   formatReviewSviPercentile,
   reviewRationaleMeasures,
 } from "@/features/ux-reset/review/review-rationale-rows";
@@ -90,6 +94,126 @@ describe("review rationale compact rows", () => {
       tick: [
         ["Ixodes scapularis", "Established"],
         ["Ixodes pacificus", "Unavailable"],
+      ],
+    });
+  });
+
+  it("keeps an aggregate tick status when both species fields are unpublished", () => {
+    for (const tickStatus of [
+      "Established",
+      "Unknown",
+      "No records",
+      "Out of scope",
+    ]) {
+      const measures = reviewRationaleMeasures(
+        detail({
+          pacificus_status: null,
+          scapularis_status: null,
+          tick_status: tickStatus,
+        })
+      );
+      expect(
+        measures[1]?.rows.map((row) => [row.label, row.value])
+      ).toStrictEqual([
+        ["Ixodes scapularis", "Unavailable"],
+        ["Ixodes pacificus", "Unavailable"],
+        ["County record", tickStatus],
+      ]);
+    }
+  });
+
+  it("does not replace differing species statuses with the aggregate", () => {
+    const measures = reviewRationaleMeasures(
+      detail({
+        pacificus_status: "Reported",
+        scapularis_status: "Established",
+        tick_status: "Established",
+      })
+    );
+    expect(
+      measures[1]?.rows.map((row) => [row.label, row.value])
+    ).toStrictEqual([
+      ["Ixodes scapularis", "Established"],
+      ["Ixodes pacificus", "Reported"],
+    ]);
+  });
+
+  it("uses the 2023 RUCC threshold of 5,000 for codes 6 through 9", () => {
+    expect(
+      Object.fromEntries(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9].map((code) => [
+          code,
+          {
+            detail: RUCC_2023_COMPACT_CLASSIFICATIONS[code]?.detail,
+            label: RUCC_2023_LABELS[code],
+            title: RUCC_2023_COMPACT_CLASSIFICATIONS[code]?.title,
+          },
+        ])
+      )
+    ).toStrictEqual({
+      1: {
+        detail: "Metro population: 1 million or more",
+        label: "metro area of 1 million or more",
+        title: "Large metro",
+      },
+      2: {
+        detail: "Metro population: 250,000 to 1 million",
+        label: "metro area of 250,000 to 1 million",
+        title: "Medium metro",
+      },
+      3: {
+        detail: "Metro population: fewer than 250,000",
+        label: "metro area of fewer than 250,000",
+        title: "Small metro",
+      },
+      4: {
+        detail: "Urban population of 20,000 or more, adjacent to a metro area",
+        label: "urban population of 20,000 or more, adjacent to a metro area",
+        title: "Urban, metro adjacent",
+      },
+      5: {
+        detail:
+          "Urban population of 20,000 or more, not adjacent to a metro area",
+        label:
+          "urban population of 20,000 or more, not adjacent to a metro area",
+        title: "Urban, not metro adjacent",
+      },
+      6: {
+        detail: "Urban population of 5,000 to 20,000, adjacent to a metro area",
+        label: "urban population of 5,000 to 20,000, adjacent to a metro area",
+        title: "Small urban, metro adjacent",
+      },
+      7: {
+        detail:
+          "Urban population of 5,000 to 20,000, not adjacent to a metro area",
+        label:
+          "urban population of 5,000 to 20,000, not adjacent to a metro area",
+        title: "Small urban, not metro adjacent",
+      },
+      8: {
+        detail:
+          "Urban population of fewer than 5,000, adjacent to a metro area",
+        label: "urban population of fewer than 5,000, adjacent to a metro area",
+        title: "Rural, metro adjacent",
+      },
+      9: {
+        detail:
+          "Urban population of fewer than 5,000, not adjacent to a metro area",
+        label:
+          "urban population of fewer than 5,000, not adjacent to a metro area",
+        title: "Rural, not metro adjacent",
+      },
+    });
+    const rural = reviewRationaleMeasures(detail({ rucc_2023: 8 }));
+    expect({
+      note: rural[5]?.secondaryNote,
+      rows: rural[5]?.rows.map((row) => [row.label, row.value]),
+    }).toStrictEqual({
+      note: "Urban population of fewer than 5,000, adjacent to a metro area",
+      rows: [
+        ["Classification", "Rural, metro adjacent"],
+        ["RUCC", "8"],
+        ["Year", "2023"],
       ],
     });
   });

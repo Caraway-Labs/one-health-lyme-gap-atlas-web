@@ -120,19 +120,19 @@ const RURALITY_INFO_ROWS = [
   ],
   [
     "6",
-    "Outside a metropolitan area; urban population of 2,500\u201319,999; adjacent to a metropolitan area",
+    "Outside a metropolitan area; urban population of 5,000 to 20,000; adjacent to a metropolitan area",
   ],
   [
     "7",
-    "Outside a metropolitan area; urban population of 2,500\u201319,999; not adjacent to a metropolitan area",
+    "Outside a metropolitan area; urban population of 5,000 to 20,000; not adjacent to a metropolitan area",
   ],
   [
     "8",
-    "Entirely rural or urban population below 2,500; adjacent to a metropolitan area",
+    "Urban population of fewer than 5,000; adjacent to a metropolitan area",
   ],
   [
     "9",
-    "Entirely rural or urban population below 2,500; not adjacent to a metropolitan area",
+    "Urban population of fewer than 5,000; not adjacent to a metropolitan area",
   ],
 ] as const;
 
