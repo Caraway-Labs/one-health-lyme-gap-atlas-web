@@ -28,7 +28,6 @@ import {
   tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
 const PAGE_RELEASE = reviewScopeScoresFixture.release_id;
@@ -175,15 +174,8 @@ function situationsResponse(
   >;
 }
 
-function pageTier1(
-  result: Tier1CountyPriority,
-  fips: string,
-  releaseId = PAGE_RELEASE
-) {
-  return tier1PriorityForRelease(
-    tier1PriorityForCounty(result, fips),
-    releaseId
-  );
+function pageTier1(result: Tier1CountyPriority, fips: string) {
+  return tier1PriorityForCounty(result, fips);
 }
 
 function scoresResponse(counties: readonly { fips: string; score: number }[]) {
@@ -504,22 +496,37 @@ describe("Compare County Surveillance Intelligence", () => {
       screen.getByRole("button", { name: "ML Review Priority" })
     );
     const priority = screen.getAllByTestId("surveillance-intelligence-details");
-    expect(priority[0]).toHaveTextContent(PAGE_RELEASE);
-    expect(priority[0]).not.toHaveTextContent(
-      "governed-2026-09-18-unknown-coverage"
-    );
+    const priorityText = priority[0]?.textContent ?? "";
+    expect({
+      modelRelease: priorityText.includes(
+        "governed-2026-09-18-unknown-coverage"
+      ),
+      pageRelease: priorityText.includes(PAGE_RELEASE),
+      releaseLabel: priorityText.includes("Model input release"),
+    }).toStrictEqual({
+      modelRelease: true,
+      pageRelease: false,
+      releaseLabel: true,
+    });
     await user.click(
       screen.getByRole("button", { name: "Ecological Situation" })
     );
     const ecological = screen.getAllByTestId(
       "surveillance-intelligence-details"
     );
-    expect(ecological[1]).toHaveTextContent("other-release");
-    expect(ecological[0]).toHaveTextContent("Not published");
+    const leftText = ecological[0]?.textContent ?? "";
+    const rightText = ecological[1]?.textContent ?? "";
+    expect({
+      leftUnpublished: leftText.includes("Not published"),
+      rightRelease: rightText.includes("other-release"),
+    }).toStrictEqual({
+      leftUnpublished: true,
+      rightRelease: true,
+    });
     expect(ecological[1]).toHaveTextContent("99.9% (full value 0.999)");
   });
 
-  it("does not load situations while the page release is still pending", async () => {
+  it("loads situations while the page release is still pending", async () => {
     installHappyPath();
     renderView(
       <CompareSurveillanceIntelligence
@@ -530,14 +537,14 @@ describe("Compare County Surveillance Intelligence", () => {
         rightLabel="Adams"
       />
     );
-    await expect(
-      screen.findAllByText("Class membership is loading.")
-    ).resolves.toHaveLength(4);
-    expect(situationsGet).not.toHaveBeenCalled();
-    expect(tier1Get).not.toHaveBeenCalled();
+    await screen.findAllByText("Pathogen not recorded");
+    expect(situationsGet).toHaveBeenCalledWith(LEFT, expect.anything());
+    expect(situationsGet).toHaveBeenCalledWith(RIGHT, expect.anything());
+    expect(tier1Get).toHaveBeenCalledWith(LEFT, expect.anything());
+    expect(tier1Get).toHaveBeenCalledWith(RIGHT, expect.anything());
   });
 
-  it("withholds situation classes when the response release differs from the page", async () => {
+  it("shows situation classes when the response release differs from the page", async () => {
     scoresGet.mockResolvedValue(
       scoresResponse([
         { fips: LEFT, score: 36.6 },
@@ -563,16 +570,11 @@ describe("Compare County Surveillance Intelligence", () => {
       `compare-surveillance-cell-surveillance-situation-${LEFT}`
     );
     await waitFor(() => {
-      expect(leftSituation).toHaveTextContent(
-        "Not shown for this page release"
-      );
+      expect(leftSituation).toHaveTextContent(`${LEFT} class`);
     });
-    expect(leftSituation).not.toHaveTextContent(`${LEFT} class`);
-    expect(
-      screen.getByTestId(
-        `compare-surveillance-cell-ecological-situation-${LEFT}`
-      )
-    ).toHaveTextContent("Not shown for this page release");
+    expect(leftSituation).not.toHaveTextContent(
+      "Not shown for this page release"
+    );
     expect(
       screen.getByTestId(
         `compare-surveillance-cell-surveillance-situation-${RIGHT}`
@@ -580,7 +582,7 @@ describe("Compare County Surveillance Intelligence", () => {
     ).toHaveTextContent(`${RIGHT} class`);
   });
 
-  it("withholds a tier when the model release differs from the page", async () => {
+  it("shows a tier when the model release differs from the page", async () => {
     scoresGet.mockResolvedValue(
       scoresResponse([
         { fips: LEFT, score: 36.6 },
@@ -588,13 +590,7 @@ describe("Compare County Surveillance Intelligence", () => {
       ])
     );
     tier1Get.mockImplementation(async (fips: string) =>
-      ok(
-        pageTier1(
-          tier1LowInsufficientFixture,
-          fips,
-          fips === RIGHT ? "other-tier-release" : PAGE_RELEASE
-        )
-      )
+      ok(pageTier1(tier1LowInsufficientFixture, fips))
     );
     situationsGet.mockResolvedValue(
       situationsResponse(
@@ -608,11 +604,11 @@ describe("Compare County Surveillance Intelligence", () => {
       `compare-surveillance-cell-ml-review-priority-${RIGHT}`
     );
     await waitFor(() => {
-      expect(rightPriority).toHaveTextContent(
-        "Not shown for this page release"
-      );
+      expect(rightPriority).toHaveTextContent("LOW");
     });
-    expect(rightPriority).not.toHaveTextContent("LOW");
+    expect(rightPriority).not.toHaveTextContent(
+      "Not shown for this page release"
+    );
     expect(
       screen.getByTestId(`compare-surveillance-cell-ml-review-priority-${LEFT}`)
     ).toHaveTextContent("LOW");

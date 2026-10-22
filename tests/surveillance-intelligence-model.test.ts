@@ -29,7 +29,6 @@ import {
   tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
 const PAGE_RELEASE = "governed-2026-10-15-january-climate-prod";
@@ -117,26 +116,20 @@ function readyGap(result: PublishedGapScoreSource | null): GapScoreQueryState {
   };
 }
 
-function readyTier(
-  result: Tier1CountyPriority | null,
-  releaseId = result?.release_id ?? TIER1_RELEASE
-): Tier1QueryState {
+function readyTier(result: Tier1CountyPriority | null): Tier1QueryState {
   return {
     errorStatus: null,
     phase: "success",
-    release: { releaseId, status: "ready" },
     result,
   };
 }
 
 function readySituations(
-  result: CountySurveillanceSituations | null,
-  releaseId = PAGE_RELEASE
+  result: CountySurveillanceSituations | null
 ): SituationsQueryState {
   return {
     errorStatus: null,
     phase: "success",
-    release: { releaseId, status: "ready" },
     result,
   };
 }
@@ -221,10 +214,7 @@ describe("County Surveillance Intelligence mapping", () => {
         )
       ),
       tier1: readyTier(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
-          TIER1_RELEASE
-        )
+        tier1PriorityForCounty(tier1LowInsufficientFixture, "01001")
       ),
     });
 
@@ -271,10 +261,7 @@ describe("County Surveillance Intelligence mapping", () => {
         )
       ),
       tier1: readyTier(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
-          TIER1_RELEASE
-        )
+        tier1PriorityForCounty(tier1LowInsufficientFixture, "01001")
       ),
     });
     const selected = views[2]?.memberships.find(
@@ -459,7 +446,7 @@ describe("County Surveillance Intelligence mapping", () => {
     expect(formatPercentileOneDecimal(0)).toBe("0.0");
   });
 
-  it("withholds situation classes when the response release differs from the page release", () => {
+  it("shows situation classes when the response release differs from the page release", () => {
     const responseRelease = "governed-2026-10-16-next";
     const body = situations(
       variant("AVAILABLE", fourClass),
@@ -467,26 +454,22 @@ describe("County Surveillance Intelligence mapping", () => {
     );
     body.release_id = responseRelease;
     const views = mapped({
-      situations: readySituations(body, PAGE_RELEASE),
+      situations: readySituations(body),
     });
 
     expect(views[2]).toMatchObject({
-      disclosure: [
-        { label: "Response release", value: responseRelease },
-        { label: "Page release", value: PAGE_RELEASE },
-      ],
-      kind: "unavailable",
-      primary: "Unavailable",
+      disclosure: expect.arrayContaining([
+        { label: "Presentation release", value: responseRelease },
+      ]),
+      kind: "ready",
+      primary: "Pathogen not recorded",
     });
     expect(views[3]).toMatchObject({
-      kind: "unavailable",
-      primary: "Unavailable",
+      kind: "ready",
+      primary: "Established blacklegged tick",
     });
     expect(JSON.stringify([views[2], views[3]])).not.toContain(
-      "Pathogen not recorded"
-    );
-    expect(JSON.stringify([views[2], views[3]])).not.toContain(
-      "Established blacklegged tick"
+      "Not shown for this page release"
     );
   });
 
@@ -516,8 +499,7 @@ describe("County Surveillance Intelligence mapping", () => {
     admitted.input_release_id = inputRelease;
     const views = mapped({
       situations: readySituations(
-        situations(admitted, variant("AVAILABLE", tickClass)),
-        PAGE_RELEASE
+        situations(admitted, variant("AVAILABLE", tickClass))
       ),
     });
     const disclosure = views[2]?.disclosure ?? [];
@@ -550,47 +532,43 @@ describe("County Surveillance Intelligence mapping", () => {
     expect(views[2]?.overview).not.toContain("did not match this page release");
   });
 
-  it("withholds a matched county tier when its release differs from the page", () => {
+  it("shows a matched county tier when its release differs from the page", () => {
     const priority = mapped({
       tier1: readyTier(
-        tier1PriorityForCounty(tier1HighSufficientFixture, "01001"),
-        PAGE_RELEASE
+        tier1PriorityForCounty(tier1HighSufficientFixture, "01001")
       ),
     })[1];
 
     expect(priority).toMatchObject({
-      disclosure: [
+      disclosure: expect.arrayContaining([
         {
-          label: "Response release",
+          label: "Model input release",
           value: tier1HighSufficientFixture.release_id,
         },
-        { label: "Page release", value: PAGE_RELEASE },
-      ],
-      kind: "unavailable",
-      primary: "Unavailable",
-      supporting: "Not shown for this page release",
+      ]),
+      kind: "ready",
+      primary: "HIGH",
+      sufficiency: "SUFFICIENT",
+      supporting: "Percentile 98.6 · Evidence sufficiency Sufficient",
     });
-    expect(priority?.overview).toContain("different release");
-    expect(priority?.overview).toContain("not low priority");
-    expect(JSON.stringify(priority)).not.toContain("HIGH");
-    expect(JSON.stringify(priority)).not.toContain("98.56824689786828");
+    expect(JSON.stringify(priority)).not.toContain(
+      "Not shown for this page release"
+    );
+    expect(priority?.tier).toBe("HIGH");
   });
 
-  it("withholds a tier when the governed page release is unknown", () => {
+  it("shows a returned tier when the page release is not part of the query state", () => {
     const priority = mapped({
-      tier1: {
-        errorStatus: null,
-        phase: "idle",
-        release: { status: "unknown" },
-        result: tier1PriorityForCounty(tier1HighSufficientFixture, "01001"),
-      },
+      tier1: readyTier(
+        tier1PriorityForCounty(tier1HighSufficientFixture, "01001")
+      ),
     })[1];
 
-    expect(priority?.kind).toBe("unavailable");
-    expect(priority?.overview).toContain(
+    expect(priority?.kind).toBe("ready");
+    expect(priority?.primary).toBe("HIGH");
+    expect(priority?.overview).not.toContain(
       "governed release for this page is not known"
     );
-    expect(JSON.stringify(priority)).not.toContain("HIGH");
   });
 
   it("does not invent a score when a model request fails", () => {
@@ -603,13 +581,11 @@ describe("County Surveillance Intelligence mapping", () => {
       situations: {
         errorStatus: 503,
         phase: "error",
-        release: { releaseId: PAGE_RELEASE, status: "ready" },
         result: null,
       },
       tier1: {
         errorStatus: 404,
         phase: "error",
-        release: { releaseId: TIER1_RELEASE, status: "ready" },
         result: null,
       },
     });

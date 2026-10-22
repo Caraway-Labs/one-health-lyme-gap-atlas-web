@@ -136,7 +136,7 @@ const release: Tier1ActiveRelease = {
 };
 
 function PriorityLabelProbe({ fips }: { fips: string }) {
-  const classifications = useExplorerCountyMlPriorities([fips], release);
+  const classifications = useExplorerCountyMlPriorities([fips]);
   const classification = classifications.get(fips);
   return (
     <p data-testid="priority-label" data-tier={classification?.tier}>
@@ -146,18 +146,14 @@ function PriorityLabelProbe({ fips }: { fips: string }) {
 }
 
 function PriorityListProbe({ fipsList }: { fipsList: readonly string[] }) {
-  useExplorerCountyMlPriorities(fipsList, release);
+  useExplorerCountyMlPriorities(fipsList);
   return null;
 }
 
 const APP_STALE_TIME_MS = 300_000;
 
 function tier1QueryKey(fips: string) {
-  return [
-    "ux-reset-tier1-surveillance-priority",
-    fips,
-    tier1LowInsufficientFixture.release_id,
-  ] as const;
+  return ["ux-reset-tier1-surveillance-priority", fips] as const;
 }
 
 function rowRank(fips: string): string {

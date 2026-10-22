@@ -50,7 +50,6 @@ export function reviewPreviewQueryClient(): QueryClient {
   const situationsKey = [
     "ux-reset-surveillance-situations",
     syntheticCounty.fips,
-    syntheticReleaseId,
   ];
   client.setQueryDefaults(situationsKey, FRESH_QUERY);
   const situations = {

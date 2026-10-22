@@ -27,7 +27,6 @@ import { reviewScopeScoresFixture } from "./fixtures/review-scope-api-fixtures";
 import {
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
 const release: Tier1ActiveRelease = {
@@ -265,12 +264,7 @@ describe("Explorer County Surveillance Intelligence", () => {
     const user = userEvent.setup();
     scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
     tier1Get.mockResolvedValue(
-      ok(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
-          reviewScopeScoresFixture.release_id
-        )
-      )
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"))
     );
     situationsGet.mockResolvedValue(
       situationsResponse(
@@ -363,12 +357,7 @@ describe("Explorer County Surveillance Intelligence", () => {
   it("explains the surveillance and ecology patterns in each mark tooltip", async () => {
     scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
     tier1Get.mockResolvedValue(
-      ok(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
-          reviewScopeScoresFixture.release_id
-        )
-      )
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"))
     );
     situationsGet.mockResolvedValue(
       situationsResponse(
@@ -442,12 +431,7 @@ describe("Explorer County Surveillance Intelligence", () => {
       screen.getByTestId("surveillance-intelligence-guide")
     ).toHaveTextContent(SURVEILLANCE_INTELLIGENCE_GUIDE);
     tier1Get.mockResolvedValue(
-      ok(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"),
-          reviewScopeScoresFixture.release_id
-        )
-      )
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"))
     );
     await user.click(
       screen.getByTestId("surveillance-intelligence-retry-ml-review-priority")
@@ -602,19 +586,17 @@ describe("Explorer County Surveillance Intelligence", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the situation query disabled until the page release is ready", () => {
+  it("requests situations for a valid FIPS without a page release", () => {
     const client = new QueryClient();
     expect(
-      surveillanceSituationsQueryOptions("01001", null, client).enabled
+      surveillanceSituationsQueryOptions("0100", client).enabled
     ).toBeFalsy();
     expect(
-      surveillanceSituationsQueryOptions("01001", release.releaseId, client)
-        .enabled
+      surveillanceSituationsQueryOptions("01001", client).enabled
     ).toBeTruthy();
   });
 
-  it("requests situations once after the page release becomes ready", async () => {
-    const user = userEvent.setup();
+  it("requests situations while the page release is still pending", async () => {
     scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
     tier1Get.mockResolvedValue(
       ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"))
@@ -627,20 +609,16 @@ describe("Explorer County Surveillance Intelligence", () => {
       )
     );
     renderIntelligence("01001", { status: "pending" });
-    expect(
-      screen.getAllByText("Class membership is loading.").length
-    ).toBeGreaterThan(0);
-    expect(situationsGet).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Resolve release" }));
     await screen.findByText("Pathogen not recorded");
     expect(situationsGet).toHaveBeenCalledOnce();
     expect(situationsGet).toHaveBeenCalledExactlyOnceWith(
       "01001",
       expect.anything()
     );
+    expect(tier1Get).toHaveBeenCalledWith("01001", expect.anything());
   });
 
-  it("withholds a situation response whose release does not match the page", async () => {
+  it("shows a situation response whose release does not match the page", async () => {
     const user = userEvent.setup();
     scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
     tier1Get.mockResolvedValue(
@@ -658,8 +636,8 @@ describe("Explorer County Surveillance Intelligence", () => {
     const card = await screen.findByTestId(
       "surveillance-intelligence-card-surveillance-situation"
     );
-    await within(card).findByText("Unavailable");
-    expect(card).not.toHaveTextContent("Pathogen not recorded");
+    await within(card).findByText("Pathogen not recorded");
+    expect(card).not.toHaveTextContent("Not shown for this page release");
     await user.click(
       within(card).getByRole("button", { name: /Surveillance Situation/ })
     );
@@ -667,8 +645,7 @@ describe("Explorer County Surveillance Intelligence", () => {
       "surveillance-intelligence-disclosure"
     );
     expect(disclosure).toHaveTextContent("governed-other-release");
-    expect(disclosure).toHaveTextContent(release.releaseId);
-    expect(disclosure).not.toHaveTextContent("Pathogen not recorded");
+    expect(card).toHaveTextContent("Pathogen not recorded");
   });
 
   it("shows governed source provenance in the situation disclosure", async () => {
@@ -709,7 +686,6 @@ describe("Explorer County Surveillance Intelligence", () => {
 });
 
 const PAGE_RELEASE = "governed-2026-10-15-january-climate-prod";
-const TIER1_MODEL_RELEASE = "governed-2026-09-18-unknown-coverage";
 
 function countyEvidenceWorkspace(releaseId: string): InvestigateWorkspace {
   return {
@@ -780,17 +756,12 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
     tier1Get.mockReset();
   });
 
-  async function showPriority(tier1ReleaseId: string) {
+  async function showPriority() {
     scoresGet.mockResolvedValue(
       ok({ ...reviewScopeScoresFixture, release_id: PAGE_RELEASE })
     );
     tier1Get.mockResolvedValue(
-      ok(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
-          tier1ReleaseId
-        )
-      )
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"))
     );
     situationsGet.mockResolvedValue(
       situationsResponse(
@@ -808,17 +779,12 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
     return priority;
   }
 
-  it("withholds the tier when the model release differs from the page", async () => {
+  it("shows the tier when the model release differs from the page", async () => {
     scoresGet.mockResolvedValue(
       ok({ ...reviewScopeScoresFixture, release_id: PAGE_RELEASE })
     );
     tier1Get.mockResolvedValue(
-      ok(
-        tier1PriorityForRelease(
-          tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"),
-          TIER1_MODEL_RELEASE
-        )
-      )
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "01001"))
     );
     situationsGet.mockResolvedValue(
       situationsResponse(
@@ -833,9 +799,10 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
       "surveillance-intelligence-card-ml-review-priority"
     );
     await waitFor(() => {
-      expect(priority).toHaveTextContent("Not shown for this page release");
+      expect(priority).toHaveTextContent("LOW");
     });
-    expect(priority).not.toHaveTextContent("LOW");
+    expect(priority).toHaveTextContent("Evidence sufficiency Insufficient");
+    expect(priority).not.toHaveTextContent("Not shown for this page release");
     await userEvent.click(
       within(priority).getByRole("button", { name: /ML Review Priority/ })
     );
@@ -843,13 +810,13 @@ describe("Explorer county evidence owns one Tier 1 presentation", () => {
       screen.queryByTestId("tier1-surveillance-priority")
     ).not.toBeInTheDocument();
     expect(
-      screen.getAllByText(/different release than the evidence on screen/)
-    ).toHaveLength(1);
+      screen.queryByText(/different release than the evidence on screen/)
+    ).not.toBeInTheDocument();
     expect(tier1Get).toHaveBeenCalledOnce();
   });
 
   it("shows LOW and Insufficient once when the model release matches", async () => {
-    const priority = await showPriority(PAGE_RELEASE);
+    const priority = await showPriority();
     expect(priority).toHaveTextContent("LOW");
     expect(priority).toHaveTextContent("Evidence sufficiency Insufficient");
     expect(screen.getAllByText("LOW")).toHaveLength(1);

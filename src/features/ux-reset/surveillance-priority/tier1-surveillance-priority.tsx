@@ -13,37 +13,21 @@ import {
   TIER1_MODEL_ASSISTED_LABEL,
   TIER1_REASON_ABSENCE,
   TIER1_REGION_LABEL,
-  TIER1_RELEASE_MISMATCH_MESSAGE,
-  TIER1_RELEASE_UNKNOWN_MESSAGE,
   TIER1_STALE_MESSAGE,
   TIER1_SUPPORT_NOTE,
   TIER1_UNAVAILABLE_MESSAGE,
-  type Tier1ActiveRelease,
+  TIER1_UNVERIFIED_MESSAGE,
   type Tier1ModelDetails,
   type Tier1ReasonDisplay,
   type Tier1SurveillancePriorityView,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { useTier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/use-tier1-surveillance-priority";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { ApiResponseValidationError } from "@/lib/api-response-validation";
 
 import "./surveillance-priority.css";
 
 type HeadingLevel = "h2" | "h3";
-
-function releaseUnalignedMessage(reason: "mismatch" | "unknown"): string {
-  switch (reason) {
-    case "mismatch": {
-      return TIER1_RELEASE_MISMATCH_MESSAGE;
-    }
-    case "unknown": {
-      return TIER1_RELEASE_UNKNOWN_MESSAGE;
-    }
-    default: {
-      const exhaustive: never = reason;
-      return exhaustive;
-    }
-  }
-}
 
 function queryStatus(query: {
   isError: boolean;
@@ -65,24 +49,22 @@ function queryStatus(query: {
 export function Tier1SurveillancePriority({
   fips,
   headingLevel = "h2",
-  release,
   showInterpretiveNotes = true,
 }: {
   fips: string;
   headingLevel?: HeadingLevel;
-  release: Tier1ActiveRelease;
   /** Atlas Explorer omits review-priority disclaimers. */
   showInterpretiveNotes?: boolean;
 }) {
-  const query = useTier1SurveillancePriority(fips, release);
+  const query = useTier1SurveillancePriority(fips);
   const status = queryStatus(query);
   const view = presentTier1SurveillancePriority({
     errorStatus:
       query.error instanceof AtlasApiError ? query.error.status : null,
-    release,
     requestedFips: fips,
     result: status === "success" ? (query.data ?? null) : null,
     status,
+    unverified: query.error instanceof ApiResponseValidationError,
   });
   return (
     <Tier1SurveillancePriorityPanel
@@ -109,9 +91,6 @@ export function Tier1SurveillancePriorityPanel({
       aria-label={TIER1_REGION_LABEL}
       className="ux-reset-model-signal"
       data-fips={view.fips}
-      data-release-reason={
-        view.kind === "release-unaligned" ? view.reason : undefined
-      }
       data-signal="model-assisted"
       data-state={view.kind}
       data-sufficiency={viewSufficiency(view)}
@@ -168,10 +147,10 @@ function Tier1SurveillancePriorityBody({
         </AtlasStatusMessage>
       );
     }
-    case "release-unaligned": {
+    case "unverified": {
       return (
-        <AtlasStatusMessage tone="empty">
-          {releaseUnalignedMessage(view.reason)}
+        <AtlasStatusMessage tone="error">
+          {TIER1_UNVERIFIED_MESSAGE}
         </AtlasStatusMessage>
       );
     }
@@ -218,7 +197,7 @@ function viewSufficiency(
     case "unavailable":
     case "failed":
     case "stale":
-    case "release-unaligned": {
+    case "unverified": {
       return undefined;
     }
     default: {
@@ -334,7 +313,7 @@ function Tier1ModelDetailsDisclosure({
           <dd>{details.rawScoreLabel}</dd>
         </div>
         <div>
-          <dt>Release</dt>
+          <dt>Model input release</dt>
           <dd>{details.releaseId}</dd>
         </div>
         <div>

@@ -28,7 +28,6 @@ import { AtlasApiError } from "@/lib/api-mutator";
 import {
   tier1HighSufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
 const reviewRouter = vi.hoisted(() => ({
@@ -3563,9 +3562,9 @@ describe("Reset Review scope UI", () => {
   });
 
   it("shows a Tier 1 result only for the resolved review release", async () => {
-    reviewReleaseControls.tier1Result = tier1PriorityForRelease(
-      tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
-      "alpha-2026"
+    reviewReleaseControls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "36001"
     );
     renderReview("?scope=NY&county=36001&dataset=alpha-2026");
     await waitFor(() =>
@@ -3580,7 +3579,7 @@ describe("Reset Review scope UI", () => {
     ).toBe("SUFFICIENT");
   });
 
-  it("keeps a historical review dataset from showing the current Tier 1 batch", async () => {
+  it("shows the current Tier 1 batch on a historical review dataset", async () => {
     reviewReleaseControls.metadataReleaseId = "historical-2024";
     reviewReleaseControls.tier1Result = tier1PriorityForCounty(
       tier1HighSufficientFixture,
@@ -3590,27 +3589,29 @@ describe("Reset Review scope UI", () => {
     await waitFor(() =>
       expect(
         screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
-          .dataset.state
-      ).toBe("release-unaligned")
+          .dataset.tier
+      ).toBe("HIGH")
     );
     const region = screen.getByTestId(
       "surveillance-intelligence-card-ml-review-priority"
     );
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
-      reason: region.dataset.releaseReason,
-      tier: region.dataset.tier,
+      state: region.dataset.state,
+      sufficiency: region.dataset.sufficiency,
     }).toStrictEqual({
       low: false,
-      reason: "mismatch",
-      tier: undefined,
+      state: "ready",
+      sufficiency: "SUFFICIENT",
     });
+    expect(region.textContent).not.toContain("Not shown for this page release");
+    expect(region.textContent).not.toContain("Not on this release");
   });
 
-  it("drops the Tier 1 tier when the same review county changes release", async () => {
-    reviewReleaseControls.tier1Result = tier1PriorityForRelease(
-      tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
-      "alpha-2026"
+  it("keeps the Tier 1 tier when the same review county changes release", async () => {
+    reviewReleaseControls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "36001"
     );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3626,28 +3627,22 @@ describe("Reset Review scope UI", () => {
     );
     reviewReleaseControls.metadataReleaseId = "historical-2024";
     view.rerenderSearch("?scope=NY&county=36001&dataset=historical-2024");
-    await waitFor(() => {
-      const region = screen.getByTestId(
-        "surveillance-intelligence-card-ml-review-priority"
-      );
-      if (
-        region.dataset.state !== "release-unaligned" ||
-        region.dataset.tier === "HIGH"
-      ) {
-        throw new Error("The previous Tier 1 result stayed on screen.");
-      }
-    });
-    expect(
-      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
-        .dataset.releaseReason
-    ).toBe("mismatch");
-    expect(
-      screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
-        .textContent
-    ).not.toMatch(/\bLOW\b|\bHIGH\b/);
+    await waitFor(() =>
+      expect(
+        screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
+          .dataset.tier
+      ).toBe("HIGH")
+    );
+    const region = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
+    expect(region.dataset.state).toBe("ready");
+    expect(region.textContent).toMatch(/\bHIGH\b/);
+    expect(region.textContent).not.toMatch(/\bLOW\b/);
+    expect(region.textContent).not.toContain("Not shown for this page release");
   });
 
-  it("does not align a Tier 1 result when review release metadata fails", async () => {
+  it("shows a Tier 1 result when review release metadata fails", async () => {
     reviewReleaseControls.metadataStatus = 503;
     reviewReleaseControls.tier1Result = tier1PriorityForCounty(
       tier1HighSufficientFixture,
@@ -3656,25 +3651,26 @@ describe("Reset Review scope UI", () => {
     renderReview("?scope=NY&county=36001&dataset=older-release");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
-      ).toBe("unknown")
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
     );
     const region = screen.getByTestId("tier1-surveillance-priority");
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
       state: region.dataset.state,
-      tier: region.dataset.tier,
+      sufficiency: region.dataset.sufficiency,
     }).toStrictEqual({
       low: false,
-      state: "release-unaligned",
-      tier: undefined,
+      state: "result",
+      sufficiency: "SUFFICIENT",
     });
+    expect(region.textContent).not.toContain("Not on this release");
   });
 
-  it("drops a matched tier when a metadata refetch fails in the same client", async () => {
-    reviewReleaseControls.tier1Result = tier1PriorityForRelease(
-      tier1PriorityForCounty(tier1HighSufficientFixture, "36001"),
-      "alpha-2026"
+  it("keeps a matched tier when a metadata refetch fails in the same client", async () => {
+    reviewReleaseControls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "36001"
     );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -3695,35 +3691,32 @@ describe("Reset Review scope UI", () => {
     await waitFor(() =>
       expect(
         screen.getByTestId("surveillance-intelligence-card-ml-review-priority")
-          .dataset.state
-      ).toBe("release-unaligned")
+          .dataset.tier
+      ).toBe("HIGH")
     );
     const legend =
       screen.queryByTestId("explorer-ml-priority-legend")?.textContent ?? "";
     const pageText = (document.body.textContent ?? "").replace(legend, "");
+    const region = screen.getByTestId(
+      "surveillance-intelligence-card-ml-review-priority"
+    );
     expect({
       high: /\bHIGH\b/.test(pageText),
-      insufficient: /\bINSUFFICIENT\b/.test(pageText),
       low: /\bLOW\b/.test(pageText),
-      medium: /\bMEDIUM\b/.test(pageText),
       panels: screen.getAllByTestId(
         "surveillance-intelligence-card-ml-review-priority"
       ).length,
-      reason: screen.getByTestId(
-        "surveillance-intelligence-card-ml-review-priority"
-      ).dataset.releaseReason,
-      sufficiency: screen.queryByTestId("tier1-evidence-sufficiency"),
-      tier: screen.queryByTestId("tier1-priority-tier"),
+      state: region.dataset.state,
+      sufficiency: region.dataset.sufficiency,
     }).toStrictEqual({
-      high: false,
-      insufficient: false,
+      high: true,
       low: false,
-      medium: false,
       panels: 1,
-      reason: "unknown",
-      sufficiency: null,
-      tier: null,
+      state: "ready",
+      sufficiency: "SUFFICIENT",
     });
+    expect(pageText).not.toContain("Not shown for this page release");
+    expect(pageText).not.toContain("Not on this release");
   });
 
   it("does not mix reproducibility identifiers across scope or release changes", async () => {

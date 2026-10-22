@@ -1,0 +1,9 @@
+{
+  "type": "https://onehealthatlas.org/problems/http-404",
+  "title": "Not found",
+  "status": 404,
+  "detail": "No current Tier 1 county result",
+  "instance": "/v1/counties/36000/tier1-surveillance-priority",
+  "request_id": "e4a06d37-8bd0-460f-a7d2-98214b2694c5",
+  "errors": null
+}

@@ -43,7 +43,6 @@ import {
   ATLAS_EXPLORER_PATH,
   RESET_INVESTIGATE_PATH,
 } from "@/features/ux-reset/routes";
-import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { Tier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/tier1-surveillance-priority";
 
 const COUNTY_FIPS = /^\d{5}$/;
@@ -235,13 +234,6 @@ function InvestigateExperienceInner() {
     <Tier1SurveillancePriority
       fips={workspace.requestedFips ?? ""}
       headingLevel={visibleBundle ? "h3" : "h2"}
-      release={tier1ReleaseFromMetadata({
-        isError:
-          Boolean(workspace.metadataError) ||
-          workspace.recovery === "release_mismatch",
-        isLoading: workspace.metadataLoading,
-        releaseId: workspace.releaseId,
-      })}
     />
   ) : null;
 
