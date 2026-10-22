@@ -458,7 +458,10 @@ test("retired public analytical bookmarks open Atlas Explorer", async ({
   }
 });
 
-test("publishes an accessible, clear privacy summary", async ({ page }) => {
+test("publishes an accessible, clear privacy summary", async ({
+  page,
+  request,
+}) => {
   await page.goto("/privacy");
 
   await expect(page).toHaveURL(/\/privacy$/);
@@ -466,33 +469,72 @@ test("publishes an accessible, clear privacy summary", async ({ page }) => {
     page.getByRole("heading", { name: "Privacy without the fine print." })
   ).toBeVisible();
   await expect(
+    page.getByRole("heading", { name: "What we collect and why" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Questions you ask Atlas" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Your analytics choices" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "What never goes into analytics" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Service providers we use" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "How long we keep information" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "How we protect information" })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Children" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Visitors outside the United States" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Changes to this policy" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Questions and requests" })
+  ).toBeVisible();
+  await expect(
     page.getByText(
-      /After you allow optional analytics in Privacy settings, Atlas sends allowlisted product events to Amplitude/
+      /Only if you turn analytics on, Atlas sends basic usage events/
     )
   ).toBeVisible();
   await expect(
     page.getByText(
-      /We do not sell, rent, or share personal data for advertising/
+      /We do not sell or rent personal information, and we do not share it for advertising/
     )
   ).toBeVisible();
   await expect(
-    page.getByText(/chat prompts or answers, feedback text, raw search text/)
+    page.getByText("Your IP address", { exact: true })
   ).toBeVisible();
   await expect(page.getByText("Export my data")).toBeVisible();
   await expect(page.getByText("Remove all data")).toBeVisible();
   await expect(
     page.getByText(
-      /Signed-in users can start Export my data and Remove all data from Account and from professional Settings/
+      /If you have an account, you can use Export my data and Remove all data from Account or professional Settings/
     )
   ).toBeVisible();
   await expect(
-    page.getByText(
-      /pages that use the analytical shell, including the public Atlas, Account, and sign-in/
-    )
-  ).toBeVisible();
-  await expect(
-    page.getByText(/professional workspace does not start that analytics SDK/)
-  ).toBeVisible();
+    page.getByText(/data-use summary|allowlisted|analytical shell/)
+  ).toHaveCount(0);
+  for (const link of [
+    { href: "/ai-ethics", name: "AI and machine learning" },
+    { href: "/about/caraway-labs", name: "about Caraway Labs" },
+    { href: "/overview#atlas", name: "Return to the Atlas" },
+  ] as const) {
+    await expect(page.getByRole("link", { name: link.name })).toHaveAttribute(
+      "href",
+      link.href
+    );
+    expect(
+      (await request.get(link.href.split("#")[0] ?? link.href)).status()
+    ).toBe(200);
+  }
   await expect
     .poll(() =>
       page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
