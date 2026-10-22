@@ -41,14 +41,16 @@ export type ReviewCategoryBadge =
 
 export type CompareSlotLetter = "A" | "B";
 
-function ReviewCategoryMark({
+export function ReviewCategoryMark({
   badge,
   fips,
+  testIdPrefix = "compare-review-category",
 }: {
   badge: ReviewCategoryBadge;
   fips: string;
+  testIdPrefix?: string;
 }) {
-  const testId = `compare-review-category-${fips}`;
+  const testId = `${testIdPrefix}-${fips}`;
   switch (badge.kind) {
     case "recognized": {
       const tone = compareReviewCategoryTone(badge.priority);

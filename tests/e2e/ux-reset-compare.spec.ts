@@ -4,9 +4,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
 
 import {
-  COMPARE_CANOPY_MEASURE_ID,
-  COMPARE_CASES_MEASURE_ID,
-  COMPARE_TICK_MEASURE_ID,
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
   compareScoresFixture,
@@ -31,17 +28,6 @@ async function replaceCountyFromKeyboard(
   await page.keyboard.type(query, { delay: 20 });
   await expect(page.getByRole("option").first()).toBeVisible();
   await page.keyboard.press("Enter");
-}
-
-async function showAdditionalObservations(page: Page) {
-  const group = page.getByTestId("compare-group-additional");
-  await expect(group).toBeVisible();
-  const open = await group.evaluate((element) =>
-    element instanceof HTMLDetailsElement ? element.open : false
-  );
-  if (!open) {
-    await group.locator("> summary").click();
-  }
 }
 
 async function explorerReturnLink(page: Page) {
@@ -210,26 +196,30 @@ test.describe("two-county Compare", () => {
     const requested: string[] = [];
     await installCompareMocks(page, requested);
     await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    const cases = page.getByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
-    await expect(cases).toHaveAttribute("data-row-index", "0");
-    await showAdditionalObservations(page);
+    const floorRow = page.getByTestId("compare-profile-row-human_case_floor");
+    await expect(floorRow).toBeVisible();
+    await expect(floorRow).toHaveAttribute("data-gap", "true");
+    await expect(floorRow).not.toContainText("differ by");
+    const publishedFloor = page.getByTestId(
+      "compare-profile-cell-human_case_floor-08001"
+    );
+    await expect(publishedFloor).toContainText("12");
+    await expect(publishedFloor).toContainText("or more");
+    const suppressedFloor = page.getByTestId(
+      "compare-profile-cell-human_case_floor-08013"
+    );
+    await expect(suppressedFloor).toContainText("Suppressed");
+    await expect(suppressedFloor).toContainText("Limited");
     await expect(
-      page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
-    ).toContainText("12");
-    await expect(
-      page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08013`)
-    ).toContainText("0");
+      suppressedFloor.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
+    ).toHaveCount(0);
     const missing = page.getByTestId(
-      `compare-cell-${COMPARE_TICK_MEASURE_ID}-08013`
+      "compare-profile-cell-scapularis_status-08013"
     );
-    await expect(missing).toHaveAttribute("data-observation", "missing");
-    await expect(missing).not.toContainText("0");
-    const withheld = page.getByTestId(
-      `compare-relation-${COMPARE_CANOPY_MEASURE_ID}`
-    );
-    await expect(withheld).toHaveAttribute("data-relation", "withheld");
-    await expect(withheld).toContainText("periods differ");
-    await expect(withheld).not.toContainText("differ by");
+    await expect(missing).not.toHaveAttribute("data-observation", "present");
+    await expect(
+      missing.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
+    ).toHaveCount(0);
     await expect(page.getByTestId("compare-action")).toHaveCount(0);
     await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
       "href",
@@ -249,19 +239,13 @@ test.describe("two-county Compare", () => {
       "aria-label",
       "View county evidence for the second county"
     );
-    const floor = page.getByTestId(
-      "compare-profile-cell-human_case_floor-08001"
+    const incidence = page.getByTestId(
+      "compare-profile-cell-incidence_floor-08013"
     );
-    await expect(floor).toContainText("12");
-    await expect(floor).toContainText("or more");
-    const suppressed = page
-      .getByTestId("compare-profile-cell-incidence_floor-08013")
-      .getByTestId("evidence-display-value");
-    await expect(suppressed).toHaveText("Suppressed");
-    await expect(suppressed).not.toContainText("0");
+    await expect(incidence).toContainText("Suppressed");
     await expect(
-      page.getByTestId("compare-profile-row-human_case_floor")
-    ).not.toContainText("differ by");
+      incidence.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
+    ).toHaveCount(0);
     await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
       "href",
       /\/askatlas/
@@ -271,14 +255,8 @@ test.describe("two-county Compare", () => {
       /page_ref=/
     );
     await expect(page.getByTestId("compare-return")).toHaveCount(0);
-    await expect(page.getByTestId("compare-group-review")).toHaveJSProperty(
-      "open",
-      true
-    );
-    await expect(page.getByTestId("compare-group-human")).toHaveJSProperty(
-      "open",
-      false
-    );
+    await expect(page.getByTestId("compare-at-a-glance")).toBeVisible();
+    await expect(page.getByTestId("compare-group-human")).toBeVisible();
     await expect(page.getByTestId("compare-summary")).toBeVisible();
     if (testInfo.project.name.includes("mobile")) {
       const scrolls = await page
@@ -317,9 +295,8 @@ test.describe("two-county Compare", () => {
       "data-fips",
       "08001,08013"
     );
-    await showAdditionalObservations(page);
     await expect(
-      page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
+      page.getByTestId("compare-profile-cell-human_case_floor-08001")
     ).toContainText("12");
 
     await page.getByRole("button", { name: "Clear second county" }).click();
@@ -333,10 +310,9 @@ test.describe("two-county Compare", () => {
       "data-fips",
       "08001,08013"
     );
-    await showAdditionalObservations(page);
     await expect(
-      page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08013`)
-    ).toContainText("0");
+      page.getByTestId("compare-profile-cell-human_case_floor-08013")
+    ).toContainText("Suppressed");
     await page.goForward();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
@@ -373,9 +349,8 @@ test.describe("two-county Compare", () => {
       "08001,36001"
     );
     await expect(page).toHaveURL(/36001/);
-    await showAdditionalObservations(page);
     await expect(
-      page.getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-36001`)
+      page.getByTestId("compare-profile-cell-human_case_floor-36001")
     ).toBeVisible();
 
     await page.goBack();
@@ -623,14 +598,8 @@ test.describe("two-county Compare", () => {
     await page.goto("/compare?compare=08001,08013");
     await expect(page.getByTestId("compare-alignment")).toBeVisible();
     await expect(page.getByTestId("compare-return")).toHaveCount(0);
-    await expect(page.getByTestId("compare-group-review")).toHaveJSProperty(
-      "open",
-      true
-    );
-    await expect(page.getByTestId("compare-group-human")).toHaveJSProperty(
-      "open",
-      false
-    );
+    await expect(page.getByTestId("compare-at-a-glance")).toBeVisible();
+    await expect(page.getByTestId("compare-group-human")).toBeVisible();
     await page.reload();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",

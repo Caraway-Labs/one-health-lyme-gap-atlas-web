@@ -5016,3 +5016,730 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
     animation: none;
   }
 }
+
+/* ---- Compare results: visual-first layout (story 829, phase 2) ---- */
+
+.ux-reset-compare-results-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.ux-reset-compare-results-head .ux-reset-compare-results-title {
+  margin: 0;
+}
+
+.ux-reset-compare-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-section-title {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.ux-reset-compare-glance,
+.ux-reset-compare-evidence,
+.ux-reset-compare-perspectives,
+.ux-reset-compare-unknown,
+.ux-reset-compare-vsection {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+  margin-top: var(--space-6);
+}
+
+.ux-reset-compare-evidence .ux-reset-compare-vsection {
+  margin-top: var(--space-4);
+}
+
+.ux-reset-compare-glance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.ux-reset-compare-glance-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1rem;
+}
+
+.ux-reset-compare-fips {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.ux-reset-compare-glance-body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ux-reset-compare-glance-score {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ux-reset-compare-glance-components {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ux-reset-compare-glance-components p {
+  margin: 0;
+}
+
+.ux-reset-compare-ring {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.ux-reset-compare-ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ux-reset-compare-ring-track {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 7;
+}
+
+.ux-reset-compare-ring-value {
+  fill: none;
+  stroke: var(--primary);
+  stroke-linecap: round;
+  stroke-width: 7;
+}
+
+.ux-reset-compare-ring-text {
+  position: relative;
+  color: var(--foreground);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.ux-reset-compare-mini {
+  display: grid;
+  grid-template-columns: minmax(3rem, 1fr) auto;
+  align-items: center;
+  gap: 0.15rem var(--space-2);
+  font-size: 0.8rem;
+}
+
+.ux-reset-compare-mini-label {
+  grid-column: 1 / -1;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+/* Bars. Letter A is a solid fill, letter B is a striped fill, so identity
+   never depends on color alone. */
+.ux-reset-compare-track {
+  position: relative;
+  display: block;
+  flex: 1 1 6rem;
+  height: 0.6rem;
+  min-width: 3rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.ux-reset-compare-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.ux-reset-compare-track[data-letter="B"] .ux-reset-compare-fill {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--primary) 0 4px,
+    color-mix(in srgb, var(--primary) 35%, var(--background)) 4px 8px
+  );
+}
+
+.ux-reset-compare-coverage-list {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-compare-coverage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+}
+
+.ux-reset-compare-coverage strong {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.ux-reset-compare-coverage-dot {
+  box-sizing: border-box;
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: transparent;
+}
+
+.ux-reset-compare-coverage[data-coverage="available"]
+  .ux-reset-compare-coverage-dot {
+  background: var(--primary);
+}
+
+.ux-reset-compare-coverage[data-coverage="limited"]
+  .ux-reset-compare-coverage-dot {
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0 50%,
+    transparent 50% 100%
+  );
+}
+
+.ux-reset-compare-coverage[data-coverage="unavailable"]
+  .ux-reset-compare-coverage-dot {
+  border-style: dashed;
+  border-color: var(--muted-foreground);
+}
+
+.ux-reset-compare-reasons-details summary {
+  min-height: 2rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Perspective cards */
+.ux-reset-compare-tiles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-compare-tile {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.ux-reset-compare-tile[data-expanded="true"] {
+  border-color: var(--primary);
+}
+
+.ux-reset-compare-tile-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.ux-reset-compare-tile-question {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-compare-tile-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.ux-reset-compare-tile-sides > .ux-reset-compare-tile-side:nth-child(2) {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border);
+}
+
+.ux-reset-compare-tile-side {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ux-reset-compare-tile-value {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* Visual rows */
+.ux-reset-compare-vrows {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-vrow {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.ux-reset-compare-vrow > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-vrow h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.ux-reset-compare-vrow p {
+  margin: 0;
+}
+
+.ux-reset-compare-relation {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.ux-reset-compare-vbars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.ux-reset-compare-vbars > .ux-reset-compare-vside:nth-child(2) {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border);
+}
+
+.ux-reset-compare-vside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ux-reset-compare-vlabel {
+  min-width: 4.5rem;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ux-reset-compare-zero {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.ux-reset-compare-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px dashed var(--muted-foreground);
+  border-radius: var(--radius-md);
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--muted-foreground) 12%, transparent) 5px 10px
+  );
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.ux-reset-compare-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  font-size: 0.85rem;
+}
+
+.ux-reset-compare-status-chip[data-tone="present"] {
+  border-color: var(--primary);
+}
+
+.ux-reset-compare-status-chip[data-tone="absent"] {
+  border-style: dotted;
+}
+
+.ux-reset-compare-vdots {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.ux-reset-compare-dotplot {
+  width: 100%;
+  max-width: 28rem;
+  height: 1.75rem;
+}
+
+.ux-reset-compare-dot-lane {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.ux-reset-compare-dot-tick {
+  stroke: var(--border);
+  stroke-dasharray: 2 3;
+  stroke-width: 1;
+}
+
+.ux-reset-compare-dot-a {
+  fill: var(--primary);
+}
+
+.ux-reset-compare-dot-b {
+  fill: var(--background);
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.ux-reset-compare-dot-scale {
+  display: flex;
+  justify-content: space-between;
+  max-width: 28rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.ux-reset-compare-caption {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+/* Toolbar: counts and filters */
+.ux-reset-compare-toolbar {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--muted);
+}
+
+.ux-reset-compare-summary-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-compare-summary-counts li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-summary-counts strong {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ux-reset-compare-summary-icon {
+  display: inline-flex;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-compare-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+}
+
+.ux-reset-compare-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.ux-reset-compare-filter label {
+  cursor: pointer;
+}
+
+.ux-reset-compare-filter-count {
+  margin: 0 0 0 auto;
+}
+
+.ux-reset-compare-filter-empty {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+
+/* What we do not know */
+.ux-reset-compare-unknown {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.ux-reset-compare-unknown p {
+  margin: 0;
+}
+
+.ux-reset-compare-unknown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.ux-reset-compare-unknown-grid ul {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-compare-unknown-grid > div {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ux-reset-compare-unknown-grid li {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.ux-reset-compare-unknown-county {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+.ux-reset-compare-unknown-state {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+/* Sources and methods table */
+.ux-reset-compare-sources {
+  margin-top: var(--space-4);
+}
+
+.ux-reset-compare-sources > summary {
+  min-height: 2.25rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ux-reset-compare-sources-scroll {
+  overflow-x: auto;
+}
+
+.ux-reset-compare-sources table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ux-reset-compare-sources th,
+.ux-reset-compare-sources td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ux-reset-compare-source-cell {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Per-value information popover */
+.ux-reset-compare-info-button {
+  flex: none;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-compare-info p {
+  margin: 0 0 var(--space-2);
+}
+
+.ux-reset-compare-info-title {
+  font-weight: 650;
+}
+
+.ux-reset-compare-info dl {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0 0 var(--space-2);
+}
+
+.ux-reset-compare-info-line {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-info-line dt {
+  color: var(--muted-foreground);
+}
+
+.ux-reset-compare-info-line dd {
+  margin: 0;
+}
+
+.ux-reset-compare-info-limits {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.ux-reset-compare-info-unknown {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px dashed var(--muted-foreground);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.ux-reset-compare-measure-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem var(--space-2);
+  min-width: 0;
+}
+
+.ux-reset-compare-measure-value p {
+  margin: 0;
+}
+
+@media (max-width: 799px) {
+  .ux-reset-compare-glance-grid,
+  .ux-reset-compare-tiles,
+  .ux-reset-compare-unknown-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media print {
+  /*
+    Closed disclosures stay out of a PDF. Open the provenance and release
+    bodies before the per-value buttons are hidden, so source, period,
+    vintage, and release context remain on the page.
+  */
+  .ux-reset-compare-sources::details-content,
+  .ux-reset-compare .ux-reset-explorer-release::details-content {
+    display: block;
+    height: auto;
+    content-visibility: visible;
+  }
+
+  .ux-reset-compare-sources-scroll {
+    overflow: visible;
+  }
+
+  .ux-reset-compare-share,
+  .ux-reset-compare-filters,
+  .ux-reset-compare-pinned,
+  .ux-reset-compare-info-button {
+    display: none;
+  }
+
+  .ux-reset-compare-vrow,
+  .ux-reset-compare-tile,
+  .ux-reset-compare-glance-card {
+    break-inside: avoid;
+  }
+}
+
+.ux-reset-compare-limited {
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--muted-foreground);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.ux-reset-compare-unknown-block {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ux-reset-compare-unknown-block ul {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ux-reset-compare-unknown-block li {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.ux-reset-compare-unknown-block li[data-state="unavailable"] {
+  border-style: dashed;
+}
+
+.ux-reset-compare-unknown-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
