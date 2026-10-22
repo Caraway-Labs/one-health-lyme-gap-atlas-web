@@ -129,11 +129,6 @@ const WORKSPACE_DESTINATIONS = [
     path: "/app/feed",
     title: "Feed | One Health Lyme Gap Atlas",
   },
-  {
-    heading: "Data Provenance",
-    path: "/data-provenance",
-    title: "Data Provenance | One Health Lyme Gap Atlas",
-  },
 ] as const;
 
 const WORKSPACE_NAV_LABELS = [

@@ -123,36 +123,39 @@ describe("public trust page shell", () => {
   });
 
   it("restores footer feedback only on the contracted public routes", () => {
-    const seen = ["/about/caraway-labs", "/privacy", "/ai-ethics"].map(
-      (route) => {
-        cleanup();
-        pathname = route;
-        render(
-          <FeedbackProvider>
-            <PublicLayout>
-              <main>
-                <p>{route}</p>
-              </main>
-            </PublicLayout>
-          </FeedbackProvider>
-        );
-        const feedback = within(screen.getByRole("contentinfo")).queryByRole(
-          "button",
-          { name: "Feedback" }
-        );
-        if (!feedback) {
-          return { dialog: null, route, trigger: null };
-        }
-        fireEvent.click(feedback);
-        return {
-          dialog: screen
-            .getByRole("dialog", { name: "Send feedback" })
-            .textContent?.includes("Send feedback"),
-          route,
-          trigger: feedback.dataset.atlasAnalyticsControl,
-        };
+    const seen = [
+      "/about/caraway-labs",
+      "/privacy",
+      "/ai-ethics",
+      "/data-provenance",
+    ].map((route) => {
+      cleanup();
+      pathname = route;
+      render(
+        <FeedbackProvider>
+          <PublicLayout>
+            <main>
+              <p>{route}</p>
+            </main>
+          </PublicLayout>
+        </FeedbackProvider>
+      );
+      const feedback = within(screen.getByRole("contentinfo")).queryByRole(
+        "button",
+        { name: "Feedback" }
+      );
+      if (!feedback) {
+        return { dialog: null, route, trigger: null };
       }
-    );
+      fireEvent.click(feedback);
+      return {
+        dialog: screen
+          .getByRole("dialog", { name: "Send feedback" })
+          .textContent?.includes("Send feedback"),
+        route,
+        trigger: feedback.dataset.atlasAnalyticsControl,
+      };
+    });
 
     expect(seen).toStrictEqual([
       { dialog: null, route: "/about/caraway-labs", trigger: null },
@@ -164,6 +167,11 @@ describe("public trust page shell", () => {
       {
         dialog: true,
         route: "/ai-ethics",
+        trigger: "feedback_footer_open",
+      },
+      {
+        dialog: true,
+        route: "/data-provenance",
         trigger: "feedback_footer_open",
       },
     ]);
