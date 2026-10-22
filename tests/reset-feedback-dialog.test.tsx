@@ -140,7 +140,7 @@ describe("reset feedback dialog", () => {
     expect(labels).toStrictEqual([
       expect.stringContaining("Suggest a dataset"),
       expect.stringContaining("Share an idea"),
-      expect.stringContaining("Expand Atlas"),
+      expect.stringContaining("Expand One Health Atlas"),
       expect.stringContaining("Report a problem"),
     ]);
     await waitFor(() => {
@@ -273,7 +273,9 @@ describe("reset feedback dialog", () => {
     renderFeedback();
     openDialog();
     await waitFor(() => {
-      expect(screen.getByText(/linked to your Atlas account/i)).toBeTruthy();
+      expect(
+        screen.getByText(/linked to your One Health Atlas account/i)
+      ).toBeTruthy();
     });
     choose(/Report a problem/);
     expect(
