@@ -7,7 +7,7 @@ const DESTINATION_LABELS = [
   "Atlas Explorer",
   "Compare",
   "Ask Atlas",
-  "Feed",
+  "Research & News",
   "Data Provenance",
   "Settings",
   "Docs, opens in a new tab",

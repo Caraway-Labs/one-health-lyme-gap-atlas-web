@@ -420,7 +420,9 @@ test.describe("professional shell scroll containment", () => {
     );
     await expectChromeParked(page, sidebarBox, headerBox);
 
-    await page.getByRole("link", { exact: true, name: "Feed" }).click();
+    await page
+      .getByRole("link", { exact: true, name: "Research & News" })
+      .click();
     await expect(page).toHaveURL(/\/app\/feed$/);
     await expect(
       page.getByRole("heading", { exact: true, name: "Feed" })

@@ -6,6 +6,8 @@ import {
   RESET_ACCESS_NAV,
   RESET_WORKSPACE_NAV,
   pageMetadataForResetRoute,
+  resetNavigationLabel,
+  resetRouteById,
 } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import {
@@ -81,15 +83,17 @@ describe("workspace header title resolution", () => {
 
   it("keeps sidebar labels and document titles independent of the header", () => {
     expect({
-      access: RESET_ACCESS_NAV.map((route) => route.label),
+      access: RESET_ACCESS_NAV.map((route) => resetNavigationLabel(route)),
       compareTitle: pageMetadataForResetRoute("compare").title,
+      feedPageLabel: resetRouteById("feed").label,
       feedTitle: pageMetadataForResetRoute("feed").title,
       navigationLabel: findRouteMetadata("/app")?.label,
       overviewTitle: pageMetadataForResetRoute("overview").title,
       workspace: RESET_WORKSPACE_NAV.map((route) => route.label),
     }).toStrictEqual({
-      access: ["Feed", "Data Provenance", "Settings", "Docs"],
+      access: ["Research & News", "Data Provenance", "Settings", "Docs"],
       compareTitle: "Compare | One Health Lyme Gap Atlas",
+      feedPageLabel: "Feed",
       feedTitle: "Feed | One Health Lyme Gap Atlas",
       navigationLabel: "Professional workspace",
       overviewTitle: "Professional workspace | One Health Lyme Gap Atlas",

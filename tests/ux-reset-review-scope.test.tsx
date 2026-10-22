@@ -3330,7 +3330,7 @@ describe("Reset Review scope UI", () => {
       return {
         ask: askQuery ? `${ask.pathname}?${askQuery}` : ask.pathname,
         compare: href("Compare"),
-        feed: href("Feed"),
+        feed: href("Research & News"),
         settings: href("Settings"),
       };
     };

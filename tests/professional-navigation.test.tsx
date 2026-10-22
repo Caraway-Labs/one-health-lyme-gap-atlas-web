@@ -17,6 +17,7 @@ import {
   RESET_APP_PATH,
   RESET_FEEDBACK_ACTION,
   RESET_WORKSPACE_NAV,
+  resetNavigationLabel,
 } from "@/features/ux-reset/paths";
 import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 
@@ -252,7 +253,7 @@ describe("professional workspace navigation", () => {
       "Atlas Explorer",
       "Compare",
       "Ask Atlas",
-      "Feed",
+      "Research & News",
       "Data Provenance",
       "Settings",
       "Docs",
@@ -262,12 +263,14 @@ describe("professional workspace navigation", () => {
     const described = [...RESET_WORKSPACE_NAV, ...RESET_ACCESS_NAV].map(
       (route) => {
         const accessibleName =
-          route.id === "docs" ? "Docs, opens in a new tab" : route.label;
+          route.id === "docs"
+            ? "Docs, opens in a new tab"
+            : resetNavigationLabel(route);
         const link = screen.getByRole("link", { name: accessibleName });
         return {
           description: link.getAttribute("aria-description"),
           label: link.querySelector(".sidebar-item-label")?.textContent,
-          title: route.tooltipTitle ?? route.label,
+          title: route.tooltipTitle ?? resetNavigationLabel(route),
         };
       }
     );
@@ -293,8 +296,8 @@ describe("professional workspace navigation", () => {
       {
         description:
           "Track new findings and updates that may inform Lyme surveillance and research.",
-        label: "Feed",
-        title: "Intelligence Feed",
+        label: "Research & News",
+        title: "Research & News",
       },
       {
         description:
