@@ -74,6 +74,10 @@ describe("Privacy policy content", () => {
     expect(
       privacyContent.questions.links.map((link) => link.href)
     ).toStrictEqual(["/ai-ethics", "/about/caraway-labs"]);
+    expect(privacyContent.commitments[0]).toStrictEqual({
+      text: "You can read about Atlas, its data sources, its methods, and this policy without an account. Signing in is required for the Atlas workspace, where you explore the map and compare counties.",
+      title: "Public information stays public",
+    });
   });
 
   it("does not repeat a sentence or publish retired privacy wording", () => {

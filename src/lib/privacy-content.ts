@@ -21,8 +21,8 @@ export const privacyContent = {
   },
   commitments: [
     {
-      title: "Public exploration stays public",
-      text: "You can browse, filter, compare, and download public Atlas results without an account. Sign-in is required only for the professional workspace, and this policy is always public.",
+      title: "Public information stays public",
+      text: "You can read about Atlas, its data sources, its methods, and this policy without an account. Signing in is required for the Atlas workspace, where you explore the map and compare counties.",
     },
     {
       title: "No ads or data sales",

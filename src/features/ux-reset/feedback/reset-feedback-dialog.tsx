@@ -485,7 +485,8 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
               <p className="text-muted-foreground text-xs">
                 Do not include medical details, patient information, or other
                 private personal information. Feedback is voluntary product
-                input, not a clinical channel or a data-rights request.
+                input, not a clinical channel. For a privacy request, include an
+                email address so we can reply.
               </p>
               {validationError ? (
                 <p className="text-destructive text-sm" role="alert">

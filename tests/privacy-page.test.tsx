@@ -17,7 +17,7 @@ const ANALYTICAL_SHELL_HREFS = [
 const POLICY_HEADINGS = [
   "Privacy without the fine print.",
   "Use less data. Explain it clearly.",
-  "Public exploration stays public",
+  "Public information stays public",
   "No ads or data sales",
   "Purpose before collection",
   "What we collect and why",
@@ -45,15 +45,18 @@ const RETIRED_COPY = [
 describe("public privacy page", () => {
   afterEach(cleanup);
 
-  it("keeps public exploration and the privacy page outside the professional workspace", () => {
+  it("keeps public information readable without an account and the privacy page outside the professional workspace", () => {
     render(<PrivacyPage />);
 
     expect(
       screen.getByRole("heading", { name: "Privacy without the fine print." })
     ).toBeTruthy();
     expect(
+      screen.getByRole("heading", { name: "Public information stays public" })
+    ).toBeTruthy();
+    expect(
       screen.getByText(
-        /Sign-in is required only for the professional workspace, and this policy is always public/
+        "You can read about Atlas, its data sources, its methods, and this policy without an account. Signing in is required for the Atlas workspace, where you explore the map and compare counties."
       )
     ).toBeTruthy();
     expect(
