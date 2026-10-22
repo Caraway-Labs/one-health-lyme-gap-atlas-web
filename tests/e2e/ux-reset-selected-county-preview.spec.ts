@@ -88,17 +88,43 @@ async function installPublishedReview(page: Page) {
   );
 }
 
+function followUpIsAtScrollportStart(element: Element): boolean {
+  const rect = element.getBoundingClientRect();
+  const visibleHeight =
+    Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
+  const scroller = element.closest(".ux-reset-pro-scroll");
+  if (!(scroller instanceof HTMLElement)) {
+    return false;
+  }
+  const scrollerBox = scroller.getBoundingClientRect();
+  const scrollPadding = Number.parseFloat(
+    getComputedStyle(scroller).scrollPaddingTop
+  );
+  const scrollMargin = Number.parseFloat(
+    getComputedStyle(element).scrollMarginTop
+  );
+  // The parked header stays put and the route pane scrolls. block:start
+  // aligns this section to that pane, then adds the pane's scroll padding
+  // and the section's scroll margin. That sum is the header height plus
+  // 0.5rem plus 1rem, and the snap can land a fraction past it.
+  const alignedTop =
+    scrollerBox.top +
+    (Number.isFinite(scrollPadding) ? scrollPadding : 0) +
+    (Number.isFinite(scrollMargin) ? scrollMargin : 0);
+  return (
+    visibleHeight > 0 &&
+    rect.top < window.innerHeight &&
+    rect.top >= scrollerBox.top - 1 &&
+    rect.top <= alignedTop + 1
+  );
+}
+
 async function expectFollowUpInView(page: Page) {
   await expect
     .poll(async () =>
-      page.locator("#explorer-map-follow-up").evaluate((element) => {
-        const rect = element.getBoundingClientRect();
-        const visibleHeight =
-          Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0);
-        return (
-          visibleHeight > 0 && rect.top < window.innerHeight && rect.top <= 80
-        );
-      })
+      page
+        .locator("#explorer-map-follow-up")
+        .evaluate(followUpIsAtScrollportStart)
     )
     .toBe(true);
 }

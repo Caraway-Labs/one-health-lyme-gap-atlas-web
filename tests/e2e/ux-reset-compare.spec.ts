@@ -19,6 +19,20 @@ import {
 import { installCompareMocks } from "./compare-page-mocks";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
+async function replaceCountyFromKeyboard(
+  page: Page,
+  slotName: string,
+  query: string
+) {
+  const input = page.getByRole("combobox", { name: slotName });
+  await input.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.type(query, { delay: 20 });
+  await expect(page.getByRole("option").first()).toBeVisible();
+  await page.keyboard.press("Enter");
+}
+
 async function showAdditionalObservations(page: Page) {
   const group = page.getByTestId("compare-group-additional");
   await expect(group).toBeVisible();
@@ -222,10 +236,10 @@ test.describe("two-county Compare", () => {
       /compare=08001(?:%2C|,)08013/
     );
     await expect(page.getByTestId("compare-investigate-08001")).toHaveText(
-      "View county evidence"
+      "County evidence"
     );
     await expect(page.getByTestId("compare-investigate-08013")).toHaveText(
-      "View county evidence"
+      "County evidence"
     );
     await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
       "aria-label",
@@ -350,9 +364,10 @@ test.describe("two-county Compare", () => {
       "08001,08013"
     );
     await expect(page.getByTestId("compare-pair")).toContainText("Boulder");
-    const second = page.getByRole("combobox", { name: "Second county" });
-    await second.focus();
-    await page.keyboard.type("Albany", { delay: 20 });
+    await expect(
+      page.getByRole("combobox", { name: "Filter B by state" })
+    ).toBeVisible();
+    await replaceCountyFromKeyboard(page, "Second county", "Albany");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001,36001"
@@ -384,11 +399,7 @@ test.describe("two-county Compare", () => {
 
     await page.goto("/compare?compare=08001");
     await expect(page.getByTestId("compare-pair")).toContainText("Denver");
-    const secondCounty = page.getByRole("combobox", { name: "Second county" });
-    await secondCounty.focus();
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.type("Washington, R", { delay: 20 });
-    await page.keyboard.press("Enter");
+    await replaceCountyFromKeyboard(page, "Second county", "Washington, R");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       `08001,${COMPARE_WASHINGTON_RI}`
@@ -397,10 +408,7 @@ test.describe("two-county Compare", () => {
       "Rhode Island"
     );
 
-    await secondCounty.focus();
-    await page.keyboard.press("ArrowDown");
-    await page.keyboard.type("Washington, M", { delay: 20 });
-    await page.keyboard.press("Enter");
+    await replaceCountyFromKeyboard(page, "Second county", "Washington, M");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       `08001,${COMPARE_WASHINGTON_MN}`
@@ -446,8 +454,7 @@ test.describe("two-county Compare", () => {
       await page.getByRole("button", { name: "Close navigation" }).click();
     }
 
-    await page.getByTestId("compare-slot-1").click();
-    await page.getByRole("option", { name: /Boulder, Colorado/ }).click();
+    await replaceCountyFromKeyboard(page, "Second county", "Boulder");
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(
       "data-fips",
       "08001,08013"
@@ -560,11 +567,20 @@ test.describe("two-county Compare", () => {
       await route.fallback();
     });
     await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await expect(page.getByTestId("compare-profile-loading")).toBeVisible();
+    await expect(page.getByTestId("compare-loading")).toContainText(
+      "published county records"
+    );
     await expect(page.getByTestId("compare-profile")).toHaveCount(0);
     released = true;
     releaseGate();
-    await expect(page.getByTestId("compare-retry-profile")).toBeVisible();
+    const alert = page.getByTestId("compare-status").getByRole("alert");
+    await expect(alert).toContainText(
+      "A county record could not be loaded. Values that were not returned stay blank."
+    );
+    await expect(
+      page.getByTestId("compare-status-error-profile-partial")
+    ).toBeVisible();
+    await expect(page.getByTestId("compare-retry")).toBeEnabled();
     await expect(
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
     ).toContainText("Couldn’t load this evidence.");
@@ -572,7 +588,7 @@ test.describe("two-county Compare", () => {
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
     ).not.toContainText("12");
     failCounty = false;
-    await page.getByTestId("compare-retry-profile").click();
+    await page.getByTestId("compare-retry").click();
     await expect(
       page.getByTestId("compare-profile-cell-human_case_floor-08001")
     ).toContainText("12");
