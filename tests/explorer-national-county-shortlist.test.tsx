@@ -122,17 +122,22 @@ function listedFips(): string[] {
 }
 
 function expectCountiesHeadingOutsideRows(): void {
-  const heading = screen.getByRole("heading", { name: "Counties" });
+  const heading = screen.getByRole("heading", { name: "Ranked counties" });
   const rowList = document.querySelector(".ux-reset-ranked-county-list");
   expect({
     duplicateEyebrow: document.querySelector(
       ".ux-reset-ranked-counties-eyebrow"
     ),
     insideRows: rowList?.contains(heading) ?? null,
+    className: heading.className,
     level: heading.tagName,
-    redundantH1: screen.queryByRole("heading", { level: 1, name: "Counties" }),
+    redundantH1: screen.queryByRole("heading", {
+      level: 1,
+      name: "Ranked counties",
+    }),
   }).toStrictEqual({
     duplicateEyebrow: null,
+    className: "eyebrow",
     insideRows: false,
     level: "H2",
     redundantH1: null,
@@ -157,7 +162,7 @@ describe("national county shortlist", () => {
       states: [...new Set(national.map((fips) => fips.slice(0, 2)))].toSorted(),
     }).toStrictEqual({
       count: EXPLORER_NATIONAL_COUNTY_SHORTLIST_LENGTH,
-      firstHeading: "Counties",
+      firstHeading: "Ranked counties",
       localStateFilter: null,
       note: "Showing the first 40 counties. Use the State control, or select a state on the map, to narrow this list.",
       states: ["08", "36"],

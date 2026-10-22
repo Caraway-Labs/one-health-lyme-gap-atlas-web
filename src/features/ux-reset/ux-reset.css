@@ -2416,6 +2416,10 @@
   outline-offset: 2px;
 }
 
+.ux-reset-layer-availability-release {
+  color: var(--atlas-muted-text);
+}
+
 @media (max-width: 640px) {
   .ux-reset-explorer-map-layer .ux-reset-review-scope-field {
     flex-wrap: wrap;
@@ -2471,7 +2475,8 @@
 
 .ux-reset-explorer-list > .gap-0 {
   min-height: 0;
-  padding-top: 0.75rem;
+  /* Same 1rem top inset as the Selected county card. */
+  padding-top: 1rem;
 }
 
 .ux-reset-explorer-list [data-testid="explorer-national-shortlist-note"] {
@@ -2883,11 +2888,8 @@
 
 .ux-reset-ranked-counties-header h2 {
   margin: 0;
-  color: var(--navy);
   font-family: var(--font-sans);
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.3;
+  line-height: inherit;
 }
 
 .ux-reset-ranked-county-list {
@@ -4416,8 +4418,8 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-body {
   display: grid;
-  gap: 1rem;
-  padding: 0 1.625rem 1.5rem;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
 }
 
 .ux-reset-explorer-scenario-body p {
@@ -4426,7 +4428,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-intro {
   color: var(--foreground);
-  font-size: 0.9375rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .ux-reset-explorer-scenario-settings {
@@ -4434,13 +4438,12 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
+  gap: 0.5rem 1rem;
 }
 
 .ux-reset-explorer-scenario-settings p {
-  color: var(--atlas-muted-text);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+  font-size: 0.875rem;
 }
 
 .ux-reset-explorer-scenario-controls {
@@ -4449,10 +4452,10 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-control {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem);
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
   align-items: center;
-  gap: 0.75rem 1.75rem;
-  padding: 1.25rem 0;
+  gap: 0.75rem 1.25rem;
+  padding: 0.75rem 0;
   background: transparent;
 }
 
@@ -4469,26 +4472,32 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-control-copy label {
   color: var(--navy);
+  font-family: var(--font-sans);
   font-size: 0.9375rem;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .ux-reset-explorer-scenario-control-copy p,
-.ux-reset-explorer-scenario-quiet {
+.ux-reset-explorer-scenario-quiet,
+.ux-reset-explorer-scenario-value-note {
   color: var(--atlas-muted-text);
+  font-family: var(--font-sans);
   font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .ux-reset-explorer-scenario-value {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.35rem 0.75rem;
+  gap: 0.25rem 0.75rem;
 }
 
 .ux-reset-explorer-scenario-value strong {
   color: var(--navy);
-  font-size: 1.0625rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
@@ -4595,46 +4604,53 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-impact {
   display: grid;
-  gap: 0.55rem;
-  padding: 1rem 1.15rem;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
   border: 0;
-  border-radius: 8px;
-  background: var(--navy);
-  color: var(--white);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans);
 }
 
-.ux-reset-explorer-scenario-impact h3,
+.ux-reset-explorer-scenario-impact-empty {
+  border-bottom: 0;
+  padding-block: 0.25rem 0;
+}
+
 .ux-reset-explorer-scenario-impact-county,
 .ux-reset-explorer-scenario-impact-summary,
 .ux-reset-explorer-scenario-impact p {
   margin: 0;
-  color: var(--white);
-}
-
-.ux-reset-explorer-scenario-impact h3 {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 500;
+  color: var(--foreground);
 }
 
 .ux-reset-explorer-scenario-impact-county,
 .ux-reset-explorer-scenario-impact-cell dt,
 .ux-reset-explorer-scenario-impact-cell span {
-  color: var(--pale);
+  color: var(--atlas-muted-text);
   font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .ux-reset-explorer-scenario-impact-summary {
-  font-size: 0.9375rem;
+  color: var(--atlas-muted-text);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.ux-reset-explorer-scenario-impact-empty
+  .ux-reset-explorer-scenario-impact-summary {
+  font-weight: 400;
 }
 
 .ux-reset-explorer-scenario-impact-scores {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 0.75rem 1.25rem;
+  gap: 0.35rem 0.75rem;
   align-items: end;
 }
 
@@ -4644,8 +4660,8 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-impact-arrow {
   align-self: center;
-  color: var(--white);
-  font-size: 1.35rem;
+  color: var(--atlas-muted-text);
+  font-size: 1rem;
   line-height: 1;
 }
 
@@ -4665,17 +4681,18 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-explorer-scenario-impact-cell strong {
   display: block;
-  color: var(--white);
-  font-size: 1.75rem;
+  color: var(--navy);
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 @media (max-width: 800px) {
   .ux-reset-explorer-scenario > summary,
   .ux-reset-explorer-scenario-body {
-    padding-inline: 1.15rem;
+    padding-inline: 1rem;
   }
 
   .ux-reset-explorer-scenario-control,

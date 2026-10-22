@@ -730,7 +730,10 @@ export function ReviewNationalPicture({
           paint={mapPaint}
         />
         <div className="ux-reset-explorer-map-availability">
-          <ExplorerMapLayerAvailability gates={layerGates} />
+          <ExplorerMapLayerAvailability
+            gates={layerGates}
+            releaseId={releaseId}
+          />
         </div>
         <ExplorerMapSourceCaption period={period} releaseId={releaseId} />
       </Card>
