@@ -149,7 +149,7 @@ test.describe("Compare county surveillance intelligence", () => {
       "data-fips",
       `${AUTAUGA},${COMPARE_LEFT_FIPS}`
     );
-    const rows = section.locator("tbody tr");
+    const rows = section.getByTestId(/^compare-surveillance-row-/);
     await expect(rows).toHaveCount(4);
     await expect(rows.nth(0)).toHaveAttribute("data-perspective", "gap-score");
     await expect(rows.nth(1)).toHaveAttribute(
@@ -185,18 +185,12 @@ test.describe("Compare county surveillance intelligence", () => {
     await expect(section).not.toContainText(
       /differ by|winner|loser|composite/i
     );
-    await expect(page.getByTestId("compare-group-review")).toHaveJSProperty(
-      "open",
-      true
-    );
-    await expect(page.getByTestId("compare-group-human")).toHaveJSProperty(
-      "open",
-      false
-    );
+    await expect(page.getByTestId("compare-at-a-glance")).toBeVisible();
+    await expect(page.getByTestId("compare-group-human")).toBeVisible();
 
     const placement = await page.evaluate(() => {
-      const review = document.querySelector(
-        '[data-testid="compare-group-review"]'
+      const glance = document.querySelector(
+        '[data-testid="compare-at-a-glance"]'
       );
       const human = document.querySelector(
         '[data-testid="compare-group-human"]'
@@ -205,27 +199,22 @@ test.describe("Compare county surveillance intelligence", () => {
         '[data-testid="compare-surveillance-intelligence"]'
       );
       if (
-        !(review instanceof HTMLElement) ||
+        !(glance instanceof HTMLElement) ||
         !(human instanceof HTMLElement) ||
         !(intelligence instanceof HTMLElement)
       ) {
         return null;
       }
-      const reviewBox = review.getBoundingClientRect();
+      const glanceBox = glance.getBoundingClientRect();
       const humanBox = human.getBoundingClientRect();
       const intelligenceBox = intelligence.getBoundingClientRect();
       return {
-        humanBeforeIntelligence: humanBox.top < intelligenceBox.top,
-        humanTop: humanBox.top,
-        reviewTop: reviewBox.top,
-        reviewVisible: reviewBox.top >= 0 && reviewBox.top < window.innerHeight,
+        glanceVisible: glanceBox.top >= 0 && glanceBox.top < window.innerHeight,
+        intelligenceBeforeHuman: intelligenceBox.top < humanBox.top,
       };
     });
-    expect(placement?.reviewVisible).toBe(true);
-    expect(placement?.humanBeforeIntelligence).toBe(true);
-    // The open review evidence fills the first screen. Human disease
-    // surveillance stays immediately below it, ahead of this section.
-    expect(placement?.humanTop).toBeLessThan(1100);
+    expect(placement?.glanceVisible).toBe(true);
+    expect(placement?.intelligenceBeforeHuman).toBe(true);
 
     const situation = section.getByRole("button", {
       name: "Surveillance Situation",
@@ -266,10 +255,11 @@ test.describe("Compare county surveillance intelligence", () => {
       const cell = page.getByTestId(
         `compare-surveillance-cell-gap-score-${AUTAUGA}`
       );
+      await expect(cell).toBeVisible();
       const display = await cell.evaluate(
         (element) => getComputedStyle(element).display
       );
-      expect(display).toBe("table-cell");
+      expect(display).not.toBe("none");
       const overflows = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1
       );

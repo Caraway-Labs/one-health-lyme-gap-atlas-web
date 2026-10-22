@@ -22,7 +22,6 @@ import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
-  COMPARE_CANOPY_MEASURE_ID,
   COMPARE_CASES_MEASURE_ID,
   COMPARE_LEFT_FIPS,
   COMPARE_RIGHT_FIPS,
@@ -354,8 +353,8 @@ async function waitForPair(fips: string) {
   });
 }
 
-function cell(measureId: string, fips: string) {
-  return screen.getByTestId(`compare-cell-${measureId}-${fips}`);
+function comparisonReady(): boolean {
+  return screen.queryByTestId("compare-alignment") !== null;
 }
 
 function populationCatalogState() {
@@ -483,7 +482,6 @@ describe("two-county aligned comparison", () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
     await screen.findByTestId("compare-evidence");
     await screen.findByTestId("compare-profile-row-human_case_floor");
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
     const count = screen.getByTestId("compare-filter-count");
     const total = Number(
       (count.textContent ?? "").split(" of ")[1]?.split(" ")[0]
@@ -491,16 +489,15 @@ describe("two-county aligned comparison", () => {
     expect(count.textContent).toBe(`${total} of ${total} rows`);
     fireEvent.click(screen.getByTestId("compare-filter-gaps"));
     await waitFor(() => {
+      const rows = screen.getAllByTestId(/^compare-profile-row-/);
       const shown = Number((count.textContent ?? "").split(" of ")[0]);
-      if (!(shown < total)) {
+      if (
+        shown !== rows.length ||
+        rows.some((row) => row.dataset.gap !== "true")
+      ) {
         throw new Error("Waiting for the gap filter.");
       }
     });
-    expect(
-      screen
-        .getAllByTestId(/^compare-profile-row-/)
-        .every((row) => row.dataset.gap === "true")
-    ).toBeTruthy();
     fireEvent.click(screen.getByTestId("compare-filter-gaps"));
     fireEvent.click(screen.getByTestId("compare-filter-differences"));
     await waitFor(() => {
@@ -531,30 +528,28 @@ describe("two-county aligned comparison", () => {
     ).toBeTruthy();
   });
 
-  it("describes withheld counts as not comparable, including failed requests", async () => {
+  it("defines same, different, and not comparable without treating a gap as a match", async () => {
     observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
     const summary = await screen.findByTestId("compare-summary");
-    await waitFor(() => {
-      if (!(summary.textContent ?? "").includes("counted as not comparable")) {
-        throw new Error("Waiting for the withheld overview.");
-      }
-    });
+    await screen.findByTestId("compare-profile-row-human_case_floor");
     const text = summary.textContent ?? "";
     expect({
-      failedAsMatched: text.includes("never as the same or different"),
-      fieldMatchLimitedToShared:
-        text.includes("Same and different compare the published values") &&
+      definesComparison: text.includes(
+        "Same and different compare the published values"
+      ),
+      definesWithheld:
+        text.includes("Not comparable means") &&
         text.includes("unit, period, release, or method does not match"),
-      partial: text.includes("counted as not comparable"),
+      missingIsNotZero: text.includes(
+        "A missing value stays missing and is not zero"
+      ),
       treatsWithheldAsMatched: text.includes("already match"),
-      withheldNotComparable: text.includes("Not comparable means"),
     }).toStrictEqual({
-      failedAsMatched: true,
-      fieldMatchLimitedToShared: true,
-      partial: true,
+      definesComparison: true,
+      definesWithheld: true,
+      missingIsNotZero: true,
       treatsWithheldAsMatched: false,
-      withheldNotComparable: true,
     });
   });
 
@@ -591,62 +586,57 @@ describe("two-county aligned comparison", () => {
     );
   });
 
-  it("aligns a comparable value and a real zero on stable measure rows", async () => {
+  it("shows a published floor beside a suppressed value that is not zero", async () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await waitForPair("08001,08013");
-    const cases = await screen.findByTestId(
-      `compare-row-${COMPARE_CASES_MEASURE_ID}`
+    const row = await screen.findByTestId(
+      "compare-profile-row-human_case_floor"
     );
-    const tick = screen.getByTestId(`compare-row-${COMPARE_TICK_MEASURE_ID}`);
-    const canopy = screen.getByTestId(
-      `compare-row-${COMPARE_CANOPY_MEASURE_ID}`
+    const left = within(row).getByTestId(
+      "compare-profile-cell-human_case_floor-08001"
     );
-    expect(cases.dataset.rowIndex).toBe("0");
-    expect(tick.dataset.rowIndex).toBe("1");
-    expect(canopy.dataset.rowIndex).toBe("2");
+    const right = within(row).getByTestId(
+      "compare-profile-cell-human_case_floor-08013"
+    );
+    expect(left.textContent).toContain("12");
+    expect(right.dataset.observation).toBe("missing");
     expect(
-      within(cell(COMPARE_CASES_MEASURE_ID, "08001")).getByTestId(
-        "evidence-display-value"
-      ).textContent
-    ).toContain("12");
-    expect(
-      within(cell(COMPARE_CASES_MEASURE_ID, "08013")).getByTestId(
-        "evidence-display-value"
-      ).textContent
-    ).toContain("0");
+      right.querySelector(".ux-reset-compare-missing span[aria-hidden='true']")
+        ?.textContent
+    ).toBe("No record");
+    expect(row.dataset.relation).toBe("incomparable");
   });
 
-  it("keeps a missing observation off later rows and off zero", async () => {
+  it("keeps a missing county value off zero and still shows later rows", async () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await waitForPair("08001,08013");
     const missing = await screen.findByTestId(
-      `compare-cell-${COMPARE_TICK_MEASURE_ID}-08013`
+      "compare-profile-cell-scapularis_status-08013"
     );
     expect(missing.dataset.observation).toBe("missing");
-    expect(missing.textContent).not.toContain("0");
     expect(
-      screen.getByTestId(`compare-relation-${COMPARE_TICK_MEASURE_ID}`)
-        .textContent
-    ).toContain("not zero");
+      missing.querySelector(
+        ".ux-reset-compare-missing span[aria-hidden='true']"
+      )?.textContent
+    ).toBe("No record");
     expect(
-      screen.getByTestId(`compare-row-${COMPARE_CANOPY_MEASURE_ID}`).dataset
-        .rowIndex
-    ).toBe("2");
+      screen.getByTestId("compare-profile-row-population_2022")
+    ).toBeTruthy();
   });
 
-  it("withholds a period mismatch in the aligned table", async () => {
+  it("does not describe a gap as a calculated difference", async () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    const relation = await screen.findByTestId(
-      `compare-relation-${COMPARE_CANOPY_MEASURE_ID}`
+    const row = await screen.findByTestId(
+      "compare-profile-row-human_case_floor"
     );
-    expect(relation.dataset.relation).toBe("withheld");
-    expect(relation.textContent).toContain("periods differ");
-    expect(relation.textContent).not.toContain("differ by");
+    expect(row.dataset.relation).toBe("incomparable");
+    expect(row.textContent ?? "").not.toContain("differ by");
+    expect(
+      (await screen.findByTestId("compare-profile-comparability")).textContent
+    ).not.toContain("differ by");
   });
 
   it("queries both counties and hands the same pair downstream", async () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    await screen.findByTestId("compare-alignment");
     const caseRequest = observationRequests.find((request) =>
       request.includes(COMPARE_CASES_MEASURE_ID)
     );
@@ -721,7 +711,7 @@ describe("two-county aligned comparison", () => {
 
   it("does not let a pre-existing URL replace the pair on screen", async () => {
     renderCompare("?compare=08001,08013");
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    await screen.findByTestId("compare-alignment");
     await pickCounty("Second county", /Albany, New York/);
     await waitForPair("08001,36001");
     expect(screen.getByTestId("compare-workspace").dataset.staleUrl).toBe(
@@ -753,7 +743,7 @@ describe("two-county aligned comparison", () => {
 
   it("removes and clears without letting the previous URL restore itself", async () => {
     renderCompare("?compare=08001,08013&scope=CO");
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    await screen.findByTestId("compare-alignment");
     fireEvent.click(
       screen.getByRole("button", { name: "Clear second county" })
     );
@@ -864,16 +854,13 @@ describe("two-county aligned comparison", () => {
 
   it("reloads a direct two-county link as the same pair", async () => {
     const first = renderCompare("?compare=08001,08013&scope=CO");
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    await screen.findByTestId("compare-alignment");
     first.unmount();
     renderCompare("?compare=08001,08013&scope=CO");
     await waitForPair("08001,08013");
     expect(
-      within(
-        await screen.findByTestId(
-          `compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`
-        )
-      ).getByTestId("evidence-display-value").textContent
+      (await screen.findByTestId("compare-profile-cell-human_case_floor-08001"))
+        .textContent
     ).toContain("12");
   });
 
@@ -939,7 +926,7 @@ describe("two-county aligned comparison", () => {
         </NuqsTestingAdapter>
       </QueryClientProvider>
     );
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    await screen.findByTestId("compare-alignment");
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
     });
@@ -993,7 +980,7 @@ describe("two-county aligned comparison", () => {
     });
     catalogFailuresRemaining = 0;
     fireEvent.click(screen.getByTestId("compare-retry"));
-    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    await screen.findByTestId("compare-alignment");
     const recoveredHref =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
       "";
@@ -1165,10 +1152,7 @@ describe("two-county aligned comparison", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
-    await flushCompare(
-      () =>
-        screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
-    );
+    await flushCompare(() => comparisonReady());
     const href =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
       "";
@@ -1224,10 +1208,7 @@ describe("two-county aligned comparison", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
-    await flushCompare(
-      () =>
-        screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
-    );
+    await flushCompare(() => comparisonReady());
     const href =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
       "";
@@ -1265,10 +1246,7 @@ describe("two-county aligned comparison", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(59_000);
     });
-    await flushCompare(
-      () =>
-        screen.queryByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`) !== null
-    );
+    await flushCompare(() => comparisonReady());
     const href =
       screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
       "";
@@ -1285,43 +1263,20 @@ describe("two-county aligned comparison", () => {
     });
   });
 
-  it("retries failed measures without dropping rows that already loaded", async () => {
+  it("keeps loaded county records visible when an additional observation fails", async () => {
     observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await screen.findByTestId("compare-retry");
-    const requestsFor = (measureId: string) =>
-      observationRequests.filter((request) => request.includes(measureId))
-        .length;
-    const casesBefore = requestsFor(COMPARE_CASES_MEASURE_ID);
-    expect({
-      cases: cell(COMPARE_CASES_MEASURE_ID, "08001").dataset.observation,
-      casesBefore,
-      tick: cell(COMPARE_TICK_MEASURE_ID, "08001").dataset.observation,
-    }).toStrictEqual({
-      cases: "present",
-      casesBefore: 1,
-      tick: "failed",
-    });
-    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 0);
-    fireEvent.click(screen.getByTestId("compare-retry"));
-    await waitFor(() => {
-      if (
-        cell(COMPARE_TICK_MEASURE_ID, "08001").dataset.observation !== "present"
-      ) {
-        throw new Error("Waiting for the failed measure to load.");
-      }
-    });
-    expect({
-      boulder: cell(COMPARE_TICK_MEASURE_ID, "08013").dataset.observation,
-      cases: cell(COMPARE_CASES_MEASURE_ID, "08001").dataset.observation,
-      casesAfter: requestsFor(COMPARE_CASES_MEASURE_ID),
-      denver: cell(COMPARE_TICK_MEASURE_ID, "08001").dataset.observation,
-    }).toStrictEqual({
-      boulder: "missing",
-      cases: "present",
-      casesAfter: casesBefore,
-      denver: "present",
-    });
+    const floor = await screen.findByTestId(
+      "compare-profile-cell-human_case_floor-08001"
+    );
+    await screen.findByTestId("compare-alignment");
+    expect(floor.textContent ?? "").toContain("12");
+    expect(
+      observationRequests.some((request) =>
+        request.includes(COMPARE_TICK_MEASURE_ID)
+      )
+    ).toBeTruthy();
+    expect(screen.queryByTestId("compare-status-error-measures")).toBeNull();
   });
 
   it("keeps Review return on the original county when the pair changes", async () => {

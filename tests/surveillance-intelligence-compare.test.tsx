@@ -399,9 +399,9 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     await screen.findByText("Pathogen not recorded");
-    expect(
-      screen.getByTestId("compare-intelligence-guide")
-    ).toHaveTextContent(SURVEILLANCE_INTELLIGENCE_GUIDE);
+    expect(screen.getByTestId("compare-intelligence-guide")).toHaveTextContent(
+      SURVEILLANCE_INTELLIGENCE_GUIDE
+    );
     expect(
       screen.getByTestId("compare-surveillance-intelligence")
     ).not.toHaveTextContent(

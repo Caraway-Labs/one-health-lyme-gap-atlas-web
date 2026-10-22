@@ -101,12 +101,16 @@ describe(buildCompareVisualRows, () => {
   const rows = buildCompareVisualRows(pairedProfile());
 
   it("groups rows by the question being asked, not by data system", () => {
-    expect(compareRowsForSection(rows, "human").map((row) => row.id)).toStrictEqual([
+    expect(
+      compareRowsForSection(rows, "human").map((row) => row.id)
+    ).toStrictEqual([
       "human_case_floor",
       "incidence_floor",
       "state_unallocated_2023",
     ]);
-    expect(compareRowsForSection(rows, "vector").map((row) => row.id)).toStrictEqual([
+    expect(
+      compareRowsForSection(rows, "vector").map((row) => row.id)
+    ).toStrictEqual([
       "scapularis_status",
       "pacificus_status",
       "burgdorferi_status",
@@ -122,11 +126,14 @@ describe(buildCompareVisualRows, () => {
     ]);
   });
 
-  it("picks the visual that fits the data type", () => {
+  it("uses bars for counts and dots for rates on a shared scale", () => {
     expect(rowById(rows, "human_case_floor").visual).toBe("bars");
     expect(rowById(rows, "population_2022").visual).toBe("bars");
     expect(rowById(rows, "svi_percentile_2022").visual).toBe("dots");
     expect(rowById(rows, "uninsured_percent_2022").visual).toBe("dots");
+  });
+
+  it("uses status chips for categorical findings", () => {
     expect(rowById(rows, "scapularis_status").visual).toBe("chips");
     expect(rowById(rows, "rucc_2023").visual).toBe("chips");
   });
@@ -265,7 +272,9 @@ describe("coverage and gaps", () => {
     );
     const entries = compareGapEntries(buildCompareVisualRows(profile), "right");
     expect(entries.length).toBeGreaterThan(0);
-    expect(entries.every((entry) => entry.state === "Unavailable")).toBeTruthy();
+    expect(
+      entries.every((entry) => entry.state === "Unavailable")
+    ).toBeTruthy();
     expect(entries[0]?.reason).toMatch(/could not be loaded/);
   });
 

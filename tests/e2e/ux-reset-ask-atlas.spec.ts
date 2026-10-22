@@ -1,10 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-import {
-  COMPARE_CASES_MEASURE_ID,
-  compareObservation,
-} from "../fixtures/compare-api-fixtures";
+import { compareObservation } from "../fixtures/compare-api-fixtures";
 import {
   EXPLORE_CASES_MEASURE_ID,
   exploreGeometryFixture,
@@ -678,20 +675,11 @@ test.describe("Ask Atlas dedicated page", () => {
 
     await installUniformCompareMocks(page);
     await page.goto("/compare?compare=08001,08013&scope=CO&period=1999-01-01");
-    const additional = page.getByTestId("compare-group-additional");
-    await expect(additional).toBeVisible();
-    const additionalOpen = await additional.evaluate((element) =>
-      element instanceof HTMLDetailsElement ? element.open : false
+    const comparability = page.getByTestId("compare-profile-comparability");
+    await expect(comparability).toContainText("published 2023 snapshot");
+    await expect(comparability).toContainText(
+      "1999-01-01 is not applied to these rows"
     );
-    if (!additionalOpen) {
-      await additional.locator("> summary").click();
-    }
-    await expect(
-      additional
-        .getByTestId(`compare-cell-${COMPARE_CASES_MEASURE_ID}-08001`)
-        .getByText("Observation period 2023")
-    ).toBeVisible();
-    await expect(page.getByTestId("compare-alignment")).toContainText("2023");
     await expect(page.getByTestId("compare-alignment")).not.toContainText(
       "1999"
     );
