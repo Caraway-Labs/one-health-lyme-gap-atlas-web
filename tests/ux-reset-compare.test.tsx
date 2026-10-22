@@ -36,6 +36,14 @@ import {
 } from "./fixtures/compare-api-fixtures";
 import { investigateMetadataFixture } from "./fixtures/investigate-api-fixtures";
 
+// jsdom has no PointerEvent. Base UI Switch dispatches one when clicked.
+if (window.PointerEvent === undefined) {
+  Object.defineProperty(window, "PointerEvent", {
+    configurable: true,
+    value: MouseEvent,
+  });
+}
+
 const observationRequests: string[] = [];
 const catalogRequests: string[] = [];
 const observationFailureBudgets = new Map<string, number>();
@@ -305,9 +313,7 @@ function populationCatalogState() {
   );
   const text = population.textContent ?? "";
   return {
-    availability:
-      within(population).getByTestId("ux-reset-evidence-object").dataset
-        .evidenceAvailability ?? "",
+    availability: population.dataset.evidenceAvailability ?? "",
     caveat: text.includes("Coverage is incomplete"),
     evidenceType: text.includes("Count"),
   };
@@ -369,23 +375,109 @@ describe("two-county aligned comparison", () => {
     ).toBeNull();
   });
 
-  it("places surveillance intelligence after human disease surveillance", async () => {
+  it("orders the results: at a glance, perspectives, evidence, gaps, sources", async () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    const human = await screen.findByTestId("compare-group-human");
+    const glance = await screen.findByTestId("compare-at-a-glance");
     const intelligence = await screen.findByTestId(
       "compare-surveillance-intelligence"
     );
+    const evidence = screen.getByTestId("compare-evidence");
+    const unknown = await screen.findByTestId("compare-unknown");
+    const sources = screen.getByTestId("compare-sources");
+    const human = screen.getByTestId("compare-group-human");
     const vector = screen.getByTestId("compare-group-vector");
-    expect(human.compareDocumentPosition(intelligence)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
-    expect(intelligence.compareDocumentPosition(vector)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
-    );
-    expect(screen.getByTestId("compare-group-review")).toBeTruthy();
+    const community = screen.getByTestId("compare-group-community");
+    const following = Node.DOCUMENT_POSITION_FOLLOWING;
+    expect([
+      glance.compareDocumentPosition(intelligence),
+      intelligence.compareDocumentPosition(evidence),
+      human.compareDocumentPosition(vector),
+      vector.compareDocumentPosition(community),
+      evidence.compareDocumentPosition(unknown),
+      unknown.compareDocumentPosition(sources),
+    ]).toStrictEqual([
+      following,
+      following,
+      following,
+      following,
+      following,
+      following,
+    ]);
+    expect(screen.getByTestId("compare-intelligence-guide")).toBeTruthy();
+    expect(screen.getAllByTestId(/^compare-surveillance-row-/)).toHaveLength(4);
     expect(intelligence.textContent ?? "").not.toMatch(
       /differ by|winner|loser|delta/i
     );
+  });
+
+  it("shows both glance cards equally, with no winner", async () => {
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const first = await screen.findByTestId("compare-glance-08001");
+    const second = screen.getByTestId("compare-glance-08013");
+    expect(first.className).toBe(second.className);
+    expect(
+      within(first).getByRole("img", { name: /Published review score/ })
+    ).toBeTruthy();
+    expect(
+      within(first)
+        .getAllByTestId(/^compare-coverage-/)
+        .map((item) => item.dataset.coverage)
+        .every((coverage) =>
+          ["available", "limited", "unavailable"].includes(coverage ?? "")
+        )
+    ).toBeTruthy();
+  });
+
+  it("filters rows to differences and to evidence gaps, and counts them", async () => {
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await screen.findByTestId("compare-evidence");
+    await screen.findByTestId("compare-profile-row-human_case_floor");
+    await screen.findByTestId(`compare-row-${COMPARE_CASES_MEASURE_ID}`);
+    const count = screen.getByTestId("compare-filter-count");
+    const total = Number(
+      (count.textContent ?? "").split(" of ")[1]?.split(" ")[0]
+    );
+    expect(count.textContent).toBe(`${total} of ${total} rows`);
+    fireEvent.click(screen.getByTestId("compare-filter-gaps"));
+    await waitFor(() => {
+      const shown = Number((count.textContent ?? "").split(" of ")[0]);
+      if (!(shown < total)) {
+        throw new Error("Waiting for the gap filter.");
+      }
+    });
+    expect(
+      screen
+        .getAllByTestId(/^compare-profile-row-/)
+        .every((row) => row.dataset.gap === "true")
+    ).toBeTruthy();
+    fireEvent.click(screen.getByTestId("compare-filter-gaps"));
+    fireEvent.click(screen.getByTestId("compare-filter-differences"));
+    await waitFor(() => {
+      expect(
+        screen
+          .queryAllByTestId(/^compare-profile-row-/)
+          .some((row) => row.dataset.relation === "same")
+      ).toBeFalsy();
+    });
+  });
+
+  it("keeps source details behind one button per value and one table", async () => {
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const row = await screen.findByTestId(
+      "compare-profile-row-population_2022"
+    );
+    expect(
+      within(row).getAllByRole("button", {
+        name: /Sources and limitations for/,
+      }).length
+    ).toBeGreaterThan(0);
+    expect(row.textContent ?? "").not.toMatch(
+      /Source unknown|Observation period unknown/
+    );
+    const sources = screen.getByTestId("compare-sources");
+    expect(
+      within(sources).getByTestId("compare-source-row-population_2022")
+    ).toBeTruthy();
   });
 
   it("describes withheld counts as not comparable, including failed requests", async () => {
@@ -393,25 +485,19 @@ describe("two-county aligned comparison", () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
     const summary = await screen.findByTestId("compare-summary");
     await waitFor(() => {
-      if (
-        !(summary.textContent ?? "").includes(
-          "Withheld counts are not comparable"
-        )
-      ) {
+      if (!(summary.textContent ?? "").includes("counted as not comparable")) {
         throw new Error("Waiting for the withheld overview.");
       }
     });
     const text = summary.textContent ?? "";
     expect({
-      failedAsMatched: text.includes("not treated as matched"),
+      failedAsMatched: text.includes("never as the same or different"),
       fieldMatchLimitedToShared:
-        text.includes("Shared and differing counts") &&
-        text.includes("whose measure, unit, period, release, and method match"),
-      partial: text.includes("failed requests stay in the withheld count"),
+        text.includes("Same and different compare the published values") &&
+        text.includes("unit, period, release, or method does not match"),
+      partial: text.includes("counted as not comparable"),
       treatsWithheldAsMatched: text.includes("already match"),
-      withheldNotComparable: text.includes(
-        "Withheld counts are not comparable"
-      ),
+      withheldNotComparable: text.includes("Not comparable means"),
     }).toStrictEqual({
       failedAsMatched: true,
       fieldMatchLimitedToShared: true,
@@ -1177,17 +1263,19 @@ describe("two-county aligned comparison", () => {
     });
   });
 
-  it("describes differing limitations without a shared note, and places a shared note after the groups", async () => {
+  it("lists differing limitations per county and a shared limitation once, in What we don't know", async () => {
     countyLimitationOverrides.set(COMPARE_LEFT_FIPS, "Denver coverage gap.");
     countyLimitationOverrides.set("36001", "Albany coverage gap.");
     renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
-    const limitations = await screen.findByTestId("compare-group-limitations");
-    const differingGuidance =
-      limitations.querySelector(".ux-reset-compare-group-description")
-        ?.textContent ?? "";
-    const differingSharedNote = screen.queryByText(
-      "Shared release limitations"
-    );
+    const unknown = await screen.findByTestId("compare-unknown");
+    const differing = {
+      first: within(unknown).getByTestId(
+        `compare-limitation-${COMPARE_LEFT_FIPS}`
+      ).textContent,
+      second: within(unknown).getByTestId("compare-limitation-36001")
+        .textContent,
+      sharedNote: screen.queryByTestId("compare-shared-limitation"),
+    };
     cleanup();
 
     countyLimitationOverrides.set(
@@ -1196,27 +1284,23 @@ describe("two-county aligned comparison", () => {
     );
     countyLimitationOverrides.set("36001", "Same release limitation.");
     renderCompare("?compare=08001,36001&scope=CO&dataset=alpha-2026");
-    const sharedText = await screen.findByText("Same release limitation.");
-    const sharedNote = sharedText.closest("details");
-    const review = screen.getByTestId("compare-group-review");
-    const heading = screen.getByRole("heading", { name: "County comparison" });
-    const sharedCopy = sharedNote?.textContent ?? "";
+    const shared = await screen.findByTestId("compare-shared-limitation");
     expect({
-      differingGuidance,
-      differingSharedNote,
-      sharedAfterHeading:
-        sharedNote === null
-          ? null
-          : heading.compareDocumentPosition(sharedNote),
-      sharedAfterReview:
-        sharedNote === null ? null : review.compareDocumentPosition(sharedNote),
-      sharedClaimsAbove: sharedCopy.includes("above the comparison"),
+      differing,
+      perCountyWhenShared: screen.queryByTestId(
+        `compare-limitation-${COMPARE_LEFT_FIPS}`
+      ),
+      sharedInUnknown: screen.getByTestId("compare-unknown").contains(shared),
+      sharedText: shared.textContent,
     }).toStrictEqual({
-      differingGuidance: "These limitations differ by county.",
-      differingSharedNote: null,
-      sharedAfterHeading: Node.DOCUMENT_POSITION_FOLLOWING,
-      sharedAfterReview: Node.DOCUMENT_POSITION_FOLLOWING,
-      sharedClaimsAbove: false,
+      differing: {
+        first: "Denver coverage gap.",
+        second: "Albany coverage gap.",
+        sharedNote: null,
+      },
+      perCountyWhenShared: null,
+      sharedInUnknown: true,
+      sharedText: expect.stringContaining("Same release limitation."),
     });
   });
 
@@ -1247,7 +1331,9 @@ describe("two-county aligned comparison", () => {
       first: screen.getByTestId("compare-investigate-08001").textContent,
       floor: floor.textContent?.includes("12"),
       missing: missing.dataset.observation,
-      missingDigits: /\d/.test(missing.textContent ?? ""),
+      missingDigits: /\d/.test(
+        missing.querySelector(".ux-reset-compare-missing")?.textContent ?? ""
+      ),
       period: screen
         .getByTestId("compare-profile-comparability")
         .textContent?.includes("1999-01-01"),

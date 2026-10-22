@@ -1,25 +1,14 @@
 "use client";
 
 import { ArrowLeftRight } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useRef, useState } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
-import type {
-  CompareAlignedRow,
-  CompareAlignment,
-  CompareCell,
-  CompareRelation,
-} from "@/features/ux-reset/compare/compare-alignment";
-import {
-  CompareCompactEvidence,
-  compareReaderState,
-} from "@/features/ux-reset/compare/compare-compact-evidence";
 import {
   CompareCountyPicker,
   type ReviewCategoryBadge,
@@ -29,14 +18,7 @@ import {
   publishedReviewPriority,
   type CompareProfileAlignment,
 } from "@/features/ux-reset/compare/compare-county-profile";
-import {
-  CompareCountyProfileSection,
-  CompareEvidenceGroup,
-  ComparePairedValues,
-  ComparePeriodQualification,
-  CompareProfileGroups,
-  type CompareProfileGroup,
-} from "@/features/ux-reset/compare/compare-county-profile-section";
+import { CompareCountyProfileSection } from "@/features/ux-reset/compare/compare-county-profile-section";
 import { CompareEmptyGuide } from "@/features/ux-reset/compare/compare-empty-guide";
 import {
   ComparePinnedPair,
@@ -52,18 +34,27 @@ import {
 } from "@/features/ux-reset/compare/compare-status-strip";
 import { CompareSurveillanceIntelligence } from "@/features/ux-reset/compare/compare-surveillance-intelligence";
 import {
-  COMPARE_COMMUNITY_ROW_IDS,
-  COMPARE_HUMAN_ROW_IDS,
   COMPARE_LIMITATION_ROW_ID,
-  COMPARE_REVIEW_ROW_IDS,
-  COMPARE_SCORE_ROW_IDS,
-  COMPARE_STATE_CONTEXT_ROW_ID,
-  COMPARE_VECTOR_ROW_IDS,
-  reconcileAlignmentRows,
   sharedReleaseLimitation,
   tickAggregateNote,
   tickStatusRowNote,
 } from "@/features/ux-reset/compare/compare-unified-rows";
+import {
+  buildCompareVisualRows,
+  compareSummaryCounts,
+  filterCompareRows,
+  type CompareRowFilters,
+} from "@/features/ux-reset/compare/compare-visual-model";
+import type { CompareCountyIdentity } from "@/features/ux-reset/compare/compare-visual-parts";
+import {
+  CompareAtAGlance,
+  CompareEvidenceSections,
+  CompareEvidenceToolbar,
+  CompareShareBar,
+  CompareSourcesTable,
+  CompareUnknownPanel,
+  type CompareSourceEntry,
+} from "@/features/ux-reset/compare/compare-visual-sections";
 import {
   compareOptionDisabled,
   useCompareWorkspace,
@@ -78,69 +69,20 @@ import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { PAGE_INTRODUCTION_COPY } from "@/features/ux-reset/page-introduction-copy";
 import { RESET_COMPARE_PATH } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import { cn } from "@/lib/utils";
 
-function relationText(relation: CompareRelation): string {
-  switch (relation.kind) {
-    case "similar": {
-      return "Same value";
+function profileSourceEntries(
+  profile: CompareProfileAlignment
+): CompareSourceEntry[] {
+  return profile.rows.flatMap((row) => {
+    const evidenceFor = (cell: (typeof row)["left"]) =>
+      cell.kind === "evidence" ? [cell.evidence] : [];
+    const left = evidenceFor(row.left);
+    const right = evidenceFor(row.right);
+    if (left.length === 0 && right.length === 0) {
+      return [];
     }
-    case "different": {
-      return `Values differ by ${relation.absoluteDifference}.`;
-    }
-    case "withheld": {
-      return relation.explanation;
-    }
-    default: {
-      const exhaustive: never = relation;
-      return exhaustive;
-    }
-  }
-}
-
-function relationReasons(relation: CompareRelation): string {
-  if (relation.kind !== "withheld") {
-    return "";
-  }
-  return relation.reasons.join(",");
-}
-
-function CompareCellView({
-  cell,
-  fips,
-  measureId,
-}: {
-  cell: CompareCell;
-  fips: string;
-  measureId: string;
-}) {
-  if (cell.kind === "empty") {
-    return (
-      <div
-        data-fips={fips}
-        data-measure-id={measureId}
-        data-observation={cell.reason}
-        data-testid={`compare-cell-${measureId}-${fips}`}
-      >
-        <p>{compareReaderState(cell.reason, cell.message)}</p>
-      </div>
-    );
-  }
-  return (
-    <div
-      data-fips={fips}
-      data-measure-id={measureId}
-      data-observation="present"
-      data-testid={`compare-cell-${measureId}-${fips}`}
-    >
-      {cell.records.map((record) => (
-        <CompareCompactEvidence
-          key={record.observation.observation_id}
-          model={record.evidence}
-        />
-      ))}
-    </div>
-  );
+    return [{ id: row.id, label: row.label, left, right }];
+  });
 }
 
 function reviewCategoryBadge(
@@ -195,50 +137,6 @@ function selectionInstruction(
     return "Your Explorer county is carried forward. Choose a second county. Atlas will not select one for you.";
   }
   return selection;
-}
-
-function failedMeasureLabels(alignment: CompareAlignment | null): string[] {
-  if (!alignment) {
-    return [];
-  }
-  const labels: string[] = [];
-  for (const outcome of alignment.outcomes) {
-    if (outcome.status !== "failed") {
-      continue;
-    }
-    const row = alignment.rows.find(
-      (entry) => entry.measureId === outcome.measureId
-    );
-    labels.push(row?.measureLabel ?? outcome.measureId);
-  }
-  return labels;
-}
-
-function summaryCounts(rows: readonly CompareAlignedRow[]) {
-  let different = 0;
-  let similar = 0;
-  let withheld = 0;
-  for (const row of rows) {
-    switch (row.relation.kind) {
-      case "different": {
-        different += 1;
-        break;
-      }
-      case "similar": {
-        similar += 1;
-        break;
-      }
-      case "withheld": {
-        withheld += 1;
-        break;
-      }
-      default: {
-        const exhaustive: never = row.relation;
-        return exhaustive;
-      }
-    }
-  }
-  return { different, similar, withheld };
 }
 
 function CompareExperienceInner() {
@@ -296,46 +194,57 @@ function CompareExperienceInner() {
     : workspace.metadataError
       ? releaseEvidenceLoadStateValues.error
       : releaseEvidenceLoadStateValues.loading;
-  const reconciledRows = useMemo(
-    () =>
-      workspace.alignment
-        ? reconcileAlignmentRows(workspace.profile, workspace.alignment.rows)
-        : [],
-    [workspace.alignment, workspace.profile]
-  );
-  const counts = useMemo(
-    () =>
-      workspace.alignment
-        ? summaryCounts(reconciledRows.map((entry) => entry.row))
-        : null,
-    [reconciledRows, workspace.alignment]
-  );
+  const [filters, setFilters] = useState<CompareRowFilters>({
+    onlyDifferences: false,
+    onlyGaps: false,
+  });
   const sharedLimitation = workspace.profile
     ? sharedReleaseLimitation(workspace.profile.rows)
     : null;
   const tickDecision = workspace.profile
     ? tickAggregateNote(workspace.profile.rows)
     : null;
-  const vectorRowIds = COMPARE_VECTOR_ROW_IDS.filter(
-    (rowId) => rowId !== "tick_status" || tickDecision !== "hide"
+  const visualRows = useMemo(
+    () =>
+      workspace.profile
+        ? buildCompareVisualRows(workspace.profile, {
+            hideRowIds: tickDecision === "hide" ? ["tick_status"] : [],
+            rowNote: (rowId) =>
+              rowId === "tick_status"
+                ? tickStatusRowNote(workspace.profile?.rows ?? [])
+                : null,
+          })
+        : [],
+    [tickDecision, workspace.profile]
   );
+  const shownVisualRows = useMemo(
+    () => filterCompareRows(visualRows, filters),
+    [filters, visualRows]
+  );
+  const overviewCounts =
+    visualRows.length > 0
+      ? compareSummaryCounts(visualRows.map((row) => row.relation))
+      : null;
+  const sourceEntries: CompareSourceEntry[] = workspace.profile
+    ? profileSourceEntries(workspace.profile)
+    : [];
   const limitationRow = workspace.profile?.rows.find(
     (row) => row.id === COMPARE_LIMITATION_ROW_ID
   );
-  const limitationTextsDiffer = Boolean(
+  const countyLimitations: readonly [string, string] | null =
     limitationRow &&
     limitationRow.left.kind === "text" &&
     limitationRow.right.kind === "text" &&
     limitationRow.left.text.trim() !== limitationRow.right.text.trim()
-  );
-  const failedMeasures =
-    workspace.alignment?.outcomes.some(
-      (outcome) => outcome.status === "failed"
-    ) ?? false;
-  const failedLabels = failedMeasureLabels(workspace.alignment);
-  const overviewCounts = counts && reconciledRows.length > 0 ? counts : null;
+      ? [limitationRow.left.text.trim(), limitationRow.right.text.trim()]
+      : null;
   const leftLabel = leftOption?.label ?? leftFips;
   const rightLabel = rightOption?.label ?? rightFips;
+  const counties: readonly [CompareCountyIdentity, CompareCountyIdentity] = [
+    { fips: leftFips, label: leftLabel, letter: "A" },
+    { fips: rightFips, label: rightLabel, letter: "B" },
+  ];
+  const resultsReady = Boolean(workspace.profile);
   const tier1Release = tier1ReleaseFromMetadata({
     isError: Boolean(workspace.metadataError),
     isLoading: workspace.metadataLoading,
@@ -351,58 +260,6 @@ function CompareExperienceInner() {
         rightLabel={rightLabel}
       />
     ) : null;
-  const profileGroups: CompareProfileGroup[] = workspace.profile
-    ? [
-        {
-          id: "review",
-          rowIds: COMPARE_REVIEW_ROW_IDS,
-          title: "Review category and reasons",
-        },
-        {
-          id: "human",
-          rowIds: COMPARE_HUMAN_ROW_IDS,
-          title: "Human disease surveillance",
-        },
-        {
-          id: "vector",
-          rowIds: vectorRowIds,
-          rowNote: (rowId) =>
-            rowId === "tick_status"
-              ? tickStatusRowNote(workspace.profile?.rows ?? [])
-              : null,
-          title: "Tick, vector, and pathogen observations",
-        },
-        {
-          id: "community",
-          rowIds: COMPARE_COMMUNITY_ROW_IDS,
-          title: "Population and community context",
-        },
-        {
-          description:
-            "State-unallocated human records are not county case counts.",
-          id: "state-context",
-          rowIds: [COMPARE_STATE_CONTEXT_ROW_ID],
-          title: "State-level reporting context",
-        },
-        {
-          description:
-            "Published score components. They are not case counts, and this comparison does not rank the counties.",
-          id: "scores",
-          rowIds: COMPARE_SCORE_ROW_IDS,
-          title: "Score components",
-        },
-        ...(limitationTextsDiffer
-          ? [
-              {
-                description: "These limitations differ by county.",
-                id: "limitations",
-                rowIds: [COMPARE_LIMITATION_ROW_ID],
-                title: "Evidence gaps and limitations",
-              } satisfies CompareProfileGroup,
-            ]
-          : []),
-      ]
-    : [];
   const handleSwapPair = () => {
     workspace.swapPair();
   };
@@ -425,8 +282,8 @@ function CompareExperienceInner() {
     alignment: workspace.alignment,
     directoryError: workspace.directoryError,
     evidenceError: workspace.evidenceError,
-    failedLabels,
-    failedMeasures,
+    failedLabels: [],
+    failedMeasures: false,
     metadataError: workspace.metadataError,
     profile: workspace.profile,
     profileError: workspace.profileError,
@@ -474,7 +331,7 @@ function CompareExperienceInner() {
   ];
   const retryTargets = {
     catalog: Boolean(workspace.catalogError) || workspace.catalogCoolingDown,
-    evidence: failedMeasures || Boolean(workspace.evidenceError),
+    evidence: Boolean(workspace.evidenceError),
     profile:
       Boolean(workspace.profileError) ||
       Boolean(workspace.profile?.retryable) ||
@@ -688,12 +545,15 @@ function CompareExperienceInner() {
           aria-labelledby="compare-results-title"
           className="ux-reset-compare-unified"
         >
-          <h2
-            className="ux-reset-compare-results-title"
-            id="compare-results-title"
-          >
-            County comparison
-          </h2>
+          <div className="ux-reset-compare-results-head">
+            <h2
+              className="ux-reset-compare-results-title"
+              id="compare-results-title"
+            >
+              County comparison
+            </h2>
+            {resultsReady ? <CompareShareBar askHref={askHref} /> : null}
+          </div>
           <CompareCountyProfileSection
             alignment={workspace.profile}
             coolingDown={workspace.profileCoolingDown}
@@ -718,107 +578,80 @@ function CompareExperienceInner() {
               <span />
             </div>
           ) : null}
-          {workspace.profile || reconciledRows.length > 0 ? (
-            <>
+          {workspace.profile ? (
+            <div
+              data-testid={
+                workspace.alignment ? "compare-alignment" : undefined
+              }
+            >
               <div
-                data-testid={
-                  workspace.alignment ? "compare-alignment" : undefined
-                }
+                data-testid={workspace.profile ? "compare-profile" : undefined}
               >
-                <div
-                  data-testid={
-                    workspace.profile ? "compare-profile" : undefined
-                  }
+                {workspace.profile ? (
+                  <CompareAtAGlance
+                    counties={counties}
+                    profile={workspace.profile}
+                    reviewBadges={[
+                      reviewCategoryBadge(workspace.profile, leftFips),
+                      reviewCategoryBadge(workspace.profile, rightFips),
+                    ]}
+                    rows={visualRows}
+                  />
+                ) : null}
+                {surveillanceIntelligence}
+                <section
+                  aria-labelledby="compare-evidence-title"
+                  className="ux-reset-compare-evidence"
+                  data-testid="compare-evidence"
                 >
-                  {workspace.profile ? (
-                    <CompareProfileGroups
-                      afterContent={surveillanceIntelligence}
-                      afterGroupId="human"
-                      alignment={workspace.profile}
-                      groups={profileGroups}
-                      leftLabel={leftLabel}
-                      rightLabel={rightLabel}
-                    />
-                  ) : null}
-                  {!workspace.profile && workspace.profileError
-                    ? surveillanceIntelligence
-                    : null}
-                  {reconciledRows.length > 0 ? (
-                    <CompareEvidenceGroup
-                      columnLabels={[leftLabel, rightLabel]}
-                      defaultOpen={!workspace.profile}
-                      key={
-                        workspace.profile ? "with-profile" : "alignment-only"
-                      }
-                      description="Catalog observations kept when their period or value is not the same county-record row. A comparison is withheld when the governed fields do not support one."
-                      testId="compare-group-additional"
-                      title="Additional observations"
+                  <h3
+                    className="ux-reset-compare-section-title"
+                    id="compare-evidence-title"
+                  >
+                    What the evidence shows
+                  </h3>
+                  <CompareEvidenceToolbar
+                    counts={overviewCounts}
+                    filters={filters}
+                    partial={false}
+                    shown={shownVisualRows.length}
+                    total={visualRows.length}
+                    onFiltersChange={setFilters}
+                  />
+                  <CompareEvidenceSections
+                    counties={counties}
+                    rows={shownVisualRows}
+                  />
+                  {(filters.onlyDifferences || filters.onlyGaps) &&
+                  shownVisualRows.length === 0 ? (
+                    <p
+                      className="ux-reset-compare-filter-empty"
+                      data-testid="compare-filter-empty"
                     >
-                      {reconciledRows.map((entry, index) => (
-                        <article
-                          className="ux-reset-compare-item"
-                          data-measure-id={entry.row.measureId}
-                          data-row-index={index}
-                          data-testid={`compare-row-${entry.row.measureId}`}
-                          key={entry.row.measureId}
-                        >
-                          <h4>{entry.row.measureLabel}</h4>
-                          <p className="type-small">{entry.row.measureId}</p>
-                          {entry.note ? (
-                            <p className="type-small">{entry.note}</p>
-                          ) : null}
-                          <p
-                            data-reasons={relationReasons(entry.row.relation)}
-                            data-relation={entry.row.relation.kind}
-                            data-signed-difference={
-                              entry.row.relation.kind === "different"
-                                ? String(entry.row.relation.signedDifference)
-                                : ""
-                            }
-                            data-testid={`compare-relation-${entry.row.measureId}`}
-                          >
-                            {relationText(entry.row.relation)}
-                          </p>
-                          <ComparePairedValues
-                            left={
-                              <CompareCellView
-                                cell={entry.row.left}
-                                fips={workspace.alignment?.leftFips ?? leftFips}
-                                measureId={entry.row.measureId}
-                              />
-                            }
-                            leftLabel={leftLabel}
-                            right={
-                              <CompareCellView
-                                cell={entry.row.right}
-                                fips={
-                                  workspace.alignment?.rightFips ?? rightFips
-                                }
-                                measureId={entry.row.measureId}
-                              />
-                            }
-                            rightLabel={rightLabel}
-                          />
-                        </article>
-                      ))}
-                    </CompareEvidenceGroup>
+                      No rows match these filters. Turn a filter off to see
+                      every measure.
+                    </p>
                   ) : null}
-                </div>
+                </section>
               </div>
-              <CompareOverview
-                counts={overviewCounts}
-                partial={failedMeasures}
-              />
-              {sharedLimitation ? (
-                <details className="ux-reset-compare-shared-note">
-                  <summary>Shared release limitations</summary>
-                  <p>{sharedLimitation}</p>
-                </details>
-              ) : null}
-              <ComparePeriodQualification period={workspace.period} />
-            </>
+            </div>
           ) : workspace.profileError ? (
             surveillanceIntelligence
+          ) : null}
+          {resultsReady ? (
+            <>
+              <CompareUnknownPanel
+                countyLimitations={countyLimitations}
+                counties={counties}
+                period={workspace.period}
+                rows={visualRows}
+                sharedLimitation={sharedLimitation}
+              />
+              <CompareSourcesTable
+                counties={counties}
+                entries={sourceEntries}
+              />
+            </>
           ) : null}
         </section>
       ) : null}
@@ -837,25 +670,6 @@ function CompareExperienceInner() {
           loadState={releaseLoadState}
         />
       </details>
-
-      {askHref ? (
-        <nav
-          aria-label="Continue from this comparison"
-          className="ux-reset-compare-next"
-        >
-          <Link
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "ux-reset-compare-action"
-            )}
-            data-testid="compare-ask-atlas"
-            data-variant="secondary"
-            href={askHref}
-          >
-            Ask Atlas about this comparison
-          </Link>
-        </nav>
-      ) : null}
     </div>
   );
 }
@@ -873,69 +687,6 @@ function countyEvidenceLinkLabel(index: 0 | 1): string {
       return exhaustive;
     }
   }
-}
-
-function CompareOverview({
-  counts,
-  partial,
-}: {
-  counts: { different: number; similar: number; withheld: number } | null;
-  partial: boolean;
-}) {
-  return (
-    <section
-      aria-labelledby="compare-overview-title"
-      className="ux-reset-compare-overview"
-      data-testid="compare-summary"
-    >
-      <h2 className="sr-only" id="compare-overview-title">
-        Comparison overview
-      </h2>
-      {counts ? (
-        <ul className="ux-reset-compare-overview-counts">
-          <li data-testid="compare-count-similar">
-            <strong>{counts.similar}</strong>
-            <span>Shared comparable values</span>
-          </li>
-          <li data-testid="compare-count-different">
-            <strong>{counts.different}</strong>
-            <span>Differing comparable values</span>
-          </li>
-          <li data-testid="compare-count-withheld">
-            <strong>{counts.withheld}</strong>
-            <span>Comparisons withheld</span>
-          </li>
-        </ul>
-      ) : null}
-      {partial ? (
-        <p data-testid="compare-overview-partial">
-          Some additional observations did not load. Those failed requests stay
-          in the withheld count. They are not treated as matched, shared, or
-          different. Loaded county records stay visible.
-        </p>
-      ) : null}
-      <details className="ux-reset-compare-overview-note">
-        <summary>How these counts are defined</summary>
-        {counts ? (
-          <p className="type-small">
-            Shared and differing counts include only additional catalog
-            observations whose measure, unit, period, release, and method match.
-            Withheld counts are not comparable: one side may be missing, a
-            request may have failed, or the unit, period, release, or method may
-            differ. Withheld observations are not counted as shared or
-            different. Zero differing observations does not mean the counties
-            are equivalent. A missing value stays missing and is not zero.
-          </p>
-        ) : (
-          <p className="type-small">
-            A missing value stays missing and is not zero. County-record rows
-            stay published values. This page does not calculate a difference for
-            them.
-          </p>
-        )}
-      </details>
-    </section>
-  );
 }
 
 export function ResetCompareExperience() {
