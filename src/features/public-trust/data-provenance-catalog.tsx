@@ -77,7 +77,7 @@ export function DataProvenanceCatalog() {
             <p>
               <strong>What Atlas uses it for.</strong> {item.uses}
             </p>
-            <dl className="public-trust-facts">
+            <dl className="public-trust-facts public-trust-facts--stacked">
               <div>
                 <dt>Edition in Atlas</dt>
                 <dd>{item.edition}</dd>
