@@ -144,6 +144,29 @@ describe("Data Provenance page", () => {
     });
   });
 
+  it("stacks source-card facts and leaves the at-a-glance list beside its labels", () => {
+    render(<DataProvenancePage />);
+    const glance = document.querySelector(
+      "section[aria-labelledby='provenance-glance'] .public-trust-facts"
+    );
+    const cards = [
+      ...document.querySelectorAll(
+        ".public-trust-cards--trio .public-trust-facts"
+      ),
+    ];
+    expect({
+      cards: cards.length,
+      glanceStacked: glance?.classList.contains("public-trust-facts--stacked"),
+      sourceStacked: cards.every((card) =>
+        card.classList.contains("public-trust-facts--stacked")
+      ),
+    }).toStrictEqual({
+      cards: dataProvenanceContent.datasets.length,
+      glanceStacked: false,
+      sourceStacked: true,
+    });
+  });
+
   it("does not render retired catalog wording", () => {
     render(<DataProvenancePage />);
     const text = document.body.textContent ?? "";

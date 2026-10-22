@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
+import sitemap from "@/app/sitemap";
 import {
   dataProvenanceContent,
   dataProvenanceFilterCount,
@@ -74,6 +75,9 @@ describe("data provenance content", () => {
         "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
       title: "Data Provenance | One Health Lyme Gap Atlas",
     });
+    expect(
+      sitemap().some((entry) => entry.url.endsWith("/data-provenance"))
+    ).toBeTruthy();
   });
 
   it("lists twenty sources, including ten public-health bulletins", () => {
