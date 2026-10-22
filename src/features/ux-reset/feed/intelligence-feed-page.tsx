@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
@@ -18,6 +19,8 @@ import {
 import {
   activeFeedFilterCount,
   DEFAULT_FEED_PUBLISHED,
+  FEED_PUBLISHED_LABELS,
+  feedRequestNarrows,
   feedResultSummary,
   feedSearchParams,
   feedSourceOptions,
@@ -37,7 +40,10 @@ import {
   feedRequestFailure,
 } from "./feed-presentation";
 import { IntelligenceFeedFilters } from "./intelligence-feed-filters";
-import { useIntelligenceFeed } from "./use-intelligence-feed";
+import {
+  resetIntelligenceFeedToFirstPage,
+  useIntelligenceFeed,
+} from "./use-intelligence-feed";
 import { useIntelligenceSources } from "./use-intelligence-sources";
 
 const EMPTY_TITLE = "No new items";
@@ -45,6 +51,8 @@ const EMPTY_BODY =
   "Approved trusted sources have no items in this feed right now.";
 const FILTERED_EMPTY_TITLE = "No items match these filters";
 const FILTERED_EMPTY_BODY = "Try another source or a wider date range.";
+const DATE_WINDOW_EMPTY_TITLE = "No items in this date window";
+const DATE_WINDOW_EMPTY_BODY = `${FEED_PUBLISHED_LABELS[DEFAULT_FEED_PUBLISHED]} has no matching items. All dates includes older items and items without a publication date.`;
 const TOO_BROAD_TITLE = "Too many items to show at once";
 const TOO_BROAD_BODY = "Choose a source or a shorter date range.";
 
@@ -132,6 +140,7 @@ function FeedRetry({ onRetry }: { onRetry: () => Promise<unknown> }) {
 
 export function IntelligenceFeedExperience() {
   const route = resetRouteById("feed");
+  const queryClient = useQueryClient();
   const filterBarRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const [urlState, setUrlState] = useQueryStates(feedSearchParams, {
@@ -148,13 +157,7 @@ export function IntelligenceFeedExperience() {
     () => feedSourceOptions(sources.data ?? []),
     [sources.data]
   );
-  const sourceIsKnown = filters.sourceId
-    ? sourceOptions.some((option) => option.sourceId === filters.sourceId)
-    : false;
-  const waitForCatalog = Boolean(filters.sourceId) && sources.isPending;
-  const sourceRejected =
-    Boolean(filters.sourceId) && sources.isSuccess && !sourceIsKnown;
-  const feed = useIntelligenceFeed(filters, !waitForCatalog && !sourceRejected);
+  const feed = useIntelligenceFeed(filters);
   const rawSource = searchParams.get("source");
   const rawPublished = searchParams.get("published");
 
@@ -167,24 +170,21 @@ export function IntelligenceFeedExperience() {
     ) {
       patch.published = null;
     }
-    const sourceIsAbsent =
-      Boolean(rawSource) &&
-      isFeedSourceId(rawSource ?? "") &&
-      sources.isSuccess &&
-      !sourceOptions.some((option) => option.sourceId === rawSource);
-    if ((rawSource !== null && !isFeedSourceId(rawSource)) || sourceIsAbsent) {
+    // source_catalog_complete is fixed false, so a missing catalog row does not
+    // invalidate a syntactically valid deep-linked source id.
+    if (rawSource !== null && !isFeedSourceId(rawSource)) {
       patch.source = null;
     }
     if (patch.published === undefined && patch.source === undefined) {
       return;
     }
     void setUrlState(patch, { history: "replace", scroll: false });
-  }, [rawPublished, rawSource, setUrlState, sourceOptions, sources.isSuccess]);
+  }, [rawPublished, rawSource, setUrlState]);
 
   const pages = feed.data?.pages ?? [];
   const items = pages.flatMap((page) => page.data);
   const limitations = pages[0]?.meta.limitations ?? [];
-  const narrowed = activeFeedFilterCount(filters) > 0;
+  const requestNarrows = feedRequestNarrows(filters);
   const tooBroad =
     items.length === 0 && feed.isError && isFeedQueryTooBroad(feed.error);
   const nextPageFailure =
@@ -200,19 +200,15 @@ export function IntelligenceFeedExperience() {
       ? feedRequestFailure(feed.error)
       : null;
 
-  const replaceFilters = (
-    next: Partial<FeedFilterState>,
-    history: "push" | "replace"
-  ) => {
-    const published = next.published ?? filters.published;
-    const sourceId =
-      next.sourceId === undefined ? filters.sourceId : next.sourceId;
+  const commitFilters = (next: FeedFilterState) => {
+    void resetIntelligenceFeedToFirstPage(queryClient, next);
     void setUrlState(
       {
-        published: published === DEFAULT_FEED_PUBLISHED ? null : published,
-        source: sourceId,
+        published:
+          next.published === DEFAULT_FEED_PUBLISHED ? null : next.published,
+        source: next.sourceId,
       },
-      { history, scroll: false }
+      { history: "push", scroll: false }
     );
   };
 
@@ -221,7 +217,7 @@ export function IntelligenceFeedExperience() {
       return;
     }
     const next = { ...filters, sourceId };
-    replaceFilters({ sourceId }, "push");
+    commitFilters(next);
     trackFeedFilterApplied(
       "feed_source",
       sourceId ? "source_selected" : "all",
@@ -234,7 +230,7 @@ export function IntelligenceFeedExperience() {
       return;
     }
     const next = { ...filters, published };
-    replaceFilters({ published }, "push");
+    commitFilters(next);
     trackFeedFilterApplied(
       "feed_published",
       published,
@@ -244,21 +240,18 @@ export function IntelligenceFeedExperience() {
 
   const removeSource = () => {
     const next = { ...filters, sourceId: null };
-    replaceFilters({ sourceId: null }, "push");
+    commitFilters(next);
     trackFeedFilterCleared("single", activeFeedFilterCount(next));
   };
 
   const removePublished = () => {
     const next = { ...filters, published: DEFAULT_FEED_PUBLISHED };
-    replaceFilters({ published: DEFAULT_FEED_PUBLISHED }, "push");
+    commitFilters(next);
     trackFeedFilterCleared("single", activeFeedFilterCount(next));
   };
 
   const clearFilters = () => {
-    replaceFilters(
-      { published: DEFAULT_FEED_PUBLISHED, sourceId: null },
-      "push"
-    );
+    commitFilters({ published: DEFAULT_FEED_PUBLISHED, sourceId: null });
     trackFeedFilterCleared("all", 0);
     filterBarRef.current?.focus({ preventScroll: true });
   };
@@ -314,14 +307,36 @@ export function IntelligenceFeedExperience() {
         The feed could not be read.
       </AtlasStatusMessage>
     );
+  } else if (items.length === 0 && !requestNarrows) {
+    state = "empty";
+    body = (
+      <>
+        <FeedLimitations limitations={limitations} />
+        <AtlasStatusMessage title={EMPTY_TITLE} titleAs="h2" tone="empty">
+          {EMPTY_BODY}
+        </AtlasStatusMessage>
+      </>
+    );
   } else if (items.length === 0) {
-    state = narrowed ? "filtered-empty" : "empty";
+    const defaultWindowOnly = activeFeedFilterCount(filters) === 0;
+    state = "filtered-empty";
     body = (
       <>
         <FeedLimitations limitations={limitations} />
         <AtlasStatusMessage
           action={
-            narrowed ? (
+            defaultWindowOnly ? (
+              <Button
+                className="ux-reset-feed-clear"
+                onClick={() => {
+                  applyPublished("all");
+                }}
+                type="button"
+                variant="outline"
+              >
+                Show all dates
+              </Button>
+            ) : (
               <Button
                 className="ux-reset-feed-clear"
                 onClick={clearFilters}
@@ -330,13 +345,15 @@ export function IntelligenceFeedExperience() {
               >
                 Clear filters
               </Button>
-            ) : null
+            )
           }
-          title={narrowed ? FILTERED_EMPTY_TITLE : EMPTY_TITLE}
+          title={
+            defaultWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
+          }
           titleAs="h2"
           tone="empty"
         >
-          {narrowed ? FILTERED_EMPTY_BODY : EMPTY_BODY}
+          {defaultWindowOnly ? DATE_WINDOW_EMPTY_BODY : FILTERED_EMPTY_BODY}
         </AtlasStatusMessage>
       </>
     );

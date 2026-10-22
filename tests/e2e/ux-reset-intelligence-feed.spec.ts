@@ -172,11 +172,14 @@ test("keeps an empty feed distinct from failure and unavailability", async ({
   await installFeed(page, 200, intelligenceFeedEnvelope([]));
   await page.goto("/app/feed");
   await expect(
-    page.getByRole("heading", { name: "No new items" })
+    page.getByRole("heading", { name: "No items in this date window" })
   ).toBeVisible();
   await expect(
-    page.getByText(/no items in this feed right now/i)
+    page.getByRole("button", { name: "Show all dates" })
   ).toBeVisible();
+  await expect(page.getByText(/no items in this feed right now/i)).toHaveCount(
+    0
+  );
   const feed = page.getByTestId("intelligence-feed");
   await expect(feed.getByRole("alert")).toHaveCount(0);
   await expect(feed.getByText(/fail|error|unavailable/i)).toHaveCount(0);
@@ -444,8 +447,23 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expectNoAxeViolations(page);
 
+  feedUrls.length = 0;
   await page.goto("/app/feed?source=missing-source&published=30d");
-  await expect(page).toHaveURL(/\/app\/feed$/);
+  await expect(page).toHaveURL(/\/app\/feed\?source=missing-source$/);
+  await expect(page.getByRole("combobox", { name: "Source" })).toContainText(
+    "missing-source"
+  );
+  await expect(
+    page.getByRole("button", { name: "Remove filter Source: missing-source" })
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      feedUrls.some((url) => url.includes("source_id=missing-source"))
+    )
+    .toBe(true);
+  expect(
+    feedUrls.some((url) => new URL(url).searchParams.get("source_id") === null)
+  ).toBe(false);
   await expectNoAxeViolations(page);
 });
 
@@ -535,6 +553,9 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
   await page.goto("/app/feed");
   await expect(page.getByText("Sources couldn't load")).toBeVisible();
   await expect(
+    page.getByRole("status").getByRole("button", { name: "Try again" })
+  ).toHaveAttribute("data-atlas-analytics-control", "feed_sources_retry");
+  await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
   ).toBeVisible();
   await expect(
@@ -546,6 +567,166 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
       "fixture-backed-intelligence-feed-source-error.png"
     ),
   });
+});
+
+test("keeps a default date window empty distinct from an unfiltered feed", async ({
+  page,
+}) => {
+  const older = {
+    ...mixedIntelligenceFeedItems[0],
+    published_at: "2020-01-15T00:00:00Z",
+    title: "Older surveillance note",
+  };
+  const undated = {
+    ...mixedIntelligenceFeedItems[1],
+    publication_date_state: "not_provided" as const,
+    published_at: null,
+    title: "Undated surveillance note",
+  };
+  await page.route(FEED_URL, async (route) => {
+    const url = route.request().url();
+    feedUrls.push(url);
+    const publishedFrom = new URL(url).searchParams.get("published_from");
+    await route.fulfill({
+      contentType: "application/json",
+      json: intelligenceFeedEnvelope(publishedFrom ? [] : [older, undated]),
+      status: 200,
+    });
+  });
+  await page.goto("/app/feed");
+  await expect(
+    page.getByRole("heading", { name: "No items in this date window" })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Approved trusted sources have no items in this feed right now."
+    )
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear filters" })).toHaveCount(
+    0
+  );
+  await page.getByRole("button", { name: "Show all dates" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Older surveillance note" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Undated surveillance note" })
+  ).toBeVisible();
+  await expect(page).toHaveURL(/published=all/);
+  expect(
+    feedUrls.some((url) => new URL(url).searchParams.get("published_from"))
+  ).toBe(true);
+  expect(
+    feedUrls.some((url) => !new URL(url).searchParams.has("published_from"))
+  ).toBe(true);
+});
+
+test("resets cached feed pages to page one when a filter changes or clears", async ({
+  page,
+}) => {
+  const [first, second, third] = mixedIntelligenceFeedItems;
+  let defaultPageOneVisits = 0;
+  const pageOneTokens: string[] = [];
+  await page.route(FEED_URL, async (route) => {
+    const url = route.request().url();
+    feedUrls.push(url);
+    const params = new URL(url).searchParams;
+    const token = params.get("page_token");
+    const publishedFrom = params.get("published_from");
+    const isSevenDays = publishedFrom === localPublishedFrom(7);
+    if (isSevenDays) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: intelligenceFeedEnvelope([third], token ? null : "7d-1"),
+        status: 200,
+      });
+      return;
+    }
+    if (token) {
+      await route.fulfill({
+        contentType: "application/json",
+        json: intelligenceFeedEnvelope([
+          { ...second, title: `Continuation ${token}` },
+        ]),
+        status: 200,
+      });
+      return;
+    }
+    defaultPageOneVisits += 1;
+    const nextToken = `30d-${defaultPageOneVisits}`;
+    pageOneTokens.push(nextToken);
+    await route.fulfill({
+      contentType: "application/json",
+      json: intelligenceFeedEnvelope(
+        [{ ...first, title: "Default first" }],
+        nextToken
+      ),
+      status: 200,
+    });
+  });
+
+  const settledPageOneToken = async () => {
+    await expect(
+      page.getByRole("heading", { name: "Default first" })
+    ).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    const token = pageOneTokens.at(-1);
+    expect(token).toBeTruthy();
+    return token ?? "";
+  };
+
+  await page.goto("/app/feed");
+  const firstToken = await settledPageOneToken();
+  await page.getByRole("button", { name: "Show more items" }).click();
+  await expect(
+    page.getByRole("heading", { name: `Continuation ${firstToken}` })
+  ).toBeVisible();
+
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 7 days" }).click();
+  await expect(
+    page.getByRole("heading", { name: "New York Lyme disease information" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: `Continuation ${firstToken}` })
+  ).toHaveCount(0);
+
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 30 days" }).click();
+  const returnedToken = await settledPageOneToken();
+  expect(returnedToken).not.toBe(firstToken);
+  await expect(
+    page.getByRole("heading", { name: `Continuation ${firstToken}` })
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Show more items" }).click();
+  await expect(
+    page.getByRole("heading", { name: `Continuation ${returnedToken}` })
+  ).toBeVisible();
+  expect(
+    feedUrls.filter((url) => url.includes(`page_token=${returnedToken}`))
+  ).toHaveLength(1);
+  expect(
+    feedUrls.filter((url) => url.includes(`page_token=${firstToken}`))
+  ).toHaveLength(1);
+
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 7 days" }).click();
+  await expect(
+    page.getByRole("heading", { name: "New York Lyme disease information" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  const clearedToken = await settledPageOneToken();
+  expect(clearedToken).not.toBe(returnedToken);
+  await expect(
+    page.getByRole("heading", { name: `Continuation ${returnedToken}` })
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Show more items" }).click();
+  await expect(
+    page.getByRole("heading", { name: `Continuation ${clearedToken}` })
+  ).toBeVisible();
+  expect(
+    feedUrls.filter((url) => url.includes(`page_token=${clearedToken}`))
+  ).toHaveLength(1);
 });
 
 test("stacks feed filters at 375px without horizontal scroll", async ({

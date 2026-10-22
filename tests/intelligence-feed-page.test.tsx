@@ -87,10 +87,12 @@ vi.mock(import("@/lib/atlas-analytics"), async (importOriginal) => {
 
 const SCRIPT_URL = ["java", "script:alert(1)"].join("");
 
-function renderFeed(search = "") {
+function renderFeed(search = "", options?: { staleTime?: number }) {
   searchParamsHolder.value = new URLSearchParams(search);
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: {
+      queries: { retry: false, staleTime: options?.staleTime ?? 0 },
+    },
   });
   const urlUpdates: string[] = [];
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -127,6 +129,56 @@ function succeed(data: ReturnType<typeof intelligenceFeedEnvelope>) {
 }
 
 type FeedItem = (typeof mixedIntelligenceFeedItems)[number];
+
+const PRODUCTION_FEED_STALE_TIME = 300_000;
+
+function withTitle(entry: FeedItem, title: string): FeedItem {
+  return { ...entry, title };
+}
+
+async function choosePublished(name: string) {
+  fireEvent.click(screen.getByRole("combobox", { name: "Published" }));
+  const option = await screen.findByRole("option", { name });
+  fireEvent.pointerDown(option, { button: 0, pointerId: 1 });
+  fireEvent.pointerUp(option, { button: 0, pointerId: 1 });
+  fireEvent.click(option);
+}
+
+function installStalePageFeed() {
+  const from7 = publishedFromForPreset("7d", new Date());
+  let defaultVisits = 0;
+  listIntelligenceFeed.mockImplementation(async (params) => {
+    const token = params?.page_token;
+    if (params?.published_from === from7) {
+      return {
+        data: intelligenceFeedEnvelope(
+          [withTitle(mixedIntelligenceFeedItems[2], "Seven first")],
+          token ? null : "7d-1"
+        ),
+        headers: new Headers(),
+        status: 200,
+      };
+    }
+    if (token) {
+      return {
+        data: intelligenceFeedEnvelope([
+          withTitle(mixedIntelligenceFeedItems[1], `Continuation ${token}`),
+        ]),
+        headers: new Headers(),
+        status: 200,
+      };
+    }
+    defaultVisits += 1;
+    return {
+      data: intelligenceFeedEnvelope(
+        [withTitle(mixedIntelligenceFeedItems[0], "Default first")],
+        `30d-${defaultVisits}`
+      ),
+      headers: new Headers(),
+      status: 200,
+    };
+  });
+}
 
 function pageTokenCalls() {
   return listIntelligenceFeed.mock.calls.filter(
@@ -228,17 +280,17 @@ describe("intelligence feed page", () => {
     renderFeed();
 
     await expect(
-      screen.findByRole("heading", { name: "No new items" })
+      screen.findByRole("heading", { name: "No items in this date window" })
     ).resolves.toBeTruthy();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Approved trusted sources have no items in this feed right now."
       )
-    ).toBeTruthy();
+    ).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText(/fail|error|unavailable/i)).toBeNull();
     expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
-      "empty"
+      "filtered-empty"
     );
   });
 
@@ -639,11 +691,16 @@ describe("intelligence feed page", () => {
     expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
       "ready"
     );
-    fireEvent.click(
-      within(screen.getByRole("status")).getByRole("button", {
+    const retrySources = within(screen.getByRole("status")).getByRole(
+      "button",
+      {
         name: "Try again",
-      })
+      }
     );
+    expect(retrySources.dataset.atlasAnalyticsControl).toBe(
+      "feed_sources_retry"
+    );
+    fireEvent.click(retrySources);
     await waitFor(() => {
       expect(listIntelligenceSources.mock.calls.length).toBeGreaterThan(1);
     });
@@ -771,5 +828,192 @@ describe("intelligence feed page", () => {
       "cdc-lyme"
     );
     expect(screen.getByText("Showing 3 items")).toBeTruthy();
+  });
+
+  it("keeps a deep-linked source when the catalog is empty", async () => {
+    listIntelligenceSources.mockResolvedValue({
+      data: intelligenceSourcesEnvelope([]),
+      headers: new Headers(),
+      status: 200,
+    });
+    succeed(intelligenceFeedEnvelope([mixedIntelligenceFeedItems[0]]));
+    const { urlUpdates } = renderFeed("?source=cdc-lyme");
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    expect({
+      chip: Boolean(
+        screen.getByRole("button", {
+          name: "Remove filter Source: cdc-lyme",
+        })
+      ),
+      source: screen.getByRole("combobox", { name: "Source" }).textContent,
+      sourceIds: listIntelligenceFeed.mock.calls.map(
+        (call) => call[0]?.source_id
+      ),
+      urlUpdates,
+    }).toStrictEqual({
+      chip: true,
+      source: expect.stringContaining("cdc-lyme"),
+      sourceIds: ["cdc-lyme"],
+      urlUpdates: [],
+    });
+  });
+
+  it("keeps a deep-linked source missing from a partial catalog", async () => {
+    listIntelligenceSources.mockResolvedValue({
+      data: intelligenceSourcesEnvelope([mixedIntelligenceFeedItems[1].source]),
+      headers: new Headers(),
+      status: 200,
+    });
+    succeed(intelligenceFeedEnvelope([mixedIntelligenceFeedItems[0]]));
+    const { urlUpdates } = renderFeed("?source=cdc-lyme");
+
+    await screen.findByRole("heading", {
+      name: /Lyme disease surveillance update/,
+    });
+    expect(
+      listIntelligenceFeed.mock.calls.every(
+        (call) => call[0]?.source_id === "cdc-lyme"
+      )
+    ).toBeTruthy();
+    expect(urlUpdates).toStrictEqual([]);
+    expect(
+      screen.getByRole("combobox", { name: "Source" }).textContent
+    ).toContain("cdc-lyme");
+  });
+
+  it("treats the default date window as filtered when it returns no rows", async () => {
+    const older = {
+      ...mixedIntelligenceFeedItems[0],
+      published_at: "2020-01-15T00:00:00Z",
+      title: "Older surveillance note",
+    };
+    const undated = {
+      ...mixedIntelligenceFeedItems[1],
+      publication_date_state: "not_provided" as const,
+      published_at: null,
+      title: "Undated surveillance note",
+    };
+    listIntelligenceFeed.mockImplementation(async (params) => ({
+      data: intelligenceFeedEnvelope(
+        params?.published_from ? [] : [older, undated]
+      ),
+      headers: new Headers(),
+      status: 200,
+    }));
+    renderFeed();
+
+    await screen.findByRole("heading", {
+      name: "No items in this date window",
+    });
+    expect({
+      clear: screen.queryByRole("button", { name: "Clear filters" }),
+      chips: screen.queryByRole("button", { name: /Remove filter/ }),
+      state: screen.getByTestId("intelligence-feed").dataset.feedState,
+      unfiltered: screen.queryByText(
+        "Approved trusted sources have no items in this feed right now."
+      ),
+      unfilteredTitle: screen.queryByRole("heading", { name: "No new items" }),
+      window: Boolean(
+        screen.getByText(
+          "Past 30 days has no matching items. All dates includes older items and items without a publication date."
+        )
+      ),
+    }).toStrictEqual({
+      clear: null,
+      chips: null,
+      state: "filtered-empty",
+      unfiltered: null,
+      unfilteredTitle: null,
+      window: true,
+    });
+    expect(listIntelligenceFeed.mock.calls[0]?.[0]?.published_from).toBe(
+      publishedFromForPreset("30d", new Date())
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Show all dates" }));
+    await screen.findByRole("heading", { name: /Older surveillance note/ });
+    expect(
+      screen.getByRole("heading", { name: /Undated surveillance note/ })
+    ).toBeTruthy();
+    expect(
+      listIntelligenceFeed.mock.calls.some((call) => !call[0]?.published_from)
+    ).toBeTruthy();
+  });
+
+  it("uses the unfiltered empty message only when the request does not narrow", async () => {
+    succeed(intelligenceFeedEnvelope([]));
+    renderFeed("?published=all");
+
+    await screen.findByRole("heading", { name: "No new items" });
+    expect(
+      screen.getByText(
+        "Approved trusted sources have no items in this feed right now."
+      )
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { name: "No items in this date window" })
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show all dates" })).toBeNull();
+    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
+      "empty"
+    );
+  });
+
+  it("resets a cached filter to page one when that filter is selected again", async () => {
+    installStalePageFeed();
+    renderFeed("", { staleTime: PRODUCTION_FEED_STALE_TIME });
+
+    await screen.findByRole("heading", { name: /Default first/ });
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", { name: /Continuation 30d-1/ });
+    await choosePublished("Past 7 days");
+    await screen.findByRole("heading", { name: /Seven first/ });
+
+    const callsBeforeReturn = listIntelligenceFeed.mock.calls.length;
+    await choosePublished("Past 30 days");
+    await screen.findByRole("heading", { name: /Default first/ });
+    expect(
+      screen.queryByRole("heading", { name: /Continuation 30d-1/ })
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", { name: /Continuation 30d-2/ });
+    expect(
+      screen.queryByRole("heading", { name: /Continuation 30d-1/ })
+    ).toBeNull();
+    expect(
+      listIntelligenceFeed.mock.calls
+        .slice(callsBeforeReturn)
+        .map((call) => call[0]?.page_token ?? null)
+    ).toStrictEqual([null, "30d-2"]);
+  });
+
+  it("resets the default filter to page one when filters are cleared", async () => {
+    installStalePageFeed();
+    renderFeed("", { staleTime: PRODUCTION_FEED_STALE_TIME });
+
+    await screen.findByRole("heading", { name: /Default first/ });
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", { name: /Continuation 30d-1/ });
+    await choosePublished("Past 7 days");
+    await screen.findByRole("heading", { name: /Seven first/ });
+
+    const callsBeforeClear = listIntelligenceFeed.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    await screen.findByRole("heading", { name: /Default first/ });
+    expect(
+      screen.queryByRole("heading", { name: /Continuation 30d-1/ })
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByRole("heading", { name: /Continuation 30d-2/ });
+    expect(
+      listIntelligenceFeed.mock.calls
+        .slice(callsBeforeClear)
+        .map((call) => call[0]?.page_token ?? null)
+    ).toStrictEqual([null, "30d-2"]);
   });
 });

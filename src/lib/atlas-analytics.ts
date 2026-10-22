@@ -45,6 +45,7 @@ export const uiControlIds = [
   "footer_privacy",
   "footer_back_to_atlas",
   "page_retry",
+  "feed_sources_retry",
   "nav_data_dictionary_close",
   "results_table_county_select",
   "methods_source_open",

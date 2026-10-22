@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 import {
   activeFeedFilterCount,
@@ -140,7 +141,12 @@ export function IntelligenceFeedFilters({
           {sourcesError ? (
             <div className="ux-reset-feed-source-status" role="status">
               <p>Sources couldn&apos;t load</p>
-              <Button onClick={onRetrySources} type="button" variant="outline">
+              <Button
+                {...analyticsControlAttributes("feed_sources_retry")}
+                onClick={onRetrySources}
+                type="button"
+                variant="outline"
+              >
                 Try again
               </Button>
             </div>

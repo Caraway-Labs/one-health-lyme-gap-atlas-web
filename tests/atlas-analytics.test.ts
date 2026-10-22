@@ -213,6 +213,7 @@ describe("Atlas Amplitude boundary", () => {
         "geo_add_comparison",
         "geo_pagination_next",
         "experiment_retry",
+        "feed_sources_retry",
         "experiment_county_select",
         "evidence_chat_history_clear",
         "evidence_chat_history_select",

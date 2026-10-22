@@ -4,6 +4,7 @@ import {
   useInfiniteQuery,
   useQueryClient,
   type InfiniteData,
+  type QueryClient,
 } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -39,6 +40,19 @@ async function readFeedPage(
   );
   const response = await listIntelligenceFeed(params, { signal });
   return validateApiResponse("Intelligence feed", MetadataFeed, response.data);
+}
+
+/** Drop a cached multi-page result so the next view of these filters starts at page one. */
+export function resetIntelligenceFeedToFirstPage(
+  queryClient: QueryClient,
+  filters: FeedFilterState
+): Promise<void> {
+  return queryClient.resetQueries({
+    exact: true,
+    queryKey: getListIntelligenceFeedQueryKey(
+      buildFeedListParams(filters, new Date())
+    ),
+  });
 }
 
 export function useIntelligenceFeed(filters: FeedFilterState, enabled = true) {

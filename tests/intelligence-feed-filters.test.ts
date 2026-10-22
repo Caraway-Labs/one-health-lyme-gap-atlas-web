@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   activeFeedFilterCount,
   buildFeedListParams,
+  feedRequestNarrows,
   collectIntelligenceSourcePages,
   feedPublishedParser,
   feedResultSummary,
@@ -178,6 +179,21 @@ describe("intelligence feed filters", () => {
     expect(
       activeFeedFilterCount({ published: "7d", sourceId: "cdc-lyme" })
     ).toBe(2);
+  });
+
+  it("treats the default date window as a narrowed request", () => {
+    expect({
+      allDates: feedRequestNarrows({ published: "all", sourceId: null }),
+      defaultWindow: feedRequestNarrows({ published: "30d", sourceId: null }),
+      sourceOnly: feedRequestNarrows({
+        published: "all",
+        sourceId: "cdc-lyme",
+      }),
+    }).toStrictEqual({
+      allDates: false,
+      defaultWindow: true,
+      sourceOnly: true,
+    });
   });
 
   it("distinguishes a too-broad query from a stale page token", () => {

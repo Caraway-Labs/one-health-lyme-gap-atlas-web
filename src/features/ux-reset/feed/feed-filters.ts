@@ -133,6 +133,15 @@ export function activeFeedFilterCount(filters: FeedFilterState): number {
   return count;
 }
 
+/**
+ * True when the feed request sends source_id or published_from.
+ * The default Past 30 days control still narrows; only All dates with no
+ * source is an unfiltered request. Chip count stays separate.
+ */
+export function feedRequestNarrows(filters: FeedFilterState): boolean {
+  return buildFeedListParams(filters, new Date()) !== undefined;
+}
+
 export function feedResultSummary(
   count: number,
   moreAvailable: boolean
