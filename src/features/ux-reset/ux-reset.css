@@ -2412,6 +2412,10 @@
   outline-offset: 2px;
 }
 
+.ux-reset-layer-availability-release {
+  color: var(--atlas-muted-text);
+}
+
 @media (max-width: 640px) {
   .ux-reset-explorer-map-layer .ux-reset-review-scope-field {
     flex-wrap: wrap;

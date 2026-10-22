@@ -605,7 +605,7 @@ test.describe("Atlas Explorer layer legends", () => {
     await expect(legend).toBeVisible();
     await expect(legend).toContainText("Gap review score");
     await expect(legend).not.toContainText(/atlas gap score/i);
-    await expect(legend).toContainText("review-priority score");
+    await expect(legend).not.toContainText("review-priority score");
     await expect(legend).toContainText("Gap score unavailable");
     await expect(legend).toContainText(">=75");
     await expect(legend).not.toContainText("not personal disease risk");
