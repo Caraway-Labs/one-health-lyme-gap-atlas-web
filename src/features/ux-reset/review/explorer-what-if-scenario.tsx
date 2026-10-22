@@ -29,28 +29,38 @@ const PUBLISHED_HUMAN_STATUS = "published_count_floor";
 export const EXPLORER_SCENARIO_HEADING = "Explore scoring assumptions";
 
 export const EXPLORER_SCENARIO_INTRO =
-  "Adjust the assumptions. See how county scores and rankings change.";
+  "Adjust settings to see how scores and rankings change.";
 
 export const EXPLORER_SCENARIO_FOOTER =
   "Changes are for exploration and do not alter published results. The score supports surveillance review; it does not estimate individual infection risk.";
 
-export const EXPLORER_SCENARIO_WEIGHT_LABEL = "Tick and pathogen weight";
+export const EXPLORER_SCENARIO_WEIGHT_LABEL = "Tick / pathogen weight";
 
 export const EXPLORER_SCENARIO_WEIGHT_DESCRIPTION =
-  "Give tick and pathogen data more influence, or give community context more influence.";
+  "Balance tick and pathogen data against community context.";
 
 export const EXPLORER_SCENARIO_INCIDENCE_LABEL = "Effect of reported incidence";
 
 export const EXPLORER_SCENARIO_INCIDENCE_DESCRIPTION =
-  "Higher reported incidence lowers the score. Choose how strongly it lowers it.";
+  "Higher reported Lyme disease incidence lowers the gap score. Adjust how quickly it falls.";
 
 export const EXPLORER_SCENARIO_MISSING_LABEL = "Missing county case data";
 
 export const EXPLORER_SCENARIO_MISSING_DESCRIPTION =
-  "Choose the assumed human disease component when published case data are unavailable.";
+  "Set the assumed disease component when county case data are unavailable.";
 
-export const EXPLORER_SCENARIO_MISSING_SUPPORT =
-  "Can affect other counties and their rankings. This is not an estimated case count.";
+export const EXPLORER_SCENARIO_MISSING_SUPPORT = "This is not a case estimate.";
+
+export const EXPLORER_SCENARIO_NO_COUNTY =
+  "Select a county to compare published and adjusted scores.";
+
+export function explorerIncidenceSettingLabel(smoothK: number): string {
+  return `Incidence setting: ${smoothK}`;
+}
+
+export function explorerIncidenceHalfReductionNote(smoothK: number): string {
+  return `At ${smoothK} reported cases per 100,000 people, the incidence adjustment reduces the score by half.`;
+}
 
 export const EXPLORER_SCENARIO_MISSING_INACTIVE = "Does not affect this county";
 
@@ -211,10 +221,6 @@ function countyHasPublishedIncidence(county: CountyScoreSummary): boolean {
     Number.isFinite(county.incidence_floor_2023) &&
     county.incidence_floor_2023 >= 0
   );
-}
-
-function settingsStatus(settings: ScoreSettings): string {
-  return `Tick / pathogen weight ${settings.ecological_share}% · Incidence setting ${settings.smooth_k} per 100,000 · Missing-data component ${settings.missing_human_weakness} out of 100`;
 }
 
 function countyIdentity(name: string, state: string | undefined): string {
@@ -494,10 +500,8 @@ export function presentExplorerScenarioImpact(
   switch (state.status) {
     case "none": {
       return {
-        collapsed:
-          "Select a county to compare its published Atlas score with the score using your changes.",
-        expanded:
-          "Select a county to compare its published Atlas score with the score using your changes.",
+        collapsed: EXPLORER_SCENARIO_NO_COUNTY,
+        expanded: EXPLORER_SCENARIO_NO_COUNTY,
         kind: "placeholder",
         placeholder: "none",
       };
@@ -539,6 +543,7 @@ type ScenarioSliderProps = {
   value: number;
   valueAnnouncement: string;
   valueDetail: string;
+  valueNote?: string;
   valueText: string;
 };
 
@@ -555,6 +560,7 @@ function ScenarioSlider({
   value,
   valueAnnouncement,
   valueDetail,
+  valueNote,
   valueText,
 }: ScenarioSliderProps) {
   const slug = label.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase();
@@ -578,8 +584,11 @@ function ScenarioSlider({
       <div className="ux-reset-explorer-scenario-control-input">
         <p className="ux-reset-explorer-scenario-value">
           <strong>{valueText}</strong>
-          <span>{valueDetail}</span>
+          {valueDetail ? <span>{valueDetail}</span> : null}
         </p>
+        {valueNote ? (
+          <p className="ux-reset-explorer-scenario-value-note">{valueNote}</p>
+        ) : null}
         <Slider
           aria-describedby={descriptionId}
           aria-label={label}
@@ -685,12 +694,10 @@ function ScenarioImpactDetails({
     case "placeholder": {
       return (
         <section
-          aria-labelledby="explorer-scenario-impact-heading"
-          className="ux-reset-explorer-scenario-impact"
+          className="ux-reset-explorer-scenario-impact ux-reset-explorer-scenario-impact-empty"
           data-impact={view.placeholder}
           data-testid="explorer-scenario-impact"
         >
-          <h3 id="explorer-scenario-impact-heading">Gap review score</h3>
           <ScenarioImpactSummary view={view} />
           {view.expanded === view.collapsed ? null : <p>{view.expanded}</p>}
         </section>
@@ -703,12 +710,10 @@ function ScenarioImpactDetails({
       const categoryLabel = followUpCategoryLabel(view.governedPriority);
       return (
         <section
-          aria-labelledby="explorer-scenario-impact-heading"
           className="ux-reset-explorer-scenario-impact"
           data-impact={view.kind === "definite" ? view.resultKind : view.kind}
           data-testid="explorer-scenario-impact"
         >
-          <h3 id="explorer-scenario-impact-heading">Gap review score</h3>
           <p className="ux-reset-explorer-scenario-impact-county">
             {countyIdentity(view.countyName, countyState)}
           </p>
@@ -754,7 +759,6 @@ function ScenarioExplanation() {
     <details
       className="ux-reset-explorer-scenario-disclosure"
       data-testid="explorer-scenario-methods"
-      open
     >
       <summary>How these scenarios work</summary>
       <div className="ux-reset-explorer-scenario-topics">
@@ -916,12 +920,9 @@ export function ExplorerWhatIfScenario({
           </span>
         </summary>
         <div className="ux-reset-explorer-scenario-body">
-          <p className="ux-reset-explorer-scenario-intro">
-            {EXPLORER_SCENARIO_INTRO}
-          </p>
           <div className="ux-reset-explorer-scenario-settings">
-            <p data-testid="explorer-scenario-settings">
-              {settingsStatus(settings)}
+            <p className="ux-reset-explorer-scenario-intro">
+              {EXPLORER_SCENARIO_INTRO}
             </p>
             <Button
               data-testid="explorer-scenario-reset"
@@ -939,10 +940,7 @@ export function ExplorerWhatIfScenario({
           <div className="ux-reset-explorer-scenario-controls">
             <ScenarioSlider
               description={EXPLORER_SCENARIO_WEIGHT_DESCRIPTION}
-              endLabels={[
-                "More community weight",
-                "More tick / pathogen weight",
-              ]}
+              endLabels={["More community", "More tick / pathogen"]}
               label={EXPLORER_SCENARIO_WEIGHT_LABEL}
               max={SCENARIO_CONTROL_RANGES.ecological_share.max}
               min={SCENARIO_CONTROL_RANGES.ecological_share.min}
@@ -957,25 +955,25 @@ export function ExplorerWhatIfScenario({
             />
             <ScenarioSlider
               description={EXPLORER_SCENARIO_INCIDENCE_DESCRIPTION}
-              endLabels={["Stronger reduction", "Gentler reduction"]}
+              endLabels={["Lowers it faster", "Lowers it more gradually"]}
               label={EXPLORER_SCENARIO_INCIDENCE_LABEL}
               max={SCENARIO_CONTROL_RANGES.smooth_k.max}
               min={SCENARIO_CONTROL_RANGES.smooth_k.min}
               step={SCENARIO_CONTROL_RANGES.smooth_k.step}
               value={settings.smooth_k}
-              valueAnnouncement={`${settings.smooth_k} per 100,000`}
-              valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.smooth_k}`}
-              valueText={`${settings.smooth_k} per 100,000`}
+              valueAnnouncement={explorerIncidenceSettingLabel(
+                settings.smooth_k
+              )}
+              valueDetail=""
+              valueNote={explorerIncidenceHalfReductionNote(settings.smooth_k)}
+              valueText={explorerIncidenceSettingLabel(settings.smooth_k)}
               onChange={(value) => {
                 onChange({ ...settings, smooth_k: value });
               }}
             />
             <ScenarioSlider
               description={EXPLORER_SCENARIO_MISSING_DESCRIPTION}
-              endLabels={[
-                "Lower assumed component",
-                "Higher assumed component",
-              ]}
+              endLabels={["Lower component", "Higher component"]}
               label={EXPLORER_SCENARIO_MISSING_LABEL}
               max={SCENARIO_CONTROL_RANGES.missing_human_weakness.max}
               min={SCENARIO_CONTROL_RANGES.missing_human_weakness.min}
@@ -983,9 +981,9 @@ export function ExplorerWhatIfScenario({
               step={SCENARIO_CONTROL_RANGES.missing_human_weakness.step}
               supporting={EXPLORER_SCENARIO_MISSING_SUPPORT}
               value={settings.missing_human_weakness}
-              valueAnnouncement={`${settings.missing_human_weakness} out of 100`}
+              valueAnnouncement={`${settings.missing_human_weakness} / 100`}
               valueDetail={`Default: ${SCENARIO_SCORE_DEFAULTS.missing_human_weakness}`}
-              valueText={`${settings.missing_human_weakness} out of 100`}
+              valueText={`${settings.missing_human_weakness} / 100`}
               onChange={(value) => {
                 onChange({ ...settings, missing_human_weakness: value });
               }}
