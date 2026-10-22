@@ -1106,7 +1106,7 @@ function evidenceObservations(fips: string, measureId: string): Observation[] {
 async function openProvenance(
   page: Page,
   name: RegExp | string,
-  root: Locator = page
+  root: Page | Locator = page
 ) {
   const summary = root
     .getByRole("group")
