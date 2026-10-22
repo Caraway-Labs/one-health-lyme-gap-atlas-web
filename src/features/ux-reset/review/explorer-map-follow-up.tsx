@@ -54,8 +54,7 @@ export function ExplorerMapFollowUp({
       </h2>
       {countyFips.length === 0 ? (
         <p className="type-body">
-          Choose a county on the map or in the list before reading suggested
-          follow-up. Atlas will not pick one.
+          Select a county on the map or in the list to see suggested follow-up.
         </p>
       ) : null}
       {countyFips && !releaseId ? (
