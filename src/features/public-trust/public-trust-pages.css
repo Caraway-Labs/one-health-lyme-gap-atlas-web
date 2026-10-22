@@ -284,6 +284,12 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  /* Source cards are too narrow for the tablet term column. Stack the label. */
+  .public-trust-facts.public-trust-facts--stacked > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
   .public-trust-cards--flow {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
