@@ -24,7 +24,12 @@ const {
   followWorkspaceHref: vi.fn<(href: string) => void>(),
   getSession: vi.fn<
     () => Promise<{
-      data: { session: { user: { id: string } } | null };
+      data: {
+        session: {
+          access_token?: string;
+          user: { id: string };
+        } | null;
+      };
       error: { message: string } | null;
     }>
   >(),
@@ -75,9 +80,64 @@ import {
   workspaceSignOutPending,
   workspaceSignOutSuppressesExpiryRedirect,
 } from "../src/features/ux-reset/workspace-sign-out";
+import {
+  PRIVACY_REAUTH_CONTINUE_NOTICE,
+  PRIVACY_REAUTH_STORAGE_KEY,
+  resetPrivacyReauthResumeForTests,
+} from "../src/lib/auth/privacy-reauth";
+
+function secondAligned(ms: number): number {
+  return Math.floor(ms / 1000) * 1000;
+}
+
+function accessTokenIssuedAt(issuedAtMs: number): string {
+  const payload = btoa(JSON.stringify({ iat: Math.floor(issuedAtMs / 1000) }))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
+  return `eyJhbGciOiJub25lIn0.${payload}.sig`;
+}
+
+function sessionWithToken(issuedAtMs: number) {
+  return {
+    data: {
+      session: {
+        access_token: accessTokenIssuedAt(issuedAtMs),
+        user: { id: "user-a" },
+      },
+    },
+    error: null,
+  };
+}
+
+function bearer(token: string) {
+  return { headers: { Authorization: `Bearer ${token}` } };
+}
+
+function seedSatisfiedChallenge(
+  action: "export" | "deletion",
+  now = Date.now()
+) {
+  const previousIssuedAtMs = secondAligned(now - 60_000);
+  const issuedAtMs = secondAligned(now - 5000);
+  localStorage.setItem(
+    PRIVACY_REAUTH_STORAGE_KEY,
+    JSON.stringify({
+      action,
+      challengedAtMs: now - 10_000,
+      nonce: "11111111-1111-4111-8111-111111111111",
+      previousIssuedAtMs,
+      subjectId: "user-a",
+    })
+  );
+  getSession.mockResolvedValue(sessionWithToken(issuedAtMs));
+  return accessTokenIssuedAt(issuedAtMs);
+}
 
 describe("account data rights", () => {
   beforeEach(() => {
+    resetPrivacyReauthResumeForTests();
+    localStorage.clear();
     resetWorkspaceSignOutStateForTests();
     followWorkspaceHref.mockReset();
     getSession.mockReset();
@@ -109,6 +169,8 @@ describe("account data rights", () => {
   });
 
   afterEach(() => {
+    localStorage.clear();
+    resetPrivacyReauthResumeForTests();
     cleanup();
     document.querySelector(".ux-reset-pro-app")?.remove();
     document.querySelector(".account-session-shell")?.remove();
@@ -127,14 +189,9 @@ describe("account data rights", () => {
     );
   });
 
-  it("downloads the completed export after confirmation", async () => {
-    const objectUrl = vi.fn<() => string>(() => "blob:export");
-    const revoke = vi.fn<(url: string) => void>();
-    vi.stubGlobal("URL", {
-      createObjectURL: objectUrl,
-      revokeObjectURL: revoke,
-    });
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  it("asks for a new sign-in before a still-fresh session can export", async () => {
+    const issuedAtMs = secondAligned(Date.now() - 60_000);
+    getSession.mockResolvedValue(sessionWithToken(issuedAtMs));
 
     render(<AccountDataRights />);
     fireEvent.click(screen.getByRole("button", { name: "Export my data" }));
@@ -143,16 +200,56 @@ describe("account data rights", () => {
     );
 
     await waitFor(() => {
+      expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Faccount");
+    });
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(screen.getByRole("status").textContent).toContain(
+      PRIVACY_REAUTH_CONTINUE_NOTICE
+    );
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toContain(
+      `"previousIssuedAtMs":${issuedAtMs}`
+    );
+  });
+
+  it("downloads the completed export after a newer sign-in", async () => {
+    const objectUrl = vi.fn<() => string>(() => "blob:export");
+    const revoke = vi.fn<(url: string) => void>();
+    vi.stubGlobal("URL", {
+      createObjectURL: objectUrl,
+      revokeObjectURL: revoke,
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    const token = seedSatisfiedChallenge("export");
+
+    render(<AccountDataRights />);
+
+    await waitFor(() => {
       expect(screen.getByRole("status").textContent).toContain(
         "Your data export downloaded."
       );
     });
-    expect(createPrivacyRequest).toHaveBeenCalledWith({ action: "export" });
-    expect(confirmPrivacyRequest).toHaveBeenCalledWith("req-export-1", {
-      nonce: "nonce-abcdefghijklmnopqrstuvwxyz",
+    expect({
+      confirm: confirmPrivacyRequest.mock.calls,
+      create: createPrivacyRequest.mock.calls,
+      download: downloadPrivacyExport.mock.calls,
+      remainingChallenge: localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY),
+      signOut: signOut.mock.calls,
+      urls: objectUrl.mock.calls.length,
+    }).toStrictEqual({
+      confirm: [
+        [
+          "req-export-1",
+          { nonce: "nonce-abcdefghijklmnopqrstuvwxyz" },
+          bearer(token),
+        ],
+      ],
+      create: [[{ action: "export" }, bearer(token)]],
+      download: [["req-export-1", bearer(token)]],
+      remainingChallenge: null,
+      signOut: [],
+      urls: 1,
     });
-    expect(downloadPrivacyExport).toHaveBeenCalledWith("req-export-1");
-    expect(objectUrl).toHaveBeenCalledOnce();
   });
 
   it("closes the confirmation dialog with Escape without starting a request", () => {
@@ -175,12 +272,9 @@ describe("account data rights", () => {
         "req-log-9"
       )
     );
+    seedSatisfiedChallenge("export");
 
     render(<AccountDataRights />);
-    fireEvent.click(screen.getByRole("button", { name: "Export my data" }));
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Export my data" }).at(-1)!
-    );
 
     await waitFor(() => {
       expect(screen.getByRole("status").textContent).toContain(
@@ -196,12 +290,9 @@ describe("account data rights", () => {
     createPrivacyRequest.mockRejectedValueOnce(
       new AtlasApiError("stale", "/v1/me/privacy-requests", 401, null)
     );
+    seedSatisfiedChallenge("deletion");
 
     render(<AccountDataRights />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
-    );
 
     await waitFor(() => {
       expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Faccount");
@@ -210,17 +301,38 @@ describe("account data rights", () => {
     expect(followWorkspaceHref).not.toHaveBeenCalled();
   });
 
+  it("does not resume removal for the same access token", async () => {
+    const issuedAtMs = secondAligned(Date.now() - 5000);
+    localStorage.setItem(
+      PRIVACY_REAUTH_STORAGE_KEY,
+      JSON.stringify({
+        action: "deletion",
+        challengedAtMs: Date.now() - 10_000,
+        nonce: "11111111-1111-4111-8111-111111111111",
+        previousIssuedAtMs: issuedAtMs,
+        subjectId: "user-a",
+      })
+    );
+    getSession.mockResolvedValue(sessionWithToken(issuedAtMs));
+
+    render(<AccountDataRights />);
+    await waitFor(() => {
+      expect(getSession).toHaveBeenCalledWith();
+    });
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toContain(
+      "deletion"
+    );
+  });
+
   it("does not replace an in-flight home navigation when removal is unauthorized", async () => {
     beginWorkspaceSignOut();
     createPrivacyRequest.mockRejectedValueOnce(
       new AtlasApiError("stale", "/v1/me/privacy-requests", 401, null)
     );
+    seedSatisfiedChallenge("deletion");
 
     render(<AccountDataRights returnPath="/app/settings" />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
-    );
 
     await waitFor(() => {
       expect(createPrivacyRequest).toHaveBeenCalledOnce();
@@ -253,11 +365,8 @@ describe("account data rights", () => {
         accountShell.inert;
     });
 
+    seedSatisfiedChallenge("deletion");
     render(<AccountDataRights returnPath="/app/settings" />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
-    );
 
     await waitFor(() => {
       expect(followWorkspaceHref).toHaveBeenCalledWith("/");
@@ -282,11 +391,8 @@ describe("account data rights", () => {
       error: null,
     });
 
+    seedSatisfiedChallenge("deletion");
     render(<AccountDataRights returnPath="/app/settings" />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Remove all data" }).at(-1)!
-    );
 
     await waitFor(() => {
       expect(screen.getByRole("status").textContent).toContain(
@@ -308,6 +414,19 @@ describe("account data rights", () => {
     createPrivacyRequest.mockRejectedValueOnce(
       new AtlasApiError("stale", "/v1/me/privacy-requests", 401, null)
     );
+    seedSatisfiedChallenge("deletion");
+
+    render(<AccountDataRights returnPath="/app/settings" />);
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Fapp%2Fsettings");
+    });
+  });
+
+  it("keeps the current session when sign-out fails before removal", async () => {
+    const issuedAtMs = secondAligned(Date.now() - 60_000);
+    getSession.mockResolvedValue(sessionWithToken(issuedAtMs));
+    signOut.mockResolvedValue({ error: { message: "remote failed" } });
 
     render(<AccountDataRights returnPath="/app/settings" />);
     fireEvent.click(screen.getByRole("button", { name: "Remove all data" }));
@@ -316,7 +435,12 @@ describe("account data rights", () => {
     );
 
     await waitFor(() => {
-      expect(push).toHaveBeenCalledWith("/auth/sign-in?next=%2Fapp%2Fsettings");
+      expect(screen.getByRole("status").textContent).toContain(
+        SIGN_OUT_STILL_ACTIVE
+      );
     });
+    expect(createPrivacyRequest).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+    expect(localStorage.getItem(PRIVACY_REAUTH_STORAGE_KEY)).toBeNull();
   });
 });

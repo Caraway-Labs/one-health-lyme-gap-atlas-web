@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AtlasSectionHeader } from "@/components/atlas-section-header";
+import { humanDate } from "@/features/public-trust/human-date";
 import {
   PublicTrustActions,
   PublicTrustIntro,
@@ -13,15 +14,6 @@ import { aiEthicsContent } from "@/lib/ai-ethics-content";
 import { ATLAS_OVERVIEW_PATH, pageMetadataForRoute } from "@/lib/navigation";
 
 export const metadata = pageMetadataForRoute("/ai-ethics");
-
-function humanDate(isoDate: string) {
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${isoDate}T00:00:00Z`));
-}
 
 function FeedbackParagraph() {
   const { before, between, emphasis, links } = aiEthicsContent.feedback;

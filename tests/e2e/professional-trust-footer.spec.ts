@@ -179,6 +179,10 @@ test("opens trust links from the professional footer", async ({
   await expect(
     page.getByRole("heading", { name: "Privacy without the fine print." })
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Questions and requests" })
+  ).toBeVisible();
+  await expect(page.getByText("data-use summary")).toHaveCount(0);
 
   await page.goto("/explore");
   await page

@@ -192,7 +192,7 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     label: "Privacy",
     match: "exact",
     pageDescription:
-      "How One Health Lyme Gap Atlas handles user data and privacy choices.",
+      "How One Health Atlas collects, uses, and protects information, the service providers involved, how long data is kept, and the privacy choices available to every visitor.",
     pageTitle: "Privacy | One Health Lyme Gap Atlas",
     placement: "footer",
     shell: "public",
