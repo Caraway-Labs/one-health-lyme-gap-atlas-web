@@ -851,7 +851,6 @@ function ResetReviewExperienceInner() {
                 tierRelease={tierRelease}
                 mapFocus={urlState.focus}
                 onCountyChange={setCounty}
-                onViewCountyEvidence={openCountyEvidence}
                 onMapFocusChange={setMapFocus}
                 onMapLayerChange={setMapLayer}
                 onReturnToUsView={returnToUsView}

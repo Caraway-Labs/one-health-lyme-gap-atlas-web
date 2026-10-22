@@ -111,7 +111,10 @@ describe("selected county preview", () => {
         .textContent,
       compareVariant: screen.getByRole("link", { name: "Compare This County" })
         .dataset.variant,
-      evidence: screen.getByTestId("review-view-county-evidence").textContent,
+      evidence: screen.queryByRole("button", {
+        name: "View Full County Evidence",
+      }),
+      pdf: screen.getByRole("button", { name: "Download PDF" }).textContent,
       fips,
       followUp: screen.getByRole("button", { name: "View County Follow-Up" })
         .textContent,
@@ -135,7 +138,8 @@ describe("selected county preview", () => {
       canonical: null,
       community: "Community context",
       compareVariant: "outline",
-      evidence: "View Full County Evidence",
+      evidence: null,
+      pdf: "Download PDF",
       fips: "FIPS 01003",
       followUp: "View County Follow-Up",
       influenceAfterEvidence: true,

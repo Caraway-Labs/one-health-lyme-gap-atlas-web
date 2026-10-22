@@ -178,9 +178,23 @@ test.describe("Selected county preview", () => {
     await expect(preview.getByRole("link")).toHaveCount(1);
     await expect(preview.getByTestId("review-investigate")).toHaveCount(0);
     await expect(preview.getByTestId("review-ask-atlas")).toHaveCount(0);
-    await expect(preview.getByTestId("review-view-county-evidence")).toHaveText(
-      "View Full County Evidence"
+    await expect(
+      preview.getByTestId("review-view-county-evidence")
+    ).toHaveCount(0);
+    await expect(
+      preview.getByRole("button", { name: "View Full County Evidence" })
+    ).toHaveCount(0);
+    await expect(preview.getByTestId("explore-download-pdf")).toHaveText(
+      "Download PDF"
     );
+    await expect(preview.getByTestId("explore-download-pdf")).toBeEnabled();
+    await expect(preview.getByTestId("review-compare")).toHaveAttribute(
+      "href",
+      /\/compare\?.*county=01003/
+    );
+    await expect(
+      preview.locator(".ux-reset-review-preview-actions > *")
+    ).toHaveCount(3);
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
       "Minimum reported cases"
     );
@@ -220,6 +234,14 @@ test.describe("Selected county preview", () => {
 
     await page.locator('button.ux-reset-ranked-row[data-fips="01001"]').click();
     await expect(preview).toHaveAttribute("data-fips", "01001");
+    await expect(
+      preview.getByTestId("review-view-county-evidence")
+    ).toHaveCount(0);
+    await expect(
+      preview.getByTestId("review-view-county-follow-up")
+    ).toHaveCount(1);
+    await expect(preview.getByTestId("review-compare")).toHaveCount(1);
+    await expect(preview.getByTestId("explore-download-pdf")).toHaveCount(1);
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
       "County record"
     );
@@ -244,6 +266,27 @@ test.describe("Selected county preview", () => {
     await expectActionLayout(page, preview);
     await page.setViewportSize({ height: 1000, width: 1920 });
     await expectActionLayout(page, preview);
+    await page.setViewportSize({ height: 900, width: 640 });
+    await expect(
+      preview.getByRole("button", { name: "View Full County Evidence" })
+    ).toHaveCount(0);
+    await expectActionLayout(page, preview);
+    await preview.getByTestId("review-view-county-follow-up").focus();
+    const tabStops: string[] = [];
+    for (let step = 0; step < 4; step += 1) {
+      tabStops.push(
+        (
+          await page.evaluate(
+            () =>
+              (document.activeElement as HTMLElement | null)?.innerText ?? ""
+          )
+        ).replaceAll("\n", " ")
+      );
+      await page.keyboard.press("Tab");
+    }
+    expect(tabStops.join(" | ")).not.toContain("View Full County Evidence");
+    expect(tabStops[0]).toContain("View County Follow-Up");
+    await page.setViewportSize({ height: 1000, width: 1440 });
     await page.getByTestId("review-view-county-follow-up").click();
     await expect(page.locator("#explorer-map-follow-up")).toBeFocused();
     await expectFollowUpInView(page);
