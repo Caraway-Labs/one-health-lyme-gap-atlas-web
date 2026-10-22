@@ -35,7 +35,6 @@ import {
 import {
   tier1HighSufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
 
 const controls: {
@@ -1479,9 +1478,9 @@ describe("County Investigate workspace", () => {
   });
 
   it("shows a Tier 1 result only for the resolved investigate release", async () => {
-    controls.tier1Result = tier1PriorityForRelease(
-      tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
-      "alpha-2026"
+    controls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "08001"
     );
     renderInvestigate("?county=08001&scope=CO&dataset=alpha-2026");
     await waitFor(() =>
@@ -1494,7 +1493,7 @@ describe("County Investigate workspace", () => {
     ).toBe("SUFFICIENT");
   });
 
-  it("keeps a historical investigate dataset from showing the current Tier 1 batch", async () => {
+  it("shows the current Tier 1 batch on a historical investigate dataset", async () => {
     controls.metadataReleaseId = "historical-2024";
     controls.scoresReleaseId = "historical-2024";
     controls.tier1Result = tier1PriorityForCounty(
@@ -1504,25 +1503,26 @@ describe("County Investigate workspace", () => {
     renderInvestigate("?county=08001&scope=CO&dataset=historical-2024");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.state
-      ).toBe("release-unaligned")
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
     );
     const region = screen.getByTestId("tier1-surveillance-priority");
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
-      reason: region.dataset.releaseReason,
-      tier: region.dataset.tier,
+      state: region.dataset.state,
+      sufficiency: region.dataset.sufficiency,
     }).toStrictEqual({
       low: false,
-      reason: "mismatch",
-      tier: undefined,
+      state: "result",
+      sufficiency: "SUFFICIENT",
     });
+    expect(region.textContent).not.toContain("Not shown for this page release");
   });
 
-  it("drops the Tier 1 tier when the same investigate county changes release", async () => {
-    controls.tier1Result = tier1PriorityForRelease(
-      tier1PriorityForCounty(tier1HighSufficientFixture, "08001"),
-      "alpha-2026"
+  it("keeps the Tier 1 tier when the same investigate county changes release", async () => {
+    controls.tier1Result = tier1PriorityForCounty(
+      tier1HighSufficientFixture,
+      "08001"
     );
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -1540,26 +1540,22 @@ describe("County Investigate workspace", () => {
     controls.scoresReleaseId = "beta-2026";
     await view.rerenderSearch("?county=08001&scope=CO&dataset=beta-2026");
     await waitFor(() => {
-      const region = screen.getByTestId("tier1-surveillance-priority");
-      if (
-        region.dataset.state !== "release-unaligned" ||
-        region.dataset.tier === "HIGH"
-      ) {
-        throw new Error("The previous Tier 1 result stayed on screen.");
-      }
+      expect(
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH");
+      expect(screen.getByTestId("investigate-header").dataset.release).toBe(
+        "beta-2026"
+      );
     });
-    expect(
-      screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
-    ).toBe("mismatch");
-    expect(screen.getByTestId("investigate-header").dataset.release).toBe(
-      "beta-2026"
-    );
-    expect(
-      screen.getByTestId("tier1-surveillance-priority").textContent
-    ).not.toMatch(/\bLOW\b|\bHIGH\b/);
+    const region = screen.getByTestId("tier1-surveillance-priority");
+    expect(region.dataset.state).toBe("result");
+    expect(region.dataset.tier).toBe("HIGH");
+    expect(region.textContent).toContain("HIGH");
+    expect(region.textContent).not.toContain("LOW");
+    expect(region.textContent).not.toContain("Not shown for this page release");
   });
 
-  it("does not align a Tier 1 result when investigate release metadata fails", async () => {
+  it("shows a Tier 1 result when investigate release metadata fails", async () => {
     controls.metadataStatus = 503;
     controls.tier1Result = tier1PriorityForCounty(
       tier1HighSufficientFixture,
@@ -1568,18 +1564,18 @@ describe("County Investigate workspace", () => {
     renderInvestigate("?county=08001&scope=CO&dataset=older-release");
     await waitFor(() =>
       expect(
-        screen.getByTestId("tier1-surveillance-priority").dataset.releaseReason
-      ).toBe("unknown")
+        screen.getByTestId("tier1-surveillance-priority").dataset.tier
+      ).toBe("HIGH")
     );
     const region = screen.getByTestId("tier1-surveillance-priority");
     expect({
       low: /\bLOW\b/.test(region.textContent ?? ""),
       state: region.dataset.state,
-      tier: region.dataset.tier,
+      sufficiency: region.dataset.sufficiency,
     }).toStrictEqual({
       low: false,
-      state: "release-unaligned",
-      tier: undefined,
+      state: "result",
+      sufficiency: "SUFFICIENT",
     });
   });
 

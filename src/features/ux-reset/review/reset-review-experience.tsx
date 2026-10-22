@@ -787,7 +787,6 @@ function ResetReviewExperienceInner() {
         <Tier1SurveillancePriority
           fips={reviewCounty}
           headingLevel="h2"
-          release={tierRelease}
           showInterpretiveNotes={false}
         />
       ) : null}

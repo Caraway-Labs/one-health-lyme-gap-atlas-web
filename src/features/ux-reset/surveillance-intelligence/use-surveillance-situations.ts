@@ -11,7 +11,11 @@ import { countySurveillanceSituationsGet } from "@/generated/atlas";
 import type { CountySurveillanceSituations } from "@/generated/models/countySurveillanceSituations";
 import { CountySurveillanceSituationsGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
-import { validateApiResponse } from "@/lib/api-response-validation";
+import {
+  ApiResponseValidationError,
+  logUnverifiedApiResponse,
+  validateApiResponse,
+} from "@/lib/api-response-validation";
 
 const COUNTY_FIPS = /^\d{5}$/;
 const MILLISECONDS_PER_SECOND = 1000;
@@ -49,12 +53,12 @@ export function surveillanceSituationsRetryDelay(
 
 export function surveillanceSituationsQueryOptions(
   fips: string,
-  releaseId: string | null,
   queryClient: QueryClient,
   enabled = true
 ): UseQueryOptions<CountySurveillanceSituations, Error> {
+  const endpoint = `/v1/counties/${fips}/surveillance-situations`;
   return {
-    enabled: enabled && COUNTY_FIPS.test(fips) && releaseId !== null,
+    enabled: enabled && COUNTY_FIPS.test(fips),
     queryFn: async ({
       signal,
     }: {
@@ -64,18 +68,29 @@ export function surveillanceSituationsQueryOptions(
       if (response.status !== 200) {
         throw new AtlasApiError(
           "County surveillance situations could not be loaded.",
-          `/v1/counties/${fips}/surveillance-situations`,
+          endpoint,
           response.status,
           null
         );
       }
-      return validateApiResponse(
-        "County surveillance situations",
-        CountySurveillanceSituationsGetResponse,
-        response.data
-      );
+      try {
+        return validateApiResponse(
+          "County surveillance situations",
+          CountySurveillanceSituationsGetResponse,
+          response.data
+        );
+      } catch (error) {
+        if (error instanceof ApiResponseValidationError) {
+          logUnverifiedApiResponse({
+            endpoint,
+            fips,
+            reason: error.reason,
+          });
+        }
+        throw error;
+      }
     },
-    queryKey: ["ux-reset-surveillance-situations", fips, releaseId] as const,
+    queryKey: ["ux-reset-surveillance-situations", fips] as const,
     retry: (failureCount: number, error: unknown) => {
       if (error instanceof AtlasApiError && error.status === NOT_FOUND) {
         return false;
@@ -91,13 +106,9 @@ export function surveillanceSituationsQueryOptions(
   };
 }
 
-export function useSurveillanceSituations(
-  fips: string,
-  releaseId: string | null,
-  enabled = true
-) {
+export function useSurveillanceSituations(fips: string, enabled = true) {
   const queryClient = useQueryClient();
   return useQuery(
-    surveillanceSituationsQueryOptions(fips, releaseId, queryClient, enabled)
+    surveillanceSituationsQueryOptions(fips, queryClient, enabled)
   );
 }

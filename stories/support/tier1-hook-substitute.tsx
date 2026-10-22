@@ -4,7 +4,6 @@ import type { QueryClient, UseQueryOptions } from "@tanstack/react-query";
 import { createContext, useContext, useEffect } from "react";
 import type { ReactNode } from "react";
 
-import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 
@@ -96,17 +95,15 @@ function storyPriorityResult(fips: string): Promise<Tier1CountyPriority> {
  */
 export function tier1SurveillancePriorityQueryOptions(
   fips: string,
-  releaseId: string | null,
   _queryClient: QueryClient,
   enabled = true
 ): UseQueryOptions<Tier1CountyPriority, Error> {
   const scenarioReady =
     storyScenario.status === "success" || storyScenario.status === "error";
   return {
-    enabled:
-      enabled && scenarioReady && COUNTY_FIPS.test(fips) && releaseId !== null,
+    enabled: enabled && scenarioReady && COUNTY_FIPS.test(fips),
     queryFn: (): Promise<Tier1CountyPriority> => storyPriorityResult(fips),
-    queryKey: ["ux-reset-tier1-surveillance-priority", fips, releaseId],
+    queryKey: ["ux-reset-tier1-surveillance-priority", fips],
     retry: false,
   };
 }
@@ -123,13 +120,9 @@ type StoryQueryResult = {
  * Storybook substitute for the request hook. It never calls the API.
  * Production tests keep the real module; only the Storybook Vite alias uses this file.
  */
-export function useTier1SurveillancePriority(
-  fips: string,
-  release: Tier1ActiveRelease
-): StoryQueryResult {
+export function useTier1SurveillancePriority(fips: string): StoryQueryResult {
   const scenario = useContext(Tier1StoryQueryContext);
-  const releaseId = release.status === "ready" ? release.releaseId : null;
-  if (!(COUNTY_FIPS.test(fips) && releaseId !== null)) {
+  if (!COUNTY_FIPS.test(fips)) {
     return {
       data: undefined,
       error: null,

@@ -78,10 +78,3 @@ export function tier1PriorityForCounty(
 ): Tier1CountyPriority {
   return { ...result, county_fips: countyFips };
 }
-
-export function tier1PriorityForRelease(
-  result: Tier1CountyPriority,
-  releaseId: string
-): Tier1CountyPriority {
-  return { ...result, release_id: releaseId };
-}

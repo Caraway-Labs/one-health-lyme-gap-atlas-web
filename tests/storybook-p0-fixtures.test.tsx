@@ -16,10 +16,9 @@ import { investigateEvidenceConflicts } from "@/features/ux-reset/investigate/co
 import { ReviewCountyPreviewPanel } from "@/features/ux-reset/review/review-county-preview-panel";
 import {
   TIER1_FAILED_MESSAGE,
-  TIER1_RELEASE_MISMATCH_MESSAGE,
-  TIER1_RELEASE_UNKNOWN_MESSAGE,
   TIER1_STALE_MESSAGE,
   TIER1_UNAVAILABLE_MESSAGE,
+  TIER1_UNVERIFIED_MESSAGE,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 
 import {
@@ -216,20 +215,18 @@ describe("Storybook P0 evidence fixtures", () => {
       tier1StoryView("unavailable").kind,
       tier1StoryView("failed").kind,
       tier1StoryView("stale").kind,
-      tier1StoryView("release-unknown").kind,
-      tier1StoryView("release-mismatch").kind,
+      tier1StoryView("unverified").kind,
     ];
     expect(kinds).toStrictEqual([
       "unavailable",
       "failed",
       "stale",
-      "release-unaligned",
-      "release-unaligned",
+      "unverified",
     ]);
     expect(tier1StoryView("unavailable").kind).not.toBe("result");
     expect(tier1StoryView("failed").kind).not.toBe("result");
     expect(tier1StoryView("stale").kind).not.toBe("result");
-    expect(tier1StoryView("release-mismatch").kind).not.toBe("result");
+    expect(tier1StoryView("unverified").kind).not.toBe("result");
   });
 
   it("keeps a returned low insufficient tier distinct from withholding", () => {
@@ -239,13 +236,10 @@ describe("Storybook P0 evidence fixtures", () => {
       tier: "LOW",
     });
     expect(tier1StoryView("not-estimable").kind).toBe("not-estimable");
-    expect(tier1StoryView("release-unknown")).toMatchObject({
-      kind: "release-unaligned",
-      reason: "unknown",
-    });
-    expect(tier1StoryView("release-mismatch")).toMatchObject({
-      kind: "release-unaligned",
-      reason: "mismatch",
+    expect(tier1StoryView("unverified").kind).toBe("unverified");
+    expect(tier1StoryView("high-sufficient")).toMatchObject({
+      kind: "result",
+      tier: "HIGH",
     });
   });
 
@@ -254,8 +248,7 @@ describe("Storybook P0 evidence fixtures", () => {
       TIER1_UNAVAILABLE_MESSAGE,
       TIER1_FAILED_MESSAGE,
       TIER1_STALE_MESSAGE,
-      TIER1_RELEASE_UNKNOWN_MESSAGE,
-      TIER1_RELEASE_MISMATCH_MESSAGE,
+      TIER1_UNVERIFIED_MESSAGE,
     ];
     expect(
       messages.every((message) => message.includes("not low priority"))
@@ -380,9 +373,17 @@ describe("Storybook P0 evidence fixtures", () => {
     expect(longForm.preview.qualification?.provenance.sourceUrl).toBe(
       syntheticReviewSourceUrl
     );
-    expect(dropped.query.data.release_id).toBe(dropped.release.releaseId);
+    expect(dropped.query.data.release_id).toBe(
+      tier1HighSufficientFixture.release_id
+    );
     expect(dropped.release.releaseId).toBe(syntheticReleaseId);
-    expect(high.details.releaseId).toBe(syntheticReleaseId);
+    expect({
+      captured: high.details.releaseId,
+      synthetic: high.details.releaseId === syntheticReleaseId,
+    }).toStrictEqual({
+      captured: tier1HighSufficientFixture.release_id,
+      synthetic: false,
+    });
   });
 
   it("puts the synthetic release on handoff dataset parameters", () => {
@@ -393,12 +394,19 @@ describe("Storybook P0 evidence fixtures", () => {
     ) {
       throw new Error("Rationale must return a model.");
     }
-    expect(rationale.query.data.release_id).toBe(rationale.release.releaseId);
+    expect({
+      captured: rationale.query.data.release_id,
+      pageRelease:
+        rationale.query.data.release_id === rationale.release.releaseId,
+    }).toStrictEqual({
+      captured: tier1HighSufficientFixture.release_id,
+      pageRelease: false,
+    });
     expect(rationale.href).toContain(`dataset=${syntheticReleaseId}`);
     expect(rationale.compareHref).toContain(`dataset=${syntheticReleaseId}`);
-    expect(tier1StoryView("release-mismatch")).toMatchObject({
-      kind: "release-unaligned",
-      reason: "mismatch",
+    expect(tier1StoryView("high-sufficient")).toMatchObject({
+      kind: "result",
+      tier: "HIGH",
     });
     expect(tier1HighSufficientFixture.release_id).not.toBe(syntheticReleaseId);
   });
@@ -411,7 +419,13 @@ describe("Storybook P0 evidence fixtures", () => {
     }
     expect(model.bundle.releaseId).toBe(syntheticReleaseId);
     expect(model.countyRecord?.releaseId).toBe(syntheticReleaseId);
-    expect(view.details.releaseId).toBe(model.bundle.releaseId);
+    expect({
+      bundle: view.details.releaseId === model.bundle.releaseId,
+      captured: view.details.releaseId,
+    }).toStrictEqual({
+      bundle: false,
+      captured: tier1HighSufficientFixture.release_id,
+    });
     expect(
       provenancePreset("full-reason").provenance.technical?.releaseId
     ).toBe(syntheticReleaseId);
@@ -423,10 +437,7 @@ describe("Storybook P0 evidence fixtures", () => {
   it("resolves the nested surveillance substitute without fetching", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     function Probe() {
-      const query = useTier1SurveillancePriority(syntheticCounty.fips, {
-        releaseId: "alpha-2026",
-        status: "ready",
-      });
+      const query = useTier1SurveillancePriority(syntheticCounty.fips);
       return <p>{query.isPending ? "pending" : "settled"}</p>;
     }
     render(
@@ -444,7 +455,6 @@ describe("Storybook P0 evidence fixtures", () => {
     const queryClient = new QueryClient();
     const idleOptions = tier1SurveillancePriorityQueryOptions(
       syntheticCounty.fips,
-      syntheticReleaseId,
       queryClient
     );
     expect(idleOptions.enabled).toBeFalsy();
@@ -453,7 +463,6 @@ describe("Storybook P0 evidence fixtures", () => {
     function Probe() {
       const options = tier1SurveillancePriorityQueryOptions(
         syntheticCounty.fips,
-        syntheticReleaseId,
         queryClient
       );
       enabled = options.enabled === true;
@@ -466,7 +475,6 @@ describe("Storybook P0 evidence fixtures", () => {
     );
     const options = tier1SurveillancePriorityQueryOptions(
       syntheticCounty.fips,
-      syntheticReleaseId,
       queryClient
     );
     const { queryFn, queryKey } = options;

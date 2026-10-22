@@ -1,0 +1,28 @@
+{
+  "county_fips": "16001",
+  "priority_tier": "LOW",
+  "priority_percentile": 41.18676423798918,
+  "raw_model_score": 0.6918748441153785,
+  "evidence_sufficiency": "INSUFFICIENT",
+  "model_version": "tier1-statistical-reference-v1",
+  "release_id": "governed-2026-09-18-unknown-coverage",
+  "source_commit": "024bbbf74a7da8e54566bd60e8e762d85a51e24f",
+  "prediction_batch_version": "tier1-review-priority-5536b5caad95cf47",
+  "tier_policy_version": "tier1-review-percentile-v1",
+  "generated_at_utc": "2026-10-07T02:14:24Z",
+  "reasons": [
+    {
+      "code": "NO_COUNTY_HUMAN_RECORD",
+      "text": "No county-linked human record is available; the model uses an explicit placeholder."
+    },
+    {
+      "code": "PATHOGEN_NO_RECORDS",
+      "text": "Publisher reports No records; this is not evidence of absence."
+    },
+    {
+      "code": "SVI_CONTEXT_DIFFERENCE",
+      "text": "SVI context differs from the scored-population center."
+    }
+  ],
+  "limitation_ref": "docs/contracts/tier1-persisted-output-v1.md"
+}

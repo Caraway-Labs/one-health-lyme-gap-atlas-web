@@ -16,7 +16,6 @@ import {
   tier1LowInsufficientFixture,
   tier1MediumSufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "../fixtures/tier1-surveillance-priority";
 
 const RELEASE_ID = reviewScopeMetadataFixture.release_id;
@@ -25,10 +24,7 @@ function aligned(
   result: Tier1CountyPriority,
   fips: string
 ): Tier1CountyPriority {
-  return tier1PriorityForRelease(
-    tier1PriorityForCounty(result, fips),
-    RELEASE_ID
-  );
+  return tier1PriorityForCounty(result, fips);
 }
 
 async function installClassifiedCounties(page: Page): Promise<void> {

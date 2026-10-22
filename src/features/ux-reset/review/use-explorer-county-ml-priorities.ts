@@ -15,10 +15,10 @@ import {
   explorerMlListClassification,
   type ExplorerMlListClassification,
 } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
-import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { tier1SurveillancePriorityQueryOptions } from "@/features/ux-reset/surveillance-priority/use-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { ApiResponseValidationError } from "@/lib/api-response-validation";
 
 /** In-flight Tier 1 reads for one Explorer list. A state directory must not open one request per county. */
 export const EXPLORER_ML_PRIORITY_FETCH_LIMIT = 4;
@@ -68,15 +68,10 @@ export function explorerMlListedFips(input: {
   );
 }
 
-function tier1QueryState(
-  queryClient: QueryClient,
-  fips: string,
-  releaseId: string | null
-) {
+function tier1QueryState(queryClient: QueryClient, fips: string) {
   return queryClient.getQueryState<Tier1CountyPriority, Error>([
     "ux-reset-tier1-surveillance-priority",
     fips,
-    releaseId,
   ]);
 }
 
@@ -158,24 +153,18 @@ function releaseExplorerMlPrioritySlot(queryClient: QueryClient): void {
   gate.active -= 1;
 }
 
-function tier1QuerySettled(
-  queryClient: QueryClient,
-  fips: string,
-  releaseId: string | null
-): boolean {
-  const state = tier1QueryState(queryClient, fips, releaseId);
+function tier1QuerySettled(queryClient: QueryClient, fips: string): boolean {
+  const state = tier1QueryState(queryClient, fips);
   return state?.status === "success" || state?.status === "error";
 }
 
 function boundedTier1QueryOptions(
   fips: string,
-  releaseId: string | null,
   queryClient: QueryClient,
   enabled: boolean
 ): UseQueryOptions<Tier1CountyPriority, Error> {
   const options = tier1SurveillancePriorityQueryOptions(
     fips,
-    releaseId,
     queryClient,
     enabled
   );
@@ -208,7 +197,6 @@ function boundedTier1QueryOptions(
 export function explorerMlPriorityFetchTargets(
   fipsList: readonly string[],
   queryClient: QueryClient,
-  releaseId: string | null,
   limit = EXPLORER_ML_PRIORITY_FETCH_LIMIT
 ): ReadonlySet<string> {
   const fetching: string[] = [];
@@ -217,7 +205,7 @@ export function explorerMlPriorityFetchTargets(
     if (!isLower48CountyFips(fips)) {
       continue;
     }
-    const state = tier1QueryState(queryClient, fips, releaseId);
+    const state = tier1QueryState(queryClient, fips);
     if (state?.fetchStatus === "fetching" || state?.fetchStatus === "paused") {
       fetching.push(fips);
       continue;
@@ -251,26 +239,20 @@ function queryStatus(
 }
 
 export function useExplorerCountyMlPriorities(
-  fipsList: readonly string[],
-  release: Tier1ActiveRelease
+  fipsList: readonly string[]
 ): ReadonlyMap<string, ExplorerMlListClassification> {
   const queryClient = useQueryClient();
-  const releaseId = release.status === "ready" ? release.releaseId : null;
-  const fetchTargets =
-    release.status === "ready"
-      ? explorerMlPriorityFetchTargets(fipsList, queryClient, releaseId)
-      : new Set<string>();
+  const fetchTargets = explorerMlPriorityFetchTargets(fipsList, queryClient);
   const queries: PriorityResult[] = useQueries({
     queries: fipsList.map((fips) => {
-      const inScope = release.status === "ready" && isLower48CountyFips(fips);
+      const inScope = isLower48CountyFips(fips);
       // A finished read stays enabled so mount, focus, and invalidation can
       // refresh it. Enabling only the active window left 503s and stale
       // successes disabled for the rest of the cache lifetime.
       const keepSettledObserver =
-        inScope && tier1QuerySettled(queryClient, fips, releaseId);
+        inScope && tier1QuerySettled(queryClient, fips);
       return boundedTier1QueryOptions(
         fips,
-        releaseId,
         queryClient,
         keepSettledObserver || fetchTargets.has(fips)
       );
@@ -286,10 +268,10 @@ export function useExplorerCountyMlPriorities(
         errorStatus:
           query?.error instanceof AtlasApiError ? query.error.status : null,
         inLower48: isLower48CountyFips(fips),
-        release,
         requestedFips: fips,
         result: status === "success" ? (query?.data ?? null) : null,
         status,
+        unverified: query?.error instanceof ApiResponseValidationError,
       })
     );
   }
