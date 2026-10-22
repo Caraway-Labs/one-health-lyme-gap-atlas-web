@@ -126,7 +126,7 @@ test("shows trusted-source items from workspace navigation", async ({
   await page.goto("/explore");
   await page
     .getByRole("navigation", { name: "Professional workspace" })
-    .getByRole("link", { name: "Feed", exact: true })
+    .getByRole("link", { name: "Research & News", exact: true })
     .click();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect(
