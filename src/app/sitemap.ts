@@ -21,5 +21,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.4,
       url: new URL("/llms-full.txt", origin).href,
     },
+    {
+      changeFrequency: "monthly",
+      priority: 0.5,
+      url: new URL("/data-provenance", origin).href,
+    },
   ];
 }
