@@ -208,7 +208,8 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     label: "Data Provenance",
     match: "prefix",
     navGroup: "access",
-    pageDescription: "Understand the evidence behind One Health Atlas.",
+    pageDescription:
+      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
     pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
     tooltipDetail: DATA_PROVENANCE_NAV_DESCRIPTION,
   },

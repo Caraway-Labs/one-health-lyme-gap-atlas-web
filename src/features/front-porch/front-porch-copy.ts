@@ -49,12 +49,13 @@ export const FRONT_PORCH_HERO_IMAGE = {
 
 /**
  * Anonymous-safe trust links for `/` (issue 534).
- * Production returns 200 for `/privacy` and `/ai-ethics`.
+ * Production returns 200 for `/privacy`, `/ai-ethics`, and `/data-provenance`.
  * Privacy settings stays the shared PrivacyPreferences dialog.
  */
 export const FRONT_PORCH_FOOTER_LINKS = [
   { href: "/privacy", label: "Privacy" },
   { href: "/ai-ethics", label: "AI / Responsible Use" },
+  { href: "/data-provenance", label: "Data Provenance" },
 ] as const;
 
 export const FRONT_PORCH_INTRO = {

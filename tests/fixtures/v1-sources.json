@@ -1,0 +1,123 @@
+{
+  "data": [
+    {
+      "source_id": "context_nlcd_2025",
+      "label": "MRLC Annual NLCD 2025 reviewed demo cohort",
+      "publisher": null,
+      "lineage_source_id": "mrlc_annual_nlcd_derived_county_aggregates",
+      "dataset_id": "annual-nlcd-c1v2-2025-reviewed-demo-cohort",
+      "semantic_version": "2.0.0",
+      "release_version": "governed-2026-10-15-january-climate-prod",
+      "source_url": "https://www.mrlc.gov/downloads/sciweb1/shared/mrlc/data-bundles/Annual_NLCD_LndCov_2025_CU_C1V2.zip",
+      "source_vintage": "C1V2-2025",
+      "source_version": null,
+      "published_at": null,
+      "atlas_acquired_at": null,
+      "upstream_updated_at": null,
+      "source_retrieved_at": null,
+      "limitations": [
+        "Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission."
+      ]
+    },
+    {
+      "source_id": "context_rucc",
+      "label": "USDA ERS Rural-Urban Continuum Codes",
+      "publisher": null,
+      "lineage_source_id": "usda_ers",
+      "dataset_id": "rural-urban-continuum-codes-2023",
+      "semantic_version": "2.0.0",
+      "release_version": "governed-2026-10-15-january-climate-prod",
+      "source_url": "https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/",
+      "source_vintage": "2023",
+      "source_version": null,
+      "published_at": null,
+      "atlas_acquired_at": null,
+      "upstream_updated_at": null,
+      "source_retrieved_at": null,
+      "limitations": [
+        "RUCC is a contextual county classification; vintages are not automatically comparable and it is not a causal or individual risk measure."
+      ]
+    },
+    {
+      "source_id": "context_svi",
+      "label": "CDC/ATSDR Social Vulnerability Index",
+      "publisher": null,
+      "lineage_source_id": "cdc_atsdr_svi",
+      "dataset_id": "atsdr-svi-2022-county-layer",
+      "semantic_version": "2.0.0",
+      "release_version": "governed-2026-10-15-january-climate-prod",
+      "source_url": "https://www.atsdr.cdc.gov/placeandhealth/svi/data_documentation_download.html",
+      "source_vintage": "2022 (2018-2022 ACS)",
+      "source_version": null,
+      "published_at": null,
+      "atlas_acquired_at": null,
+      "upstream_updated_at": null,
+      "source_retrieved_at": null,
+      "limitations": [
+        "Contextual population and vulnerability measures are not causal drivers or individual risk factors. The same reviewed source supplies county identity and geometry."
+      ]
+    },
+    {
+      "source_id": "human",
+      "label": "CDC Lyme surveillance",
+      "publisher": "Centers for Disease Control and Prevention",
+      "lineage_source_id": "cdc_lyme",
+      "dataset_id": "x5j9-wybp",
+      "semantic_version": "2.0.0",
+      "release_version": "governed-2026-10-15-january-climate-prod",
+      "source_url": "https://data.cdc.gov/resource/x5j9-wybp.json",
+      "source_vintage": "2023",
+      "source_version": null,
+      "published_at": null,
+      "atlas_acquired_at": null,
+      "upstream_updated_at": null,
+      "source_retrieved_at": null,
+      "limitations": [
+        "County-of-residence surveillance. County-linked values are published privacy-protected floors, not complete incidence estimates."
+      ]
+    },
+    {
+      "source_id": "pathogen",
+      "label": "CDC ArboNET tickborne pathogen status",
+      "publisher": null,
+      "lineage_source_id": "cdc_arbonet_tick_module",
+      "dataset_id": "cdc-ixodes-pathogen-status-2025",
+      "semantic_version": "2.0.0",
+      "release_version": "governed-2026-10-15-january-climate-prod",
+      "source_url": "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html",
+      "source_vintage": "through 2025-12-31",
+      "source_version": null,
+      "published_at": null,
+      "atlas_acquired_at": null,
+      "upstream_updated_at": null,
+      "source_retrieved_at": null,
+      "limitations": [
+        "This is a distinct restricted pathogen source. No records is not absence; 33 absent canonical counties are classified as unknown source coverage."
+      ]
+    },
+    {
+      "source_id": "tick",
+      "label": "CDC ArboNET county tick status",
+      "publisher": null,
+      "lineage_source_id": "cdc_arbonet_tick_module",
+      "dataset_id": "cdc-ixodes-county-status-2025",
+      "semantic_version": "2.0.0",
+      "release_version": "governed-2026-10-15-january-climate-prod",
+      "source_url": "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html",
+      "source_vintage": "through 2025-12-31",
+      "source_version": null,
+      "published_at": null,
+      "atlas_acquired_at": null,
+      "upstream_updated_at": null,
+      "source_retrieved_at": null,
+      "limitations": [
+        "Tick status is cumulative surveillance evidence; no records is not absence and status is not abundance, pathogen prevalence, diagnosis, or individual risk."
+      ]
+    }
+  ],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-10-21T23:18:57.305293Z"
+  },
+  "links": { "self": null }
+}

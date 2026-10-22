@@ -24,9 +24,9 @@ describe("professional app route guard", () => {
     expect(isProfessionalAppPath("/assistant")).toBeFalsy();
   });
 
-  it("guards the data provenance route and its nested paths", () => {
-    expect(isProfessionalAppPath("/data-provenance")).toBeTruthy();
-    expect(isProfessionalAppPath("/data-provenance/source")).toBeTruthy();
+  it("leaves the public data provenance page outside the workspace guard", () => {
+    expect(isProfessionalAppPath("/data-provenance")).toBeFalsy();
+    expect(isProfessionalAppPath("/data-provenance/source")).toBeFalsy();
   });
 
   it("treats partial Supabase configuration as not configured", () => {

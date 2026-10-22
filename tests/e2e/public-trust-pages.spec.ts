@@ -19,6 +19,10 @@ const TRUST_ROUTES = [
     heading: "How Atlas uses AI and machine learning",
     path: "/ai-ethics",
   },
+  {
+    heading: "Where Atlas evidence comes from",
+    path: "/data-provenance",
+  },
 ] as const;
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -98,6 +102,25 @@ async function keyboardFocus(page: Page, control: Locator) {
   }
   throw new Error("AI Ethics link was not reached by keyboard");
 }
+
+test("Data Provenance filter is operable from the keyboard", async ({
+  page,
+}) => {
+  await page.goto("/data-provenance");
+  const bulletins = page.getByRole("button", {
+    name: "Public-health bulletins (10)",
+  });
+  await keyboardFocus(page, bulletins);
+  await expect(bulletins).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(bulletins).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Showing 10 of 20 sources")).toBeVisible();
+  await expect(page.locator("#source-cdc-mmwr")).toBeVisible();
+  await expect(page.locator("#source-human")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Return to the Atlas" })
+  ).toHaveAttribute("href", "/overview#atlas");
+});
 
 test("AI Ethics copy is public and its links are reachable from the keyboard", async ({
   page,

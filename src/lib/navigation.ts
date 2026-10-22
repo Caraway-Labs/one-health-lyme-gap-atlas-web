@@ -296,18 +296,18 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     status: "hidden",
   },
   {
-    auth: "required",
     description:
-      "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
+      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
     href: RESET_DATA_PROVENANCE_PATH,
     id: "data-provenance",
     label: "Data Provenance",
     match: "prefix",
-    pageDescription: "Understand the evidence behind One Health Atlas.",
+    pageDescription:
+      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
     pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
-    placement: "none",
-    shell: "none",
-    status: "hidden",
+    placement: "footer",
+    shell: "public",
+    status: "available",
   },
   {
     auth: "required",
