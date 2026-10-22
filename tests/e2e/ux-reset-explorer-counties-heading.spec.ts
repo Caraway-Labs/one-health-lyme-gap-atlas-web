@@ -191,7 +191,10 @@ async function expectDesktopColumns(page: Page) {
 
 async function expectStickyCountiesHeading(page: Page) {
   const list = page.locator(".ux-reset-explorer-list");
-  const heading = list.getByRole("heading", { exact: true, name: "Counties" });
+  const heading = list.getByRole("heading", {
+    exact: true,
+    name: "Ranked counties",
+  });
   const rowList = list.locator(".ux-reset-ranked-county-list");
   await expect(heading).toBeVisible();
   await expect(heading).toHaveJSProperty("tagName", "H2");
@@ -199,7 +202,7 @@ async function expectStickyCountiesHeading(page: Page) {
     0
   );
   await expect(
-    page.getByRole("heading", { level: 1, name: "Counties" })
+    page.getByRole("heading", { level: 1, name: "Ranked counties" })
   ).toHaveCount(0);
   const before = await heading.boundingBox();
   expect(before).not.toBeNull();

@@ -146,7 +146,10 @@ async function box(locator: Locator) {
 async function expectRankedIndent(page: Page, threeDigit: boolean) {
   await page.evaluate(() => document.fonts.ready);
   const list = page.locator(".ux-reset-explorer-list");
-  const heading = list.getByRole("heading", { exact: true, name: "Counties" });
+  const heading = list.getByRole("heading", {
+    exact: true,
+    name: "Ranked counties",
+  });
   const sample = countyRow(page, "Rio Grande");
   await expect(heading).toBeVisible();
   await expect(sample).toBeVisible();
