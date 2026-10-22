@@ -529,13 +529,23 @@ function compareTimeBoundCandidates(
     .map((bound) => ({ bound, governed: false }));
 }
 
-function isRejectedFilter(error: unknown): boolean {
-  return (
-    error instanceof AtlasApiError &&
-    error.status >= 400 &&
-    error.status < 500 &&
-    error.status !== 429
-  );
+const INCOMPATIBLE_TIME_FILTER_CODE = "UNSUPPORTED_FILTER";
+
+/**
+ * The public observations contract names an incompatible time bound as HTTP
+ * 400 `UNSUPPORTED_FILTER`. Other 4xx responses, including 401 and 403, are
+ * request failures and must not be read as "no published value".
+ */
+function isIncompatibleTimeFilter(error: unknown): boolean {
+  if (!(error instanceof AtlasApiError) || error.status !== 400) {
+    return false;
+  }
+  const body = error.responseBody;
+  if (!body || typeof body !== "object") {
+    return false;
+  }
+  const code = "code" in body ? body.code : null;
+  return code === INCOMPATIBLE_TIME_FILTER_CODE;
 }
 
 async function fetchFirstAvailableObservations(input: {
@@ -549,10 +559,11 @@ async function fetchFirstAvailableObservations(input: {
   observations: Observation[];
   selection: KnownEmptyObservationSelection | null;
 }> {
-  let lastEmpty: {
+  let successfulEmpty: {
     observations: Observation[];
     selection: KnownEmptyObservationSelection | null;
   } | null = null;
+  let rejectedFilter: unknown = null;
   for (const candidate of input.timeBounds) {
     try {
       const loaded = await fetchCompareObservations({
@@ -566,16 +577,24 @@ async function fetchFirstAvailableObservations(input: {
       if (loaded.observations.length > 0 || candidate.governed) {
         return loaded;
       }
-      lastEmpty = loaded;
+      successfulEmpty = loaded;
     } catch (error) {
-      // A fallback bound the API does not accept for this measure is not a
-      // load failure. The next published bound is tried.
-      if (candidate.governed || !isRejectedFilter(error)) {
+      // Only an explicit incompatible time filter may try the next bound.
+      // A governed bound, or any other rejection, is a failed read.
+      if (candidate.governed || !isIncompatibleTimeFilter(error)) {
         throw error;
       }
+      rejectedFilter = error;
     }
   }
-  return lastEmpty ?? { observations: [], selection: null };
+  if (successfulEmpty) {
+    return successfulEmpty;
+  }
+  // Every candidate was rejected. Absence was not read from the API.
+  if (rejectedFilter) {
+    throw rejectedFilter;
+  }
+  return { observations: [], selection: null };
 }
 
 export type CompareRetryCooldown = {

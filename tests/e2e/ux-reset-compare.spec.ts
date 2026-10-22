@@ -683,8 +683,12 @@ test.describe("two-county Compare", () => {
         return;
       }
       await route.fulfill({
-        json: { detail: "unsupported filter" },
-        status: 404,
+        json: {
+          code: "UNSUPPORTED_FILTER",
+          detail: "This time filter is not supported for the measure.",
+          status: 400,
+        },
+        status: 400,
       });
     });
     const reportUrls: string[] = [];

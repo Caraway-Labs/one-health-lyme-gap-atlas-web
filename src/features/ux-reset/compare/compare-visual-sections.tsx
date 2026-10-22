@@ -29,6 +29,7 @@ import {
   type CompareProfileAlignment,
 } from "@/features/ux-reset/compare/compare-county-profile";
 import {
+  compareDownloadOperationKey,
   CompareDownloadPdfsButton,
   type CompareShareCounty,
 } from "@/features/ux-reset/compare/compare-share-actions";
@@ -763,7 +764,11 @@ export function CompareShareBar({
         )}
         {copied ? "Link copied" : "Copy link"}
       </Button>
-      <CompareDownloadPdfsButton counties={counties} releaseId={releaseId} />
+      <CompareDownloadPdfsButton
+        key={compareDownloadOperationKey(counties, releaseId)}
+        counties={counties}
+        releaseId={releaseId}
+      />
       {askHref ? (
         <Link
           className={cn(

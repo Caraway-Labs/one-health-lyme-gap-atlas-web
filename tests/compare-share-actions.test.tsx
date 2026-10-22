@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -25,6 +26,18 @@ const boulder: CompareShareCounty = {
   label: "Boulder, Colorado (08013)",
   stateCode: "CO",
 };
+
+const larimer: CompareShareCounty = {
+  countyName: "Larimer",
+  fips: "08069",
+  label: "Larimer, Colorado (08069)",
+  stateCode: "CO",
+};
+
+function reportTarget(url: string): string {
+  const parsed = new URL(url, "http://localhost");
+  return `${parsed.pathname}?${parsed.searchParams.get("dataset_version") ?? ""}`;
+}
 
 function pdfResponse(status = 200): Response {
   return new Response(new Blob(["%PDF-1.7"]), {
@@ -144,6 +157,97 @@ describe(CompareDownloadPdfsButton, () => {
       alert:
         "The PDF for Boulder, Colorado (08013) could not be downloaded. Try again. The published report was not changed.",
       retried: ["/v1/counties/08013/report.pdf"],
+    });
+  });
+
+  it("downloads the current pair after a failed download for another pair", async () => {
+    let boulderFailures = 1;
+    const urls = installPdfFetch((url) => {
+      if (url.includes("08013") && boulderFailures > 0) {
+        boulderFailures -= 1;
+        return pdfResponse(500);
+      }
+      return pdfResponse();
+    });
+    const view = render(
+      <CompareDownloadPdfsButton
+        counties={[denver, boulder]}
+        releaseId="alpha-2026"
+      />
+    );
+    fireEvent.click(screen.getByTestId("compare-download-pdfs"));
+    await screen.findByRole("alert");
+    view.rerender(
+      <CompareDownloadPdfsButton
+        counties={[denver, larimer]}
+        releaseId="beta-2026"
+      />
+    );
+    const beforeNext = urls.length;
+    fireEvent.click(screen.getByTestId("compare-download-pdfs"));
+    await screen.findByText("County PDFs downloaded.");
+    expect({
+      alert: screen.queryByRole("alert"),
+      next: urls.slice(beforeNext).map(reportTarget).toSorted(),
+    }).toStrictEqual({
+      alert: null,
+      next: [
+        "/v1/counties/08001/report.pdf?beta-2026",
+        "/v1/counties/08069/report.pdf?beta-2026",
+      ],
+    });
+  });
+
+  it("drops a deferred download when the pair and release change", async () => {
+    const gate = Promise.withResolvers<boolean>();
+    let saves = 0;
+    const urls = installPdfFetch(async () => {
+      await gate.promise;
+      return pdfResponse();
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {
+      saves += 1;
+    });
+    const view = render(
+      <CompareDownloadPdfsButton
+        counties={[denver, boulder]}
+        releaseId="alpha-2026"
+      />
+    );
+    fireEvent.click(screen.getByTestId("compare-download-pdfs"));
+    await waitFor(() => {
+      if (urls.length < 2) {
+        throw new Error("Waiting for both county requests.");
+      }
+    });
+    view.rerender(
+      <CompareDownloadPdfsButton
+        counties={[denver, larimer]}
+        releaseId="beta-2026"
+      />
+    );
+    await act(async () => {
+      gate.resolve(true);
+      await gate.promise;
+    });
+    const button = screen.getByTestId("compare-download-pdfs");
+    const held = {
+      alert: screen.queryByRole("alert")?.textContent ?? "",
+      saves,
+      state: button.dataset.state ?? "",
+      success: screen.queryByText("County PDFs downloaded.")?.textContent ?? "",
+    };
+    fireEvent.click(button);
+    await screen.findByText("County PDFs downloaded.");
+    expect({
+      held,
+      next: urls.slice(2).map(reportTarget).toSorted(),
+    }).toStrictEqual({
+      held: { alert: "", saves: 0, state: "idle", success: "" },
+      next: [
+        "/v1/counties/08001/report.pdf?beta-2026",
+        "/v1/counties/08069/report.pdf?beta-2026",
+      ],
     });
   });
 });

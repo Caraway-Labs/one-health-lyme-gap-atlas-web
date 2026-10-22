@@ -1,7 +1,7 @@
 "use client";
 
 import { FileDown } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,17 @@ function describeError(failed: readonly CompareShareCounty[]): string {
 }
 
 /**
+ * Identity of one download operation. Retry-only-failed stays inside this key.
+ * A different pair or release is a new operation.
+ */
+export function compareDownloadOperationKey(
+  counties: readonly Pick<CompareShareCounty, "fips">[],
+  releaseId: string
+): string {
+  return `${releaseId.trim()}:${counties.map((county) => county.fips).join(",")}`;
+}
+
+/**
  * Downloads the published county report PDF for each compared county, using
  * the same request and filename logic as the Explore county download.
  */
@@ -38,10 +49,18 @@ export function CompareDownloadPdfsButton({
   counties: readonly CompareShareCounty[];
   releaseId: string;
 }) {
+  const release = releaseId.trim();
+  const operationKey = compareDownloadOperationKey(counties, releaseId);
+  const operationKeyRef = useRef(operationKey);
   const abortRef = useRef<AbortController | null>(null);
   const [phase, setPhase] = useState<DownloadPhase>("idle");
   const [failed, setFailed] = useState<readonly CompareShareCounty[]>([]);
-  const release = releaseId.trim();
+  const [phaseKey, setPhaseKey] = useState(operationKey);
+  if (phaseKey !== operationKey) {
+    setPhaseKey(operationKey);
+    setPhase("idle");
+    setFailed([]);
+  }
   const ready =
     release.length > 0 &&
     counties.length > 0 &&
@@ -51,34 +70,39 @@ export function CompareDownloadPdfsButton({
         atlasBriefFilename(county.countyName, county.stateCode) !== null
     );
 
-  useEffect(
-    () => () => {
+  useLayoutEffect(() => {
+    operationKeyRef.current = operationKey;
+    return () => {
       abortRef.current?.abort();
-    },
-    []
-  );
+      abortRef.current = null;
+    };
+  }, [operationKey]);
 
   const downloadOne = async (
     county: CompareShareCounty,
-    controller: AbortController
+    controller: AbortController,
+    operationIdentity: string
   ): Promise<CountyOutcome> => {
     const filename = atlasBriefFilename(county.countyName, county.stateCode);
     if (!filename) {
       return { county, ok: false };
     }
+    const stillCurrent = () =>
+      operationKeyRef.current === operationIdentity &&
+      !controller.signal.aborted;
     try {
-      await downloadPdfReport(
+      const result = await downloadPdfReport(
         { identifier: county.fips, level: "county" },
         governedCountyReportScoreSettings(),
         release,
         {
           approvedFilename: filename,
           isApprovedServerFilename: (serverName) => serverName === filename,
-          shouldCommit: () => !controller.signal.aborted,
+          shouldCommit: stillCurrent,
           signal: controller.signal,
         }
       );
-      return { county, ok: true };
+      return { county, ok: result.committed && stillCurrent() };
     } catch {
       return { county, ok: false };
     }
@@ -88,7 +112,8 @@ export function CompareDownloadPdfsButton({
     if (!ready || phase === "downloading") {
       return;
     }
-    // Retry only the counties that failed last time.
+    const operationIdentity = operationKey;
+    // Retry only the counties that failed for this same pair and release.
     const targets =
       phase === "error" && failed.length > 0 ? failed : [...counties];
     const controller = new AbortController();
@@ -98,9 +123,14 @@ export function CompareDownloadPdfsButton({
     // Both requests start from the same click so the browser treats the two
     // files as one user-initiated download.
     const outcomes = await Promise.all(
-      targets.map((county) => downloadOne(county, controller))
+      targets.map((county) =>
+        downloadOne(county, controller, operationIdentity)
+      )
     );
-    if (controller.signal.aborted) {
+    if (
+      controller.signal.aborted ||
+      operationKeyRef.current !== operationIdentity
+    ) {
       return;
     }
     const failures = outcomes

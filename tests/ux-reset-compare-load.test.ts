@@ -5,6 +5,7 @@ import {
   type CompareCell,
   type CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
+import { compareReaderState } from "@/features/ux-reset/compare/compare-compact-evidence";
 import {
   COMPARE_PUBLIC_READ_LIMIT,
   resetCompareReadLimit,
@@ -804,7 +805,13 @@ describe("compare evidence loading through the generated client", () => {
           })
         );
       }
-      return jsonResponse({ detail: "unsupported filter" }, 404);
+      return jsonResponse(
+        {
+          code: "UNSUPPORTED_FILTER",
+          detail: "This time filter is not supported for the measure.",
+        },
+        400
+      );
     });
     const alignment = await loadCompareEvidence({
       leftFips: COMPARE_LEFT_FIPS,
@@ -830,6 +837,172 @@ describe("compare evidence loading through the generated client", () => {
     }).toStrictEqual({
       bounds: ["day:2024-06-01", "day:2025-01-15", "year:2023"],
       kind: "observations",
+    });
+  });
+
+  it("fails the measure when every fallback is unauthorized", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const statuses = [401, 403];
+    const loaded = [];
+    for (const status of statuses) {
+      requests.length = 0;
+      vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+        const url = new URL(String(input));
+        requests.push(
+          url.searchParams.get("start_date") ??
+            url.searchParams.get("year") ??
+            ""
+        );
+        return jsonResponse({ detail: "not allowed" }, status);
+      });
+      const alignment = await loadCompareEvidence({
+        leftFips: COMPARE_LEFT_FIPS,
+        leftLabel: "Denver, Colorado (08001)",
+        measures: [
+          {
+            ...base,
+            label: "Seasonal canopy",
+            measure_id: "unbound-gap",
+            temporal_grains: ["CUSTOM"],
+            temporal_semantics: "2024-06-01",
+          },
+        ],
+        period: null,
+        releaseId: COMPARE_RELEASE_ID,
+        rightFips: COMPARE_RIGHT_FIPS,
+        rightLabel: "Boulder, Colorado (08013)",
+        signal: new AbortController().signal,
+      });
+      const cell = alignment.rows[0]?.left;
+      loaded.push({
+        laterBound: requests.includes("2023"),
+        reader:
+          cell?.kind === "empty"
+            ? compareReaderState(cell.reason, cell.message)
+            : "",
+        reason: cell?.kind === "empty" ? cell.reason : "",
+        status: alignment.outcomes[0]?.status ?? "",
+      });
+    }
+    expect(loaded).toStrictEqual([
+      {
+        laterBound: false,
+        reader: "Couldn\u2019t load this evidence.",
+        reason: "failed",
+        status: "failed",
+      },
+      {
+        laterBound: false,
+        reader: "Couldn\u2019t load this evidence.",
+        reason: "failed",
+        status: "failed",
+      },
+    ]);
+  });
+
+  it("does not turn a rejected 400 or 422 into an empty read", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const statuses = [400, 422];
+    const loaded = [];
+    for (const status of statuses) {
+      requests.length = 0;
+      vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+        const url = new URL(String(input));
+        requests.push(
+          url.searchParams.get("start_date") ??
+            url.searchParams.get("year") ??
+            ""
+        );
+        return jsonResponse(
+          { code: "INVALID_REQUEST", detail: "rejected filter" },
+          status
+        );
+      });
+      const alignment = await loadCompareEvidence({
+        leftFips: COMPARE_LEFT_FIPS,
+        leftLabel: "Denver, Colorado (08001)",
+        measures: [
+          {
+            ...base,
+            label: "Seasonal canopy",
+            measure_id: "unbound-gap",
+            temporal_grains: ["CUSTOM"],
+            temporal_semantics: "2024-06-01",
+          },
+        ],
+        period: null,
+        releaseId: COMPARE_RELEASE_ID,
+        rightFips: COMPARE_RIGHT_FIPS,
+        rightLabel: "Boulder, Colorado (08013)",
+        signal: new AbortController().signal,
+      });
+      const cell = alignment.rows[0]?.left;
+      loaded.push({
+        laterBound: requests.includes("2023"),
+        reason: cell?.kind === "empty" ? cell.reason : "",
+        status: alignment.outcomes[0]?.status ?? "",
+      });
+    }
+    expect(loaded).toStrictEqual([
+      { laterBound: false, reason: "failed", status: "failed" },
+      { laterBound: false, reason: "failed", status: "failed" },
+    ]);
+  });
+
+  it("does not report a missing value when every time filter is incompatible", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requests.push(
+        url.searchParams.get("start_date") ?? url.searchParams.get("year") ?? ""
+      );
+      return jsonResponse(
+        {
+          code: "UNSUPPORTED_FILTER",
+          detail: "This time filter is not supported for the measure.",
+        },
+        400
+      );
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: [
+        {
+          ...base,
+          label: "Seasonal canopy",
+          measure_id: "unbound-gap",
+          temporal_grains: ["CUSTOM"],
+          temporal_semantics: "2024-06-01",
+        },
+      ],
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const cell = alignment.rows[0]?.left;
+    expect({
+      bounds: requests,
+      reader:
+        cell?.kind === "empty"
+          ? compareReaderState(cell.reason, cell.message)
+          : "",
+      status: alignment.outcomes[0]?.status ?? "",
+    }).toStrictEqual({
+      bounds: ["2024-06-01", "2023", "2025-12-31"],
+      reader: "Couldn\u2019t load this evidence.",
+      status: "failed",
     });
   });
 
