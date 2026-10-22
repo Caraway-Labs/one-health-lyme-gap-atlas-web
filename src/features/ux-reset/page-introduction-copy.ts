@@ -19,7 +19,7 @@ export const PAGE_INTRODUCTION_COPY = {
     headline: "Explore county Lyme data",
     helper: "Choose a state, search for a county, or select one on the map.",
     scoreBody:
-      "The Gap review score (0-100) helps prioritize counties for closer review. Higher scores can reflect low reported Lyme disease incidence alongside tick or pathogen findings, missing county case data, and community factors such as social vulnerability, lack of insurance, and rurality.",
+      "The Gap review score (0-100) helps prioritize counties for closer review. Higher scores can reflect low reported Lyme disease incidence alongside tick or pathogen findings, missing county case data, and community factors.",
     scoreHeading: "What does the score mean?",
     scoreQualifier:
       "It does not confirm a surveillance gap or measure personal Lyme disease risk.",
