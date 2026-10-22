@@ -14,6 +14,34 @@ const ANALYTICAL_SHELL_HREFS = [
   "/auth/sign-in",
 ] as const;
 
+const POLICY_HEADINGS = [
+  "Privacy without the fine print.",
+  "Use less data. Explain it clearly.",
+  "Public exploration stays public",
+  "No ads or data sales",
+  "Purpose before collection",
+  "What we collect and why",
+  "Questions you ask Atlas",
+  "Your analytics choices",
+  "What never goes into analytics",
+  "Service providers we use",
+  "How long we keep information",
+  "Your rights and controls",
+  "How we protect information",
+  "Children",
+  "Visitors outside the United States",
+  "Changes to this policy",
+  "Questions and requests",
+] as const;
+
+const RETIRED_COPY = [
+  "data-use summary",
+  "allowlisted",
+  "analytical shell",
+  "reviewed-literature chat is enabled",
+  "This page does not state",
+] as const;
+
 describe("public privacy page", () => {
   afterEach(cleanup);
 
@@ -24,39 +52,70 @@ describe("public privacy page", () => {
       screen.getByRole("heading", { name: "Privacy without the fine print." })
     ).toBeTruthy();
     expect(
-      screen.getByText(/This Privacy page stays public either way/)
+      screen.getByText(
+        /Sign-in is required only for the professional workspace, and this policy is always public/
+      )
     ).toBeTruthy();
     expect(
       screen
         .getByRole("link", { name: "Return to the Atlas" })
         .getAttribute("href")
     ).toBe("/overview#atlas");
+    expect(getRouteShell("/privacy")).toBe("public");
   });
 
-  it("qualifies analytics, assistant storage, and account controls against current behavior", () => {
+  it("renders the approved policy headings", () => {
+    render(<PrivacyPage />);
+
+    expect(
+      POLICY_HEADINGS.map(
+        (name) => screen.getByRole("heading", { name }).tagName
+      )
+    ).toStrictEqual([
+      "H1",
+      "H2",
+      "H3",
+      "H3",
+      "H3",
+      "H2",
+      "H2",
+      "H2",
+      "H3",
+      "H2",
+      "H2",
+      "H2",
+      "H2",
+      "H2",
+      "H2",
+      "H2",
+      "H2",
+    ]);
+  });
+
+  it("states the 30-day conversation retention and the analytics boundaries", () => {
     render(<PrivacyPage />);
 
     expect(
       screen.getByText(
-        /professional workspace does not start that analytics SDK/
+        /The Atlas service stores questions and answers for 30 days after a conversation's most recent message/
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        /Ask Atlas uses that same browser store and does not keep a separate saved-chat library/
+        /Analytics run on public Atlas pages, Account, and sign-in. They never run in the signed-in professional workspace/
       )
     ).toBeTruthy();
     expect(
       screen.getByText(
-        /This page does not state how long the API keeps a question/
+        /If your browser sends a Do Not Track signal, Atlas keeps optional analytics off/
       )
     ).toBeTruthy();
     expect(
-      screen.getAllByText(/from Account and from professional Settings/).length
+      screen.getAllByText(/from Account or professional Settings/).length
     ).toBeGreaterThan(0);
   });
 
-  it("pins product-analytics copy to the analytical-shell route set", () => {
+  it("keeps analytics off the professional workspace route set", () => {
     render(<PrivacyPage />);
 
     expect(
@@ -64,34 +123,54 @@ describe("public privacy page", () => {
         .map((route) => route.href)
         .sort()
     ).toStrictEqual([...ANALYTICAL_SHELL_HREFS].sort());
-    expect(
-      screen.getByText(
-        /pages that use the analytical shell, including the public Atlas, Account, and sign-in/
-      )
-    ).toBeTruthy();
     expect(getRouteShell("/account")).toBe("analytical");
     expect(getRouteShell("/auth/sign-in")).toBe("analytical");
     expect(getRouteShell("/app")).toBe("none");
+    expect(screen.queryByText(/analytical shell/)).toBeNull();
   });
 
-  it("keeps the privacy page footer in the feedback entry-point sentence", () => {
+  it("links the policy questions to Feedback, AI Ethics, and Caraway Labs", () => {
     render(<PrivacyPage />);
 
     expect(
-      screen.getByText(
-        /In-product feedback is available from the Atlas header, the geographic explorer, and this privacy page footer\./
+      screen
+        .getByRole("link", { name: "AI and machine learning" })
+        .getAttribute("href")
+    ).toBe("/ai-ethics");
+    expect(
+      screen
+        .getByRole("link", { name: "about Caraway Labs" })
+        .getAttribute("href")
+    ).toBe("/about/caraway-labs");
+    expect(
+      [...document.querySelectorAll("main strong")].map(
+        (element) => element.textContent
       )
-    ).toBeTruthy();
+    ).toStrictEqual([
+      "Privacy settings",
+      "Export my data",
+      "Remove all data",
+      "Feedback",
+      "Feedback",
+      "Feedback",
+      "Version 1.0.0",
+    ]);
+    expect(
+      document
+        .querySelector("[aria-label='Privacy policy version']")
+        ?.textContent?.replaceAll(/\s+/g, " ")
+        .trim()
+    ).toBe("Version 1.0.0 · Last updated October 21, 2026");
   });
 
-  it("does not describe the professional workspace as an unlaunched saved workspace", () => {
+  it("does not publish the retired privacy summary", () => {
     render(<PrivacyPage />);
 
+    const text = document.querySelector("main")?.textContent ?? "";
     expect(
-      screen.getAllByText(
-        /does not store saved views, saved investigations, or an artifact library/
-      ).length
-    ).toBeGreaterThan(0);
+      RETIRED_COPY.filter((phrase) => text.includes(phrase))
+    ).toStrictEqual([]);
     expect(screen.queryByText(/Saved workspaces are not launched/)).toBeNull();
+    expect(text.match(/\bSDK\b/)).toBeNull();
   });
 });
