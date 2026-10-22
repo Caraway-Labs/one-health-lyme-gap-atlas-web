@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -71,6 +73,27 @@ describe(ExplorerWhatIfScenario, () => {
       scoring: false,
       tag: "DETAILS",
     });
+  });
+
+  it("uses a compact sans-serif assumptions header row", () => {
+    renderScenario();
+    expect(
+      screen.getByRole("heading", { name: EXPLORER_SCENARIO_HEADING }).className
+    ).toContain("ux-reset-explorer-scenario-heading");
+    const css = readFileSync("src/features/ux-reset/ux-reset.css", "utf-8")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    const required = [
+      ".ux-reset-explorer-scenario > summary { display: flex; flex-wrap: nowrap;",
+      "min-height: 2.5rem;",
+      "max-height: 2.75rem;",
+      "padding: 0.5rem 1rem;",
+      ".ux-reset-explorer-scenario-heading { margin: 0; color: var(--navy); font-family: var(--font-sans); font-size: 0.9375rem; font-weight: 600;",
+      "background: var(--white);",
+    ];
+    expect(required.filter((snippet) => !css.includes(snippet))).toStrictEqual(
+      []
+    );
   });
 
   it("shows the rate reference point and missing-record value after expanding", () => {
