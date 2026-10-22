@@ -1,7 +1,4 @@
-import {
-  presentTier1SurveillancePriority,
-  type Tier1ActiveRelease,
-} from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { presentTier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models";
 
 /**
@@ -12,9 +9,14 @@ export const EXPLORER_ML_PRIORITY_LEGEND =
   "ML surveillance priority — counties flagged for review, not personal Lyme disease risk";
 
 export const EXPLORER_ML_PRIORITY_NOTE =
-  "HIGH, MEDIUM, and LOW are persisted Tier 1 surveillance-review labels for this release. They support follow-up review. They are not personal Lyme disease risk. A missing or unknown result stays Not available and is not shown as LOW. A request that could not be loaded stays Could not load and is not shown as Not available or LOW.";
+  "HIGH, MEDIUM, and LOW are persisted Tier 1 surveillance-review labels. They support follow-up review. They are not personal Lyme disease risk. Not estimable is shown as Not estimable. A missing result stays Not available and is not shown as LOW. A response that could not be verified stays Response could not be verified. A request that could not be loaded stays Could not load and is not shown as Not available or LOW.";
 
 export const EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL = "Not available";
+
+export const EXPLORER_ML_PRIORITY_NOT_ESTIMABLE_LABEL = "Not estimable";
+
+export const EXPLORER_ML_PRIORITY_UNVERIFIED_LABEL =
+  "Response could not be verified";
 
 export const EXPLORER_ML_PRIORITY_LOADING_LABEL = "Loading";
 
@@ -25,6 +27,8 @@ export type ExplorerMlListTier =
   | "MEDIUM"
   | "LOW"
   | "unavailable"
+  | "not-estimable"
+  | "unverified"
   | "loading"
   | "failed";
 
@@ -33,6 +37,8 @@ export type ExplorerMlListLabel =
   | "MEDIUM"
   | "LOW"
   | typeof EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL
+  | typeof EXPLORER_ML_PRIORITY_NOT_ESTIMABLE_LABEL
+  | typeof EXPLORER_ML_PRIORITY_UNVERIFIED_LABEL
   | typeof EXPLORER_ML_PRIORITY_LOADING_LABEL
   | typeof EXPLORER_ML_PRIORITY_FAILED_LABEL;
 
@@ -51,12 +57,25 @@ export const EXPLORER_ML_PRIORITY_FAILED: ExplorerMlListClassification = {
   tier: "failed",
 };
 
+export const EXPLORER_ML_PRIORITY_NOT_ESTIMABLE: ExplorerMlListClassification =
+  {
+    label: EXPLORER_ML_PRIORITY_NOT_ESTIMABLE_LABEL,
+    tier: "not-estimable",
+  };
+
+export const EXPLORER_ML_PRIORITY_UNVERIFIED: ExplorerMlListClassification = {
+  label: EXPLORER_ML_PRIORITY_UNVERIFIED_LABEL,
+  tier: "unverified",
+};
+
 export const EXPLORER_ML_PRIORITY_LEGEND_ITEMS: readonly ExplorerMlListClassification[] =
   [
     { label: "HIGH", tier: "HIGH" },
     { label: "MEDIUM", tier: "MEDIUM" },
     { label: "LOW", tier: "LOW" },
+    EXPLORER_ML_PRIORITY_NOT_ESTIMABLE,
     EXPLORER_ML_PRIORITY_UNAVAILABLE,
+    EXPLORER_ML_PRIORITY_UNVERIFIED,
     EXPLORER_ML_PRIORITY_FAILED,
   ];
 
@@ -78,10 +97,14 @@ function classificationForView(
     case "failed": {
       return EXPLORER_ML_PRIORITY_FAILED;
     }
-    case "unavailable":
-    case "stale":
-    case "release-unaligned":
     case "not-estimable": {
+      return EXPLORER_ML_PRIORITY_NOT_ESTIMABLE;
+    }
+    case "unverified": {
+      return EXPLORER_ML_PRIORITY_UNVERIFIED;
+    }
+    case "unavailable":
+    case "stale": {
       return EXPLORER_ML_PRIORITY_UNAVAILABLE;
     }
     default: {
@@ -97,16 +120,17 @@ function classificationForView(
  * model-native anomaly score, and the contract does not define HIGH as a
  * detected outlier, so this label never adds one.
  * Counties outside the lower 48 and DC stay Not available.
- * Null, unknown, withheld, and not-estimable results stay Not available, never LOW.
- * A failed request stays Could not load. It is not recoded as Not available or LOW.
+ * A missing result stays Not available, never LOW.
+ * NOT_ESTIMABLE stays Not estimable. A schema or coherence failure stays
+ * Response could not be verified. A failed request stays Could not load.
  */
 export function explorerMlListClassification(input: {
   errorStatus: number | null;
   inLower48: boolean;
-  release: Tier1ActiveRelease;
   requestedFips: string;
   result: Tier1CountyPriority | null;
   status: PriorityQueryStatus;
+  unverified?: boolean;
 }): ExplorerMlListClassification {
   if (!input.inLower48) {
     return EXPLORER_ML_PRIORITY_UNAVAILABLE;

@@ -13,8 +13,8 @@ import {
 import { useSurveillanceSituations } from "@/features/ux-reset/surveillance-intelligence/use-surveillance-situations";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { useTier1SurveillancePriority } from "@/features/ux-reset/surveillance-priority/use-tier1-surveillance-priority";
-import type { Tier1CountyPriority } from "@/generated/models/tier1CountyPriority";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { ApiResponseValidationError } from "@/lib/api-response-validation";
 
 export type CountySurveillanceIntelligenceModel = {
   announcement: string;
@@ -45,50 +45,14 @@ function errorStatus(error: unknown): number | null {
   return error instanceof AtlasApiError ? error.status : null;
 }
 
-function situationsPhase(
-  release: Tier1ActiveRelease,
+function countyPhase(
   fips: string,
   query: UseQueryResult<unknown, Error>
 ): IntelligenceQueryPhase {
   if (!/^\d{5}$/.test(fips)) {
     return "idle";
   }
-  switch (release.status) {
-    case "pending": {
-      return "loading";
-    }
-    case "unknown": {
-      return "idle";
-    }
-    case "ready": {
-      return phaseOf(true, query);
-    }
-    default: {
-      const exhaustive: never = release;
-      return exhaustive;
-    }
-  }
-}
-
-function tier1Phase(
-  release: Tier1ActiveRelease,
-  query: UseQueryResult<Tier1CountyPriority, Error>
-): IntelligenceQueryPhase {
-  switch (release.status) {
-    case "pending": {
-      return "loading";
-    }
-    case "unknown": {
-      return "idle";
-    }
-    case "ready": {
-      return phaseOf(true, query);
-    }
-    default: {
-      const exhaustive: never = release;
-      return exhaustive;
-    }
-  }
+  return phaseOf(true, query);
 }
 
 /**
@@ -103,13 +67,8 @@ export function useCountySurveillanceIntelligence(input: {
   const releaseId =
     input.release.status === "ready" ? input.release.releaseId : null;
   const scoresQuery = useExplorerMapScores(releaseId);
-  const tier1Query = useTier1SurveillancePriority(input.fips, input.release);
-  const situationsEnabled = releaseId !== null && /^\d{5}$/.test(input.fips);
-  const situationsQuery = useSurveillanceSituations(
-    input.fips,
-    releaseId,
-    situationsEnabled
-  );
+  const tier1Query = useTier1SurveillancePriority(input.fips);
+  const situationsQuery = useSurveillanceSituations(input.fips);
   const perspectives = mapCountySurveillanceIntelligence({
     fips: input.fips,
     gapScore: {
@@ -122,15 +81,15 @@ export function useCountySurveillanceIntelligence(input: {
     },
     situations: {
       errorStatus: errorStatus(situationsQuery.error),
-      phase: situationsPhase(input.release, input.fips, situationsQuery),
-      release: input.release,
+      phase: countyPhase(input.fips, situationsQuery),
       result: situationsQuery.isSuccess ? situationsQuery.data : null,
+      unverified: situationsQuery.error instanceof ApiResponseValidationError,
     },
     tier1: {
       errorStatus: errorStatus(tier1Query.error),
-      phase: tier1Phase(input.release, tier1Query),
-      release: input.release,
+      phase: countyPhase(input.fips, tier1Query),
       result: tier1Query.isSuccess ? tier1Query.data : null,
+      unverified: tier1Query.error instanceof ApiResponseValidationError,
     },
   });
   const retry = (id: IntelligencePerspectiveView["id"]) => {

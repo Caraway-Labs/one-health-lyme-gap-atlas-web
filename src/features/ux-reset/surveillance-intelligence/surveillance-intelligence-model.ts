@@ -14,7 +14,8 @@ import {
 } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import {
   sufficiencyLabel,
-  TIER1_RELEASE_MISMATCH_MESSAGE,
+  TIER1_INCOHERENT_REASON,
+  TIER1_UNVERIFIED_MESSAGE,
   type Tier1ActiveRelease,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { CountySurveillanceSituations } from "@/generated/models/countySurveillanceSituations";
@@ -39,6 +40,7 @@ import {
   Tier1CountyPriorityPriorityTier,
   type Tier1CountyPriorityPriorityTier as PriorityTier,
 } from "@/generated/models/tier1CountyPriorityPriorityTier";
+import { logUnverifiedApiResponse } from "@/lib/api-response-validation";
 import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 export type IntelligenceField = {
@@ -56,7 +58,8 @@ export type IntelligenceKind =
   | "incompatible"
   | "loading"
   | "ready"
-  | "unavailable";
+  | "unavailable"
+  | "unverified";
 
 /** A bounded 0–100 track. Null value means the bar must not render. */
 export type IntelligenceTrack = {
@@ -87,7 +90,6 @@ export type IntelligencePerspectiveView = {
   primary: string;
   qualifier: string | null;
   reasons: readonly IntelligenceReason[];
-  releaseReason: "mismatch" | "unknown" | null;
   /** Published review-category title for the gap score. Not an ML tier. */
   reviewCategory: string | null;
   /** Map-ramp color for the published gap score chip. */
@@ -123,17 +125,17 @@ export type GapScoreQueryState = {
 export type Tier1QueryState = {
   errorStatus: number | null;
   phase: IntelligenceQueryPhase;
-  /** Governed page release the Tier 1 result must match before a tier is shown. */
-  release: Tier1ActiveRelease;
   result: Tier1CountyPriority | null;
+  /** Schema or coherence failure. Distinct from an empty or network result. */
+  unverified?: boolean;
 };
 
 export type SituationsQueryState = {
   errorStatus: number | null;
   phase: IntelligenceQueryPhase;
-  /** Governed page release the situation response must match before a class is shown. */
-  release: Tier1ActiveRelease;
   result: CountySurveillanceSituations | null;
+  /** Schema failure. Display still follows availability only for a valid body. */
+  unverified?: boolean;
 };
 
 const NOT_RETURNED = "Not returned";
@@ -228,7 +230,6 @@ function emptyPerspective(
     primary,
     qualifier: null,
     reasons: [],
-    releaseReason: null,
     reviewCategory: null,
     retryable,
     sufficiency: null,
@@ -469,7 +470,6 @@ function mapGapScore(
     primary: formatted,
     qualifier: null,
     reasons: [],
-    releaseReason: null,
     reviewCategory: reviewCategoryTitle(county.color),
     retryable: false,
     swatch: county.color ?? null,
@@ -484,25 +484,17 @@ function mapGapScore(
   };
 }
 
-function tier1ReleaseMismatch(
-  result: Tier1CountyPriority,
-  pageReleaseId: string
+function unverifiedPerspective(
+  id: SurveillanceIntelligencePerspectiveId
 ): IntelligencePerspectiveView {
-  return {
-    ...emptyPerspective(
-      "ml-review-priority",
-      "unavailable",
-      UNAVAILABLE_PRIMARY,
-      "Not shown for this page release",
-      TIER1_RELEASE_MISMATCH_MESSAGE,
-      false
-    ),
-    disclosure: [
-      { label: "Response release", value: result.release_id },
-      { label: "Page release", value: pageReleaseId },
-    ],
-    releaseReason: "mismatch",
-  };
+  return emptyPerspective(
+    id,
+    "unverified",
+    "Response could not be verified",
+    "Response could not be verified",
+    TIER1_UNVERIFIED_MESSAGE,
+    false
+  );
 }
 
 function mapTier1(
@@ -511,24 +503,23 @@ function mapTier1(
 ): IntelligencePerspectiveView {
   const id = "ml-review-priority" as const;
   const supportingLoading = "Percentile and evidence sufficiency are loading.";
-  const release = state.release;
-  if (release.status === "pending" || state.phase === "loading") {
+  if (state.phase === "loading") {
     return loadingPerspective(id, supportingLoading);
   }
-  if (release.status === "unknown" || state.phase === "idle") {
-    return {
-      ...emptyPerspective(
-        id,
-        "unavailable",
-        UNAVAILABLE_PRIMARY,
-        `${percentileFact(null)} · ${sufficiencyFact(null)}`,
-        "ML review priority was not requested because the governed release for this page is not known.",
-        false
-      ),
-      releaseReason: "unknown",
-    };
+  if (state.phase === "idle") {
+    return emptyPerspective(
+      id,
+      "unavailable",
+      UNAVAILABLE_PRIMARY,
+      `${percentileFact(null)} · ${sufficiencyFact(null)}`,
+      "ML review priority was not requested for this county identifier.",
+      false
+    );
   }
   if (state.phase === "error") {
+    if (state.unverified) {
+      return unverifiedPerspective(id);
+    }
     if (state.errorStatus === 404) {
       return emptyPerspective(
         id,
@@ -545,7 +536,7 @@ function mapTier1(
     );
   }
   const result = state.result;
-  if (!result || result.county_fips !== fips || !tier1NumbersCoherent(result)) {
+  if (!result || result.county_fips !== fips) {
     return emptyPerspective(
       id,
       "unavailable",
@@ -555,13 +546,18 @@ function mapTier1(
       false
     );
   }
-  if (result.release_id !== release.releaseId) {
-    return tier1ReleaseMismatch(result, release.releaseId);
+  if (!tier1NumbersCoherent(result)) {
+    logUnverifiedApiResponse({
+      endpoint: `/v1/counties/${fips}/tier1-surveillance-priority`,
+      fips,
+      reason: TIER1_INCOHERENT_REASON,
+    });
+    return unverifiedPerspective(id);
   }
   const supporting = `${percentileFact(result.priority_percentile)} · ${sufficiencyFact(result.evidence_sufficiency)}`;
   const disclosure: IntelligenceField[] = [
     { label: "Model version", value: result.model_version },
-    { label: "Release", value: result.release_id },
+    { label: "Model input release", value: result.release_id },
     { label: "Tier policy", value: result.tier_policy_version },
     { label: "Prediction batch", value: result.prediction_batch_version },
     { label: "Source commit", value: result.source_commit },
@@ -602,7 +598,6 @@ function mapTier1(
       primary: "Not estimable",
       qualifier: `${PERCENTILE_QUALIFIER} ${SUFFICIENCY_QUALIFIER}`,
       reasons,
-      releaseReason: null,
       reviewCategory: null,
       retryable: false,
       sufficiency: result.evidence_sufficiency,
@@ -652,7 +647,6 @@ function mapTier1(
     primary: result.priority_tier,
     qualifier: `${PERCENTILE_QUALIFIER} ${SUFFICIENCY_QUALIFIER}`,
     reasons,
-    releaseReason: null,
     reviewCategory: null,
     retryable: false,
     sufficiency: result.evidence_sufficiency,
@@ -840,7 +834,6 @@ function mapAvailableSituation(
     primary: classification.class_name,
     qualifier: CLASS_MEMBERSHIP_QUALIFIER,
     reasons: [],
-    releaseReason: null,
     reviewCategory: null,
     retryable: false,
     sufficiency: null,
@@ -927,56 +920,16 @@ function mapSituationVariant(
   );
 }
 
-function releaseMismatchPerspective(
-  id: SurveillanceIntelligencePerspectiveId,
-  responseReleaseId: string,
-  pageReleaseId: string
-): IntelligencePerspectiveView {
-  return {
-    ...emptyPerspective(
-      id,
-      "unavailable",
-      UNAVAILABLE_PRIMARY,
-      "Not shown for this page release",
-      "The surveillance situation response did not match this page release, so no classification is shown.",
-      false
-    ),
-    disclosure: [
-      { label: "Response release", value: responseReleaseId },
-      { label: "Page release", value: pageReleaseId },
-    ],
-  };
-}
-
-function releaseUnknownPerspective(
-  id: SurveillanceIntelligencePerspectiveId
-): IntelligencePerspectiveView {
-  return emptyPerspective(
-    id,
-    "unavailable",
-    UNAVAILABLE_PRIMARY,
-    MEMBERSHIP_NOT_RETURNED,
-    "Surveillance situation is not shown because the governed release for this page is not known.",
-    false
-  );
-}
-
 function mapSituations(
   fips: string,
   state: SituationsQueryState
 ): [IntelligencePerspectiveView, IntelligencePerspectiveView] {
   const fourId = "surveillance-situation" as const;
   const tickId = "ecological-situation" as const;
-  if (state.release.status === "pending" || state.phase === "loading") {
+  if (state.phase === "loading") {
     return [
       loadingPerspective(fourId, "Class membership is loading."),
       loadingPerspective(tickId, "Class membership is loading."),
-    ];
-  }
-  if (state.release.status === "unknown") {
-    return [
-      releaseUnknownPerspective(fourId),
-      releaseUnknownPerspective(tickId),
     ];
   }
   if (state.phase === "idle") {
@@ -1000,6 +953,9 @@ function mapSituations(
     ];
   }
   if (state.phase === "error") {
+    if (state.unverified) {
+      return [unverifiedPerspective(fourId), unverifiedPerspective(tickId)];
+    }
     if (state.errorStatus === 404) {
       return [
         emptyPerspective(
@@ -1026,27 +982,21 @@ function mapSituations(
     ];
   }
   const result = state.result;
-  const pageReleaseId = state.release.releaseId;
+  const lineageRelease = result?.release_id ?? NOT_RETURNED;
   if (!result || result.county_fips !== fips) {
     return [
       mapSituationVariant(
         fourId,
-        pageReleaseId,
+        lineageRelease,
         unavailableVariant("four-state"),
         false
       ),
       mapSituationVariant(
         tickId,
-        pageReleaseId,
+        lineageRelease,
         unavailableVariant("tick-pathogen"),
         false
       ),
-    ];
-  }
-  if (result.release_id !== pageReleaseId) {
-    return [
-      releaseMismatchPerspective(fourId, result.release_id, pageReleaseId),
-      releaseMismatchPerspective(tickId, result.release_id, pageReleaseId),
     ];
   }
   return [

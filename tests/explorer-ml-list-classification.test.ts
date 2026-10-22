@@ -5,10 +5,11 @@ import {
   EXPLORER_ML_PRIORITY_FAILED_LABEL,
   EXPLORER_ML_PRIORITY_LEGEND,
   EXPLORER_ML_PRIORITY_LOADING_LABEL,
+  EXPLORER_ML_PRIORITY_NOT_ESTIMABLE_LABEL,
   EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
+  EXPLORER_ML_PRIORITY_UNVERIFIED_LABEL,
   explorerMlListClassification,
 } from "@/features/ux-reset/surveillance-priority/explorer-list-classification";
-import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models";
 
 import {
@@ -16,13 +17,7 @@ import {
   tier1LowInsufficientFixture,
   tier1MediumSufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "./fixtures/tier1-surveillance-priority";
-
-const alignedRelease: Tier1ActiveRelease = {
-  releaseId: tier1HighSufficientFixture.release_id,
-  status: "ready",
-};
 
 function classify(
   result: Tier1CountyPriority | null,
@@ -30,18 +25,18 @@ function classify(
     errorStatus?: number | null;
     fips?: string;
     inLower48?: boolean;
-    release?: Tier1ActiveRelease;
     status?: "error" | "loading" | "success";
+    unverified?: boolean;
   }
 ) {
   const fips = input?.fips ?? result?.county_fips ?? "01001";
   return explorerMlListClassification({
     errorStatus: input?.errorStatus ?? null,
     inLower48: input?.inLower48 ?? isLower48CountyFips(fips),
-    release: input?.release ?? alignedRelease,
     requestedFips: fips,
     result,
     status: input?.status ?? "success",
+    unverified: input?.unverified,
   });
 }
 
@@ -58,7 +53,7 @@ describe("Explorer county list ML classification", () => {
     });
   });
 
-  it("keeps a null tier as Not available", () => {
+  it("labels NOT_ESTIMABLE as Not estimable", () => {
     const notEstimable: Tier1CountyPriority = {
       ...tier1HighSufficientFixture,
       evidence_sufficiency: "NOT_ESTIMABLE",
@@ -68,8 +63,9 @@ describe("Explorer county list ML classification", () => {
       reasons: [],
     };
     const label = classify(notEstimable).label;
-    expect(label).toBe(EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL);
+    expect(label).toBe(EXPLORER_ML_PRIORITY_NOT_ESTIMABLE_LABEL);
     expect(label).not.toBe("LOW");
+    expect(label).not.toBe(EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL);
   });
 
   it("keeps a missing result Not available and a failed request Could not load", () => {
@@ -93,7 +89,7 @@ describe("Explorer county list ML classification", () => {
       unavailableService: classify(null, { errorStatus: 503, status: "error" })
         .label,
     }).toStrictEqual({
-      incoherent: EXPLORER_ML_PRIORITY_FAILED_LABEL,
+      incoherent: EXPLORER_ML_PRIORITY_UNVERIFIED_LABEL,
       missing: EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
       network: EXPLORER_ML_PRIORITY_FAILED_LABEL,
       rateLimit: EXPLORER_ML_PRIORITY_FAILED_LABEL,
@@ -108,31 +104,19 @@ describe("Explorer county list ML classification", () => {
     );
   });
 
-  it("withholds a tier from a different release", () => {
-    const otherRelease = tier1PriorityForRelease(
-      tier1HighSufficientFixture,
-      "governed-2026-10-06-nlcd-demo-cohort"
-    );
-    expect(classify(otherRelease).label).toBe(
-      EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL
-    );
+  it("shows a tier whose model release differs from the page release", () => {
+    expect(classify(tier1HighSufficientFixture).label).toBe("HIGH");
   });
 
-  it("shows Loading only while the release or request is unresolved", () => {
+  it("shows Loading only while the request is unresolved", () => {
     expect({
-      pendingRelease: classify(tier1HighSufficientFixture, {
-        release: { status: "pending" },
-      }).label,
       request: classify(null, { status: "loading" }).label,
       retryAfter: classify(null, { errorStatus: 429, status: "loading" }).label,
-      unknownRelease: classify(tier1HighSufficientFixture, {
-        release: { status: "unknown" },
-      }).label,
+      returned: classify(tier1HighSufficientFixture).label,
     }).toStrictEqual({
-      pendingRelease: EXPLORER_ML_PRIORITY_LOADING_LABEL,
       request: EXPLORER_ML_PRIORITY_LOADING_LABEL,
       retryAfter: EXPLORER_ML_PRIORITY_LOADING_LABEL,
-      unknownRelease: EXPLORER_ML_PRIORITY_UNAVAILABLE_LABEL,
+      returned: "HIGH",
     });
   });
 

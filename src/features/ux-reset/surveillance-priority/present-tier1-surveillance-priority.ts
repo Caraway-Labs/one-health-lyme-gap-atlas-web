@@ -3,6 +3,7 @@ import {
   type Tier1CountyPriority,
   type Tier1CountyPriorityPriorityTier,
 } from "@/generated/models";
+import { logUnverifiedApiResponse } from "@/lib/api-response-validation";
 
 /** Returned reasons are displayed in order, capped at the contract maximum. */
 const RETURNED_REASON_LIMIT = 3;
@@ -28,11 +29,11 @@ export const TIER1_FAILED_MESSAGE =
 export const TIER1_STALE_MESSAGE =
   "This model-assisted priority did not match the selected county, so it was not shown. It is not low priority.";
 
-export const TIER1_RELEASE_MISMATCH_MESSAGE =
-  "This model-assisted priority is for a different release than the evidence on screen, so it was not shown. It is not low priority.";
+export const TIER1_UNVERIFIED_MESSAGE =
+  "Response could not be verified. It is not low priority.";
 
-export const TIER1_RELEASE_UNKNOWN_MESSAGE =
-  "Model-assisted surveillance priority is not shown because the governed release for this page is not known. It is not low priority.";
+export const TIER1_INCOHERENT_REASON =
+  "Tier, percentile, score, and evidence sufficiency are not a coherent persisted result.";
 
 export const TIER1_REASON_ABSENCE = "No contributing reasons were returned.";
 
@@ -96,7 +97,7 @@ export type Tier1SurveillancePriorityView =
   | { fips: string; kind: "unavailable" }
   | { fips: string; kind: "failed" }
   | { fips: string; kind: "stale" }
-  | { fips: string; kind: "release-unaligned"; reason: "mismatch" | "unknown" }
+  | { fips: string; kind: "unverified" }
   | {
       details: Tier1ModelDetails;
       fips: string;
@@ -197,7 +198,7 @@ function isScoredTier(
  * SUFFICIENT and INSUFFICIENT require a returned tier, percentile, and score.
  * NOT_ESTIMABLE requires all three to be null. Anything else is not shown as a tier.
  */
-function isCoherent(result: Tier1CountyPriority): boolean {
+export function isTier1ResponseCoherent(result: Tier1CountyPriority): boolean {
   const percentile = result.priority_percentile;
   const score = result.raw_model_score;
   const numbersPresent =
@@ -223,27 +224,26 @@ function isCoherent(result: Tier1CountyPriority): boolean {
 
 export function presentTier1SurveillancePriority(input: {
   errorStatus: number | null;
-  release: Tier1ActiveRelease;
   requestedFips: string;
   result: Tier1CountyPriority | null;
   status: "error" | "loading" | "success";
+  unverified?: boolean;
 }): Tier1SurveillancePriorityView {
-  const { errorStatus, release, requestedFips, result, status } = input;
-  if (release.status === "pending") {
-    return { fips: requestedFips, kind: "loading" };
-  }
-  if (release.status === "unknown") {
-    return {
-      fips: requestedFips,
-      kind: "release-unaligned",
-      reason: "unknown",
-    };
-  }
+  const {
+    errorStatus,
+    requestedFips,
+    result,
+    status,
+    unverified = false,
+  } = input;
   switch (status) {
     case "loading": {
       return { fips: requestedFips, kind: "loading" };
     }
     case "error": {
+      if (unverified) {
+        return { fips: requestedFips, kind: "unverified" };
+      }
       if (errorStatus === 404) {
         return { fips: requestedFips, kind: "unavailable" };
       }
@@ -253,15 +253,13 @@ export function presentTier1SurveillancePriority(input: {
       if (!result || result.county_fips !== requestedFips) {
         return { fips: requestedFips, kind: "stale" };
       }
-      if (result.release_id !== release.releaseId) {
-        return {
+      if (!isTier1ResponseCoherent(result)) {
+        logUnverifiedApiResponse({
+          endpoint: `/v1/counties/${requestedFips}/tier1-surveillance-priority`,
           fips: requestedFips,
-          kind: "release-unaligned",
-          reason: "mismatch",
-        };
-      }
-      if (!isCoherent(result)) {
-        return { fips: requestedFips, kind: "failed" };
+          reason: TIER1_INCOHERENT_REASON,
+        });
+        return { fips: requestedFips, kind: "unverified" };
       }
       const reasons = returnedReasons(result.reasons);
       const details = modelDetails(result);

@@ -440,7 +440,6 @@ describe("Review operating picture state", () => {
       investigate: new URL(investigate, "http://localhost").searchParams.get(
         "dataset"
       ),
-      reason: surveillance.dataset.releaseReason,
       release: download.dataset.release,
       state: download.dataset.state,
       surveillance: surveillance.dataset.state,
@@ -449,11 +448,10 @@ describe("Review operating picture state", () => {
       county: "08001",
       disabled: false,
       investigate: "alpha-2026",
-      reason: "unknown",
       release: "alpha-2026",
       state: "idle",
-      surveillance: "release-unaligned",
-      text: expect.stringContaining("Unavailable"),
+      surveillance: "loading",
+      text: expect.stringContaining("Loading"),
     });
   });
 

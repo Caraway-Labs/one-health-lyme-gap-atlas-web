@@ -19,7 +19,6 @@ import {
   tier1HighSufficientFixture,
   tier1LowInsufficientFixture,
   tier1PriorityForCounty,
-  tier1PriorityForRelease,
 } from "../../tests/fixtures/tier1-surveillance-priority";
 import {
   storyGeographyError,
@@ -65,10 +64,7 @@ export const syntheticReviewSourceUrl =
   "https://example.com/synthetic-review-source";
 
 function alignedPriority(result: Tier1CountyPriority): Tier1CountyPriority {
-  return tier1PriorityForRelease(
-    tier1PriorityForCounty(result, syntheticCounty.fips),
-    syntheticReleaseId
-  );
+  return tier1PriorityForCounty(result, syntheticCounty.fips);
 }
 
 function withSyntheticSourceLink(

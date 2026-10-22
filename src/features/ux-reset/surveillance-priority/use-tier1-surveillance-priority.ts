@@ -7,12 +7,19 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 
-import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import {
+  isTier1ResponseCoherent,
+  TIER1_INCOHERENT_REASON,
+} from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import { countyTier1SurveillancePriorityGet } from "@/generated/atlas";
 import type { Tier1CountyPriority } from "@/generated/models";
 import { CountyTier1SurveillancePriorityGetResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
-import { validateApiResponse } from "@/lib/api-response-validation";
+import {
+  ApiResponseValidationError,
+  logUnverifiedApiResponse,
+  validateApiResponse,
+} from "@/lib/api-response-validation";
 
 const COUNTY_FIPS = /^\d{5}$/;
 const MILLISECONDS_PER_SECOND = 1000;
@@ -50,12 +57,12 @@ export function tier1SurveillancePriorityRetryDelay(
 
 export function tier1SurveillancePriorityQueryOptions(
   fips: string,
-  releaseId: string | null,
   queryClient: QueryClient,
   enabled = true
 ): UseQueryOptions<Tier1CountyPriority, Error> {
+  const endpoint = `/v1/counties/${fips}/tier1-surveillance-priority`;
   return {
-    enabled: enabled && COUNTY_FIPS.test(fips) && releaseId !== null,
+    enabled: enabled && COUNTY_FIPS.test(fips),
     queryFn: async ({
       signal,
     }: {
@@ -67,22 +74,42 @@ export function tier1SurveillancePriorityQueryOptions(
       if (response.status !== 200) {
         throw new AtlasApiError(
           "Model-assisted surveillance priority could not be loaded.",
-          `/v1/counties/${fips}/tier1-surveillance-priority`,
+          endpoint,
           response.status,
           null
         );
       }
-      return validateApiResponse(
-        "Tier 1 surveillance priority",
-        CountyTier1SurveillancePriorityGetResponse,
-        response.data
-      );
+      let parsed: Tier1CountyPriority;
+      try {
+        parsed = validateApiResponse(
+          "Tier 1 surveillance priority",
+          CountyTier1SurveillancePriorityGetResponse,
+          response.data
+        );
+      } catch (error) {
+        if (error instanceof ApiResponseValidationError) {
+          logUnverifiedApiResponse({
+            endpoint,
+            fips,
+            reason: error.reason,
+          });
+        }
+        throw error;
+      }
+      if (!isTier1ResponseCoherent(parsed)) {
+        logUnverifiedApiResponse({
+          endpoint,
+          fips,
+          reason: TIER1_INCOHERENT_REASON,
+        });
+        throw new ApiResponseValidationError(
+          "Tier 1 surveillance priority",
+          TIER1_INCOHERENT_REASON
+        );
+      }
+      return parsed;
     },
-    queryKey: [
-      "ux-reset-tier1-surveillance-priority",
-      fips,
-      releaseId,
-    ] as const,
+    queryKey: ["ux-reset-tier1-surveillance-priority", fips] as const,
     retry: (failureCount: number, error: unknown) => {
       if (error instanceof AtlasApiError && error.status === 404) {
         return false;
@@ -98,13 +125,7 @@ export function tier1SurveillancePriorityQueryOptions(
   };
 }
 
-export function useTier1SurveillancePriority(
-  fips: string,
-  release: Tier1ActiveRelease
-) {
+export function useTier1SurveillancePriority(fips: string) {
   const queryClient = useQueryClient();
-  const releaseId = release.status === "ready" ? release.releaseId : null;
-  return useQuery(
-    tier1SurveillancePriorityQueryOptions(fips, releaseId, queryClient)
-  );
+  return useQuery(tier1SurveillancePriorityQueryOptions(fips, queryClient));
 }
