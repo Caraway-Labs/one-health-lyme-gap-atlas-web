@@ -479,6 +479,105 @@ async function fetchCompareObservations(input: {
   };
 }
 
+const FALLBACK_ANNUAL_YEAR = 2023;
+const FALLBACK_CUMULATIVE_DAY = "2025-12-31";
+
+function dayBound(date: string): ExploreTimeBound {
+  return { date, handoffPeriod: date, kind: "day" };
+}
+
+/**
+ * Time bounds to try for one measure, best first. The governed bound comes
+ * first. When the catalog does not name one, the public API still serves
+ * the published annual year and the cumulative day, so those are tried
+ * instead of withholding the measure before any request is made.
+ */
+function compareTimeBoundCandidates(
+  measure: Pick<Measure, "temporal_grains" | "temporal_semantics">,
+  period: string | null
+): { bound: ExploreTimeBound; governed: boolean }[] {
+  const governed = resolveExploreTimeBound(measure, period);
+  if (governed) {
+    return [{ bound: governed, governed: true }];
+  }
+  const candidates: ExploreTimeBound[] = [];
+  const semantics = measure.temporal_semantics?.trim() ?? "";
+  if (parseCalendarIsoDate(semantics) === semantics) {
+    candidates.push(dayBound(semantics));
+  }
+  if (period && parseCalendarIsoDate(period) === period) {
+    candidates.push(dayBound(period));
+  }
+  candidates.push(
+    {
+      handoffPeriod: `${FALLBACK_ANNUAL_YEAR}-01-01`,
+      kind: "year",
+      year: FALLBACK_ANNUAL_YEAR,
+    },
+    dayBound(FALLBACK_CUMULATIVE_DAY)
+  );
+  const seen = new Set<string>();
+  return candidates
+    .filter((bound) => {
+      const key = bound.kind === "year" ? String(bound.year) : bound.date;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    })
+    .map((bound) => ({ bound, governed: false }));
+}
+
+function isRejectedFilter(error: unknown): boolean {
+  return (
+    error instanceof AtlasApiError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 429
+  );
+}
+
+async function fetchFirstAvailableObservations(input: {
+  measureId: string;
+  pair: readonly [string, string];
+  period: string | null;
+  releaseId: string;
+  signal: AbortSignal;
+  timeBounds: readonly { bound: ExploreTimeBound; governed: boolean }[];
+}): Promise<{
+  observations: Observation[];
+  selection: KnownEmptyObservationSelection | null;
+}> {
+  let lastEmpty: {
+    observations: Observation[];
+    selection: KnownEmptyObservationSelection | null;
+  } | null = null;
+  for (const candidate of input.timeBounds) {
+    try {
+      const loaded = await fetchCompareObservations({
+        measureId: input.measureId,
+        pair: input.pair,
+        period: input.period,
+        releaseId: input.releaseId,
+        signal: input.signal,
+        timeBound: candidate.bound,
+      });
+      if (loaded.observations.length > 0 || candidate.governed) {
+        return loaded;
+      }
+      lastEmpty = loaded;
+    } catch (error) {
+      // A fallback bound the API does not accept for this measure is not a
+      // load failure. The next published bound is tried.
+      if (candidate.governed || !isRejectedFilter(error)) {
+        throw error;
+      }
+    }
+  }
+  return lastEmpty ?? { observations: [], selection: null };
+}
+
 export type CompareRetryCooldown = {
   measureId: string;
   retryAtMs: number;
@@ -637,13 +736,7 @@ export async function loadCompareEvidence(input: {
     measuresToFetch,
     COMPARE_OBSERVATION_CONCURRENCY,
     async (measure) => {
-      const timeBound = resolveExploreTimeBound(measure, input.period);
-      if (!timeBound) {
-        return {
-          measureId: measure.measure_id,
-          status: "unsupported_period" as const,
-        };
-      }
+      const timeBounds = compareTimeBoundCandidates(measure, input.period);
       const scope: CompareCooldownScope = {
         leftFips: pair[0],
         measureId: measure.measure_id,
@@ -658,13 +751,13 @@ export async function loadCompareEvidence(input: {
           signal: input.signal,
         });
         const loaded = await withCompareReadLimit(input.signal, () =>
-          fetchCompareObservations({
+          fetchFirstAvailableObservations({
             measureId: measure.measure_id,
             pair,
             period: input.period,
             releaseId: input.releaseId,
             signal: input.signal,
-            timeBound,
+            timeBounds,
           })
         );
         return {

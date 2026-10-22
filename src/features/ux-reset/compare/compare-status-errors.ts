@@ -32,8 +32,6 @@ export function compareStatusErrors(input: {
   catalogError: string | null;
   directoryError: string | null;
   evidenceError: string | null;
-  failedLabels: readonly string[];
-  failedMeasures: boolean;
   metadataError: string | null;
   profile: CompareProfileAlignment | null;
   profileError: string | null;
@@ -59,16 +57,6 @@ export function compareStatusErrors(input: {
     add(
       "release-mismatch",
       "A county record belongs to a different release, so its values were not shown."
-    );
-  }
-  if (input.failedMeasures) {
-    const affected =
-      input.failedLabels.length > 0
-        ? ` Affected measures: ${input.failedLabels.join(", ")}.`
-        : "";
-    add(
-      "measures",
-      `Some measures could not be loaded. Evidence that loaded stays in this comparison.${affected}`
     );
   }
   return messages;

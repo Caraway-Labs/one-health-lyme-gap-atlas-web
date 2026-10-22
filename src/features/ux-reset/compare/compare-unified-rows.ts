@@ -1,6 +1,7 @@
-import type {
-  CompareAlignedRow,
-  CompareCell,
+import {
+  isNclimgridMeasure,
+  type CompareAlignedRow,
+  type CompareCell,
 } from "@/features/ux-reset/compare/compare-alignment";
 import type {
   CompareProfileAlignment,
@@ -224,15 +225,16 @@ export function reconcileAlignmentRows(
   profile: CompareProfileAlignment | null,
   rows: readonly CompareAlignedRow[]
 ): ReconciledAlignmentRow[] {
+  const visibleRows = rows.filter((row) => !isNclimgridMeasure(row));
   if (!profile) {
-    return rows.map((row) => ({ note: null, row }));
+    return visibleRows.map((row) => ({ note: null, row }));
   }
   const byId = new Map(profile.rows.map((row) => [row.id, row]));
   const byLabel = new Map(
     profile.rows.map((row) => [normalizeLabel(row.label), row])
   );
   const kept: ReconciledAlignmentRow[] = [];
-  for (const row of rows) {
+  for (const row of visibleRows) {
     const aliased = MEASURE_TO_PROFILE_ROW[row.measureId];
     const profileRow =
       (aliased ? byId.get(aliased) : undefined) ??

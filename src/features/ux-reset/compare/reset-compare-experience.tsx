@@ -9,10 +9,7 @@ import { Button } from "@/components/ui/button";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
-import type {
-  CompareAlignment,
-  CompareRelation,
-} from "@/features/ux-reset/compare/compare-alignment";
+import type { CompareRelation } from "@/features/ux-reset/compare/compare-alignment";
 import {
   CompareCountyPicker,
   type ReviewCategoryBadge,
@@ -91,23 +88,6 @@ function profileSourceEntries(
     }
     return [{ id: row.id, label: row.label, left, right }];
   });
-}
-
-function failedMeasureLabels(alignment: CompareAlignment | null): string[] {
-  if (!alignment) {
-    return [];
-  }
-  const labels: string[] = [];
-  for (const outcome of alignment.outcomes) {
-    if (outcome.status !== "failed") {
-      continue;
-    }
-    const row = alignment.rows.find(
-      (entry) => entry.measureId === outcome.measureId
-    );
-    labels.push(row?.measureLabel ?? outcome.measureId);
-  }
-  return labels;
 }
 
 function alignmentCountRelation(
@@ -341,11 +321,6 @@ function CompareExperienceInner() {
     { fips: rightFips, label: rightLabel, letter: "B" },
   ];
   const resultsReady = Boolean(workspace.profile) || reconciledRows.length > 0;
-  const failedMeasures =
-    workspace.alignment?.outcomes.some(
-      (outcome) => outcome.status === "failed"
-    ) ?? false;
-  const failedLabels = failedMeasureLabels(workspace.alignment);
   const tier1Release = tier1ReleaseFromMetadata({
     isError: Boolean(workspace.metadataError),
     isLoading: workspace.metadataLoading,
@@ -383,8 +358,6 @@ function CompareExperienceInner() {
     alignment: workspace.alignment,
     directoryError: workspace.directoryError,
     evidenceError: workspace.evidenceError,
-    failedLabels,
-    failedMeasures,
     metadataError: workspace.metadataError,
     profile: workspace.profile,
     profileError: workspace.profileError,
@@ -432,7 +405,7 @@ function CompareExperienceInner() {
   ];
   const retryTargets = {
     catalog: Boolean(workspace.catalogError) || workspace.catalogCoolingDown,
-    evidence: failedMeasures || Boolean(workspace.evidenceError),
+    evidence: Boolean(workspace.evidenceError),
     profile:
       Boolean(workspace.profileError) ||
       Boolean(workspace.profile?.retryable) ||
@@ -653,7 +626,24 @@ function CompareExperienceInner() {
             >
               County comparison
             </h2>
-            {resultsReady ? <CompareShareBar askHref={askHref} /> : null}
+            {resultsReady ? (
+              <CompareShareBar
+                askHref={askHref}
+                counties={[leftOption, rightOption].flatMap((option) =>
+                  option
+                    ? [
+                        {
+                          countyName: option.countyName,
+                          fips: option.fips,
+                          label: option.label,
+                          stateCode: option.stateCode,
+                        },
+                      ]
+                    : []
+                )}
+                releaseId={workspace.releaseId ?? ""}
+              />
+            ) : null}
           </div>
           <CompareCountyProfileSection
             alignment={workspace.profile}
@@ -714,7 +704,7 @@ function CompareExperienceInner() {
                   <CompareEvidenceToolbar
                     counts={overviewCounts}
                     filters={filters}
-                    partial={failedMeasures}
+                    partial={false}
                     shown={shownVisualRows.length}
                     total={visualRows.length}
                     onFiltersChange={setFilters}

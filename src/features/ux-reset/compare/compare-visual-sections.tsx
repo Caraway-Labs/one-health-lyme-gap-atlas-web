@@ -5,7 +5,6 @@ import {
   Copy,
   Equal,
   MessageSquare,
-  Printer,
   SquareDashed,
   Waypoints,
 } from "lucide-react";
@@ -29,6 +28,10 @@ import {
   compareProfilePeriodQualification,
   type CompareProfileAlignment,
 } from "@/features/ux-reset/compare/compare-county-profile";
+import {
+  CompareDownloadPdfsButton,
+  type CompareShareCounty,
+} from "@/features/ux-reset/compare/compare-share-actions";
 import type { ReconciledAlignmentRow } from "@/features/ux-reset/compare/compare-unified-rows";
 import {
   buildCompareGlanceSide,
@@ -714,8 +717,16 @@ export function CompareSourcesTable({
   );
 }
 
-/** Copy link, print or save as PDF, and the hand-off to Ask Atlas. */
-export function CompareShareBar({ askHref }: { askHref: string | null }) {
+/** Copy link, download both county PDFs, and the hand-off to Ask Atlas. */
+export function CompareShareBar({
+  askHref,
+  counties,
+  releaseId,
+}: {
+  askHref: string | null;
+  counties: readonly CompareShareCounty[];
+  releaseId: string;
+}) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     try {
@@ -730,9 +741,6 @@ export function CompareShareBar({ askHref }: { askHref: string | null }) {
   };
   const handleCopyClick = () => {
     void handleCopy();
-  };
-  const handlePrint = () => {
-    window.print();
   };
   return (
     <div
@@ -755,16 +763,7 @@ export function CompareShareBar({ askHref }: { askHref: string | null }) {
         )}
         {copied ? "Link copied" : "Copy link"}
       </Button>
-      <Button
-        data-testid="compare-print"
-        size="sm"
-        type="button"
-        variant="outline"
-        onClick={handlePrint}
-      >
-        <Printer aria-hidden="true" data-icon="inline-start" />
-        Print or save as PDF
-      </Button>
+      <CompareDownloadPdfsButton counties={counties} releaseId={releaseId} />
       {askHref ? (
         <Link
           className={cn(

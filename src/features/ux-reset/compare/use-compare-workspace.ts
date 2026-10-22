@@ -5,7 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { CompareAlignment } from "@/features/ux-reset/compare/compare-alignment";
+import {
+  isNclimgridMeasure,
+  type CompareAlignment,
+} from "@/features/ux-reset/compare/compare-alignment";
 import {
   compareCatalogCoolingDown,
   compareCatalogRetryDelay,
@@ -324,7 +327,13 @@ export function useCompareWorkspace(): CompareWorkspace {
         queryClient.getDefaultOptions().queries?.retryDelay
       ),
   });
-  const measures = measuresQuery.data ?? EMPTY_MEASURES;
+  const measures = useMemo(
+    () =>
+      measuresQuery.data
+        ? measuresQuery.data.filter((measure) => !isNclimgridMeasure(measure))
+        : EMPTY_MEASURES,
+    [measuresQuery.data]
+  );
   const measureIds = measures.map((measure) => measure.measure_id);
   const leftFips = entry.pair[0] ?? "";
   const rightFips = entry.pair[1] ?? "";
