@@ -112,7 +112,7 @@ test.describe("UX Reset feedback modal", () => {
     const cards = dialog.getByRole("listitem");
     await expect(cards.nth(0)).toContainText("Suggest a dataset");
     await expect(cards.nth(1)).toContainText("Share an idea");
-    await expect(cards.nth(2)).toContainText("Expand Atlas");
+    await expect(cards.nth(2)).toContainText("Expand One Health Atlas");
     await expect(cards.nth(3)).toContainText("Report a problem");
 
     const emptyResults = await new AxeBuilder({ page })
@@ -221,7 +221,9 @@ test.describe("UX Reset feedback modal", () => {
     await expect(
       page.getByRole("dialog", { name: "Help shape One Health Atlas" })
     ).toBeVisible();
-    await page.getByRole("button", { name: /Expand Atlas/ }).click();
+    await page
+      .getByRole("button", { name: /Expand One Health Atlas/ })
+      .click();
     await expect(
       page.getByText("does not mean Atlas already includes it")
     ).toBeVisible();

@@ -70,7 +70,7 @@ describe("reset feedback model", () => {
     ).toStrictEqual([
       "Suggest a dataset",
       "Share an idea",
-      "Expand Atlas",
+      "Expand One Health Atlas",
       "Report a problem",
     ]);
   });
@@ -300,7 +300,7 @@ describe("reset feedback model", () => {
     }).toMatchObject({
       expansionCategory: "feature_idea",
       expansionMessage: expect.stringMatching(
-        /Product category: Expand Atlas[\s\S]*Public source: https:\/\/example.com\/anaplasmosis/
+        /Product category: Expand One Health Atlas[\s\S]*Public source: https:\/\/example.com\/anaplasmosis/
       ),
       problemCategory: "data_issue",
       problemRoute: "geographic_explorer",

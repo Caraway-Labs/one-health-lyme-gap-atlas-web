@@ -478,7 +478,8 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
                 }}
               />
               <p className="text-muted-foreground text-xs">
-                Atlas will include the {page.pageLabel} page and any selected
+                One Health Atlas will include the {page.pageLabel} page and any
+                selected
                 county, state, or release already in the address bar. It will
                 not include search text, cookies, or your account email.
               </p>
@@ -606,7 +607,8 @@ function AccountNotice({ signedIn }: { signedIn: boolean | null }) {
   if (signedIn === true) {
     return (
       <p className="text-muted-foreground text-xs">
-        You are signed in. This note will be linked to your Atlas account.
+        You are signed in. This note will be linked to your One Health Atlas
+        account.
         Contact email is still optional and is never copied from your profile.
       </p>
     );
@@ -730,8 +732,8 @@ function DatasetFields({
   return (
     <div className="space-y-4">
       <p className="text-sm">
-        A person reviews dataset suggestions. Atlas will not add or publish a
-        dataset from this form.
+        A person reviews dataset suggestions. One Health Atlas will not add or
+        publish a dataset from this form.
       </p>
       <FieldLabel htmlFor={referenceId} label="Dataset name or URL">
         <Input
@@ -858,11 +860,11 @@ function ExpandFields({
   return (
     <div className="space-y-4">
       <p className="text-sm">
-        Naming a disease, vector, or topic here does not mean Atlas already
-        includes it. A person reviews the suggestion. Nothing is added
+        Naming a disease, vector, or topic here does not mean One Health Atlas
+        already includes it. A person reviews the suggestion. Nothing is added
         automatically, and patient-level details do not belong here.
       </p>
-      <FieldLabel htmlFor={topicId} label="What should Atlas cover?">
+      <FieldLabel htmlFor={topicId} label="What should One Health Atlas cover?">
         <FeedbackTextarea
           disabled={disabled}
           id={topicId}
@@ -1102,8 +1104,9 @@ function ContactField({
       />
       <p className="text-muted-foreground text-xs" id={helpId}>
         An email lets us ask a follow-up question. This is optional and is not a
-        support promise. Do not include health or patient information. Atlas can
-        store an email today. A name or organization is kept in this draft until
+        support promise. Do not include health or patient information. One Health
+        Atlas can store an email today. A name or organization is kept in this
+        draft until
         you enter only an email or clear the field.
       </p>
     </div>
