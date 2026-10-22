@@ -80,11 +80,11 @@ describe("review rationale", () => {
         "No county-level health insurance coverage value was published."
       ),
       labels: [
-        "Published Lyme case data",
+        "Reported Lyme disease",
         "Tick presence",
         "Borrelia burgdorferi detection",
         "Social vulnerability",
-        "Health insurance coverage",
+        "Uninsured population",
         "Rurality",
       ],
       numbers: [1, 2, 3, 4, 5, 6],
