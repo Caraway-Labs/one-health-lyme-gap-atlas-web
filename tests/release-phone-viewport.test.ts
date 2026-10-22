@@ -185,6 +185,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
       "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 740",
       "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 640",
       "tests/e2e/ux-reset-ask-atlas-workspace.spec.ts 640",
+      "tests/e2e/ux-reset-selected-county-preview.spec.ts 640",
     ]);
     expect(
       phone.every(
