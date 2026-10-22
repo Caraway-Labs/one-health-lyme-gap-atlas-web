@@ -394,7 +394,13 @@ export function buildExplorerLegendModel(
   paint: ExplorerMapPaint
 ): ExplorerLegendModel {
   const unitText = legendUnit(paint);
-  const unitLabel = unitText.length > 0 ? unitText : null;
+  const unitLabel =
+    paint.layerId === "gap_score" &&
+    paint.unit?.trim() === "review-priority score"
+      ? null
+      : unitText.length > 0
+        ? unitText
+        : null;
   const base = {
     aboutLabel: `About ${paint.title}`,
     aboutSections: explorerLegendAboutSections(paint),
