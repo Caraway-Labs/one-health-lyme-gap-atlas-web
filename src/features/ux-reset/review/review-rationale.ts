@@ -10,17 +10,82 @@ export interface ReviewRationaleItem {
   text: string;
 }
 
-export const RUCC_2023_LABELS: Record<number, string> = {
-  1: "metro area of 1 million or more",
-  2: "metro area of 250,000 to 1 million",
-  3: "metro area of fewer than 250,000",
-  4: "urban population of 20,000 or more, adjacent to a metro area",
-  5: "urban population of 20,000 or more, not adjacent to a metro area",
-  6: "urban population of 2,500 to 19,999, adjacent to a metro area",
-  7: "urban population of 2,500 to 19,999, not adjacent to a metro area",
-  8: "completely rural or less than 2,500 urban population, adjacent to a metro area",
-  9: "completely rural or less than 2,500 urban population, not adjacent to a metro area",
-};
+/**
+ * USDA ERS 2023 Rural-Urban Continuum Codes. Codes 6–9 use the 2023 urban
+ * threshold of 5,000. The pre-2023 cutoff of 2,500 is not a 2023 definition.
+ * https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/documentation
+ */
+const RUCC_2023_DEFINITIONS = {
+  1: {
+    compactDetail: "Metro population: 1 million or more",
+    compactTitle: "Large metro",
+    label: "metro area of 1 million or more",
+  },
+  2: {
+    compactDetail: "Metro population: 250,000 to 1 million",
+    compactTitle: "Medium metro",
+    label: "metro area of 250,000 to 1 million",
+  },
+  3: {
+    compactDetail: "Metro population: fewer than 250,000",
+    compactTitle: "Small metro",
+    label: "metro area of fewer than 250,000",
+  },
+  4: {
+    compactDetail:
+      "Urban population of 20,000 or more, adjacent to a metro area",
+    compactTitle: "Urban, metro adjacent",
+    label: "urban population of 20,000 or more, adjacent to a metro area",
+  },
+  5: {
+    compactDetail:
+      "Urban population of 20,000 or more, not adjacent to a metro area",
+    compactTitle: "Urban, not metro adjacent",
+    label: "urban population of 20,000 or more, not adjacent to a metro area",
+  },
+  6: {
+    compactDetail:
+      "Urban population of 5,000 to 20,000, adjacent to a metro area",
+    compactTitle: "Small urban, metro adjacent",
+    label: "urban population of 5,000 to 20,000, adjacent to a metro area",
+  },
+  7: {
+    compactDetail:
+      "Urban population of 5,000 to 20,000, not adjacent to a metro area",
+    compactTitle: "Small urban, not metro adjacent",
+    label: "urban population of 5,000 to 20,000, not adjacent to a metro area",
+  },
+  8: {
+    compactDetail:
+      "Urban population of fewer than 5,000, adjacent to a metro area",
+    compactTitle: "Rural, metro adjacent",
+    label: "urban population of fewer than 5,000, adjacent to a metro area",
+  },
+  9: {
+    compactDetail:
+      "Urban population of fewer than 5,000, not adjacent to a metro area",
+    compactTitle: "Rural, not metro adjacent",
+    label: "urban population of fewer than 5,000, not adjacent to a metro area",
+  },
+} as const;
+
+export const RUCC_2023_LABELS: Record<number, string> = Object.fromEntries(
+  Object.entries(RUCC_2023_DEFINITIONS).map(([code, definition]) => [
+    Number(code),
+    definition.label,
+  ])
+);
+
+/** Concise Explorer county-card labels derived from `RUCC_2023_DEFINITIONS`. */
+export const RUCC_2023_COMPACT_CLASSIFICATIONS: Record<
+  number,
+  { detail: string; title: string }
+> = Object.fromEntries(
+  Object.entries(RUCC_2023_DEFINITIONS).map(([code, definition]) => [
+    Number(code),
+    { detail: definition.compactDetail, title: definition.compactTitle },
+  ])
+);
 
 const DOCUMENTED_TICK = new Set(["established", "reported"]);
 
@@ -125,7 +190,7 @@ export function reviewRationaleFor(
   return [
     {
       group: "surveillance",
-      label: "Published Lyme case data",
+      label: "Reported Lyme disease",
       number: 1,
       text: humanSentence(detail),
     },
@@ -149,7 +214,7 @@ export function reviewRationaleFor(
     },
     {
       group: "community",
-      label: "Health insurance coverage",
+      label: "Uninsured population",
       number: 5,
       text: insuranceSentence(detail),
     },

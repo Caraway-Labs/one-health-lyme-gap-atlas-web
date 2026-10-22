@@ -10,11 +10,11 @@ import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 const release = baldwin.release.release_id;
 const rowLabels = [
-  "Published Lyme case data",
+  "Reported Lyme disease",
   "Tick presence",
   "Borrelia burgdorferi detection",
   "Social vulnerability",
-  "Health insurance coverage",
+  "Uninsured population",
   "Rurality",
 ];
 
@@ -211,7 +211,7 @@ test.describe("Selected county preview", () => {
       "Minimum reported cases"
     );
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "The published data establish a minimum number of reported cases. The actual reported total may be higher."
+      "At least 5"
     );
     await expect(
       preview
@@ -232,7 +232,7 @@ test.describe("Selected county preview", () => {
       ).toHaveText(label);
     }
     await expect(
-      preview.getByRole("heading", { name: "Surveillance evidence" })
+      preview.getByRole("heading", { name: "Disease and tick data" })
     ).toBeVisible();
     await expect(
       preview.getByRole("heading", { name: "Community context" })
@@ -247,7 +247,10 @@ test.describe("Selected county preview", () => {
     await page.locator('button.ux-reset-ranked-row[data-fips="01001"]').click();
     await expect(preview).toHaveAttribute("data-fips", "01001");
     await expect(preview.getByTestId("review-rationale-1")).toContainText(
-      "No county-linked 2023 Lyme case record is available."
+      "County record"
+    );
+    await expect(preview.getByTestId("review-rationale-1")).toContainText(
+      "Unavailable"
     );
     expect(hits).toEqual([]);
 
