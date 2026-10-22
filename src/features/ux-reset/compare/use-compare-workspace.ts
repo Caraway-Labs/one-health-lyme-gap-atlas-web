@@ -88,6 +88,7 @@ export type CompareCountyOption = {
   disabled: boolean;
   fips: string;
   label: string;
+  stateCode: string;
   stateLabel: string;
 };
 
@@ -126,8 +127,10 @@ export type CompareWorkspace = {
   retryEvidence: () => void;
   retryProfile: () => void;
   scopeLabel: string;
+  setPair: (pair: readonly string[]) => void;
   setSlot: (slot: 0 | 1, fips: string) => void;
   slotMessage: string | null;
+  swapPair: () => void;
   unknownFips: readonly string[];
 };
 
@@ -444,6 +447,21 @@ export function useCompareWorkspace(): CompareWorkspace {
     }
     commitPair(next);
   };
+  const setPair = (next: readonly string[]) => {
+    const canonical = parseCompareFipsList(next.join(","));
+    if (canonical.length !== next.length) {
+      setSlotMessage(
+        "Choose a different county. Compare cannot list the same county twice."
+      );
+      return;
+    }
+    commitPair(canonical);
+  };
+  const swapPair = () => {
+    if (currentPair.length === 2) {
+      commitPair([...currentPair].toReversed());
+    }
+  };
   const removeMember = (fips: string) => {
     commitPair(removeCompareMember(currentPair, fips));
   };
@@ -498,6 +516,7 @@ export function useCompareWorkspace(): CompareWorkspace {
       disabled: false,
       fips,
       label: compareCountyOptionLabel(county, fips),
+      stateCode: county?.state ?? "",
       stateLabel: county ? county.stateName || county.state : "",
     }))
     .toSorted(
@@ -610,8 +629,10 @@ export function useCompareWorkspace(): CompareWorkspace {
     retryEvidence,
     retryProfile,
     scopeLabel: reviewScopeLabel(urlState.scope, stateOptions),
+    setPair,
     setSlot,
     slotMessage,
+    swapPair,
     unknownFips,
   };
 }

@@ -372,6 +372,7 @@ export function CompareCountyProfileSection({
   if (!(loading || error || alignment)) {
     return null;
   }
+  const showStatus = !embedded;
   return (
     <section
       aria-busy={loading || retrying}
@@ -389,14 +390,14 @@ export function CompareCountyProfileSection({
         />
       )}
       {showPeriodNote ? <ComparePeriodQualification period={period} /> : null}
-      {loading ? (
+      {showStatus && loading ? (
         <AtlasStatusMessage tone="loading">
           <p data-testid="compare-profile-loading">
             Loading published county records…
           </p>
         </AtlasStatusMessage>
       ) : null}
-      {coolingDown && !error ? (
+      {showStatus && coolingDown && !error ? (
         <AtlasStatusMessage
           action={
             <Button
@@ -418,7 +419,7 @@ export function CompareCountyProfileSection({
           </p>
         </AtlasStatusMessage>
       ) : null}
-      {error ? (
+      {showStatus && error ? (
         <AtlasStatusMessage
           action={
             <Button
@@ -438,7 +439,7 @@ export function CompareCountyProfileSection({
           <p data-testid="compare-profile-error">{error}</p>
         </AtlasStatusMessage>
       ) : null}
-      {alignment?.retryable && !error ? (
+      {showStatus && alignment?.retryable && !error ? (
         <AtlasStatusMessage
           action={
             <Button
@@ -458,7 +459,7 @@ export function CompareCountyProfileSection({
           stay blank.
         </AtlasStatusMessage>
       ) : null}
-      {alignment?.releaseMismatch ? (
+      {showStatus && alignment?.releaseMismatch ? (
         <AtlasStatusMessage tone="error">
           <p data-testid="compare-profile-release-mismatch">
             A county record belongs to a different release, so its values were
