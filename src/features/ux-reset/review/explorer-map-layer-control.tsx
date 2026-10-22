@@ -78,32 +78,49 @@ export function ExplorerMapLayerControl({
   );
 }
 
+export const LAYER_AVAILABILITY_RANKING_COPY =
+  "Changing the map layer does not change the county review ranking.";
+
+export const LAYER_AVAILABILITY_ALL_AVAILABLE_COPY =
+  "All listed map layers are available in this release. County-level data may still be missing.";
+
+const LAYER_UNAVAILABLE_FALLBACK =
+  "This layer is not available for the current release.";
+
 export function ExplorerMapLayerAvailability({
   gates,
+  releaseId,
 }: {
   gates: Record<ExplorerMapLayerId, ExplorerLayerGate>;
+  releaseId?: string | null;
 }) {
+  const exceptions = EXPLORER_MAP_LAYERS.filter((layer) => {
+    const gate = gates[layer.id];
+    return !gate?.selectable || Boolean(gate.reason);
+  });
+  const release = releaseId?.trim() ?? "";
   return (
     <details
       className="ux-reset-layer-availability"
       data-testid="explorer-layer-availability"
     >
       <summary>Layer availability</summary>
-      <p>
-        The county list stays a review ranking when one exists. Changing the
-        layer does not rank counties by this measure.
-      </p>
-      <ul>
-        {EXPLORER_MAP_LAYERS.map((layer) => (
-          <li key={layer.id}>
-            <strong>{layer.label}.</strong>{" "}
-            {gates[layer.id]?.selectable
-              ? "Available from the published collection for this release. Changing the layer does not rank counties by this measure."
-              : (gates[layer.id]?.reason ??
-                "This layer is not available for the current release.")}
-          </li>
-        ))}
-      </ul>
+      <p>{LAYER_AVAILABILITY_RANKING_COPY}</p>
+      {exceptions.length === 0 ? (
+        <p>{LAYER_AVAILABILITY_ALL_AVAILABLE_COPY}</p>
+      ) : (
+        <ul>
+          {exceptions.map((layer) => (
+            <li key={layer.id}>
+              <strong>{explorerMapLayerMenuLabel(layer)}.</strong>{" "}
+              {gates[layer.id]?.reason ?? LAYER_UNAVAILABLE_FALLBACK}
+            </li>
+          ))}
+        </ul>
+      )}
+      {release ? (
+        <p className="ux-reset-layer-availability-release">Release {release}</p>
+      ) : null}
     </details>
   );
 }
