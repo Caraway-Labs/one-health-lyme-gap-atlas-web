@@ -221,9 +221,7 @@ test.describe("UX Reset feedback modal", () => {
     await expect(
       page.getByRole("dialog", { name: "Help shape One Health Atlas" })
     ).toBeVisible();
-    await page
-      .getByRole("button", { name: /Expand One Health Atlas/ })
-      .click();
+    await page.getByRole("button", { name: /Expand One Health Atlas/ }).click();
     await expect(
       page.getByText("does not mean Atlas already includes it")
     ).toBeVisible();

@@ -479,9 +479,8 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
               />
               <p className="text-muted-foreground text-xs">
                 One Health Atlas will include the {page.pageLabel} page and any
-                selected
-                county, state, or release already in the address bar. It will
-                not include search text, cookies, or your account email.
+                selected county, state, or release already in the address bar.
+                It will not include search text, cookies, or your account email.
               </p>
               <p className="text-muted-foreground text-xs">
                 Do not include medical details, patient information, or other
@@ -608,8 +607,8 @@ function AccountNotice({ signedIn }: { signedIn: boolean | null }) {
     return (
       <p className="text-muted-foreground text-xs">
         You are signed in. This note will be linked to your One Health Atlas
-        account.
-        Contact email is still optional and is never copied from your profile.
+        account. Contact email is still optional and is never copied from your
+        profile.
       </p>
     );
   }
@@ -1104,10 +1103,9 @@ function ContactField({
       />
       <p className="text-muted-foreground text-xs" id={helpId}>
         An email lets us ask a follow-up question. This is optional and is not a
-        support promise. Do not include health or patient information. One Health
-        Atlas can store an email today. A name or organization is kept in this
-        draft until
-        you enter only an email or clear the field.
+        support promise. Do not include health or patient information. One
+        Health Atlas can store an email today. A name or organization is kept in
+        this draft until you enter only an email or clear the field.
       </p>
     </div>
   );
