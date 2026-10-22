@@ -47,19 +47,43 @@ import { useFeedbackPageContext } from "@/lib/feedback-context";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
+function feedbackCategoryLabel(category: FeedbackCategory): string {
+  switch (category) {
+    case FeedbackSubmissionRequestCategory.data_issue: {
+      return "Data issue";
+    }
+    case FeedbackSubmissionRequestCategory.usability: {
+      return "Usability";
+    }
+    case FeedbackSubmissionRequestCategory.bug: {
+      return "Bug";
+    }
+    case FeedbackSubmissionRequestCategory.feature_idea: {
+      return "Feature idea";
+    }
+    case FeedbackSubmissionRequestCategory.general: {
+      return "General";
+    }
+    default: {
+      const exhaustive: never = category;
+      return exhaustive;
+    }
+  }
+}
+
 const CATEGORY_OPTIONS: {
   value: FeedbackCategory;
   label: string;
 }[] = [
-  { value: FeedbackSubmissionRequestCategory.data_issue, label: "Data issue" },
-  { value: FeedbackSubmissionRequestCategory.usability, label: "Usability" },
-  { value: FeedbackSubmissionRequestCategory.bug, label: "Bug" },
-  {
-    value: FeedbackSubmissionRequestCategory.feature_idea,
-    label: "Feature idea",
-  },
-  { value: FeedbackSubmissionRequestCategory.general, label: "General" },
-];
+  FeedbackSubmissionRequestCategory.data_issue,
+  FeedbackSubmissionRequestCategory.usability,
+  FeedbackSubmissionRequestCategory.bug,
+  FeedbackSubmissionRequestCategory.feature_idea,
+  FeedbackSubmissionRequestCategory.general,
+].map((value) => ({
+  label: feedbackCategoryLabel(value),
+  value,
+}));
 
 type FeedbackDraft = {
   submissionToken: string;
@@ -421,7 +445,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                     aria-label="Feedback category"
                     className="mt-2 w-full"
                   >
-                    <SelectValue />
+                    <SelectValue>
+                      {feedbackCategoryLabel(draft.category)}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent positionerClassName="z-[70]">
                     {CATEGORY_OPTIONS.map((option) => (
@@ -461,7 +487,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
               >
                 Do not include medical details or other sensitive personal
                 information. Feedback is voluntary product input, not a clinical
-                channel or a data-rights request.
+                channel. For a privacy request, include an email address so we
+                can reply.
               </p>
               <p
                 id="feedback-message-count"

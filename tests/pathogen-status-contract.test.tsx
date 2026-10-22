@@ -413,7 +413,7 @@ describe("pathogen status color and order contract", () => {
     });
   });
 
-  it("leaves tick status, gap score, and boundaries on their own scales", () => {
+  it("leaves tick status and gap score on their own scales", () => {
     const counties = [
       county("08001", "Present", {
         color: "#55a8a3",
@@ -444,13 +444,7 @@ describe("pathogen status color and order contract", () => {
       layerId: "gap_score",
       scoresStatus: "ready",
     });
-    const boundaries = paintExplorerMapLayer({
-      counties,
-      layerId: "boundaries",
-      scoresStatus: "ready",
-    });
     expect({
-      boundaries: boundaries.entries.map((entry) => entry.label),
       gapColor: gap.colorsByFips.get("08013"),
       gapLabels: gap.entries.some((entry) => entry.label === "Present"),
       tickColors: {
@@ -460,7 +454,6 @@ describe("pathogen status color and order contract", () => {
       },
       tickLabels: tick.entries.map((entry) => entry.label),
     }).toStrictEqual({
-      boundaries: ["County boundary"],
       gapColor: "#e9602b",
       gapLabels: false,
       tickColors: {

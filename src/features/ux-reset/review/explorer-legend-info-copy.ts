@@ -151,9 +151,6 @@ const PATHOGEN_STATUS_COPY = {
   present: "The bacterium has been detected.",
 } as const;
 
-const BOUNDARIES_COPY =
-  "Shows county and state boundaries without displaying a data measure. Counties have a neutral fill, with darker lines marking state boundaries.";
-
 const VALUE_STATE_COPY: Readonly<Record<string, string>> = {
   "Missing (not zero and not a low value)": "Data missing",
   "No county-linked record (not zero and not confirmed absence)":
@@ -208,10 +205,7 @@ export function factualSourceYear(
 
 export function plainLegendPeriod(period: string): string {
   const trimmed = period.trim();
-  if (
-    trimmed.length === 0 ||
-    trimmed === "County boundaries are not an evidence layer."
-  ) {
+  if (trimmed.length === 0) {
     return "";
   }
   return trimmed
@@ -247,9 +241,6 @@ export function approvedSegmentTooltip(
   const mapped = VALUE_STATE_COPY[label];
   if (mapped) {
     return mapped;
-  }
-  if (layerId === "boundaries") {
-    return BOUNDARIES_COPY;
   }
   if (layerId === "tick_status") {
     if (label.startsWith("Reported")) {
@@ -609,16 +600,6 @@ function gapSections(paint: ExplorerMapPaint): ExplorerLegendAboutSection[] {
   ];
 }
 
-function boundarySections(
-  paint: ExplorerMapPaint
-): ExplorerLegendAboutSection[] {
-  return [
-    section(LEGEND_INFO_HEADING.shows, [paragraphs(text(BOUNDARIES_COPY))]),
-    ...optional(sourceSection(paint)),
-    ...optional(countySection(paint)),
-  ];
-}
-
 function optional(
   value: ExplorerLegendAboutSection | null
 ): ExplorerLegendAboutSection[] {
@@ -652,9 +633,6 @@ export function explorerLegendAboutSections(
     return statusSections(paint);
   }
   switch (paint.layerId) {
-    case "boundaries": {
-      return boundarySections(paint);
-    }
     case "completeness": {
       return completenessSections(paint);
     }

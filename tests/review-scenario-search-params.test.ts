@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { SCENARIO_CONTROL_RANGES } from "@/features/ux-reset/review/explorer-scenario-score";
 import {
   parseScenarioAssumption,
+  retiredExplorerLayerSearchParamPatch,
   reviewSearchParams,
   scenarioSearchParamPatch,
 } from "@/features/ux-reset/review/review-search-params";
@@ -54,6 +55,32 @@ describe("Review scenario URL params", () => {
     expect(
       scenarioSearchParamPatch(new URLSearchParams("scope=CO&missing=40"))
     ).toBeNull();
+  });
+
+  it("clears a retired or unknown map layer and keeps a thematic layer", () => {
+    expect({
+      boundaries: retiredExplorerLayerSearchParamPatch(
+        new URLSearchParams("scope=CO&layer=boundaries")
+      ),
+      gap: retiredExplorerLayerSearchParamPatch(
+        new URLSearchParams("scope=ALL&layer=gap_score")
+      ),
+      omitted: retiredExplorerLayerSearchParamPatch(
+        new URLSearchParams("scope=ALL")
+      ),
+      parsedBoundaries: reviewSearchParams.layer.parse("boundaries"),
+      parsedGap: reviewSearchParams.layer.parse("gap_score"),
+      unknown: retiredExplorerLayerSearchParamPatch(
+        new URLSearchParams("layer=not-a-layer")
+      ),
+    }).toStrictEqual({
+      boundaries: { layer: null },
+      gap: null,
+      omitted: null,
+      parsedBoundaries: null,
+      parsedGap: "gap_score",
+      unknown: { layer: null },
+    });
   });
 
   it("canonicalizes a padded integer", () => {
