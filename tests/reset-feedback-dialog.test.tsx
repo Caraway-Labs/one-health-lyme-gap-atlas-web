@@ -153,6 +153,11 @@ describe("reset feedback dialog", () => {
     renderFeedback();
     openDialog();
     fillDataset();
+    expect(
+      screen.getByText(
+        /Feedback is voluntary product input, not a clinical channel\. For a privacy request, include an email address so we can reply\./
+      )
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     choose(/Suggest a dataset/);
     expect(

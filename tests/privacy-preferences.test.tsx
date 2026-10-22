@@ -80,6 +80,11 @@ describe(PrivacyPreferences, () => {
   it("keeps a declined choice in the public dialog and can allow it later", () => {
     render(<PrivacyPreferences />);
     fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
+    expect(
+      screen.getByText(
+        "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas uses product analytics only after you explicitly allow them."
+      )
+    ).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: "Keep optional analytics off" })
     );

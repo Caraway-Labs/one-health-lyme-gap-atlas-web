@@ -31,8 +31,8 @@ function copyStrings(value: unknown): string[] {
 
 describe("Privacy policy content", () => {
   it("keeps a versioned public document and the approved meta description", () => {
-    expect(privacyContent.version).toBe("1.0.0");
-    expect(privacyContent.lastUpdated).toBe("2026-10-21");
+    expect(privacyContent.version).toBe("1.0.1");
+    expect(privacyContent.lastUpdated).toBe("2026-10-22");
     expect(privacyContent.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(pageMetadataForRoute("/privacy")).toStrictEqual({
       description:
@@ -74,6 +74,10 @@ describe("Privacy policy content", () => {
     expect(
       privacyContent.questions.links.map((link) => link.href)
     ).toStrictEqual(["/ai-ethics", "/about/caraway-labs"]);
+    expect(privacyContent.commitments[0]).toStrictEqual({
+      text: "You can read about Atlas, its data sources, its methods, and this policy without an account. Signing in is required for the Atlas workspace, where you explore the map and compare counties.",
+      title: "Public information stays public",
+    });
   });
 
   it("does not repeat a sentence or publish retired privacy wording", () => {

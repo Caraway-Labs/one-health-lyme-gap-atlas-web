@@ -25,7 +25,7 @@ import {
 } from "@/lib/analytics-consent";
 
 const ANALYTICS_PURPOSE =
-  "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas does not use product analytics only after you explicitly allow them.";
+  "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas uses product analytics only after you explicitly allow them.";
 
 const STORAGE_LIMITATION =
   "This setting stores only your choice, its date, expiry, and a format version in this browser for up to six months. It does not create an analytics identifier or send an event.";
