@@ -1,10 +1,6 @@
 # One Health Atlas: /compare page UX audit
 
-**Date:** October 21, 2026
-**Prepared as:** Senior UX audit for the Product Manager (non-technical summary)
-**Story:** [#829 Improve Compare Page Experience](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/829) (child of Epic [#398](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/398), milestone UX Reset Phase 1, in Lyme Atlas Project #1 as Backlog)
-**Audit branch / worktree:** `codex/web-compare-ux-audit` at `.worktrees/web-compare-ux-audit` (from `origin/main` at `a8f438c`)
-**Method:** Code reading only, plus the three production screenshots you pasted. No code changed. No server started. Nothing was clicked in the live app.
+**Date:** October 21, 2026 **Prepared as:** Senior UX audit for the Product Manager (non-technical summary) **Story:** [#829 Improve Compare Page Experience](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/829) (child of Epic [#398](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/398), milestone UX Reset Phase 1, in Lyme Atlas Project #1 as Backlog) **Audit branch / worktree:** `codex/web-compare-ux-audit` at `.worktrees/web-compare-ux-audit` (from `origin/main` at `a8f438c`) **Method:** Code reading only, plus the three production screenshots you pasted. No code changed. No server started. Nothing was clicked in the live app.
 
 > **What I could not verify.** I did not see the live app run, so statements about how many counties are in the dropdown, how long the page is, or what the data looks like come from the code and your screenshots. Where I am inferring, I say so.
 
@@ -17,7 +13,7 @@ The Compare page does its job correctly: it is careful about honesty (it never t
 The five biggest problems:
 
 1. **Picking counties is slow.** Each picker is a single long dropdown. There is no way to type "Adair" and jump to it, no filter by state, and no suggestions. The second picker is greyed out until the first is chosen.
-2. **The answer is at the bottom.** The page opens with two pickers, then a long stack of text rows. The summary ("how many values are shared / differ / withheld") is placed *after* the evidence, and it only counts a minor group of "additional observations".
+2. **The answer is at the bottom.** The page opens with two pickers, then a long stack of text rows. The summary ("how many values are shared / differ / withheld") is placed _after_ the evidence, and it only counts a minor group of "additional observations".
 3. **Every number is wrapped in text.** Under each value sits "Source unknown / Observation period unknown / Dataset vintage unknown" plus a "Sources and limitations" link. In your production screenshot this appears on **every** value, which drowns out the numbers (40.8 vs 32.4) that matter.
 4. **Almost nothing is visual.** The page contains no charts, no gauges, no bars, no map. Every comparison is two blocks of text side by side.
 5. **Internal labels leak through.** The code prints raw measure IDs (for example `case_count_floor_2023`) under headings in the "Additional observations" group. Those are system names, not user language.
@@ -31,7 +27,7 @@ The good news: **we already own most of the building blocks to fix this** (see s
 Reading top to bottom, using your three screenshots:
 
 | Step | What the user sees | Screenshot |
-|---|---|---|
+| --- | --- | --- |
 | A | Page title "Two counties. A clearer picture." and one sentence of explanation. | 1 |
 | B | Two dropdowns: **First county** and **Second county** (second is greyed out). A line says "Choose two counties to compare. Atlas will not select counties for you." | 1 |
 | C | After picking one: the county name, state, and an ID number (FIPS), plus "Clear" and "View county evidence" links. | 2 |
@@ -57,7 +53,7 @@ I grouped these by where they show up on the page. "Type" tells you whether it i
 ### 3.1 Page frame
 
 | Component | Type | What it displays to the user |
-|---|---|---|
+| --- | --- | --- |
 | **Page introduction** | Built by us | The headline "Two counties. A clearer picture." and the one-sentence description. |
 | **Left navigation** | Shared app shell | Icons for Explorer, Compare, Ask Atlas, Feed, etc. Compare is highlighted. |
 | **Footer** | Shared app shell | "One Health Atlas by Caraway Labs", Privacy, AI / Responsible Use, Privacy settings. |
@@ -65,7 +61,7 @@ I grouped these by where they show up on the page. "Type" tells you whether it i
 ### 3.2 County selection area
 
 | Component | Type | What it displays to the user |
-|---|---|---|
+| --- | --- | --- |
 | **County slot (x2)** | Built by us | One card per county: label ("First county"), a dropdown, then once chosen: county name, state, FIPS code, a "Clear" button, and a "View county evidence" link. |
 | **Dropdown (Select)** | shadcn/ui on Base UI | A single list of every available county, sorted alphabetically as "Name County, State (FIPS)". Click to open, scroll to find. The same list is used in both slots, with the other slot's county disabled. |
 | **Review-category badge** | shadcn `Badge` + our priority badge | A small colored pill above the picker once data loads (for example "Monitor for changes"). Colors are the shared priority colors. |
@@ -75,13 +71,13 @@ I grouped these by where they show up on the page. "Type" tells you whether it i
 ### 3.3 Loading and error messages (stacked between the pickers and the results)
 
 | Component | Type | What it displays |
-|---|---|---|
+| --- | --- | --- |
 | **Status message** (many variants) | Built by us | "Loading release metadata…", "Loading the published county list…", "County records are visible. Additional observations are still loading.", "Loading aligned evidence…", "Waiting for the server retry window…", and error versions with retry buttons. Up to **eight different messages** can appear in this strip. |
 
 ### 3.4 The comparison results
 
 | Component | Type | What it displays |
-|---|---|---|
+| --- | --- | --- |
 | **"County comparison" section** | Built by us | The main heading, then everything below. |
 | **Evidence group (collapsible)** | Built by us (HTML disclosure) | A section header (for example "Human disease surveillance") that expands to show rows. Only the **first** group opens by default. |
 | **Paired values (two columns)** | Built by us | Two side-by-side columns, county name on top of each, one value block per county. |
@@ -97,7 +93,7 @@ I grouped these by where they show up on the page. "Type" tells you whether it i
 ### 3.5 Footer area of the page
 
 | Component | Type | What it displays |
-|---|---|---|
+| --- | --- | --- |
 | **"Release and coverage" disclosure** | Built by us | A collapsed section: review scope, a sentence about reporting differences, and the release status strip. |
 | **"Ask Atlas about this comparison" button** | shadcn `Button` (as a link) | Jumps to the assistant with the two counties as context. |
 
@@ -107,7 +103,7 @@ Grouped as the page groups them:
 
 - **Review:** review category, review reasons, published review score (a number like 40.8).
 - **Human disease:** minimum reported cases, minimum reported incidence.
-- **Ticks / pathogens:** *Ixodes scapularis* status, *Ixodes pacificus* status, *Borrelia burgdorferi* status, overall tick status.
+- **Ticks / pathogens:** _Ixodes scapularis_ status, _Ixodes pacificus_ status, _Borrelia burgdorferi_ status, overall tick status.
 - **Community:** population, social vulnerability percentile, uninsured percent, rural-urban classification.
 - **State context:** state-unallocated human records.
 - **Score components:** human-data, ecological, community components.
@@ -125,7 +121,7 @@ Severity: **High** = blocks the "decision-support" goal. **Medium** = hurts spee
 ### A. Choosing counties
 
 | # | Finding | Severity |
-|---|---|---|
+| --- | --- | --- |
 | A1 | **Dropdown only, no search.** Both pickers are a plain list. Finding one county among thousands means scrolling or hoping type-ahead works on the first letters of "Name County, State". (Inferred: the list is the full published directory from the API, sorted alphabetically.) The Explorer page already has a real county search; Compare does not reuse it. | High |
 | A2 | **Name-first, state-last ordering is a poor mental model.** Epidemiologists usually think "Oklahoma, then county" or "my region, then county". There is no state step. | High |
 | A3 | **Second picker is disabled until the first is filled** (screenshot 1). Users cannot see how the page works, and cannot start with either county. | Medium |
@@ -138,7 +134,7 @@ Severity: **High** = blocks the "decision-support" goal. **Medium** = hurts spee
 ### B. Reading the comparison
 
 | # | Finding | Severity |
-|---|---|---|
+| --- | --- | --- |
 | B1 | **No visual encoding at all.** Every comparison is text. The eye cannot tell which county is higher, by how much, or whether two values are similar. | High |
 | B2 | **Wrong order of information.** Pickers → long status messages → evidence → overview counts last. A decision maker needs the "headline" first. | High |
 | B3 | **Metadata is louder than data.** Each value repeats "Source … / Observation period … / Dataset vintage …" even when the answer is "unknown" (screenshot 3, every cell). Provenance is required by project rules, but it should be one tap away or shown once per section, not repeated per number. | High |
@@ -158,7 +154,7 @@ Severity: **High** = blocks the "decision-support" goal. **Medium** = hurts spee
 ### C. Accessibility, mobile, and reliability (things you did not ask about, but must be in the story)
 
 | # | Finding | Severity |
-|---|---|---|
+| --- | --- | --- |
 | C1 | **Accessibility baseline is decent** (labelled fields, table headings, live-region announcements for intelligence). Any chart we add **must have an equivalent text/table path** (project rule: no map- or chart-only answers). | Requirement |
 | C2 | **Color must not carry meaning alone.** If charts use two county colors, pair them with labels or patterns. | Requirement |
 | C3 | **Narrow screens.** The page switches the two columns to one column on small screens (inferred from the layout rules). A stack of 20 paired rows will be extremely long on a phone. | Medium |
@@ -173,7 +169,7 @@ This is the answer to "use our existing libraries".
 
 **From shadcn/ui (already in `src/components/ui`):** `Badge`, `Button`, `Card`, `Dialog`, `DropdownMenu`, `Input`, `Popover`, `Progress`, `Select`, `Sidebar`, `Slider`, `Table`, `Tooltip`.
 
-**From Base UI (already installed, v1.7):** the primitives under shadcn. Base UI also publishes a **Combobox/Autocomplete** (type-to-search picker), **Tabs**, **Toggle/Toggle Group**, **Meter**, and **Accordion/Collapsible**. These are not yet wrapped in our component folder, so the first build step would be to add the shadcn-style wrappers. *(I could not open the installed package in this worktree to confirm exact names; the build story should confirm.)*
+**From Base UI (already installed, v1.7):** the primitives under shadcn. Base UI also publishes a **Combobox/Autocomplete** (type-to-search picker), **Tabs**, **Toggle/Toggle Group**, **Meter**, and **Accordion/Collapsible**. These are not yet wrapped in our component folder, so the first build step would be to add the shadcn-style wrappers. _(I could not open the installed package in this worktree to confirm exact names; the build story should confirm.)_
 
 **From Lucide:** icons for status (for example check, alert, minus-circle, info), swap arrows, map pin, bug/tick-style metaphors, download, share.
 
@@ -215,12 +211,12 @@ Design goal: **a user should be able to land with an intent ("compare Adair, OK 
 ### 6.3 Show both pickers at once, enabled from the start
 
 - Both slots active, either order. This also lets a user start from the county they care about most.
-- Visually present the pair as **"County A  ⇄  County B"** with a **Swap** button between them (Lucide arrows icon). Useful because the left column is read first.
+- Visually present the pair as **"County A ⇄ County B"** with a **Swap** button between them (Lucide arrows icon). Useful because the left column is read first.
 - Use a distinct, consistent **identity color/shape** per county (for example a filled circle for A and a ring for B) that carries through every chart and column below. Pair color with a letter (A / B) so it works for color-blind users.
 
 ### 6.4 Help people choose counties that have data (without choosing for them)
 
-Atlas must not auto-pick the second county. We *can* still help the user choose:
+Atlas must not auto-pick the second county. We _can_ still help the user choose:
 
 - In the picker list, show a small **data-coverage indicator** per county (for example three tiny dots for Human / Tick / Community, filled when Available, half when Limited, outline when Unavailable). Uses the existing Available / Limited / Unavailable words.
 - A "Show only counties with…" quick filter reusing Explorer's "available data" filter.
@@ -235,7 +231,7 @@ Replace the five-line block under each picker with a **compact county chip**:
 ```
 
 - One line, not five.
-- A tiny US-silhouette locator dot (reusing the existing silhouette) confirms *which* Adair County.
+- A tiny US-silhouette locator dot (reusing the existing silhouette) confirms _which_ Adair County.
 - "View county evidence" becomes an icon-link on the chip.
 
 ### 6.6 Entry points and empty state
@@ -310,7 +306,7 @@ For Gap Score, ML Review Priority, Surveillance Situation, Ecological Situation:
 Per measure, pick the visual that fits the data type. Same A/B colors/markers everywhere.
 
 | Data type | Examples | Visual (existing parts) |
-|---|---|---|
+| --- | --- | --- |
 | Numeric counts/rates | Minimum reported cases, incidence floor, population | **Paired horizontal bars** on a shared scale (`Progress` styled, or SVG), value label at bar end |
 | Percentiles / 0-100 | Social vulnerability percentile, review score, uninsured % | **Dot-on-a-line** (0 to 100) with both counties' dots (the pattern from `RankedDots`) |
 | Categories | Tick species status, pathogen status, rural-urban class | **Status chips** (`Badge` + Lucide icon: present / not detected / unknown), A and B aligned |
@@ -371,7 +367,7 @@ The "shared / differing / withheld" counts are useful, but only if they describe
 ## 8. Things you didn't ask about but should plan for
 
 1. **Accessibility parity.** Every visual needs a text equivalent (a "Table view" toggle is the simplest answer). Colors must not carry meaning alone; use A/B letters, shapes, and patterns.
-2. **Do not imply risk or rank.** Gauges are a *review-priority label*, not risk. Use neutral A/B identity colors for county identity, and keep the existing priority colors only on the priority badge. Avoid red/green on comparisons.
+2. **Do not imply risk or rank.** Gauges are a _review-priority label_, not risk. Use neutral A/B identity colors for county identity, and keep the existing priority colors only on the priority badge. Avoid red/green on comparisons.
 3. **Performance.** The page requests data for each county separately (profile, evidence, and four intelligence views each). Skeleton states and parallel loading matter once visuals depend on the data.
 4. **Analytics.** There is no obvious way today to know which sections users actually open. Add basic open/filter events (using the app's existing analytics helper) so the next round is evidence-based. Public analytics values must stay non-sensitive.
 5. **Testing.** The page has many `data-testid` hooks that existing automated tests rely on. A redesign should plan test updates, and add visual (Storybook) examples for each new visual so designers/PMs can review without running the app.

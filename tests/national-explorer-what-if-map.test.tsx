@@ -310,19 +310,34 @@ describe("national Explorer what-if map", () => {
     await waitFor(() => {
       expect(screen.getByTestId("mock-atlas-map")).toBeTruthy();
     });
+    const availabilityText = availability.textContent ?? "";
     expect({
-      availabilityNote: availability.textContent?.includes("Atlas gap score"),
+      allAvailable: availabilityText.includes(
+        "All listed map layers are available in this release. County-level data may still be missing."
+      ),
+      availabilityNote: availabilityText.includes(
+        "Changing the map layer does not change the county review ranking."
+      ),
+      availabilityRelease: availabilityText.includes("Release alpha-2026"),
       fitLabel: fit.textContent?.includes(visibleLabel),
       headingOmitsRelease:
         heading.parentElement?.textContent?.includes("Release"),
       labelFor: screen.getByText("Map layer").getAttribute("for"),
+      oldLayerName: availabilityText.includes("Atlas gap score"),
+      oldParagraph: availabilityText.includes(
+        "Available from the published collection"
+      ),
       order,
       provenance: provenance.textContent,
     }).toStrictEqual({
+      allAvailable: true,
       availabilityNote: true,
+      availabilityRelease: true,
       fitLabel: true,
       headingOmitsRelease: false,
       labelFor: "explorer-map-layer",
+      oldLayerName: false,
+      oldParagraph: false,
       order: [...order].toSorted((left, right) => left - right),
       provenance: "Release alpha-2026",
     });

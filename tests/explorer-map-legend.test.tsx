@@ -208,14 +208,14 @@ describe("Explorer map legend", () => {
       layer: legend.dataset.legendLayer,
       oldName: /atlas gap score/i.test(legend.textContent ?? ""),
       scale: legend.dataset.legendScale,
+      subtitle: (legend.textContent ?? "").includes("review-priority score"),
       text: legend.textContent,
     }).toStrictEqual({
       layer: "gap_score",
       oldName: false,
       scale: "segments",
-      text: expect.stringMatching(
-        /review-priority score[\s\S]*Gap score unavailable[\s\S]*>=75|Gap score unavailable[\s\S]*review-priority score[\s\S]*>=75/
-      ),
+      subtitle: false,
+      text: expect.stringMatching(/Gap score unavailable[\s\S]*>=75/),
     });
   });
 

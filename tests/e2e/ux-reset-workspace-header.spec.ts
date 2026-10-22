@@ -41,7 +41,11 @@ const CANONICAL_DESTINATIONS = [
 const SIDEBAR_TRANSITIONS = [
   { name: "Compare", pathname: "/compare", title: "Compare Counties" },
   { name: "Ask Atlas", pathname: "/askatlas", title: "Ask Atlas" },
-  { name: "Feed", pathname: "/app/feed", title: "Intelligence Feed" },
+  {
+    name: "Research & News",
+    pathname: "/app/feed",
+    title: "Intelligence Feed",
+  },
   { name: "Settings", pathname: "/app/settings", title: "Settings" },
   { name: "Atlas Explorer", pathname: "/explore", title: "Atlas Explorer" },
 ] as const;

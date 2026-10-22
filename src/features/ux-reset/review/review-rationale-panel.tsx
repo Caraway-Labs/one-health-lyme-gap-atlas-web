@@ -1,100 +1,150 @@
 "use client";
 
-import { EvidenceProvenanceInspect } from "@/features/ux-reset/evidence/evidence-provenance-inspect";
-import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
-import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-state-contract";
+import { Info } from "lucide-react";
+
 import {
-  reviewRationaleFor,
-  type ReviewRationaleItem,
-} from "@/features/ux-reset/review/review-rationale";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  MINIMUM_REPORTED_CASES_TOOLTIP,
+  MINIMUM_REPORTED_INCIDENCE_TOOLTIP,
+} from "@/features/ux-reset/review/published-human-case-copy";
 import { reviewRationaleEvidence } from "@/features/ux-reset/review/review-rationale-provenance";
+import {
+  reviewRationaleMeasures,
+  type ReviewRationaleMeasureView,
+} from "@/features/ux-reset/review/review-rationale-rows";
+import { ReviewRationaleSourceDetails } from "@/features/ux-reset/review/review-rationale-source-details";
 import type { CountyDetail } from "@/generated/models";
 
-function ClaimProvenance({ model }: { model: EvidenceObjectModel }) {
-  const summaryLabel = `Inspect provenance for ${model.claimLabel}`;
-  if (model.reasonCode) {
-    return (
-      <EvidenceProvenanceInspect
-        availability={model.availability}
-        contentSurface="source_card"
-        provenance={model.provenance}
-        reasonCode={model.reasonCode}
-        showLimitations={false}
-        summaryLabel={summaryLabel}
-      />
+const MEASURE_HELP: Partial<Record<number, string>> = {
+  1: `${MINIMUM_REPORTED_CASES_TOOLTIP} ${MINIMUM_REPORTED_INCIDENCE_TOOLTIP}`,
+};
+
+function MeasureHeader({ measure }: { measure: ReviewRationaleMeasureView }) {
+  const help = MEASURE_HELP[measure.number] ?? measure.headerHelp;
+  const title =
+    measure.number === 3 ? (
+      <>
+        <em>Borrelia burgdorferi</em> detection
+      </>
+    ) : (
+      measure.label
     );
-  }
   return (
-    <EvidenceProvenanceInspect
-      contentSurface="source_card"
-      provenance={model.provenance}
-      showLimitations={false}
-      stateLabel={evidenceAvailabilityLabel(model.availability)}
-      summaryLabel={summaryLabel}
-    />
+    <h4 className="ux-reset-review-rationale-measure-title">
+      <span>{title}</span>
+      {help ? (
+        <Popover>
+          <PopoverTrigger
+            aria-label={`About ${measure.label}`}
+            className="ux-reset-review-rationale-measure-help"
+            type="button"
+          >
+            <Info aria-hidden="true" size={14} strokeWidth={2} />
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="ux-reset-review-rationale-measure-help-content w-auto max-w-xs text-xs"
+            side="top"
+          >
+            <p className="m-0">{help}</p>
+          </PopoverContent>
+        </Popover>
+      ) : null}
+    </h4>
   );
 }
 
-function RationaleItem({
-  item,
-  models,
-}: {
-  item: ReviewRationaleItem;
-  models: readonly EvidenceObjectModel[];
-}) {
+function CompactRows({ rows }: { rows: ReviewRationaleMeasureView["rows"] }) {
   return (
-    <li data-testid={`review-rationale-${item.number}`}>
-      <span>{item.number}</span>
-      <div>
-        <h4>
-          {item.number === 3 ? (
-            <>
-              <em>Borrelia burgdorferi</em> detection
-            </>
-          ) : (
-            item.label
-          )}
-        </h4>
-        <p>{item.text}</p>
-        {models.map((model) => (
-          <ClaimProvenance key={model.claimLabel} model={model} />
-        ))}
-      </div>
-    </li>
+    <dl className="ux-reset-review-rationale-rows">
+      {rows.map((row) => (
+        <div className="ux-reset-review-rationale-row" key={row.label}>
+          <dt>
+            {row.label === "Ixodes scapularis" ||
+            row.label === "Ixodes pacificus" ? (
+              <em>{row.label}</em>
+            ) : (
+              row.label
+            )}
+          </dt>
+          <dd
+            className={
+              row.valueTone === "neutral"
+                ? "ux-reset-review-rationale-value-neutral"
+                : undefined
+            }
+          >
+            {row.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function RationaleMeasure({
+  evidence,
+  measure,
+}: {
+  evidence: ReturnType<typeof reviewRationaleEvidence>;
+  measure: ReviewRationaleMeasureView;
+}) {
+  const models = evidence.get(measure.number) ?? [];
+  return (
+    <article
+      className="ux-reset-review-rationale-measure"
+      data-testid={`review-rationale-${measure.number}`}
+    >
+      <MeasureHeader measure={measure} />
+      <CompactRows rows={measure.rows} />
+      {measure.secondaryNote ? (
+        <p className="ux-reset-review-rationale-secondary">
+          {measure.secondaryNote}
+        </p>
+      ) : null}
+      <ReviewRationaleSourceDetails models={models} />
+    </article>
   );
 }
 
 export function ReviewRationalePanel({ detail }: { detail: CountyDetail }) {
-  const items = reviewRationaleFor(detail);
+  const measures = reviewRationaleMeasures(detail);
   const evidence = reviewRationaleEvidence(detail);
-  const surveillance = items.filter((item) => item.group === "surveillance");
-  const community = items.filter((item) => item.group === "community");
+  const surveillance = measures.filter((item) => item.group === "surveillance");
+  const community = measures.filter((item) => item.group === "community");
   return (
     <section
       aria-label="County evidence"
       className="ux-reset-review-rationale"
       data-testid="review-rationale"
     >
-      <h3>Surveillance evidence</h3>
-      <ol>
-        {surveillance.map((item) => (
-          <RationaleItem
-            item={item}
-            key={item.number}
-            models={evidence.get(item.number) ?? []}
+      <h3>Disease and tick data</h3>
+      <div className="ux-reset-review-rationale-group">
+        {surveillance.map((measure) => (
+          <RationaleMeasure
+            evidence={evidence}
+            key={measure.number}
+            measure={measure}
           />
         ))}
-      </ol>
+      </div>
       <h3>Community context</h3>
-      <ol start={4}>
-        {community.map((item) => (
-          <RationaleItem
-            item={item}
-            key={item.number}
-            models={evidence.get(item.number) ?? []}
+      <div className="ux-reset-review-rationale-group">
+        {community.map((measure) => (
+          <RationaleMeasure
+            evidence={evidence}
+            key={measure.number}
+            measure={measure}
           />
         ))}
-      </ol>
+      </div>
+      <p className="ux-reset-review-rationale-footnote">
+        No record does not mean absent or zero.
+      </p>
     </section>
   );
 }

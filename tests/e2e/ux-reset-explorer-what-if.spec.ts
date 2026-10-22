@@ -192,7 +192,6 @@ test.describe("Explorer what-if scenario", () => {
     );
     await expect(impactSummary).toContainText("Scenario settings");
     const impact = page.getByTestId("explorer-scenario-impact");
-    await expect(impact).toContainText("Gap review score");
     await expect(impact).toContainText("Conejos County");
     await expect(impact).toContainText("Published score");
     await expect(impact).toContainText("Score with your changes");
@@ -491,7 +490,7 @@ test.describe("Explorer what-if scenario", () => {
     ).toHaveValue("75");
     await expect(
       page.getByRole("slider", {
-        name: "Tick and pathogen weight",
+        name: "Tick / pathogen weight",
       })
     ).toHaveValue("65");
     await expect(page.getByTestId("explorer-scenario-score")).toHaveCount(0);
@@ -592,7 +591,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(impact).toContainText("85.0");
 
     await page
-      .getByRole("slider", { name: "Tick and pathogen weight" })
+      .getByRole("slider", { name: "Tick / pathogen weight" })
       .fill("40");
     await expect(summary).toContainText("−25.0 points from published score");
     await expect(impact).toContainText(
@@ -600,7 +599,7 @@ test.describe("Explorer what-if scenario", () => {
     );
 
     await page
-      .getByRole("slider", { name: "Tick and pathogen weight" })
+      .getByRole("slider", { name: "Tick / pathogen weight" })
       .fill("85");
     const lake = page.locator(
       "[data-testid='review-candidate'][data-fips='08065']"
@@ -692,7 +691,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(impact).not.toContainText("Adjusted scenario unavailable");
     await expect(
       page.getByRole("slider", {
-        name: "Tick and pathogen weight",
+        name: "Tick / pathogen weight",
       })
     ).toHaveValue("85");
 
@@ -702,7 +701,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(summary).not.toContainText("0.0 points");
     await expect(
       page.getByRole("slider", {
-        name: "Tick and pathogen weight",
+        name: "Tick / pathogen weight",
       })
     ).toHaveValue("65");
   });
@@ -796,7 +795,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
     ).toContainText(
-      "Select a county to compare its published Atlas score with the score using your changes."
+      "Select a county to compare published and adjusted scores."
     );
     await expect(page.getByRole("slider")).toHaveCount(3);
     const missing = page.getByRole("slider", {
@@ -808,7 +807,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(
       page.getByTestId("explorer-scenario-impact-summary")
     ).toContainText(
-      "Select a county to compare its published Atlas score with the score using your changes."
+      "Select a county to compare published and adjusted scores."
     );
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })

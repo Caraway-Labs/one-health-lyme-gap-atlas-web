@@ -237,15 +237,35 @@ function setSearch(search: string) {
   );
 }
 
-function renderCompare(search: string, retry: boolean | number = false) {
+function renderCompare(
+  search: string,
+  retry: boolean | number = false,
+  options?: {
+    onUrlUpdate?: (query: string) => void;
+    shell?: boolean;
+  }
+) {
   setSearch(search);
   const client = new QueryClient({
     defaultOptions: { queries: { retry, retryDelay: 0 } },
   });
+  const page = options?.shell ? (
+    <ResetProfessionalShell>
+      <ResetCompareExperience />
+    </ResetProfessionalShell>
+  ) : (
+    <ResetCompareExperience />
+  );
   const view = render(
     <QueryClientProvider client={client}>
-      <NuqsTestingAdapter hasMemory searchParams={search}>
-        <ResetCompareExperience />
+      <NuqsTestingAdapter
+        hasMemory
+        onUrlUpdate={({ queryString }) => {
+          options?.onUrlUpdate?.(queryString);
+        }}
+        searchParams={search}
+      >
+        {page}
       </NuqsTestingAdapter>
     </QueryClientProvider>
   );
@@ -254,15 +274,46 @@ function renderCompare(search: string, retry: boolean | number = false) {
     client,
     rerenderSearch(next: string) {
       setSearch(next);
+      const nextPage = options?.shell ? (
+        <ResetProfessionalShell>
+          <ResetCompareExperience />
+        </ResetProfessionalShell>
+      ) : (
+        <ResetCompareExperience />
+      );
       view.rerender(
         <QueryClientProvider client={client}>
-          <NuqsTestingAdapter hasMemory searchParams={next}>
-            <ResetCompareExperience />
+          <NuqsTestingAdapter
+            hasMemory
+            onUrlUpdate={({ queryString }) => {
+              options?.onUrlUpdate?.(queryString);
+            }}
+            searchParams={next}
+          >
+            {nextPage}
           </NuqsTestingAdapter>
         </QueryClientProvider>
       );
     },
   };
+}
+
+function compareParam(query: string): string | null {
+  const params = new URLSearchParams(
+    query.startsWith("?") ? query.slice(1) : query
+  );
+  return params.get("compare");
+}
+
+function shellHref(label: string): string {
+  const navigation = screen.getByRole("navigation", {
+    name: "Professional workspace",
+  });
+  return (
+    navigation
+      .querySelector(`a[aria-label="${label}"]`)
+      ?.getAttribute("href") ?? ""
+  );
 }
 
 async function pickCounty(slotName: string, optionName: RegExp) {
@@ -715,6 +766,100 @@ describe("two-county aligned comparison", () => {
     await waitForPair("");
     expect(screen.getByTestId("compare-workspace").dataset.fips).toBe("");
     expect(navigationSearchParams.get("compare")).toBe("08001,08013");
+  });
+
+  it("writes a completed pair into the shareable URL, reload, and cross-page links", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string): MediaQueryList =>
+        ({
+          addEventListener: () => {},
+          dispatchEvent: () => true,
+          matches: false,
+          media: query,
+          onchange: null,
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList
+    );
+    const urlUpdates: string[] = [];
+    const selected = renderCompare("", false, {
+      onUrlUpdate: (query) => {
+        urlUpdates.push(query);
+      },
+      shell: true,
+    });
+    await pickCounty("First county", /Denver, Colorado \(08001\)/);
+    await waitForPair("08001");
+    await pickCounty("Second county", /Boulder, Colorado \(08013\)/);
+    await waitForPair("08001,08013");
+    await waitFor(() => {
+      if (compareParam(urlUpdates.at(-1) ?? "") !== "08001,08013") {
+        throw new Error("Waiting for the completed pair in the shareable URL.");
+      }
+    });
+    const sharedUrl = urlUpdates.at(-1) ?? "";
+    const investigate =
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
+    const explorer = shellHref("Atlas Explorer");
+    const compare = shellHref("Compare");
+    expect({
+      compare: compare.includes("compare=08001%2C08013"),
+      explorer: explorer.includes("compare=08001%2C08013"),
+      investigate: investigate.includes("compare=08001%2C08013"),
+      shared: compareParam(sharedUrl),
+    }).toStrictEqual({
+      compare: true,
+      explorer: true,
+      investigate: true,
+      shared: "08001,08013",
+    });
+
+    selected.unmount();
+    renderCompare(sharedUrl);
+    await waitForPair("08001,08013");
+    const reloaded =
+      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
+      "";
+    expect({
+      fips: pairFips(),
+      investigate: reloaded.includes("compare=08001%2C08013"),
+      stale: screen.getByTestId("compare-workspace").dataset.staleUrl,
+    }).toStrictEqual({
+      fips: "08001,08013",
+      investigate: true,
+      stale: "false",
+    });
+  });
+
+  it("keeps a second-county-only selection out of the URL until a first county exists", async () => {
+    const urlUpdates: string[] = [];
+    const pending = renderCompare("", false, {
+      onUrlUpdate: (query) => {
+        urlUpdates.push(query);
+      },
+    });
+    await pickCounty("Second county", /Boulder, Colorado \(08013\)/);
+    const chip = await screen.findByTestId("compare-chip-08013");
+    expect({
+      chip: (chip.textContent ?? "").includes("Boulder"),
+      pair: pairFips(),
+      urlWrites: urlUpdates.map((query) => compareParam(query)),
+    }).toStrictEqual({
+      chip: true,
+      pair: "",
+      urlWrites: [],
+    });
+
+    pending.unmount();
+    renderCompare("");
+    await waitFor(() => {
+      expect(screen.getByTestId("compare-workspace").dataset.recovery).toBe(
+        "empty"
+      );
+    });
+    expect(screen.queryByTestId("compare-chip-08013")).toBeNull();
+    expect(pairFips()).toBe("");
   });
 
   it("reloads a direct two-county link as the same pair", async () => {

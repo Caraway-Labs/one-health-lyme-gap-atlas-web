@@ -1152,7 +1152,10 @@ export function ReviewOperatingPicture({
           />
           {onMapLayerChange ? (
             <div className="ux-reset-explorer-map-availability">
-              <ExplorerMapLayerAvailability gates={layerGates} />
+              <ExplorerMapLayerAvailability
+                gates={layerGates}
+                releaseId={review.data_release_version}
+              />
             </div>
           ) : null}
           <ExplorerMapSourceCaption

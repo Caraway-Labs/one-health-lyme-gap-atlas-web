@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -109,6 +111,27 @@ describe("explorer county toolbar", () => {
       hidden: note.className.includes("sr-only"),
       note: note.textContent,
     }).toStrictEqual({ hidden: true, note: EXPLORER_COUNTY_EXPORT_NOTE });
+  });
+
+  it("styles the geography toolbar with the emphasized Explorer chrome", () => {
+    const css = readFileSync("src/features/ux-reset/ux-reset.css", "utf-8")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    const globals = readFileSync("src/app/globals.css", "utf-8")
+      .replaceAll(/\s+/g, " ")
+      .trim();
+    const combined = `${globals} ${css}`;
+    const required = [
+      "--explorer-toolbar-surface:",
+      "--explorer-toolbar-border:",
+      "background: var(--explorer-toolbar-surface);",
+      "border: 1px solid var(--explorer-toolbar-border);",
+      '.ux-reset-explorer-toolbar [data-testid="review-scope-select"] { font-weight: 600;',
+      '.ux-reset-explorer-toolbar [data-slot="select-trigger"], .ux-reset-explorer-toolbar input[type="search"] { background: var(--white);',
+    ];
+    expect(
+      required.filter((snippet) => !combined.includes(snippet))
+    ).toStrictEqual([]);
   });
 
   it("selects an exact FIPS and shows the county name", () => {

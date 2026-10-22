@@ -211,6 +211,7 @@ export function CompareCountyPicker({
           </SelectContent>
         </Select>
         <Combobox
+          autoHighlight
           filter={null}
           isItemEqualToValue={(item, value) => item.fips === value.fips}
           itemToStringLabel={(item) => item.label}
