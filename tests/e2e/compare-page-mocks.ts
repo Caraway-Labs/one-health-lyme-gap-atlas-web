@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
+import type { Measure } from "@/generated/models";
 
 import {
   compareCountyDetail,
@@ -11,7 +12,11 @@ import {
 import { investigateMetadataFixture } from "../fixtures/investigate-api-fixtures";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 
-export async function installCompareMocks(page: Page, requested: string[]) {
+export async function installCompareMocks(
+  page: Page,
+  requested: string[],
+  extras: { measures?: readonly Measure[] } = {}
+) {
   const fulfill = async (route: Route, body: unknown, status = 200) => {
     await route.fulfill({ json: body, status });
   };
@@ -56,7 +61,7 @@ export async function installCompareMocks(page: Page, requested: string[]) {
     }
     const geography = url.searchParams.get("geography_type");
     await fulfill(route, {
-      data: [...compareMeasuresFixture]
+      data: [...compareMeasuresFixture, ...(extras.measures ?? [])]
         .toReversed()
         .filter((measure) => measure.geography_semantics === geography),
       links: { self: "/v1/measures" },

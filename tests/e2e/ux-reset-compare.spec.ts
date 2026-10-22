@@ -1,11 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 import { compareObservationRequestRejection } from "@/features/ux-reset/compare/load-compare-evidence";
 
 import {
   COMPARE_WASHINGTON_MN,
   COMPARE_WASHINGTON_RI,
+  compareMeasuresFixture,
   compareScoresFixture,
 } from "../fixtures/compare-api-fixtures";
 import {
@@ -143,6 +144,21 @@ async function expectConsumedReviewReturn(page: Page, fips: string) {
   await expect(row).not.toBeFocused();
 }
 
+function pdfBytes() {
+  return Buffer.from("%PDF-1.7\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+}
+
+async function fulfillPdf(route: Route, filename: string) {
+  await route.fulfill({
+    body: pdfBytes(),
+    headers: {
+      "content-disposition": `attachment; filename="${filename}"`,
+      "content-type": "application/pdf",
+    },
+    status: 200,
+  });
+}
+
 test.describe("two-county Compare", () => {
   test("recovers empty, partial, invalid, and duplicate links", async ({
     page,
@@ -246,6 +262,22 @@ test.describe("two-county Compare", () => {
     await expect(
       incidence.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
     ).toHaveCount(0);
+    await expect(page.getByTestId("compare-download-pdfs")).toHaveText(
+      "Download Counties as PDF"
+    );
+    await expect(page.getByTestId("compare-print")).toHaveCount(0);
+    await expect(
+      page.getByText("Some measures could not be loaded")
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Social vulnerability" })
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("compare-community-summary-svi_percentile_2022")
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("compare-profile-cell-svi_percentile_2022-08013")
+    ).toContainText("No record");
     await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
       "href",
       /\/askatlas/
@@ -605,5 +637,104 @@ test.describe("two-county Compare", () => {
       "data-fips",
       "08001,08013"
     );
+  });
+
+  test("downloads both county PDFs and requests fallback periods without nclimgrid", async ({
+    page,
+  }) => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const requested: string[] = [];
+    await installCompareMocks(page, requested, {
+      measures: [
+        {
+          ...base,
+          label: "nClimGrid average temperature",
+          measure_id: "nclimgrid_tavg_county_day",
+        },
+        {
+          ...base,
+          label: "Seasonal canopy",
+          measure_id: "unbound-gap",
+          temporal_grains: ["CUSTOM"],
+          temporal_semantics: "2024-06-01",
+        },
+      ],
+    });
+    await page.route("**/v1/observations**", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("measure_id") !== "unbound-gap") {
+        await route.fallback();
+        return;
+      }
+      requested.push(url.toString());
+      const year = url.searchParams.get("year");
+      const start = url.searchParams.get("start_date");
+      if (year === "2023" || start === "2025-12-31") {
+        await route.fulfill({
+          json: {
+            data: [],
+            links: { self: "/v1/observations" },
+            meta: {},
+          },
+        });
+        return;
+      }
+      await route.fulfill({
+        json: { detail: "unsupported filter" },
+        status: 404,
+      });
+    });
+    const reportUrls: string[] = [];
+    await page.route("**/v1/counties/*/report.pdf**", async (route) => {
+      const url = route.request().url();
+      reportUrls.push(url);
+      const fips = new URL(url).pathname.split("/")[3];
+      await fulfillPdf(
+        route,
+        fips === "08001"
+          ? "Denver_CO_AtlasBrief.pdf"
+          : "Boulder_CO_AtlasBrief.pdf"
+      );
+    });
+    await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await expect(
+      page.getByTestId("compare-cell-unbound-gap-08001")
+    ).toContainText("No published value. This absence is not zero.");
+    await expect(page.getByText(/no governed period/i)).toHaveCount(0);
+    await expect(page.getByText(/nClimGrid/i)).toHaveCount(0);
+    expect(requested.some((url) => url.includes("nclimgrid"))).toBe(false);
+    const bounds = requested
+      .filter((url) => url.includes("measure_id=unbound-gap"))
+      .map((url) => {
+        const parsed = new URL(url);
+        return (
+          parsed.searchParams.get("start_date") ??
+          parsed.searchParams.get("year") ??
+          ""
+        );
+      });
+    expect(bounds.indexOf("2024-06-01")).toBeGreaterThanOrEqual(0);
+    expect(bounds.indexOf("2024-06-01")).toBeLessThan(bounds.indexOf("2023"));
+    expect(bounds.indexOf("2023")).toBeLessThan(bounds.indexOf("2025-12-31"));
+
+    const downloads: string[] = [];
+    page.on("download", (download) => {
+      downloads.push(download.suggestedFilename());
+    });
+    const button = page.getByTestId("compare-download-pdfs");
+    await expect(button).toBeEnabled();
+    await button.focus();
+    await page.keyboard.press("Enter");
+    await expect
+      .poll(() => downloads.toSorted())
+      .toEqual(["Boulder_CO_AtlasBrief.pdf", "Denver_CO_AtlasBrief.pdf"]);
+    expect(reportUrls.map((url) => new URL(url).pathname).toSorted()).toEqual([
+      "/v1/counties/08001/report.pdf",
+      "/v1/counties/08013/report.pdf",
+    ]);
+    await expect(page.getByText("County PDFs downloaded.")).toBeVisible();
   });
 });

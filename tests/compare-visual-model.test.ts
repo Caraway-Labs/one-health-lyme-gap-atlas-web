@@ -11,11 +11,14 @@ import {
   buildCompareVisualRows,
   compareBarFraction,
   compareBarScale,
+  compareCommunityDifference,
+  compareCommunitySide,
   compareGapEntries,
   compareGapSummary,
   compareNumberToken,
   compareRowRelation,
   compareRowsForSection,
+  compareRuralityRelation,
   compareSectionCaption,
   compareSectionCoverage,
   compareSummaryCounts,
@@ -26,6 +29,7 @@ import {
   type CompareVisualRow,
 } from "@/features/ux-reset/compare/compare-visual-model";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import { RUCC_2023_COMPACT_CLASSIFICATIONS } from "@/features/ux-reset/review/review-rationale";
 
 import {
   COMPARE_LEFT_FIPS,
@@ -56,7 +60,12 @@ function rowById(rows: readonly CompareVisualRow[], id: string) {
 
 function valueSide(
   text: string,
-  options: { caveat?: string; limited?: boolean; number?: number | null } = {}
+  options: {
+    caveat?: string;
+    limited?: boolean;
+    number?: number | null;
+    period?: string;
+  } = {}
 ): CompareSideValue {
   const evidence: EvidenceObjectModel = {
     availability: options.limited ? "limited" : "available",
@@ -67,7 +76,7 @@ function valueSide(
       inspectSummary: "",
       limitations: options.caveat ? [options.caveat] : [],
       materialCaveat: options.caveat ?? null,
-      observationPeriod: "2023",
+      observationPeriod: options.period ?? "2023",
       sourceFamily: "Test source",
     },
   };
@@ -514,6 +523,144 @@ describe(compareUnknownIntroduction, () => {
       mismatchClaimsUnpublished: false,
       mismatchSaysMostPublished: false,
       mismatchStatesRelease: true,
+    });
+  });
+});
+
+describe("community context figures", () => {
+  const mediumMetro = RUCC_2023_COMPACT_CLASSIFICATIONS[2];
+
+  it("reads an ordinal percentile and the year in the observation period", () => {
+    const side = compareCommunitySide(
+      "svi_percentile_2022",
+      "percentile",
+      valueSide("91st percentile", { period: "Released for 2021" })
+    );
+    expect({
+      number: side.number,
+      shown: side.shown,
+      year: side.year,
+    }).toStrictEqual({ number: 91, shown: "91st", year: "2021" });
+  });
+
+  it("falls back to the year in the row id when the period has none", () => {
+    const side = compareCommunitySide(
+      "uninsured_percent_2022",
+      "percent",
+      valueSide("11.2%", { period: "Unavailable" })
+    );
+    expect({
+      number: side.number,
+      shown: side.shown,
+      year: side.year,
+    }).toStrictEqual({ number: 11.2, shown: "11.2%", year: "2022" });
+  });
+
+  it("maps a RUCC code through the Explore classification list", () => {
+    const side = compareCommunitySide(
+      "rucc_2023",
+      "rucc",
+      valueSide("2", { period: "RUCC 2023" })
+    );
+    expect({
+      classification: side.classification,
+      code: side.code,
+      detail: side.detail,
+      shown: side.shown,
+      year: side.year,
+    }).toStrictEqual({
+      classification: mediumMetro?.title,
+      code: 2,
+      detail: mediumMetro?.detail,
+      shown: "2",
+      year: "2023",
+    });
+  });
+
+  it("does not invent a figure when the published text cannot be read", () => {
+    const percentile = compareCommunitySide(
+      "svi_percentile_2022",
+      "percentile",
+      valueSide("101st percentile")
+    );
+    const percent = compareCommunitySide(
+      "uninsured_percent_2022",
+      "percent",
+      valueSide("120%")
+    );
+    const rucc = compareCommunitySide(
+      "rucc_2023",
+      "rucc",
+      valueSide("Published value")
+    );
+    expect({
+      percent: percent.number,
+      percentile: percentile.shown,
+      rucc: rucc.classification,
+    }).toStrictEqual({ percent: null, percentile: null, rucc: null });
+  });
+
+  it("builds a difference only when both published figures parse", () => {
+    const higher = compareCommunitySide(
+      "svi_percentile_2022",
+      "percentile",
+      valueSide("82nd percentile")
+    );
+    const lower = compareCommunitySide(
+      "svi_percentile_2022",
+      "percentile",
+      valueSide("91st percentile")
+    );
+    const same = compareCommunitySide(
+      "uninsured_percent_2022",
+      "percent",
+      valueSide("4.0%")
+    );
+    const unread = compareCommunitySide(
+      "svi_percentile_2022",
+      "percentile",
+      valueSide("Present")
+    );
+    expect({
+      missing: compareCommunityDifference("percentile", higher, {
+        ...higher,
+        number: null,
+        shown: null,
+      }),
+      percent: compareCommunityDifference("percent", same, {
+        ...same,
+        number: 13,
+        shown: "13%",
+      }),
+      percentile: compareCommunityDifference("percentile", lower, higher),
+      rucc: compareCommunityDifference("rucc", higher, lower),
+      same: compareCommunityDifference("percent", same, same),
+      unread: compareCommunityDifference("percentile", unread, higher),
+    }).toStrictEqual({
+      missing: null,
+      percent: "B is 9 percentage points higher than A.",
+      percentile: "B is 9 percentile points lower than A.",
+      rucc: null,
+      same: "A and B have the same published value.",
+      unread: null,
+    });
+  });
+
+  it("states whether rural classifications match without ranking them", () => {
+    const metro = compareCommunitySide("rucc_2023", "rucc", valueSide("2"));
+    const rural = compareCommunitySide("rucc_2023", "rucc", valueSide("8"));
+    const blank = compareCommunitySide("rucc_2023", "rucc", missingSide);
+    expect({
+      different: compareRuralityRelation(metro, rural, "different"),
+      missing: compareRuralityRelation(metro, blank, "incomparable"),
+      ranked: compareRuralityRelation(metro, rural, "different"),
+      same: compareRuralityRelation(metro, metro, "same"),
+    }).toStrictEqual({
+      different: "A and B have different classifications.",
+      missing:
+        "The classifications are not compared because a published value is missing.",
+      ranked: "A and B have different classifications.",
+      same: "A and B have the same classification.",
     });
   });
 });

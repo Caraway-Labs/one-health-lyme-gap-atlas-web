@@ -5856,8 +5856,7 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   font-weight: 700;
 }
 
-.ux-reset-compare-cscale-marker[data-letter="B"]
-  .ux-reset-compare-cscale-dot {
+.ux-reset-compare-cscale-marker[data-letter="B"] .ux-reset-compare-cscale-dot {
   background: var(--background);
   color: var(--primary);
 }
