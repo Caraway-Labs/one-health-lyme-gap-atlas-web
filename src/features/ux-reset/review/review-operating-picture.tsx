@@ -22,7 +22,6 @@ import {
 } from "@/features/ux-reset/evidence/types";
 import { usePublishExploreCommittedNavigation } from "@/features/ux-reset/explore-committed-navigation";
 import { KnownEmptySelectionNotice } from "@/features/ux-reset/observations/known-empty-selection-notice";
-import { COUNTY_BOUNDARIES_FILL } from "@/features/ux-reset/review/county-boundaries-palette";
 import { DownloadCountyPdfButton } from "@/features/ux-reset/review/download-county-pdf-button";
 import {
   countyPassesAvailableData,
@@ -600,19 +599,10 @@ export function ReviewOperatingPicture({
       }).map((county) => ({
         ...county,
         color:
-          mapPaint.layerId === "boundaries"
-            ? COUNTY_BOUNDARIES_FILL
-            : (resolveExplorerMapColor(
-                mapPaint.colorsByFips.get(county.fips)
-              ) ?? unpaintedCountyColor),
+          resolveExplorerMapColor(mapPaint.colorsByFips.get(county.fips)) ??
+          unpaintedCountyColor,
       })),
-    [
-      geometryFips,
-      mapPaint.colorsByFips,
-      mapPaint.layerId,
-      scopeCode,
-      unpaintedCountyColor,
-    ]
+    [geometryFips, mapPaint.colorsByFips, scopeCode, unpaintedCountyColor]
   );
   const mapCounties = useMemo(() => {
     switch (availableDataGate.kind) {
@@ -1091,7 +1081,6 @@ export function ReviewOperatingPicture({
                   fitSignal={fitSignal}
                   geometry={geometryQuery.data as never}
                   includeUnscoredCounties={availableDataGate.kind === "open"}
-                  neutralCountyBoundaries={mapLayer === "boundaries"}
                   paintRevision={publishedMap.revision ?? undefined}
                   scores={publishedMap.frame}
                   selectedFips={selectedFips}

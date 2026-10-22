@@ -2,7 +2,10 @@ import { createParser } from "nuqs";
 
 import { uxResetSharedContextParsers } from "@/features/ux-reset/context-params";
 import { parseExplorerMapFocus } from "@/features/ux-reset/review/explorer-map-focus";
-import { parseExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
+import {
+  DEFAULT_EXPLORER_MAP_LAYER_ID,
+  parseExplorerMapLayerId,
+} from "@/features/ux-reset/review/explorer-map-layers";
 import {
   parseExplorerCountyMode,
   parseExplorerCountySelection,
@@ -92,6 +95,20 @@ export function scenarioSearchParamPatch(
   return changed ? patch : null;
 }
 
+/**
+ * Clear a removed or unknown map layer. The parser then uses Gap review score
+ * instead of leaving a selector pointed at a layer that is no longer offered.
+ */
+export function retiredExplorerLayerSearchParamPatch(
+  searchParams: Pick<URLSearchParams, "get">
+): { layer: null } | null {
+  const raw = searchParams.get("layer");
+  if (raw === null || parseExplorerMapLayerId(raw) !== null) {
+    return null;
+  }
+  return { layer: null };
+}
+
 const reviewLocalParsers = {
   breakpoint: createParser({
     parse: (value) => value,
@@ -104,7 +121,7 @@ const reviewLocalParsers = {
   layer: createParser({
     parse: (value) => parseExplorerMapLayerId(value),
     serialize: (value) => value,
-  }).withDefault("gap_score"),
+  }).withDefault(DEFAULT_EXPLORER_MAP_LAYER_ID),
   mode: createParser({
     parse: (value) => parseExplorerCountyMode(value),
     serialize: (value) => value,

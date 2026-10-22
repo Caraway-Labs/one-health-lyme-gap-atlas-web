@@ -749,23 +749,20 @@ test.describe("Atlas Explorer layer legends", () => {
     ).toContainText("CDC ArboNET tickborne pathogen status");
     await page.keyboard.press("Escape");
 
-    await chooseLayer(page, "County boundaries");
+    await page.getByTestId("explorer-map-layer").click();
+    await expect(
+      page.getByRole("option", { name: "County boundaries" })
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("option", { name: "Gap review score" })
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await chooseLayer(page, "Evidence completeness");
+    await expect(legend).toContainText("Evidence completeness");
     await expect(
       legend.getByRole("button", { name: "County boundary" })
-    ).toBeVisible();
-    await legend
-      .getByRole("button", { name: "About County boundaries" })
-      .click();
-    await expect(
-      page.getByRole("dialog", { name: "About County boundaries" })
-    ).toContainText("without displaying a data measure");
-    await expect(legend.getByRole("button", { name: "Present" })).toHaveCount(
-      0
-    );
-    await expect(
-      legend.getByRole("button", { name: /75 or higher/ })
     ).toHaveCount(0);
-    await page.keyboard.press("Escape");
 
     await chooseLayer(page, "Gap review score");
     await expect(

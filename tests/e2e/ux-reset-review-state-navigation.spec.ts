@@ -372,14 +372,14 @@ test.describe("Review national geographic navigation", () => {
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "County boundaries" }).click();
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await page.getByRole("option", { name: "Blacklegged tick status" }).click();
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page).toHaveURL(/county=08001/);
     await page.goBack({ waitUntil: "commit" });
-    await expect(page).not.toHaveURL(/layer=boundaries/);
+    await expect(page).not.toHaveURL(/layer=tick_status/);
     await expectPublishedNationalCounty(page, "08001");
     await page.goForward({ waitUntil: "commit" });
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page).toHaveURL(/county=08001/);
     await expectPublishedNationalCounty(page, "08001");
   });
@@ -488,11 +488,11 @@ test.describe("Review national geographic navigation", () => {
         .getByRole("button", { name: /Gap score unavailable/ })
     ).toBeVisible();
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "County boundaries" }).click();
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await page.getByRole("option", { name: "Blacklegged tick status" }).click();
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page).toHaveURL(/county=08013/);
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
-      "County boundaries"
+      "Blacklegged tick status"
     );
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expect
@@ -549,7 +549,7 @@ test.describe("Review national geographic navigation", () => {
   }) => {
     const profileMethods = await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1440 });
-    await page.goto("/explore?scope=CO&county=08013&layer=boundaries&eco=55");
+    await page.goto("/explore?scope=CO&county=08013&layer=tick_status&eco=55");
     const usView = page.getByRole("button", { name: "US view" });
     const fit = page.getByTestId("explorer-fit-scope");
     await expect(usView).toBeVisible();
@@ -576,7 +576,7 @@ test.describe("Review national geographic navigation", () => {
     expect(focusRing).not.toBe("none");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/scope=ALL/);
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/layer=tick_status/);
     await expect(page).toHaveURL(/eco=55/);
     await expect(page).not.toHaveURL(/county=/);
     await expect(page).not.toHaveURL(/focus=/);
@@ -586,7 +586,7 @@ test.describe("Review national geographic navigation", () => {
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await expectNationalExtentsVisible(page);
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "County boundaries"
+      "Blacklegged tick status"
     );
     expect(profileMethods.filter((method) => method === "PUT")).toStrictEqual(
       []
@@ -599,7 +599,7 @@ test.describe("Review national geographic navigation", () => {
   }) => {
     await installReviewApi(page);
     await page.setViewportSize({ height: 1000, width: 1280 });
-    await page.goto("/explore?scope=ALL&layer=boundaries");
+    await page.goto("/explore?scope=ALL&layer=tick_status");
     await expect(page.getByTestId("explorer-us-view")).toBeVisible();
     await expectNationalExtentsVisible(page);
     const overview = await readNationalCamera(page);
@@ -609,7 +609,7 @@ test.describe("Review national geographic navigation", () => {
     expect(zoomed.zoom).toBeGreaterThan(overview.zoom + 0.4);
     await page.getByRole("button", { name: "US view" }).click();
     await expectNationalExtentsVisible(page);
-    await expect(page).toHaveURL(/layer=boundaries/);
+    await expect(page).toHaveURL(/layer=tick_status/);
     await page.getByTestId("explorer-fit-national").click();
     await expectNationalExtentsVisible(page);
     await expectNoHorizontalOverflow(page);

@@ -420,7 +420,7 @@ test.describe("Explorer what-if scenario", () => {
     await expect(map).toHaveAttribute("data-map-colors", /08012:#a9d2db/i);
   });
 
-  test("loads scenario inputs on a boundaries cold arrival, then switches layers and resets", async ({
+  test("falls back from a retired boundaries layer, then resets scenario colors", async ({
     page,
   }) => {
     await installExplorer(page, {
@@ -437,11 +437,17 @@ test.describe("Explorer what-if scenario", () => {
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "County boundaries"
+      "Gap review score"
     );
+    await expect(page).not.toHaveURL(/layer=boundaries/);
     await expect(page.getByTestId("review-candidate")).toContainText(
       "Published score 22.9"
     );
+    await page.getByTestId("explorer-map-layer").click();
+    await expect(
+      page.getByRole("option", { name: "County boundaries" })
+    ).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     await page.getByTestId("explorer-what-if-summary").click();
     await page
@@ -450,15 +456,6 @@ test.describe("Explorer what-if scenario", () => {
     await expect(page.getByTestId("review-candidate")).toContainText(
       "Adjusted scenario 12.2"
     );
-    await expect(
-      page.getByRole("heading", { name: "Explore county patterns" })
-    ).toBeVisible();
-    await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "County boundaries"
-    );
-
-    await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "Gap review score" }).click();
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
@@ -821,12 +818,15 @@ test.describe("Explorer what-if scenario", () => {
     await expect(map).not.toHaveAttribute("data-map-colors", /02\d{3}:/);
 
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "County boundaries" }).click();
+    await expect(
+      page.getByRole("option", { name: "County boundaries" })
+    ).toHaveCount(0);
+    await page.getByRole("option", { name: "Blacklegged tick status" }).click();
     await expect(
       page.getByRole("heading", { name: "Explore county patterns" })
     ).toBeVisible();
     await expect(page.getByTestId("explorer-map-layer")).toContainText(
-      "County boundaries"
+      "Blacklegged tick status"
     );
     await expect(page.getByTestId("explorer-map-layer")).not.toContainText(
       "Adjusted scenario"

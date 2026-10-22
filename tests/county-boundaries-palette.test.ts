@@ -10,8 +10,6 @@ import {
   COUNTY_BOUNDARY_COUNTY_LINE_WIDTH,
   COUNTY_BOUNDARY_STATE_LINE_WIDTH,
 } from "@/features/ux-reset/review/county-boundaries-palette";
-import { buildExplorerLegendModel } from "@/features/ux-reset/review/explorer-legend-model";
-import { paintExplorerMapLayer } from "@/features/ux-reset/review/explorer-map-layers";
 
 function square(
   fips: string,
@@ -60,37 +58,6 @@ function lineLength(
 }
 
 describe("county boundaries palette", () => {
-  it("keeps one non-numeric geography swatch", () => {
-    const paint = paintExplorerMapLayer({
-      counties: [],
-      layerId: "boundaries",
-      scoresStatus: "ready",
-    });
-    const model = buildExplorerLegendModel(paint);
-    const segment = model.segments[0];
-    expect({
-      color: segment?.color,
-      gradient: model.gradient,
-      label: segment?.label,
-      leftCaption: model.leftCaption,
-      mode: model.mode,
-      outline: segment?.outline,
-      rightCaption: model.rightCaption,
-      title: model.title,
-    }).toStrictEqual({
-      color: COUNTY_BOUNDARIES_FILL,
-      gradient: null,
-      label: "County boundary",
-      leftCaption: null,
-      mode: "segments",
-      outline: COUNTY_BOUNDARIES_COUNTY_STROKE,
-      rightCaption: null,
-      title: "County boundaries",
-    });
-    expect(segment?.accessibleName).toMatch(/not a missing value/);
-    expect(segment?.accessibleName).not.toMatch(/\d+ to </);
-  });
-
   it("drops shared county edges and keeps the selected state perimeter", () => {
     const lines = stateBoundaryCollections(
       [

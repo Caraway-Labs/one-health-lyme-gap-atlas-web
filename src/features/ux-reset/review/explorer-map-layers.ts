@@ -1,12 +1,5 @@
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
 import {
-  COUNTY_BOUNDARIES_COUNTY_STROKE,
-  COUNTY_BOUNDARIES_FILL,
-  COUNTY_BOUNDARIES_LEGEND_DETAIL,
-  COUNTY_BOUNDARIES_LEGEND_LABEL,
-  COUNTY_BOUNDARIES_NOTE,
-} from "@/features/ux-reset/review/county-boundaries-palette";
-import {
   paintReadyCompletenessLayer,
   paintReadyObservationLayer,
 } from "@/features/ux-reset/review/explorer-map-layer-scale";
@@ -29,9 +22,11 @@ import {
 import type { CountyScoreSummary } from "@/generated/models";
 
 /**
- * Atlas Explorer layers. Score and boundary layers stay selectable from the
- * scores collection. Observation layers stay selectable until a load fails
+ * Atlas Explorer layers. Score layers stay selectable from the scores
+ * collection. Observation layers stay selectable until a load fails
  * validation. Completeness stays selectable only after scores validate.
+ * The boundaries-only layer is not a choice; county outlines stay on every
+ * thematic layer.
  */
 export const EXPLORER_MAP_LAYERS = [
   {
@@ -90,14 +85,10 @@ export const EXPLORER_MAP_LAYERS = [
     selectable: true,
     unavailableReason: null,
   },
-  {
-    id: "boundaries",
-    label: "County boundaries",
-    needsScores: false,
-    selectable: true,
-    unavailableReason: null,
-  },
 ] as const;
+
+/** Removed menu id. Saved and shared URLs that still send it fall back. */
+export const RETIRED_EXPLORER_MAP_LAYER_IDS = ["boundaries"] as const;
 
 export type ExplorerMapLayerId = (typeof EXPLORER_MAP_LAYERS)[number]["id"];
 
@@ -142,12 +133,7 @@ const EXPECTED_SOURCE_LABEL = {
   tick: "Tick status",
 } as const;
 
-type LegendKind =
-  | "boundaries"
-  | "categorical"
-  | "choropleth"
-  | "loading"
-  | "unavailable";
+type LegendKind = "categorical" | "choropleth" | "loading" | "unavailable";
 
 export type ExplorerMapLegendRole =
   | "class"
@@ -287,11 +273,18 @@ type GapColorGroup = {
   scores: number[];
 };
 
+/** Initial Explorer layer, and the fallback for a removed or unknown id. */
+export const DEFAULT_EXPLORER_MAP_LAYER_ID =
+  "gap_score" satisfies ExplorerMapLayerId;
+
 export function explorerMapLayerById(
   value: string | null | undefined
 ): ExplorerMapLayer {
   return (
     EXPLORER_MAP_LAYERS.find((layer) => layer.id === value) ??
+    EXPLORER_MAP_LAYERS.find(
+      (layer) => layer.id === DEFAULT_EXPLORER_MAP_LAYER_ID
+    ) ??
     EXPLORER_MAP_LAYERS[0]
   );
 }
@@ -327,6 +320,9 @@ function explorerLegendTitle(layer: ExplorerMapLayer): string {
 export function parseExplorerMapLayerId(
   value: string
 ): ExplorerMapLayerId | null {
+  if (RETIRED_EXPLORER_MAP_LAYER_IDS.some((retired) => retired === value)) {
+    return null;
+  }
   const layer = EXPLORER_MAP_LAYERS.find((entry) => entry.id === value);
   if (!layer?.selectable) {
     return null;
@@ -450,9 +446,6 @@ function sourceVintagePhrase(
 }
 
 function legendPeriod(input: PaintInput, layerId: ExplorerMapLayerId): string {
-  if (layerId === "boundaries") {
-    return "County boundaries are not an evidence layer.";
-  }
   const release = input.releaseId?.trim()
     ? `Release ${input.releaseId.trim()}`
     : null;
@@ -547,33 +540,10 @@ function boundaryPaint(
     kind,
     layerId: layer.id,
     note,
-    period: legendPeriod(
-      input,
-      layer.id === "boundaries" ? "boundaries" : layer.id
-    ),
+    period: legendPeriod(input, layer.id),
     scale: "segments",
     title,
     unit: null,
-  };
-}
-
-function countyBoundariesPaint(input: PaintInput): ExplorerMapPaint {
-  const paint = boundaryPaint(
-    input,
-    COUNTY_BOUNDARIES_NOTE,
-    "County boundaries",
-    "boundaries"
-  );
-  return {
-    ...paint,
-    entries: [
-      {
-        color: COUNTY_BOUNDARIES_FILL,
-        detail: COUNTY_BOUNDARIES_LEGEND_DETAIL,
-        label: COUNTY_BOUNDARIES_LEGEND_LABEL,
-        outline: COUNTY_BOUNDARIES_COUNTY_STROKE,
-      },
-    ],
   };
 }
 
@@ -818,9 +788,6 @@ export function paintExplorerMapLayer(input: PaintInput): ExplorerMapPaint {
   const layer = explorerMapLayerById(input.layerId);
   const layerId = layer.id;
   switch (layerId) {
-    case "boundaries": {
-      return countyBoundariesPaint(input);
-    }
     case "incidence_floor":
     case "rurality":
     case "svi":

@@ -1,12 +1,14 @@
 # County boundaries map palette
 
-Spec for the Atlas Explorer geography layer (`/explore?layer=boundaries`). Desktop only. Other layer palettes, score colors, and the shared selected-county stroke stay on their current definitions.
+County outlines stay on every thematic Explorer layer through the shared `fill-outline-color`. The boundaries-only **County boundaries** choice is no longer in the Map layer menu. A saved or shared `layer=boundaries` value falls back to Gap review score.
+
+The notes below record the neutral geography chrome `AtlasMap` applies only when `neutralCountyBoundaries` is set. Explorer no longer selects that presentation. Desktop only. Other layer palettes, score colors, and the shared selected-county stroke stay on their current definitions.
 
 ## Source
 
 | Item | Path |
 | --- | --- |
-| Layer id | `boundaries` in `src/features/ux-reset/review/explorer-map-layers.ts` |
+| Layer id | Retired. `boundaries` is not a member of `EXPLORER_MAP_LAYERS`. |
 | Legend title | `County boundaries` |
 | Paint | `boundaryPaint` for this layer only. Failed score or completeness loads still use the old boundary swatch and are not this layer. |
 | Map chrome | `AtlasMap` in `src/components/atlas-map.tsx` |

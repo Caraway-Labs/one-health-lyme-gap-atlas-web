@@ -144,7 +144,7 @@ function client(): QueryClient {
 function picture(
   queryClient: QueryClient,
   settings: ScoreSettings,
-  mapLayer: "boundaries" | "gap_score" | "tick_status"
+  mapLayer: "gap_score" | "tick_status"
 ) {
   return (
     <QueryClientProvider client={queryClient}>
@@ -245,10 +245,10 @@ describe("national Explorer what-if map", () => {
     ).toContain("keep the governed score and color");
   });
 
-  it("leaves tick status and boundaries on their governed presentation", async () => {
+  it("leaves tick status on its governed presentation", async () => {
     installRamps();
     const queryClient = client();
-    const view = render(
+    render(
       picture(
         queryClient,
         { ...SCENARIO_SCORE_DEFAULTS, missing_human_weakness: 40 },
@@ -271,21 +271,11 @@ describe("national Explorer what-if map", () => {
       legend: expect.not.stringContaining("Adjusted scenario"),
     });
     expect(featureColor(region(), "08021")).not.toBe(RAMP);
-
-    view.rerender(
-      picture(
-        queryClient,
-        { ...SCENARIO_SCORE_DEFAULTS, missing_human_weakness: 40 },
-        "boundaries"
-      )
-    );
-    await waitFor(() => {
-      expect(screen.getByTestId("explorer-map-layer").textContent).toContain(
-        "County boundaries"
-      );
-    });
     expect(screen.getByTestId("explorer-map-legend").textContent).not.toContain(
-      "Adjusted scenario"
+      "County boundaries"
+    );
+    expect(screen.getByTestId("explorer-map-layer").textContent).not.toContain(
+      "County boundaries"
     );
   });
 

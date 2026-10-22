@@ -4165,7 +4165,7 @@ describe("Reset Review scope UI", () => {
   it("returns a state county to national scope without saving the starting view", async () => {
     const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
     const updates: string[] = [];
-    renderReview("?scope=CO&county=08013&layer=boundaries&eco=55", {
+    renderReview("?scope=CO&county=08013&layer=rurality&eco=55", {
       onUrlUpdate: (query) => {
         updates.push(query);
       },
@@ -4196,7 +4196,7 @@ describe("Reset Review scope UI", () => {
       county: latest.includes("county="),
       eco: latest.includes("eco=55"),
       focus: latest.includes("focus="),
-      layer: latest.includes("layer=boundaries"),
+      layer: latest.includes("layer=rurality"),
       preview: screen.queryByTestId("review-published-county-preview"),
       profileWrites: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
       rankings: screen
@@ -4218,11 +4218,46 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("falls back from a retired county-boundaries layer to Gap review score", async () => {
+    const updates: string[] = [];
+    renderReview("?scope=ALL&layer=boundaries", {
+      onUrlUpdate: (query) => {
+        updates.push(query);
+      },
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("explorer-map-layer").textContent).toContain(
+        "Gap review score"
+      );
+    });
+    await waitFor(() => {
+      const latest = updates.at(-1) ?? "";
+      if (latest.includes("layer=boundaries")) {
+        throw new Error("retired layer query was not cleared");
+      }
+    });
+    fireEvent.click(screen.getByTestId("explorer-map-layer"));
+    const options = new Set(
+      screen.getAllByRole("option").map((option) => option.textContent)
+    );
+    expect({
+      boundaries: options.has("County boundaries"),
+      completeness: options.has("Evidence completeness"),
+      gap: options.has("Gap review score"),
+      selected: screen.getByTestId("explorer-map-layer").textContent,
+    }).toStrictEqual({
+      boundaries: false,
+      completeness: true,
+      gap: true,
+      selected: expect.stringContaining("Gap review score"),
+    });
+  });
+
   it("refits the national map from a zoomed country view and keeps the layer", async () => {
     const updates: string[] = [];
     await installNationalGeometry();
     try {
-      renderReview("?scope=ALL&layer=boundaries", {
+      renderReview("?scope=ALL&layer=rurality", {
         onUrlUpdate: (query) => {
           updates.push(query);
         },
@@ -4247,7 +4282,7 @@ describe("Reset Review scope UI", () => {
         layer: screen.getByTestId("explorer-map-layer").textContent,
         scopeWrites: updates.some((query) => query.includes("scope=")),
       }).toStrictEqual({
-        layer: expect.stringContaining("County boundaries"),
+        layer: expect.stringContaining("Rurality"),
         scopeWrites: false,
       });
     } finally {
@@ -4259,7 +4294,7 @@ describe("Reset Review scope UI", () => {
     const updates: string[] = [];
     await installNationalGeometry();
     try {
-      renderReview("?scope=ALL&focus=CO&county=08013&layer=boundaries", {
+      renderReview("?scope=ALL&focus=CO&county=08013&layer=rurality", {
         onUrlUpdate: (query) => {
           updates.push(query);
         },
@@ -4284,7 +4319,7 @@ describe("Reset Review scope UI", () => {
       expect({
         county: latest.includes("county="),
         focus: latest.includes("focus="),
-        layer: latest.includes("layer=boundaries"),
+        layer: latest.includes("layer=rurality"),
         rankings: screen
           .getAllByTestId("national-published-county")
           .map((row) => row.dataset.fips)
