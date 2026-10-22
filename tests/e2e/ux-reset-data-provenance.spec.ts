@@ -155,6 +155,51 @@ test("legacy source anchors scroll to the matching card", async ({ page }) => {
   }
 });
 
+test("source card facts stay readable at desktop width", async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1280 });
+  await page.goto("/data-provenance");
+  const rows = page.locator(
+    ".public-trust-cards--trio .public-trust-facts--stacked > div"
+  );
+  await expect(rows).toHaveCount(80);
+  const layout = await rows.evaluateAll((items) =>
+    items.map((item) => {
+      const term = item.querySelector("dt")?.getBoundingClientRect();
+      const value = item.querySelector("dd")?.getBoundingClientRect();
+      return {
+        termBottom: term?.bottom ?? 0,
+        valueTop: value?.top ?? 0,
+        valueWidth: value?.width ?? 0,
+      };
+    })
+  );
+  expect(layout).toHaveLength(80);
+  for (const row of layout) {
+    expect(row.valueWidth).toBeGreaterThanOrEqual(150);
+    expect(row.valueTop).toBeGreaterThanOrEqual(row.termBottom - 1);
+  }
+
+  const glance = page
+    .locator(
+      "section[aria-labelledby='provenance-glance'] .public-trust-facts > div"
+    )
+    .first();
+  const glanceLayout = await glance.evaluate((item) => {
+    const term = item.querySelector("dt")?.getBoundingClientRect();
+    const value = item.querySelector("dd")?.getBoundingClientRect();
+    return {
+      termRight: term?.right ?? 0,
+      termTop: term?.top ?? 0,
+      valueLeft: value?.left ?? 0,
+      valueTop: value?.top ?? 0,
+    };
+  });
+  expect(
+    Math.abs(glanceLayout.termTop - glanceLayout.valueTop)
+  ).toBeLessThanOrEqual(2);
+  expect(glanceLayout.valueLeft).toBeGreaterThan(glanceLayout.termRight - 1);
+});
+
 test("source cards stack below the desktop flow breakpoint", async ({
   page,
 }) => {
