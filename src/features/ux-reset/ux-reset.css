@@ -1646,6 +1646,10 @@
 }
 
 .ux-reset-pro-scroll {
+  /* Positioning parent for absolutely placed descendants (sr-only text, side
+     labels) so they are clipped and scrolled here instead of stretching the
+     document past the 100dvh shell. */
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -4546,5 +4550,247 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
   .ux-reset-explorer-scenario-impact-arrow {
     display: none;
+  }
+}
+
+/* Compare county picker, pinned pair, and calm status (Web #829) */
+.ux-reset-compare > .ux-reset-compare-pair .ux-reset-compare-slots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0.5rem;
+}
+
+@media (min-width: 800px) {
+  .ux-reset-compare > .ux-reset-compare-pair .ux-reset-compare-slots {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .ux-reset-compare-swap {
+    margin-top: 1.9rem;
+  }
+}
+
+.ux-reset-compare-swap {
+  justify-self: center;
+}
+
+@media (max-width: 799px) {
+  .ux-reset-compare-swap svg {
+    rotate: 90deg;
+  }
+}
+
+.ux-reset-compare-picker-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.45fr) minmax(0, 1fr);
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+@media (max-width: 479px) {
+  .ux-reset-compare-picker-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ux-reset-compare-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.ux-reset-compare-chip .ux-reset-compare-identity {
+  flex: 1 1 12rem;
+  align-items: baseline;
+}
+
+.ux-reset-compare-chip .ux-reset-compare-county-name {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.ux-reset-compare-origin {
+  display: inline-flex;
+  margin: 0;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.ux-reset-compare > .ux-reset-compare-pair .ux-reset-compare-pair-actions {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ux-reset-compare-steps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 800px) {
+  .ux-reset-compare-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ux-reset-compare-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.ux-reset-compare-step-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--muted);
+  color: var(--primary);
+}
+
+.ux-reset-compare-step-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.ux-reset-compare-step-text {
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-compare-step-text strong {
+  color: var(--foreground);
+}
+
+.ux-reset-compare-pinned {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 0;
+}
+
+.ux-reset-compare-pinned-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--card);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
+  font-size: 0.8125rem;
+}
+
+.ux-reset-compare-pinned-county {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.ux-reset-compare-pinned-county span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ux-reset-compare-pinned-bar > button:last-child {
+  margin-left: auto;
+}
+
+.ux-reset-compare-status {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ux-reset-compare-status[data-reserve="true"] {
+  min-height: 2.25rem;
+  align-content: start;
+}
+
+.ux-reset-compare-status-loading {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ux-reset-compare-status-loading p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.ux-reset-compare-status-progress {
+  display: block;
+}
+
+.ux-reset-compare-status-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--destructive);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+}
+
+.ux-reset-compare-status-error ul {
+  display: grid;
+  flex: 1 1 18rem;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.ux-reset-compare-skeleton {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ux-reset-compare-skeleton span {
+  display: block;
+  height: 4rem;
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  animation: ux-reset-compare-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ux-reset-compare-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ux-reset-compare-skeleton span {
+    animation: none;
   }
 }

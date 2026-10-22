@@ -1,20 +1,12 @@
 "use client";
 
+import { ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 
-import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
@@ -29,6 +21,10 @@ import {
   compareReaderState,
 } from "@/features/ux-reset/compare/compare-compact-evidence";
 import {
+  CompareCountyPicker,
+  type ReviewCategoryBadge,
+} from "@/features/ux-reset/compare/compare-county-picker";
+import {
   compareReviewCategoryTone,
   publishedReviewPriority,
   type CompareProfileAlignment,
@@ -41,6 +37,19 @@ import {
   CompareProfileGroups,
   type CompareProfileGroup,
 } from "@/features/ux-reset/compare/compare-county-profile-section";
+import { CompareEmptyGuide } from "@/features/ux-reset/compare/compare-empty-guide";
+import {
+  ComparePinnedPair,
+  useScrolledOutOfView,
+} from "@/features/ux-reset/compare/compare-pinned-pair";
+import {
+  compareOriginLabel,
+  compareStatusErrors,
+} from "@/features/ux-reset/compare/compare-status-errors";
+import {
+  CompareStatusStrip,
+  type CompareLoadStep,
+} from "@/features/ux-reset/compare/compare-status-strip";
 import { CompareSurveillanceIntelligence } from "@/features/ux-reset/compare/compare-surveillance-intelligence";
 import {
   COMPARE_COMMUNITY_ROW_IDS,
@@ -133,10 +142,6 @@ function CompareCellView({
     </div>
   );
 }
-
-type ReviewCategoryBadge =
-  | { kind: "published"; label: string }
-  | { kind: "recognized"; priority: string };
 
 function reviewCategoryBadge(
   profile: CompareProfileAlignment | null,
@@ -239,8 +244,14 @@ function summaryCounts(rows: readonly CompareAlignedRow[]) {
 function CompareExperienceInner() {
   const workspace = useCompareWorkspace();
   const pair = workspace.entry.pair;
+  // The pair in the URL has no gaps. A county chosen for the second slot
+  // before the first waits here until the first county is chosen.
+  const [pendingSecond, setPendingSecond] = useState("");
+  const pendingFips = pair.length === 0 ? pendingSecond : "";
+  const pickersRef = useRef<HTMLFieldSetElement | null>(null);
+  const pinned = useScrolledOutOfView(pickersRef, pair.length === 2);
   const leftFips = pair[0] ?? "";
-  const rightFips = pair[1] ?? "";
+  const rightFips = pair[1] ?? pendingFips;
   const leftOptions = compareOptionDisabled(workspace.options, rightFips);
   const rightOptions = compareOptionDisabled(workspace.options, leftFips);
   const leftOption = workspace.options.find(
@@ -392,6 +403,9 @@ function CompareExperienceInner() {
           : []),
       ]
     : [];
+  const handleSwapPair = () => {
+    workspace.swapPair();
+  };
   const handleRetryProfile = () => {
     workspace.retryProfile();
   };
@@ -402,6 +416,106 @@ function CompareExperienceInner() {
   const issueMessages = workspace.recoveryMessages.filter(
     (message) => !isSelectionPrompt(message)
   );
+  const originLabel =
+    workspace.returnTarget && pair.length === 1
+      ? compareOriginLabel(workspace.returnTarget)
+      : null;
+  const hasSelection = pair.length > 0 || Boolean(pendingFips);
+  const statusErrors = compareStatusErrors({
+    alignment: workspace.alignment,
+    directoryError: workspace.directoryError,
+    evidenceError: workspace.evidenceError,
+    failedLabels,
+    failedMeasures,
+    metadataError: workspace.metadataError,
+    profile: workspace.profile,
+    profileError: workspace.profileError,
+    catalogError: workspace.catalogError,
+  });
+  const statusSteps: CompareLoadStep[] = [
+    {
+      done: !workspace.metadataLoading,
+      id: "release",
+      label: "Loading release information…",
+    },
+    {
+      done: !workspace.directoryLoading,
+      id: "counties",
+      label: "Loading the county list…",
+    },
+    ...(pair.length === 2
+      ? [
+          {
+            done: !(
+              workspace.profileLoading ||
+              (workspace.profileCoolingDown &&
+                (!workspace.profileError || workspace.profileRetrying))
+            ),
+            id: "records",
+            label: workspace.profileCoolingDown
+              ? "Waiting for the server retry window…"
+              : "Loading published county records…",
+          },
+          {
+            done: !(
+              workspace.evidenceLoading ||
+              (workspace.catalogCoolingDown &&
+                (!workspace.catalogError || workspace.catalogRetrying))
+            ),
+            id: "observations",
+            label: workspace.catalogCoolingDown
+              ? "Waiting for the server retry window before requesting the measure catalog again."
+              : workspace.profile
+                ? "Loading additional observations…"
+                : "Loading aligned evidence…",
+          },
+        ]
+      : []),
+  ];
+  const retryTargets = {
+    catalog: Boolean(workspace.catalogError) || workspace.catalogCoolingDown,
+    evidence: failedMeasures || Boolean(workspace.evidenceError),
+    profile:
+      Boolean(workspace.profileError) ||
+      Boolean(workspace.profile?.retryable) ||
+      workspace.profileCoolingDown,
+  };
+  // The button stays usable during a server retry window so a retry can be
+  // queued. It is disabled only while a retry is already running or waiting.
+  const retryWaiting =
+    (workspace.catalogCoolingDown &&
+      (!workspace.catalogError || workspace.catalogRetrying)) ||
+    (workspace.profileCoolingDown &&
+      (!workspace.profileError || workspace.profileRetrying));
+  const retryBusy =
+    retryWaiting ||
+    workspace.catalogRetrying ||
+    workspace.evidenceRetrying ||
+    workspace.profileRetrying;
+  const statusRetry =
+    pair.length === 2 &&
+    (retryTargets.catalog || retryTargets.evidence || retryTargets.profile)
+      ? {
+          busy: retryBusy,
+          label: retryWaiting
+            ? "Waiting for the server retry window…"
+            : retryBusy
+              ? "Retrying…"
+              : "Retry what did not load",
+          waiting: retryWaiting,
+          onRetry: () => {
+            if (retryTargets.catalog) {
+              workspace.retryCatalog();
+            }
+            if (retryTargets.evidence) {
+              void workspace.retryEvidence();
+            }
+            if (retryTargets.profile) {
+              handleRetryProfile();
+            }
+          },
+        }
+      : null;
 
   return (
     <div
@@ -418,11 +532,24 @@ function CompareExperienceInner() {
       data-stale-url={workspace.entry.staleUrlIgnored ? "true" : "false"}
       data-testid="compare-workspace"
     >
+      <ComparePinnedPair
+        leftLabel={leftLabel}
+        rightLabel={rightLabel}
+        visible={pinned}
+        onEdit={() => {
+          pickersRef.current?.scrollIntoView({
+            behavior: "auto",
+            block: "start",
+          });
+          pickersRef.current?.querySelector("input")?.focus();
+        }}
+        onSwap={handleSwapPair}
+      />
       <header className="ux-reset-compare-header">
         <PageIntroduction page="compare" />
       </header>
 
-      <fieldset className="ux-reset-compare-pair">
+      <fieldset className="ux-reset-compare-pair" ref={pickersRef}>
         <legend className="sr-only">Counties to compare</legend>
         <div
           data-fips={pair.join(",")}
@@ -436,19 +563,15 @@ function CompareExperienceInner() {
           </p>
         </div>
         <div className="ux-reset-compare-slots">
-          <CountySlot
+          <CompareCountyPicker
             clearLabel="Clear first county"
-            disabled={false}
             evidenceHref={leftFips ? workspace.investigateHref(leftFips) : null}
             evidenceLabel={leftFips ? countyEvidenceLinkLabel(0) : null}
-            fips={leftFips}
             label="First county"
+            letter="A"
             options={leftOptions}
             reviewCategory={reviewCategoryBadge(workspace.profile, leftFips)}
-            selectedCounty={leftOption?.countyName}
             selectedFips={leftFips}
-            selectedLabel={leftOption?.label}
-            selectedState={leftOption?.stateLabel}
             testId="compare-slot-0"
             onClear={
               leftFips
@@ -458,50 +581,83 @@ function CompareExperienceInner() {
                 : null
             }
             onSelect={(fips) => {
+              if (pendingFips) {
+                workspace.setPair([fips, pendingFips]);
+                setPendingSecond("");
+                return;
+              }
               workspace.setSlot(0, fips);
             }}
           />
-          <CountySlot
+          <Button
+            aria-label="Swap first and second county"
+            className="ux-reset-compare-swap"
+            data-testid="compare-swap"
+            disabled={pair.length !== 2}
+            size="icon"
+            type="button"
+            variant="outline"
+            onClick={handleSwapPair}
+          >
+            <ArrowLeftRight aria-hidden="true" />
+          </Button>
+          <CompareCountyPicker
+            autoFocus={Boolean(originLabel)}
             clearLabel="Clear second county"
-            disabled={pair.length === 0}
             evidenceHref={
               rightFips ? workspace.investigateHref(rightFips) : null
             }
             evidenceLabel={rightFips ? countyEvidenceLinkLabel(1) : null}
-            fips={rightFips}
             label="Second county"
+            letter="B"
             options={rightOptions}
             reviewCategory={reviewCategoryBadge(workspace.profile, rightFips)}
-            selectedCounty={rightOption?.countyName}
             selectedFips={rightFips}
-            selectedLabel={rightOption?.label}
-            selectedState={rightOption?.stateLabel}
             testId="compare-slot-1"
             onClear={
               rightFips
                 ? () => {
+                    if (pendingFips) {
+                      setPendingSecond("");
+                      return;
+                    }
                     workspace.removeMember(rightFips);
                   }
                 : null
             }
             onSelect={(fips) => {
+              if (pair.length === 0) {
+                setPendingSecond(fips);
+                return;
+              }
               workspace.setSlot(1, fips);
             }}
           />
         </div>
-        {pair.length === 2 ? (
+        {originLabel || hasSelection ? (
           <div className="ux-reset-compare-pair-actions">
-            <Button
-              aria-label="Clear both counties"
-              size="sm"
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                workspace.clearPair();
-              }}
-            >
-              Clear both
-            </Button>
+            {originLabel ? (
+              <p
+                className="ux-reset-compare-origin"
+                data-testid="compare-origin"
+              >
+                {originLabel}: {leftLabel}
+              </p>
+            ) : null}
+            {hasSelection ? (
+              <Button
+                aria-label="Clear both counties"
+                size="sm"
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setPendingSecond("");
+                  workspace.clearPair();
+                }}
+              >
+                Clear both
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </fieldset>
@@ -518,117 +674,14 @@ function CompareExperienceInner() {
         {workspace.slotMessage ? <p>{workspace.slotMessage}</p> : null}
       </div>
 
-      {workspace.metadataLoading ? (
-        <AtlasStatusMessage tone="loading">
-          Loading release metadata…
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.metadataError ? (
-        <AtlasStatusMessage tone="error">
-          {workspace.metadataError}
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.directoryLoading ? (
-        <AtlasStatusMessage tone="loading">
-          Loading the published county list…
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.directoryError ? (
-        <AtlasStatusMessage tone="error">
-          {workspace.directoryError}
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.catalogCoolingDown ? (
-        <AtlasStatusMessage
-          action={
-            workspace.catalogError ? null : (
-              <Button
-                aria-busy
-                data-testid="compare-retry-catalog"
-                data-waiting="true"
-                disabled
-                type="button"
-                variant="secondary"
-              >
-                Waiting for the server retry window…
-              </Button>
-            )
-          }
-          tone="loading"
-        >
-          <p data-testid="compare-catalog-wait">
-            Waiting for the server retry window before requesting the measure
-            catalog again.
-          </p>
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.catalogError ? (
-        <AtlasStatusMessage
-          action={
-            <Button
-              aria-busy={workspace.catalogRetrying}
-              data-testid="compare-retry-catalog"
-              data-waiting={
-                workspace.catalogCoolingDown && workspace.catalogRetrying
-                  ? "true"
-                  : "false"
-              }
-              disabled={workspace.catalogRetrying}
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                workspace.retryCatalog();
-              }}
-            >
-              {workspace.catalogCoolingDown && workspace.catalogRetrying
-                ? "Waiting for the server retry window…"
-                : "Retry measure catalog"}
-            </Button>
-          }
-          tone="error"
-        >
-          {workspace.catalogError}
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.evidenceLoading && !workspace.catalogCoolingDown ? (
-        <AtlasStatusMessage tone="loading">
-          {workspace.profile
-            ? "County records are visible. Additional observations are still loading."
-            : "Loading aligned evidence…"}
-        </AtlasStatusMessage>
-      ) : null}
-      {workspace.evidenceError ? (
-        <AtlasStatusMessage tone="error">
-          {workspace.evidenceError}
-        </AtlasStatusMessage>
-      ) : null}
-      {failedMeasures ? (
-        <AtlasStatusMessage
-          action={
-            <Button
-              aria-busy={workspace.evidenceRetrying}
-              data-testid="compare-retry-evidence"
-              disabled={workspace.evidenceRetrying}
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                void workspace.retryEvidence();
-              }}
-            >
-              {workspace.evidenceRetrying
-                ? "Retrying evidence…"
-                : "Retry evidence that did not load"}
-            </Button>
-          }
-          tone="error"
-        >
-          Some measures could not be loaded. Evidence that loaded stays in this
-          comparison.
-          {failedLabels.length > 0
-            ? ` Affected measures: ${failedLabels.join(", ")}.`
-            : ""}
-        </AtlasStatusMessage>
-      ) : null}
+      {hasSelection ? null : <CompareEmptyGuide />}
+
+      <CompareStatusStrip
+        errors={statusErrors}
+        reserve={pair.length === 2}
+        retry={statusRetry}
+        steps={statusSteps}
+      />
 
       {pair.length === 2 ? (
         <section
@@ -654,6 +707,17 @@ function CompareExperienceInner() {
             showPeriodNote={false}
             onRetry={handleRetryProfile}
           />
+          {workspace.profileLoading && !workspace.profile ? (
+            <div
+              aria-hidden="true"
+              className="ux-reset-compare-skeleton"
+              data-testid="compare-skeleton"
+            >
+              <span />
+              <span />
+              <span />
+            </div>
+          ) : null}
           {workspace.profile || reconciledRows.length > 0 ? (
             <>
               <div
@@ -871,168 +935,6 @@ function CompareOverview({
         )}
       </details>
     </section>
-  );
-}
-
-function ReviewCategoryMark({
-  badge,
-  fips,
-}: {
-  badge: ReviewCategoryBadge;
-  fips: string;
-}) {
-  const testId = `compare-review-category-${fips}`;
-  switch (badge.kind) {
-    case "recognized": {
-      const tone = compareReviewCategoryTone(badge.priority);
-      if (!tone) {
-        return (
-          <Badge
-            data-review-tone="neutral"
-            data-testid={testId}
-            variant="outline"
-          >
-            {badge.priority}
-          </Badge>
-        );
-      }
-      return (
-        <span data-review-tone={tone} data-testid={testId}>
-          <AtlasPriorityBadge priority={badge.priority} />
-        </span>
-      );
-    }
-    case "published": {
-      return (
-        <Badge
-          data-review-tone="neutral"
-          data-testid={testId}
-          variant="outline"
-        >
-          {badge.label}
-        </Badge>
-      );
-    }
-    default: {
-      const exhaustive: never = badge;
-      return exhaustive;
-    }
-  }
-}
-
-function CountySlot({
-  clearLabel,
-  disabled,
-  evidenceHref,
-  evidenceLabel,
-  fips,
-  label,
-  onClear,
-  onSelect,
-  options,
-  reviewCategory,
-  selectedCounty,
-  selectedFips,
-  selectedLabel,
-  selectedState,
-  testId,
-}: {
-  clearLabel: string;
-  disabled: boolean;
-  evidenceHref: string | null;
-  evidenceLabel: string | null;
-  fips: string;
-  label: string;
-  onClear: (() => void) | null;
-  onSelect: (fips: string) => void;
-  options: readonly { disabled: boolean; fips: string; label: string }[];
-  reviewCategory: ReviewCategoryBadge | null;
-  selectedCounty: string | undefined;
-  selectedFips: string;
-  selectedLabel: string | undefined;
-  selectedState: string | undefined;
-  testId: string;
-}) {
-  return (
-    <div className="ux-reset-compare-slot">
-      <div className="ux-reset-compare-slot-label">
-        <span className="type-small">{label}</span>
-        {reviewCategory ? (
-          <ReviewCategoryMark badge={reviewCategory} fips={fips} />
-        ) : null}
-      </div>
-      <Select
-        disabled={disabled}
-        value={selectedFips || null}
-        onValueChange={(next) => {
-          if (!next) {
-            return;
-          }
-          onSelect(next);
-        }}
-      >
-        <SelectTrigger
-          aria-label={label}
-          className="h-8 w-full"
-          data-testid={testId}
-        >
-          <SelectValue placeholder={`Choose the ${label.toLowerCase()}`}>
-            {selectedLabel}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem
-              disabled={option.disabled}
-              key={option.fips}
-              value={option.fips}
-            >
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {selectedFips ? (
-        <p className="ux-reset-compare-identity">
-          <span className="ux-reset-compare-county-name">
-            {selectedCounty ?? selectedLabel ?? fips}
-          </span>
-          <span className="ux-reset-compare-fips">
-            {selectedState ? `${selectedState} · ` : ""}FIPS {fips}
-          </span>
-        </p>
-      ) : null}
-      {onClear || (evidenceHref && evidenceLabel) ? (
-        <div className="ux-reset-compare-slot-actions">
-          {onClear ? (
-            <Button
-              aria-label={clearLabel}
-              size="sm"
-              type="button"
-              variant="ghost"
-              onClick={onClear}
-            >
-              Clear
-            </Button>
-          ) : null}
-          {evidenceHref && evidenceLabel ? (
-            <Link
-              aria-label={evidenceLabel}
-              className={cn(
-                buttonVariants({ size: "sm", variant: "link" }),
-                "ux-reset-compare-action"
-              )}
-              data-fips={fips}
-              data-testid={`compare-investigate-${fips}`}
-              data-variant="link"
-              href={evidenceHref}
-            >
-              View county evidence
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
