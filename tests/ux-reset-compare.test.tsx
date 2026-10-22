@@ -22,6 +22,7 @@ import { ResetProfessionalShell } from "@/features/ux-reset/professional-shell";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
+  COMPARE_CANOPY_MEASURE_ID,
   COMPARE_CASES_MEASURE_ID,
   COMPARE_LEFT_FIPS,
   COMPARE_RIGHT_FIPS,
@@ -1263,20 +1264,132 @@ describe("two-county aligned comparison", () => {
     });
   });
 
-  it("keeps loaded county records visible when an additional observation fails", async () => {
+  it("keeps a unique catalog measure and its provenance beside the county record", async () => {
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const canopy = await screen.findByTestId(
+      `compare-row-${COMPARE_CANOPY_MEASURE_ID}`
+    );
+    const sources = screen.getByTestId(
+      `compare-source-row-${COMPARE_CANOPY_MEASURE_ID}`
+    );
+    expect({
+      label: (canopy.textContent ?? "").includes("Tree canopy cover"),
+      profile: Boolean(
+        screen.queryByTestId("compare-profile-row-population_2022")
+      ),
+      provenance: (sources.textContent ?? "").includes("Governed surveillance"),
+      sourceButton: within(canopy).getAllByRole("button", {
+        name: /Sources and limitations/,
+      }).length,
+    }).toStrictEqual({
+      label: true,
+      profile: true,
+      provenance: true,
+      sourceButton: 2,
+    });
+  });
+
+  it("keeps a catalog observation whose value differs from the county record", async () => {
+    extraCatalogMeasures = [
+      {
+        ...compareMeasuresFixture[0],
+        geography_semantics: "COUNTY",
+        label: "Population",
+        measure_id: "population_2022",
+        measure_type: "count",
+        unit: "people",
+      },
+    ];
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const separate = await screen.findByTestId("compare-row-population_2022");
+    expect({
+      note: (separate.textContent ?? "").includes("Kept separately"),
+      profile: Boolean(
+        screen.queryByTestId("compare-profile-row-population_2022")
+      ),
+      source: Boolean(
+        screen.queryByTestId("compare-source-row-population_2022-observation")
+      ),
+    }).toStrictEqual({
+      note: true,
+      profile: true,
+      source: true,
+    });
+  });
+
+  it("keeps aligned observations when the county record request fails", async () => {
+    countyRateLimitRemaining = 99;
+    countyRetryAfterSeconds = 0;
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const canopy = await screen.findByTestId(
+      `compare-row-${COMPARE_CANOPY_MEASURE_ID}`
+    );
+    expect({
+      observation: (canopy.textContent ?? "").includes("Tree canopy cover"),
+      profile: screen.queryByTestId("compare-profile"),
+      source: Boolean(
+        screen.queryByTestId(`compare-source-row-${COMPARE_CANOPY_MEASURE_ID}`)
+      ),
+    }).toStrictEqual({
+      observation: true,
+      profile: null,
+      source: true,
+    });
+  });
+
+  it("retries one failed measure without dropping observations that already loaded", async () => {
     observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    const floor = await screen.findByTestId(
-      "compare-profile-cell-human_case_floor-08001"
-    );
-    await screen.findByTestId("compare-alignment");
-    expect(floor.textContent ?? "").toContain("12");
-    expect(
-      observationRequests.some((request) =>
-        request.includes(COMPARE_TICK_MEASURE_ID)
-      )
-    ).toBeTruthy();
-    expect(screen.queryByTestId("compare-status-error-measures")).toBeNull();
+    await screen.findByTestId("compare-retry");
+    const requestsFor = (measureId: string) =>
+      observationRequests.filter((request) => request.includes(measureId))
+        .length;
+    const casesBefore = requestsFor(COMPARE_CASES_MEASURE_ID);
+    const notice =
+      screen.getByTestId("compare-status-error-measures").textContent ?? "";
+    expect({
+      cases: observationCell(COMPARE_CASES_MEASURE_ID, "08001").dataset
+        .observation,
+      casesBefore,
+      notice:
+        notice.includes("Some measures could not be loaded") &&
+        notice.includes("Tick pathogen detections"),
+      partial: Boolean(screen.queryByTestId("compare-overview-partial")),
+      tick: observationCell(COMPARE_TICK_MEASURE_ID, "08001").dataset
+        .observation,
+    }).toStrictEqual({
+      cases: "present",
+      casesBefore: 1,
+      notice: true,
+      partial: true,
+      tick: "failed",
+    });
+    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 0);
+    fireEvent.click(screen.getByTestId("compare-retry"));
+    await waitFor(() => {
+      if (
+        observationCell(COMPARE_TICK_MEASURE_ID, "08001").dataset
+          .observation !== "present"
+      ) {
+        throw new Error("Waiting for the failed measure to load.");
+      }
+    });
+    expect({
+      boulder: observationCell(COMPARE_TICK_MEASURE_ID, "08013").dataset
+        .observation,
+      cases: observationCell(COMPARE_CASES_MEASURE_ID, "08001").dataset
+        .observation,
+      casesAfter: requestsFor(COMPARE_CASES_MEASURE_ID),
+      denver: observationCell(COMPARE_TICK_MEASURE_ID, "08001").dataset
+        .observation,
+      notice: screen.queryByTestId("compare-status-error-measures"),
+    }).toStrictEqual({
+      boulder: "missing",
+      cases: "present",
+      casesAfter: casesBefore,
+      denver: "present",
+      notice: null,
+    });
   });
 
   it("keeps Review return on the original county when the pair changes", async () => {
@@ -1478,6 +1591,10 @@ describe("two-county aligned comparison", () => {
     });
   });
 });
+
+function observationCell(measureId: string, fips: string) {
+  return screen.getByTestId(`compare-cell-${measureId}-${fips}`);
+}
 
 function handleRetryProfile() {}
 

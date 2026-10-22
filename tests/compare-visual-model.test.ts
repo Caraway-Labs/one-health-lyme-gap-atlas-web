@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   alignCompareCountyProfiles,
   compareCountyFailureSide,
+  compareCountySideStatuses,
   type CompareCountySide,
 } from "@/features/ux-reset/compare/compare-county-profile";
 import {
@@ -11,13 +12,16 @@ import {
   compareBarFraction,
   compareBarScale,
   compareGapEntries,
+  compareGapSummary,
   compareNumberToken,
   compareRowRelation,
   compareRowsForSection,
   compareSectionCaption,
   compareSectionCoverage,
   compareSummaryCounts,
+  compareUnknownIntroduction,
   filterCompareRows,
+  type CompareMissingReason,
   type CompareSideValue,
   type CompareVisualRow,
 } from "@/features/ux-reset/compare/compare-visual-model";
@@ -52,7 +56,7 @@ function rowById(rows: readonly CompareVisualRow[], id: string) {
 
 function valueSide(
   text: string,
-  options: { limited?: boolean; number?: number | null } = {}
+  options: { caveat?: string; limited?: boolean; number?: number | null } = {}
 ): CompareSideValue {
   const evidence: EvidenceObjectModel = {
     availability: options.limited ? "limited" : "available",
@@ -61,7 +65,8 @@ function valueSide(
     provenance: {
       evidenceType: "Published",
       inspectSummary: "",
-      limitations: [],
+      limitations: options.caveat ? [options.caveat] : [],
+      materialCaveat: options.caveat ?? null,
       observationPeriod: "2023",
       sourceFamily: "Test source",
     },
@@ -81,6 +86,34 @@ const missingSide: CompareSideValue = {
   reason: "missing",
   text: "No published county record.",
 };
+
+function missingFor(
+  reason: CompareMissingReason,
+  text: string
+): CompareSideValue {
+  return { kind: "missing", reason, text };
+}
+
+function gapRow(
+  left: CompareSideValue,
+  right: CompareSideValue,
+  label = "Population"
+): CompareVisualRow {
+  return {
+    atLeast: false,
+    gap: true,
+    id: "population_2022",
+    label,
+    left,
+    note: null,
+    relation: "incomparable",
+    right,
+    scale: null,
+    section: "community",
+    unit: null,
+    visual: "bars",
+  };
+}
 
 describe(compareNumberToken, () => {
   it("reads the first number, including thousands separators and decimals", () => {
@@ -363,5 +396,124 @@ describe(buildCompareGlanceSide, () => {
     expect(
       right.components.every((component) => component.value === null)
     ).toBeTruthy();
+  });
+});
+
+describe(compareGapSummary, () => {
+  it("keeps different limited caveats on the county that stated them", () => {
+    const summary = compareGapSummary([
+      gapRow(
+        valueSide("100", {
+          caveat: "Population denominator unavailable",
+          limited: true,
+        }),
+        valueSide("200", { caveat: "Provisional data", limited: true })
+      ),
+    ]);
+    expect(
+      summary.cautions.map((group) => ({
+        reason: group.reason,
+        sides: group.items.map((item) => item.sides),
+      }))
+    ).toStrictEqual([
+      { reason: "Population denominator unavailable", sides: ["left"] },
+      { reason: "Provisional data", sides: ["right"] },
+    ]);
+  });
+
+  it("coalesces an identical limited caveat for both counties", () => {
+    const summary = compareGapSummary([
+      gapRow(
+        valueSide("100", { caveat: "Provisional data", limited: true }),
+        valueSide("200", { caveat: "Provisional data", limited: true })
+      ),
+    ]);
+    expect(summary.cautions).toStrictEqual([
+      {
+        items: [{ label: "Population", sides: "both" }],
+        reason: "Provisional data",
+      },
+    ]);
+  });
+
+  it("keeps suppressed and failed reasons on their own counties", () => {
+    const summary = compareGapSummary([
+      gapRow(
+        missingFor("suppressed", "Suppressed"),
+        missingFor("failed", "Couldn’t load this evidence.")
+      ),
+    ]);
+    expect({
+      absence: summary.absence.map((item) => ({
+        cause: item.cause,
+        reason: item.reason,
+        sides: item.sides,
+      })),
+      failed: summary.couldNotLoad.map((item) => ({
+        cause: item.cause,
+        reason: item.reason,
+        sides: item.sides,
+      })),
+      notUsable: summary.notUsable,
+    }).toStrictEqual({
+      absence: [
+        {
+          cause: "suppressed",
+          reason:
+            "Suppressed in the published data. A suppressed value is not zero.",
+          sides: "left",
+        },
+      ],
+      failed: [
+        {
+          cause: "failed",
+          reason: "This county record could not be loaded.",
+          sides: "right",
+        },
+      ],
+      notUsable: [],
+    });
+  });
+});
+
+describe(compareUnknownIntroduction, () => {
+  it("does not describe a network failure or a release mismatch as unpublished", () => {
+    const failed = buildCompareVisualRows(
+      pairedProfile(compareCountyFailureSide(new Error("network")))
+    );
+    const mismatched = buildCompareVisualRows(
+      alignCompareCountyProfiles({
+        left: ready(COMPARE_LEFT_FIPS),
+        leftFips: COMPARE_LEFT_FIPS,
+        right: {
+          message: "This county record is for a different release.",
+          status: compareCountySideStatuses.releaseMismatch,
+        },
+        rightFips: COMPARE_RIGHT_FIPS,
+      })
+    );
+    const failedText = compareUnknownIntroduction(failed);
+    const mismatchText = compareUnknownIntroduction(mismatched);
+    expect({
+      failedClaimsUnpublished: failedText.includes("No value published"),
+      failedSaysMostPublished: /Most values above are published/.test(
+        failedText
+      ),
+      failedStatesLoadFailure: failedText.includes("could not be loaded"),
+      mismatchClaimsUnpublished: mismatchText.includes("No value published"),
+      mismatchSaysMostPublished: /Most values above are published/.test(
+        mismatchText
+      ),
+      mismatchStatesRelease: mismatchText.includes(
+        "not usable for this release"
+      ),
+    }).toStrictEqual({
+      failedClaimsUnpublished: false,
+      failedSaysMostPublished: false,
+      failedStatesLoadFailure: true,
+      mismatchClaimsUnpublished: false,
+      mismatchSaysMostPublished: false,
+      mismatchStatesRelease: true,
+    });
   });
 });

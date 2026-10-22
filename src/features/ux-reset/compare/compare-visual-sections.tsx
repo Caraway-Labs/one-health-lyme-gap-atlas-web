@@ -15,6 +15,11 @@ import { useId, useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import type {
+  CompareCell,
+  CompareRelation,
+} from "@/features/ux-reset/compare/compare-alignment";
+import { compareReaderState } from "@/features/ux-reset/compare/compare-compact-evidence";
 import {
   CompareSlotMarker,
   ReviewCategoryMark,
@@ -24,17 +29,24 @@ import {
   compareProfilePeriodQualification,
   type CompareProfileAlignment,
 } from "@/features/ux-reset/compare/compare-county-profile";
+import type { ReconciledAlignmentRow } from "@/features/ux-reset/compare/compare-unified-rows";
 import {
   buildCompareGlanceSide,
+  compareAbsenceEmptyCopy,
+  compareAbsencePhrase,
+  compareCouldNotLoadPhrase,
   compareGapSummary,
-  type CompareGapSides,
+  compareNotUsablePhrase,
   compareProvenanceFacts,
   compareProvenanceUnknown,
   compareRowsForSection,
   compareSectionCaption,
+  compareUnknownIntroduction,
   compareVisualSectionIds,
   compareVisualSectionTitles,
   type CompareCoverage,
+  type CompareGapItem,
+  type CompareGapSides,
   type CompareGlanceSide,
   type CompareRowFilters,
   type CompareSummaryCounts,
@@ -42,6 +54,7 @@ import {
   type CompareVisualSectionId,
 } from "@/features/ux-reset/compare/compare-visual-model";
 import {
+  CompareMeasureValue,
   CompareMiniTrack,
   CompareScoreRing,
   CompareVisualRowView,
@@ -445,7 +458,36 @@ function gapWho(sides: CompareGapSides, counties: CountyPair): string {
   }
 }
 
-/** Section 4: what is not published, and what is published with a caution. */
+function GapList({
+  counties,
+  items,
+  phrase,
+  state,
+}: {
+  counties: CountyPair;
+  items: readonly CompareGapItem[];
+  phrase: (county: string, reason: string) => string;
+  state: "limited" | "unavailable";
+}) {
+  return (
+    <ul>
+      {items.map((item) => (
+        <li
+          data-gap-sides={item.sides}
+          data-state={state}
+          key={`${item.label}-${item.sides}-${item.reason}`}
+        >
+          <strong>{item.label}</strong>
+          <span className="type-small">
+            {phrase(gapWho(item.sides, counties), item.reason)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Section 4: governed absence, request failures, and published cautions. */
 export function CompareUnknownPanel({
   countyLimitations,
   counties,
@@ -471,33 +513,55 @@ export function CompareUnknownPanel({
       <h3 className="ux-reset-compare-section-title" id={titleId}>
         What we don’t know
       </h3>
-      <p className="type-small">
-        Most values above are published, some with a caution, and a few are not
-        published at all. Nothing here has been estimated or filled in, and a
-        missing value is never zero.
+      <p className="type-small" data-testid="compare-unknown-introduction">
+        {compareUnknownIntroduction(rows)}
       </p>
       <div
         className="ux-reset-compare-unknown-block"
         data-testid="compare-not-published"
       >
         <h4 className="ux-reset-compare-unknown-heading">Not published</h4>
-        {summary.missing.length === 0 ? (
-          <p className="type-small">
-            Every measure shown above has a published value for both counties.
-          </p>
+        {summary.absence.length === 0 ? (
+          <p className="type-small">{compareAbsenceEmptyCopy(summary)}</p>
         ) : (
-          <ul>
-            {summary.missing.map((item) => (
-              <li data-state="unavailable" key={item.label}>
-                <strong>{item.label}</strong>
-                <span className="type-small">
-                  {`No value published for ${gapWho(item.sides, counties)}. ${item.reason}`}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <GapList
+            counties={counties}
+            items={summary.absence}
+            phrase={compareAbsencePhrase}
+            state="unavailable"
+          />
         )}
       </div>
+      {summary.couldNotLoad.length > 0 ? (
+        <div
+          className="ux-reset-compare-unknown-block"
+          data-testid="compare-could-not-load"
+        >
+          <h4 className="ux-reset-compare-unknown-heading">Could not load</h4>
+          <GapList
+            counties={counties}
+            items={summary.couldNotLoad}
+            phrase={compareCouldNotLoadPhrase}
+            state="unavailable"
+          />
+        </div>
+      ) : null}
+      {summary.notUsable.length > 0 ? (
+        <div
+          className="ux-reset-compare-unknown-block"
+          data-testid="compare-not-usable"
+        >
+          <h4 className="ux-reset-compare-unknown-heading">
+            Not usable for this release
+          </h4>
+          <GapList
+            counties={counties}
+            items={summary.notUsable}
+            phrase={compareNotUsablePhrase}
+            state="unavailable"
+          />
+        </div>
+      ) : null}
       <div
         className="ux-reset-compare-unknown-block"
         data-testid="compare-cautions"
@@ -719,5 +783,160 @@ export function CompareShareBar({ askHref }: { askHref: string | null }) {
         {copied ? "Link copied to the clipboard" : ""}
       </span>
     </div>
+  );
+}
+
+function observationRelationLabel(relation: CompareRelation): string {
+  switch (relation.kind) {
+    case "similar": {
+      return "Same value";
+    }
+    case "different": {
+      return "Values differ";
+    }
+    case "withheld": {
+      return relation.explanation;
+    }
+    default: {
+      const exhaustive: never = relation;
+      return exhaustive;
+    }
+  }
+}
+
+function observationRelationReasons(relation: CompareRelation): string {
+  if (relation.kind !== "withheld") {
+    return "";
+  }
+  return relation.reasons.join(",");
+}
+
+function ObservationCell({
+  cell,
+  county,
+  fips,
+  measureId,
+}: {
+  cell: CompareCell;
+  county: string;
+  fips: string;
+  measureId: string;
+}) {
+  if (cell.kind === "empty") {
+    return (
+      <div
+        data-fips={fips}
+        data-measure-id={measureId}
+        data-observation={cell.reason}
+        data-testid={`compare-cell-${measureId}-${fips}`}
+      >
+        <p>{compareReaderState(cell.reason, cell.message)}</p>
+      </div>
+    );
+  }
+  return (
+    <div
+      data-fips={fips}
+      data-measure-id={measureId}
+      data-observation="present"
+      data-testid={`compare-cell-${measureId}-${fips}`}
+    >
+      {cell.records.map((record) => (
+        <CompareMeasureValue
+          county={county}
+          evidence={record.evidence}
+          key={record.observation.observation_id}
+          label={record.evidence.claimLabel}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Catalog observations that are not the same period or value as a county
+ * record row. Provenance stays on the value and in the sources table.
+ */
+export function CompareAdditionalObservations({
+  counties,
+  rows,
+}: {
+  counties: CountyPair;
+  rows: readonly ReconciledAlignmentRow[];
+}) {
+  const titleId = useId();
+  if (rows.length === 0) {
+    return null;
+  }
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="ux-reset-compare-vsection"
+      data-testid="compare-group-additional"
+    >
+      <h3 className="ux-reset-compare-section-title" id={titleId}>
+        More measures
+      </h3>
+      <p className="type-small">
+        Catalog observations whose period or value is not the same as a
+        county-record row. A comparison is withheld when the governed fields do
+        not support one.
+      </p>
+      <div className="ux-reset-compare-vrows">
+        {rows.map((entry) => (
+          <article
+            className="ux-reset-compare-vrow"
+            data-measure-id={entry.row.measureId}
+            data-relation={entry.row.relation.kind}
+            data-testid={`compare-row-${entry.row.measureId}`}
+            key={entry.row.measureId}
+          >
+            <header>
+              <h4>{entry.row.measureLabel}</h4>
+              <span className="ux-reset-compare-relation">
+                {entry.row.relation.kind === "withheld"
+                  ? "Not comparable"
+                  : observationRelationLabel(entry.row.relation)}
+              </span>
+            </header>
+            {entry.note ? <p className="type-small">{entry.note}</p> : null}
+            <p
+              className={
+                entry.row.relation.kind === "withheld"
+                  ? "type-small"
+                  : "sr-only"
+              }
+              data-reasons={observationRelationReasons(entry.row.relation)}
+              data-relation={entry.row.relation.kind}
+              data-testid={`compare-relation-${entry.row.measureId}`}
+            >
+              {observationRelationLabel(entry.row.relation)}
+            </p>
+            <div className="ux-reset-compare-vbars">
+              {([entry.row.left, entry.row.right] as const).map(
+                (cell, index) => {
+                  const county = counties[index];
+                  if (!county) {
+                    return null;
+                  }
+                  return (
+                    <div className="ux-reset-compare-vside" key={county.letter}>
+                      <CompareSlotMarker letter={county.letter} />
+                      <span className="sr-only">{county.label}: </span>
+                      <ObservationCell
+                        cell={cell}
+                        county={county.label}
+                        fips={county.fips}
+                        measureId={entry.row.measureId}
+                      />
+                    </div>
+                  );
+                }
+              )}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }

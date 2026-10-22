@@ -5674,6 +5674,22 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 }
 
 @media print {
+  /*
+    Closed disclosures stay out of a PDF. Open the provenance and release
+    bodies before the per-value buttons are hidden, so source, period,
+    vintage, and release context remain on the page.
+  */
+  .ux-reset-compare-sources::details-content,
+  .ux-reset-compare .ux-reset-explorer-release::details-content {
+    display: block;
+    height: auto;
+    content-visibility: visible;
+  }
+
+  .ux-reset-compare-sources-scroll {
+    overflow: visible;
+  }
+
   .ux-reset-compare-share,
   .ux-reset-compare-filters,
   .ux-reset-compare-pinned,

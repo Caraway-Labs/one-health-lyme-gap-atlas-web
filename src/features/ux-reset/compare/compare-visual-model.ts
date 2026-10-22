@@ -435,66 +435,285 @@ export function compareGapEntries(
 
 export type CompareGapSides = "both" | "left" | "right";
 
-export type CompareMissingGroup = {
-  /** Measures with no usable value, and which county lacks it. */
-  items: { label: string; sides: CompareGapSides; reason: string }[];
+export type CompareGapItem = {
+  cause: CompareMissingReason;
+  label: string;
+  reason: string;
+  sides: CompareGapSides;
 };
 
 export type CompareCautionGroup = {
-  reason: string;
   items: { label: string; sides: CompareGapSides }[];
+  reason: string;
 };
 
 export type CompareGapSummary = {
+  /** Governed absence or suppression. A request failure is not in this list. */
+  absence: CompareGapItem[];
   cautions: CompareCautionGroup[];
-  missing: CompareMissingGroup["items"];
+  couldNotLoad: CompareGapItem[];
+  notUsable: CompareGapItem[];
 };
 
-function gapSides(left: boolean, right: boolean): CompareGapSides {
-  if (left && right) {
-    return "both";
+type GapDetail = {
+  cause: CompareMissingReason;
+  reason: string;
+};
+
+const ABSENCE_FALLBACK = "No published value. A missing value is not zero.";
+const LIMITED_FALLBACK = "Published with a stated limitation.";
+
+function gapDetail(side: CompareSideValue): GapDetail | null {
+  if (side.kind !== "missing") {
+    return null;
   }
-  return left ? "left" : "right";
+  return {
+    cause: side.reason,
+    reason: gapReason(side) ?? ABSENCE_FALLBACK,
+  };
+}
+
+function limitedReason(side: CompareSideValue): string | null {
+  if (!(side.kind === "value" && side.limited)) {
+    return null;
+  }
+  return gapReason(side) ?? LIMITED_FALLBACK;
 }
 
 /**
- * Splits the gaps into values that are not published and values that are
- * published with a caution. Cautions that share wording are grouped so the
- * same sentence is not repeated for every measure and county.
+ * One item when both counties share a reason and a state. Different reasons
+ * stay attached to the county that carried them.
+ */
+function pairedGapItems(
+  label: string,
+  left: GapDetail | null,
+  right: GapDetail | null
+): CompareGapItem[] {
+  if (
+    left &&
+    right &&
+    left.cause === right.cause &&
+    left.reason === right.reason
+  ) {
+    return [
+      {
+        cause: left.cause,
+        label,
+        reason: left.reason,
+        sides: "both",
+      },
+    ];
+  }
+  const items: CompareGapItem[] = [];
+  if (left) {
+    items.push({
+      cause: left.cause,
+      label,
+      reason: left.reason,
+      sides: "left",
+    });
+  }
+  if (right) {
+    items.push({
+      cause: right.cause,
+      label,
+      reason: right.reason,
+      sides: "right",
+    });
+  }
+  return items;
+}
+
+function absenceBucket(
+  cause: CompareMissingReason
+): "absence" | "could_not_load" | "not_usable" {
+  switch (cause) {
+    case "failed": {
+      return "could_not_load";
+    }
+    case "release_mismatch": {
+      return "not_usable";
+    }
+    case "missing":
+    case "suppressed":
+    case "unavailable": {
+      return "absence";
+    }
+    default: {
+      const exhaustive: never = cause;
+      return exhaustive;
+    }
+  }
+}
+
+function addCaution(
+  groups: Map<string, CompareCautionGroup>,
+  reason: string,
+  label: string,
+  sides: CompareGapSides
+): void {
+  const group = groups.get(reason) ?? { items: [], reason };
+  group.items.push({ label, sides });
+  groups.set(reason, group);
+}
+
+/**
+ * Splits gaps into governed absence, request or release failure, and published
+ * cautions. A shared sentence is grouped only when the reason and the state
+ * are the same for both counties.
  */
 export function compareGapSummary(
   rows: readonly CompareVisualRow[]
 ): CompareGapSummary {
-  const missing: CompareGapSummary["missing"] = [];
+  const absence: CompareGapItem[] = [];
+  const couldNotLoad: CompareGapItem[] = [];
+  const notUsable: CompareGapItem[] = [];
   const cautionMap = new Map<string, CompareCautionGroup>();
   for (const row of rows) {
-    const missingLeft = row.left.kind === "missing";
-    const missingRight = row.right.kind === "missing";
-    if (missingLeft || missingRight) {
-      const reason =
-        gapReason(missingLeft ? row.left : row.right) ??
-        "No published value. A missing value is not zero.";
-      missing.push({
-        label: row.label,
-        reason,
-        sides: gapSides(missingLeft, missingRight),
-      });
+    for (const item of pairedGapItems(
+      row.label,
+      gapDetail(row.left),
+      gapDetail(row.right)
+    )) {
+      const bucket = absenceBucket(item.cause);
+      switch (bucket) {
+        case "absence": {
+          absence.push(item);
+          break;
+        }
+        case "could_not_load": {
+          couldNotLoad.push(item);
+          break;
+        }
+        case "not_usable": {
+          notUsable.push(item);
+          break;
+        }
+        default: {
+          const exhaustive: never = bucket;
+          return exhaustive;
+        }
+      }
     }
-    const limitedLeft = row.left.kind === "value" && row.left.limited;
-    const limitedRight = row.right.kind === "value" && row.right.limited;
-    if (limitedLeft || limitedRight) {
-      const reason =
-        gapReason(limitedLeft ? row.left : row.right) ??
-        "Published with a stated limitation.";
-      const group = cautionMap.get(reason) ?? { items: [], reason };
-      group.items.push({
-        label: row.label,
-        sides: gapSides(limitedLeft, limitedRight),
-      });
-      cautionMap.set(reason, group);
+    const leftCaution = limitedReason(row.left);
+    const rightCaution = limitedReason(row.right);
+    if (leftCaution && rightCaution && leftCaution === rightCaution) {
+      addCaution(cautionMap, leftCaution, row.label, "both");
+    } else {
+      if (leftCaution) {
+        addCaution(cautionMap, leftCaution, row.label, "left");
+      }
+      if (rightCaution) {
+        addCaution(cautionMap, rightCaution, row.label, "right");
+      }
     }
   }
-  return { cautions: [...cautionMap.values()], missing };
+  return {
+    absence,
+    cautions: [...cautionMap.values()],
+    couldNotLoad,
+    notUsable,
+  };
+}
+
+export function compareAbsencePhrase(county: string, reason: string): string {
+  return `No value published for ${county}. ${reason}`;
+}
+
+export function compareCouldNotLoadPhrase(
+  county: string,
+  reason: string
+): string {
+  return `Could not load for ${county}. ${reason}`;
+}
+
+export function compareNotUsablePhrase(county: string, reason: string): string {
+  return `Not usable for this release for ${county}. ${reason}`;
+}
+
+export function compareAbsenceEmptyCopy(summary: CompareGapSummary): string {
+  if (summary.couldNotLoad.length > 0 || summary.notUsable.length > 0) {
+    return "No governed absence is listed here. A value that did not load, or a record from another release, is not a value that was not published.";
+  }
+  return "Every measure shown above has a published value for both counties.";
+}
+
+/**
+ * Introduction for the gap panel. It names only states that are actually
+ * present, so a failed request is not described as unpublished data.
+ */
+export function compareUnknownIntroduction(
+  rows: readonly CompareVisualRow[]
+): string {
+  let absent = 0;
+  let failed = 0;
+  let limited = 0;
+  let mismatch = 0;
+  let published = 0;
+  let suppressed = 0;
+  for (const row of rows) {
+    for (const side of [row.left, row.right]) {
+      if (side.kind === "value") {
+        published += 1;
+        if (side.limited) {
+          limited += 1;
+        }
+        continue;
+      }
+      switch (side.reason) {
+        case "failed": {
+          failed += 1;
+          break;
+        }
+        case "release_mismatch": {
+          mismatch += 1;
+          break;
+        }
+        case "suppressed": {
+          suppressed += 1;
+          break;
+        }
+        case "missing":
+        case "unavailable": {
+          absent += 1;
+          break;
+        }
+        default: {
+          const exhaustive: never = side.reason;
+          return exhaustive;
+        }
+      }
+    }
+  }
+  const parts: string[] = [];
+  if (published > 0) {
+    parts.push(
+      limited > 0
+        ? "Some values above are published, and some of those carry a caution."
+        : "Published values are shown above."
+    );
+  }
+  if (absent > 0) {
+    parts.push("Some values are not published.");
+  }
+  if (suppressed > 0) {
+    parts.push("Some values are suppressed in the published data.");
+  }
+  if (failed > 0) {
+    parts.push(
+      "Some values could not be loaded. A request failure does not establish that no value was published."
+    );
+  }
+  if (mismatch > 0) {
+    parts.push("Some records are not usable for this release.");
+  }
+  if (parts.length === 0) {
+    parts.push("No compared values are available to summarize.");
+  }
+  parts.push(
+    "Nothing here has been estimated or filled in, and a missing value is never zero."
+  );
+  return parts.join(" ");
 }
 
 export type CompareProvenanceFacts = {

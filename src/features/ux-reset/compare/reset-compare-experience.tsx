@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
+import type {
+  CompareAlignment,
+  CompareRelation,
+} from "@/features/ux-reset/compare/compare-alignment";
 import {
   CompareCountyPicker,
   type ReviewCategoryBadge,
@@ -35,18 +39,22 @@ import {
 import { CompareSurveillanceIntelligence } from "@/features/ux-reset/compare/compare-surveillance-intelligence";
 import {
   COMPARE_LIMITATION_ROW_ID,
+  reconcileAlignmentRows,
   sharedReleaseLimitation,
   tickAggregateNote,
   tickStatusRowNote,
+  type ReconciledAlignmentRow,
 } from "@/features/ux-reset/compare/compare-unified-rows";
 import {
   buildCompareVisualRows,
   compareSummaryCounts,
   filterCompareRows,
   type CompareRowFilters,
+  type CompareRowRelation,
 } from "@/features/ux-reset/compare/compare-visual-model";
 import type { CompareCountyIdentity } from "@/features/ux-reset/compare/compare-visual-parts";
 import {
+  CompareAdditionalObservations,
   CompareAtAGlance,
   CompareEvidenceSections,
   CompareEvidenceToolbar,
@@ -83,6 +91,76 @@ function profileSourceEntries(
     }
     return [{ id: row.id, label: row.label, left, right }];
   });
+}
+
+function failedMeasureLabels(alignment: CompareAlignment | null): string[] {
+  if (!alignment) {
+    return [];
+  }
+  const labels: string[] = [];
+  for (const outcome of alignment.outcomes) {
+    if (outcome.status !== "failed") {
+      continue;
+    }
+    const row = alignment.rows.find(
+      (entry) => entry.measureId === outcome.measureId
+    );
+    labels.push(row?.measureLabel ?? outcome.measureId);
+  }
+  return labels;
+}
+
+function alignmentCountRelation(
+  kind: CompareRelation["kind"]
+): CompareRowRelation {
+  switch (kind) {
+    case "similar": {
+      return "same";
+    }
+    case "different": {
+      return "different";
+    }
+    case "withheld": {
+      return "incomparable";
+    }
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
+}
+
+function evidenceFromCell(
+  cell: ReconciledAlignmentRow["row"]["left"]
+): CompareSourceEntry["left"] {
+  if (cell.kind !== "observations") {
+    return [];
+  }
+  return cell.records.map((record) => record.evidence);
+}
+
+function alignmentSourceEntries(
+  rows: readonly ReconciledAlignmentRow[],
+  usedIds: ReadonlySet<string>
+): CompareSourceEntry[] {
+  const entries: CompareSourceEntry[] = [];
+  for (const entry of rows) {
+    const left = evidenceFromCell(entry.row.left);
+    const right = evidenceFromCell(entry.row.right);
+    if (left.length === 0 && right.length === 0) {
+      continue;
+    }
+    const id = usedIds.has(entry.row.measureId)
+      ? `${entry.row.measureId}-observation`
+      : entry.row.measureId;
+    entries.push({
+      id,
+      label: entry.row.measureLabel,
+      left,
+      right,
+    });
+  }
+  return entries;
 }
 
 function reviewCategoryBadge(
@@ -204,6 +282,13 @@ function CompareExperienceInner() {
   const tickDecision = workspace.profile
     ? tickAggregateNote(workspace.profile.rows)
     : null;
+  const reconciledRows = useMemo(
+    () =>
+      workspace.alignment
+        ? reconcileAlignmentRows(workspace.profile, workspace.alignment.rows)
+        : [],
+    [workspace.alignment, workspace.profile]
+  );
   const visualRows = useMemo(
     () =>
       workspace.profile
@@ -221,13 +306,24 @@ function CompareExperienceInner() {
     () => filterCompareRows(visualRows, filters),
     [filters, visualRows]
   );
+  const countedRelations = [
+    ...visualRows.map((row) => row.relation),
+    ...reconciledRows.map((entry) =>
+      alignmentCountRelation(entry.row.relation.kind)
+    ),
+  ];
   const overviewCounts =
-    visualRows.length > 0
-      ? compareSummaryCounts(visualRows.map((row) => row.relation))
-      : null;
-  const sourceEntries: CompareSourceEntry[] = workspace.profile
+    countedRelations.length > 0 ? compareSummaryCounts(countedRelations) : null;
+  const profileSources = workspace.profile
     ? profileSourceEntries(workspace.profile)
     : [];
+  const sourceEntries: CompareSourceEntry[] = [
+    ...profileSources,
+    ...alignmentSourceEntries(
+      reconciledRows,
+      new Set(profileSources.map((entry) => entry.id))
+    ),
+  ];
   const limitationRow = workspace.profile?.rows.find(
     (row) => row.id === COMPARE_LIMITATION_ROW_ID
   );
@@ -244,7 +340,12 @@ function CompareExperienceInner() {
     { fips: leftFips, label: leftLabel, letter: "A" },
     { fips: rightFips, label: rightLabel, letter: "B" },
   ];
-  const resultsReady = Boolean(workspace.profile);
+  const resultsReady = Boolean(workspace.profile) || reconciledRows.length > 0;
+  const failedMeasures =
+    workspace.alignment?.outcomes.some(
+      (outcome) => outcome.status === "failed"
+    ) ?? false;
+  const failedLabels = failedMeasureLabels(workspace.alignment);
   const tier1Release = tier1ReleaseFromMetadata({
     isError: Boolean(workspace.metadataError),
     isLoading: workspace.metadataLoading,
@@ -282,8 +383,8 @@ function CompareExperienceInner() {
     alignment: workspace.alignment,
     directoryError: workspace.directoryError,
     evidenceError: workspace.evidenceError,
-    failedLabels: [],
-    failedMeasures: false,
+    failedLabels,
+    failedMeasures,
     metadataError: workspace.metadataError,
     profile: workspace.profile,
     profileError: workspace.profileError,
@@ -331,7 +432,7 @@ function CompareExperienceInner() {
   ];
   const retryTargets = {
     catalog: Boolean(workspace.catalogError) || workspace.catalogCoolingDown,
-    evidence: Boolean(workspace.evidenceError),
+    evidence: failedMeasures || Boolean(workspace.evidenceError),
     profile:
       Boolean(workspace.profileError) ||
       Boolean(workspace.profile?.retryable) ||
@@ -613,7 +714,7 @@ function CompareExperienceInner() {
                   <CompareEvidenceToolbar
                     counts={overviewCounts}
                     filters={filters}
-                    partial={false}
+                    partial={failedMeasures}
                     shown={shownVisualRows.length}
                     total={visualRows.length}
                     onFiltersChange={setFilters}
@@ -632,26 +733,37 @@ function CompareExperienceInner() {
                       every measure.
                     </p>
                   ) : null}
+                  <CompareAdditionalObservations
+                    counties={counties}
+                    rows={reconciledRows}
+                  />
                 </section>
               </div>
             </div>
-          ) : workspace.profileError ? (
-            surveillanceIntelligence
-          ) : null}
-          {resultsReady ? (
+          ) : (
             <>
-              <CompareUnknownPanel
-                countyLimitations={countyLimitations}
-                counties={counties}
-                period={workspace.period}
-                rows={visualRows}
-                sharedLimitation={sharedLimitation}
-              />
-              <CompareSourcesTable
-                counties={counties}
-                entries={sourceEntries}
-              />
+              {workspace.profileError ? surveillanceIntelligence : null}
+              {reconciledRows.length > 0 ? (
+                <div data-testid="compare-alignment">
+                  <CompareAdditionalObservations
+                    counties={counties}
+                    rows={reconciledRows}
+                  />
+                </div>
+              ) : null}
             </>
+          )}
+          {workspace.profile ? (
+            <CompareUnknownPanel
+              countyLimitations={countyLimitations}
+              counties={counties}
+              period={workspace.period}
+              rows={visualRows}
+              sharedLimitation={sharedLimitation}
+            />
+          ) : null}
+          {sourceEntries.length > 0 ? (
+            <CompareSourcesTable counties={counties} entries={sourceEntries} />
           ) : null}
         </section>
       ) : null}
