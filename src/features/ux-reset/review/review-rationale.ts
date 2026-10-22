@@ -22,6 +22,51 @@ export const RUCC_2023_LABELS: Record<number, string> = {
   9: "completely rural or less than 2,500 urban population, not adjacent to a metro area",
 };
 
+/** Concise Explorer county-card labels derived from `RUCC_2023_LABELS`. */
+export const RUCC_2023_COMPACT_CLASSIFICATIONS: Record<
+  number,
+  { detail: string; title: string }
+> = {
+  1: {
+    detail: "Metro population: 1 million or more",
+    title: "Large metro",
+  },
+  2: {
+    detail: "Metro population: 250,000 to 1 million",
+    title: "Medium metro",
+  },
+  3: {
+    detail: "Metro population: fewer than 250,000",
+    title: "Small metro",
+  },
+  4: {
+    detail: "Urban population of 20,000 or more, adjacent to a metro area",
+    title: "Urban, metro adjacent",
+  },
+  5: {
+    detail: "Urban population of 20,000 or more, not adjacent to a metro area",
+    title: "Urban, not metro adjacent",
+  },
+  6: {
+    detail: "Urban population of 2,500 to 19,999, adjacent to a metro area",
+    title: "Small urban, metro adjacent",
+  },
+  7: {
+    detail: "Urban population of 2,500 to 19,999, not adjacent to a metro area",
+    title: "Small urban, not metro adjacent",
+  },
+  8: {
+    detail:
+      "Completely rural or urban population below 2,500, adjacent to a metro area",
+    title: "Rural, metro adjacent",
+  },
+  9: {
+    detail:
+      "Completely rural or urban population below 2,500, not adjacent to a metro area",
+    title: "Rural, not metro adjacent",
+  },
+};
+
 const DOCUMENTED_TICK = new Set(["established", "reported"]);
 
 function finite(value: number | null): value is number {
@@ -125,7 +170,7 @@ export function reviewRationaleFor(
   return [
     {
       group: "surveillance",
-      label: "Published Lyme case data",
+      label: "Reported Lyme disease",
       number: 1,
       text: humanSentence(detail),
     },
@@ -149,7 +194,7 @@ export function reviewRationaleFor(
     },
     {
       group: "community",
-      label: "Health insurance coverage",
+      label: "Uninsured population",
       number: 5,
       text: insuranceSentence(detail),
     },

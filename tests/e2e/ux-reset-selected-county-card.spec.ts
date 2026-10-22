@@ -190,7 +190,7 @@ async function expectCard(
   await expect(scoreChip).toHaveCount(1);
   await expect(scoreChip).toHaveText(score);
   await expect(
-    preview.getByRole("heading", { name: "Surveillance evidence" })
+    preview.getByRole("heading", { name: "Disease and tick data" })
   ).toBeVisible();
   await expect(
     preview.getByRole("heading", { name: "Community context" })
