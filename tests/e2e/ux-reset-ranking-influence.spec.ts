@@ -229,7 +229,7 @@ test.describe("Ranking influence", () => {
       preview.getByTestId("selected-county-gap-score")
     ).toContainText("0.0");
     await expect(preview.getByTestId("review-rationale-2")).toContainText(
-      "established"
+      "Established"
     );
     const influence = preview.getByTestId("ranking-influence");
     await influence.locator("summary").click();

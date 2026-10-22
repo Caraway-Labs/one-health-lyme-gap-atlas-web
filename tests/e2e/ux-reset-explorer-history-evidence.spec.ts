@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 
 import { ValueState, type Observation } from "@/generated/models";
 
@@ -1097,8 +1103,12 @@ function evidenceObservations(fips: string, measureId: string): Observation[] {
   return [];
 }
 
-async function openProvenance(page: Page, name: RegExp | string) {
-  const summary = page
+async function openProvenance(
+  page: Page,
+  name: RegExp | string,
+  root: Locator = page
+) {
+  const summary = root
     .getByRole("group")
     .locator("summary", { hasText: name })
     .first();
@@ -1163,7 +1173,8 @@ test.describe("Explorer evidence-state accessibility", () => {
     await expect(suppressed).not.toContainText("not zero evidence");
     const suppressedProvenance = await openProvenance(
       page,
-      /Inspect provenance for Reported cases/
+      "Source details",
+      suppressed.getByTestId("review-rationale-1")
     );
     await expect(suppressedProvenance).toContainText(
       "Suppressed or privacy-protected"
@@ -1189,15 +1200,15 @@ test.describe("Explorer evidence-state accessibility", () => {
     const unavailablePreview = page.getByTestId(
       "review-published-county-preview"
     );
-    await expect(unavailablePreview).toContainText(
-      "No county-linked 2023 Lyme case record is available."
-    );
-    await expect(unavailablePreview).toContainText(
-      "The published tick table has no county record."
-    );
-    await expect(unavailablePreview).toContainText(
-      "No county-level B. burgdorferi detection record is available."
-    );
+    await expect(
+      unavailablePreview.getByTestId("review-rationale-1")
+    ).toContainText("Unavailable");
+    await expect(
+      unavailablePreview.getByTestId("review-rationale-2")
+    ).toContainText("No records");
+    await expect(
+      unavailablePreview.getByTestId("review-rationale-3")
+    ).toContainText("No records");
     await expect(unavailablePreview).toContainText("Unavailable");
     await expect(unavailablePreview).not.toContainText("0 cases");
     await page.goto(
