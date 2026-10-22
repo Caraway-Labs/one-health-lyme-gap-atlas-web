@@ -16,7 +16,6 @@ import {
   EXPLORER_MAP_FOLLOW_UP_ID,
   scrollToSuggestedFollowUp,
 } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
-import { ViewFullCountyEvidence } from "@/features/ux-reset/review/view-full-county-evidence";
 import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
@@ -30,7 +29,6 @@ export function ReviewPublishedCountyPreview({
   county,
   compareHref,
   onOpen,
-  onViewCountyEvidence,
   openRef,
   release = UNKNOWN_PREVIEW_RELEASE,
   releaseId,
@@ -38,7 +36,6 @@ export function ReviewPublishedCountyPreview({
   county: ExploreCountyIdentity;
   compareHref: string;
   onOpen: (fips: string) => void;
-  onViewCountyEvidence?: (fips: string) => void;
   openRef?: Ref<HTMLAnchorElement>;
   release?: Tier1ActiveRelease;
   releaseId: string;
@@ -140,10 +137,6 @@ export function ReviewPublishedCountyPreview({
         </details>
       ) : null}
       <div className="ux-reset-review-preview-actions">
-        <ViewFullCountyEvidence
-          fips={county.fips}
-          onViewCountyEvidence={onViewCountyEvidence}
-        />
         <Button
           aria-controls={EXPLORER_MAP_FOLLOW_UP_ID}
           data-county={county.fips}

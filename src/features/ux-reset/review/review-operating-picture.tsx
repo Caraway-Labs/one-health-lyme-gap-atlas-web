@@ -1247,7 +1247,6 @@ export function ReviewOperatingPicture({
               compareHref={handoff.compareHref}
               county={selectedPublished}
               onOpen={markReviewReturnFocus}
-              onViewCountyEvidence={onViewCountyEvidence}
               openRef={openRef}
               release={tierRelease}
               releaseId={releaseId}

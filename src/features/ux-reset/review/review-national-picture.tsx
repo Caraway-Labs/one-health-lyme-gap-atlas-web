@@ -119,7 +119,6 @@ type ReviewNationalPictureProps = {
   onMapLayerChange: (layerId: ExplorerMapLayerId) => void;
   /** Clears geographic scope in the URL. The map still refits locally. */
   onReturnToUsView?: () => void;
-  onViewCountyEvidence?: (fips: string) => void;
   period: string | null;
   releaseId: string;
   /** Browser what-if. Defaults leave governed county colors in place. */
@@ -158,7 +157,6 @@ export function ReviewNationalPicture({
   scenarioSettings = SCENARIO_SCORE_DEFAULTS,
   sources = NO_LEGEND_SOURCES,
   tierRelease,
-  onViewCountyEvidence,
 }: ReviewNationalPictureProps) {
   const searchParams = useSearchParams();
   const searchKey = searchParams.toString();
@@ -804,7 +802,6 @@ export function ReviewNationalPicture({
             release={tierRelease}
             releaseId={releaseId}
             onOpen={markReviewReturnFocus}
-            onViewCountyEvidence={onViewCountyEvidence}
           />
         ) : (
           <>
