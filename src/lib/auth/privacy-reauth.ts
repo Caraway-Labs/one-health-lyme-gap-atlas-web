@@ -92,23 +92,12 @@ export function privacyReauthResumeDisposition(
 ): PrivacyReauthResumeDisposition {
   if (privacyReauthChallengeExpired(challenge, nowMs)) return "clear";
   const decision = privacyReauthSubjectDecision(challenge, snapshot.userId);
-  switch (decision) {
-    case "absent": {
-      return "wait";
-    }
-    case "mismatch": {
-      return "clear";
-    }
-    case "match": {
-      return privacyReauthSatisfied(challenge, snapshot.issuedAtMs, nowMs)
-        ? "run"
-        : "wait";
-    }
-    default: {
-      const exhaustive: never = decision;
-      return exhaustive;
-    }
-  }
+  if (decision === "absent") return "wait";
+  if (decision === "mismatch") return "clear";
+  decision satisfies "match";
+  return privacyReauthSatisfied(challenge, snapshot.issuedAtMs, nowMs)
+    ? "run"
+    : "wait";
 }
 
 /**

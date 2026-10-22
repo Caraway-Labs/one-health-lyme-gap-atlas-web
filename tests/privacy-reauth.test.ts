@@ -262,18 +262,21 @@ describe("privacy reauthentication", () => {
         challengedAtMs: NOW,
         nonce: "11111111-1111-4111-8111-111111111111",
         previousIssuedAtMs: NOW,
+        subjectId: "user-a",
       }),
       JSON.stringify({
         action: "deletion",
         challengedAtMs: 1.5,
         nonce: "11111111-1111-4111-8111-111111111111",
         previousIssuedAtMs: NOW,
+        subjectId: "user-a",
       }),
       JSON.stringify({
         action: "deletion",
         challengedAtMs: NOW,
         nonce: "11111111-1111-4111-8111-111111111111",
         previousIssuedAtMs: -1,
+        subjectId: "user-a",
       }),
       JSON.stringify({
         action: "deletion",

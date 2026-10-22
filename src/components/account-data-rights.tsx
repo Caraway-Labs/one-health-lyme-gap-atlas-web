@@ -274,22 +274,12 @@ export function AccountDataRights({
           stamp,
           Date.now()
         );
-        switch (disposition) {
-          case "clear": {
-            clearPrivacyReauthChallenge();
-            return;
-          }
-          case "wait": {
-            return;
-          }
-          case "run": {
-            break;
-          }
-          default: {
-            const exhaustive: never = disposition;
-            return exhaustive;
-          }
+        if (disposition === "clear") {
+          clearPrivacyReauthChallenge();
+          return;
         }
+        if (disposition === "wait") return;
+        disposition satisfies "run";
         const claimed = claimPrivacyReauthChallenge(challenge.nonce);
         if (!claimed || ignore) return;
         await executeRequestRef.current(claimed.action, claimed.subjectId);
