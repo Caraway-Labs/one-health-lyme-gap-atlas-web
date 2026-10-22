@@ -1,15 +1,8 @@
-import type { Metadata } from "next";
+import { pageMetadataForRoute } from "@/lib/navigation";
 
-import { DataProvenanceExperience } from "@/features/ux-reset/data-provenance/data-provenance-page";
-import { pageMetadataForResetRoute } from "@/features/ux-reset/paths";
-import { RESET_DATA_PROVENANCE_PATH } from "@/features/ux-reset/routes";
+export { DataProvenancePage as default } from "@/features/public-trust/data-provenance-page";
 
-export const metadata: Metadata = {
-  ...pageMetadataForResetRoute("data-provenance"),
-  alternates: { canonical: RESET_DATA_PROVENANCE_PATH },
-  robots: { follow: false, index: false },
+export const metadata = {
+  ...pageMetadataForRoute("/data-provenance"),
+  alternates: { canonical: "/data-provenance" },
 };
-
-export default function DataProvenancePage() {
-  return <DataProvenanceExperience />;
-}
