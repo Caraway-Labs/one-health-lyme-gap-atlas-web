@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   alignCompareEvidence,
   compareWithholdReasonValues,
+  isNclimgridMeasure,
+  type CompareAlignedRow,
   type CompareCell,
   type CompareMeasureOutcome,
   type CompareRelation,
@@ -14,6 +16,7 @@ import {
   replaceCompareSlot,
   resolveVisibleCompareEntry,
 } from "@/features/ux-reset/compare/compare-entry";
+import { reconcileAlignmentRows } from "@/features/ux-reset/compare/compare-unified-rows";
 import { compareEvidenceQueryKey } from "@/features/ux-reset/compare/load-compare-evidence";
 import { mergeCompareQueryValues } from "@/features/ux-reset/context-params";
 import { searchParamsWithCommittedExploreContext } from "@/features/ux-reset/explore-committed-navigation";
@@ -530,6 +533,51 @@ describe("aligned evidence", () => {
     );
     expect(withheld.explanation).toContain("Release identifiers differ");
     expect("signedDifference" in withheld).toBeFalsy();
+  });
+
+  it("drops nclimgrid measures from rows, even when a response arrived", () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const weatherId = "nclimgrid_tavg_county_day";
+    const alignment = alignCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver",
+      measures: [
+        base,
+        { ...base, label: "Average temperature", measure_id: weatherId },
+        {
+          ...base,
+          label: "Daily nClimGrid precipitation",
+          measure_id: "precip-custom",
+        },
+      ],
+      outcomes: [ready(base.measure_id, []), ready(weatherId, [])],
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder",
+    });
+    const weatherRow: CompareAlignedRow = {
+      definition: null,
+      left: { kind: "empty", message: "No observation.", reason: "missing" },
+      measureId: weatherId,
+      measureLabel: "Average temperature",
+      relation: { explanation: "Withheld.", kind: "withheld", reasons: [] },
+      right: { kind: "empty", message: "No observation.", reason: "missing" },
+    };
+    expect({
+      byId: isNclimgridMeasure({ measure_id: weatherId }),
+      byLabel: isNclimgridMeasure({ label: "nClim Grid precipitation" }),
+      kept: isNclimgridMeasure({ measure_id: base.measure_id, label: "Cases" }),
+      reconciled: reconcileAlignmentRows(null, [weatherRow]).length,
+      rows: alignment.rows.map((entry) => entry.measureId),
+    }).toStrictEqual({
+      byId: true,
+      byLabel: true,
+      kept: false,
+      reconciled: 0,
+      rows: [base.measure_id],
+    });
   });
 
   it("builds a cache key from the visible pair order", () => {

@@ -5743,3 +5743,127 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   font-size: 0.95rem;
   font-weight: 600;
 }
+
+/* Community context blocks, aligned with the Explore county summary panel. */
+.ux-reset-compare-cblock .ux-reset-compare-vside {
+  align-items: flex-start;
+}
+
+.ux-reset-compare-cvalue {
+  display: grid;
+  flex: 1 1 8rem;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ux-reset-compare-cfields {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+}
+
+.ux-reset-compare-cfield {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.ux-reset-compare-cfield dt {
+  margin: 0;
+  color: var(--atlas-muted-text);
+  font-weight: 400;
+}
+
+.ux-reset-compare-cfield dd {
+  margin: 0;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.ux-reset-compare-cdetail,
+.ux-reset-compare-cfoot {
+  margin: 0;
+  color: var(--atlas-muted-text);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.ux-reset-compare-cdiff {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ux-reset-compare-cscale {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0 0.9rem;
+}
+
+.ux-reset-compare-cscale-rail {
+  position: relative;
+  height: 5.8rem;
+}
+
+.ux-reset-compare-cscale-rail::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--muted);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.ux-reset-compare-cscale-marker {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  transform: translateX(-50%);
+}
+
+.ux-reset-compare-cscale-marker[data-letter="A"] {
+  top: 0;
+  flex-direction: column-reverse;
+}
+
+.ux-reset-compare-cscale-marker[data-letter="B"] {
+  bottom: 0;
+  flex-direction: column;
+}
+
+.ux-reset-compare-cscale-dot {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 1.4rem;
+  height: 1.4rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ux-reset-compare-cscale-marker[data-letter="B"] .ux-reset-compare-cscale-dot {
+  background: var(--background);
+  color: var(--primary);
+}
+
+.ux-reset-compare-cscale-value {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}

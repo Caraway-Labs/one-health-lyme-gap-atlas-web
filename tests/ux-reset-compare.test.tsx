@@ -47,6 +47,7 @@ if (window.PointerEvent === undefined) {
 const observationRequests: string[] = [];
 const catalogRequests: string[] = [];
 const observationFailureBudgets = new Map<string, number>();
+const emptyObservationMeasures = new Set<string>();
 let catalogFailureStatus = 503;
 let catalogFailuresRemaining = 0;
 let catalogRetryAfter: string | null = null;
@@ -183,6 +184,17 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           data: { detail: "invalid observation request" },
           headers: new Headers(),
           status: 400,
+        } as never;
+      }
+      if (emptyObservationMeasures.has(params.measure_id)) {
+        return {
+          data: {
+            data: [],
+            links: { self: "/v1/observations" },
+            meta: {},
+          },
+          headers: new Headers(),
+          status: 200,
         } as never;
       }
       return {
@@ -378,6 +390,7 @@ describe("two-county aligned comparison", () => {
     catalogFailuresRemaining = 0;
     catalogRequests.length = 0;
     catalogRetryAfter = null;
+    emptyObservationMeasures.clear();
     extraCatalogMeasures = [];
     clearCompareCatalogRetryDeadlines();
     clearCompareProfileRetryDeadlines();
@@ -386,6 +399,7 @@ describe("two-county aligned comparison", () => {
     countyRateLimitRemaining = 0;
     countyRecordRequests.length = 0;
     countyRetryAfterSeconds = null;
+    vi.restoreAllMocks();
     vi.useRealTimers();
     observationFailureBudgets.clear();
     observationRequests.length = 0;
@@ -1337,58 +1351,199 @@ describe("two-county aligned comparison", () => {
     });
   });
 
-  it("retries one failed measure without dropping observations that already loaded", async () => {
+  it("keeps a failed measure in its cell without a page-level measure banner", async () => {
     observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 99);
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    await screen.findByTestId("compare-retry");
-    const requestsFor = (measureId: string) =>
-      observationRequests.filter((request) => request.includes(measureId))
-        .length;
-    const casesBefore = requestsFor(COMPARE_CASES_MEASURE_ID);
-    const notice =
-      screen.getByTestId("compare-status-error-measures").textContent ?? "";
-    expect({
-      cases: observationCell(COMPARE_CASES_MEASURE_ID, "08001").dataset
-        .observation,
-      casesBefore,
-      notice:
-        notice.includes("Some measures could not be loaded") &&
-        notice.includes("Tick pathogen detections"),
-      partial: Boolean(screen.queryByTestId("compare-overview-partial")),
-      tick: observationCell(COMPARE_TICK_MEASURE_ID, "08001").dataset
-        .observation,
-    }).toStrictEqual({
-      cases: "present",
-      casesBefore: 1,
-      notice: true,
-      partial: true,
-      tick: "failed",
-    });
-    observationFailureBudgets.set(COMPARE_TICK_MEASURE_ID, 0);
-    fireEvent.click(screen.getByTestId("compare-retry"));
+    const tick = await screen.findByTestId(
+      `compare-cell-${COMPARE_TICK_MEASURE_ID}-08001`
+    );
     await waitFor(() => {
       if (
-        observationCell(COMPARE_TICK_MEASURE_ID, "08001").dataset
-          .observation !== "present"
+        !(tick.textContent ?? "").includes("Couldn\u2019t load this evidence.")
       ) {
-        throw new Error("Waiting for the failed measure to load.");
+        throw new Error("Waiting for the failed measure cell.");
       }
     });
     expect({
-      boulder: observationCell(COMPARE_TICK_MEASURE_ID, "08013").dataset
-        .observation,
+      banner: screen.queryByText(/Some measures could not be loaded/),
       cases: observationCell(COMPARE_CASES_MEASURE_ID, "08001").dataset
         .observation,
-      casesAfter: requestsFor(COMPARE_CASES_MEASURE_ID),
-      denver: observationCell(COMPARE_TICK_MEASURE_ID, "08001").dataset
-        .observation,
-      notice: screen.queryByTestId("compare-status-error-measures"),
+      overview: screen.queryByTestId("compare-overview-partial"),
+      retry: screen.queryByTestId("compare-retry"),
+      status: screen.queryByTestId("compare-status-error-measures"),
+      tick: tick.textContent ?? "",
     }).toStrictEqual({
-      boulder: "missing",
+      banner: null,
       cases: "present",
-      casesAfter: casesBefore,
-      denver: "present",
-      notice: null,
+      overview: null,
+      retry: null,
+      status: null,
+      tick: "Couldn\u2019t load this evidence.",
+    });
+  });
+
+  it("draws community context with published labels and a missing mark that is not zero", async () => {
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const social = await screen.findByTestId(
+      "compare-profile-row-svi_percentile_2022"
+    );
+    const uninsured = screen.getByTestId(
+      "compare-profile-row-uninsured_percent_2022"
+    );
+    const rurality = screen.getByTestId("compare-profile-row-rucc_2023");
+    const published = within(social).getByTestId(
+      "compare-profile-cell-svi_percentile_2022-08001"
+    );
+    const missing = within(social).getByTestId(
+      "compare-profile-cell-svi_percentile_2022-08013"
+    );
+    const ruralSummary = screen.getByTestId(
+      "compare-community-summary-rucc_2023"
+    );
+    expect({
+      download: screen.getByTestId("compare-download-pdfs").textContent,
+      gap: social.dataset.gap,
+      missingMark: missing.querySelector(".ux-reset-compare-missing")
+        ?.textContent,
+      missingZero: missing.querySelector(".ux-reset-compare-vlabel"),
+      percentile: published.textContent,
+      print: screen.queryByTestId("compare-print"),
+      relation: social.dataset.relation,
+      rurality: rurality.textContent,
+      socialHeading: social.querySelector("h4")?.textContent,
+      summary: screen.getByTestId(
+        "compare-community-summary-svi_percentile_2022"
+      ).textContent,
+      uninsuredHeading: uninsured.querySelector("h4")?.textContent,
+      year: published.textContent?.includes("2022"),
+    }).toStrictEqual({
+      download: "Download Counties as PDF",
+      gap: "true",
+      missingMark: "No recordNo published value. This absence is not zero.",
+      missingZero: null,
+      percentile: expect.stringContaining("91st"),
+      print: null,
+      relation: "incomparable",
+      rurality: expect.stringContaining(
+        "No record does not mean absent or zero."
+      ),
+      socialHeading: "Social vulnerability",
+      summary:
+        "No difference is shown because a published value is missing or not readable.",
+      uninsuredHeading: "Uninsured population",
+      year: true,
+    });
+    expect(ruralSummary.textContent).toBe(
+      "The classifications are not compared because a published value is missing."
+    );
+  });
+
+  it("leaves nclimgrid out of rows, counts, and the sources table", async () => {
+    extraCatalogMeasures = [
+      {
+        ...compareMeasuresFixture[0],
+        geography_semantics: "COUNTY_FIPS_5",
+        label: "nClimGrid average temperature",
+        measure_id: "nclimgrid_tavg_county_day",
+      },
+    ];
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    await screen.findByTestId("compare-profile-row-population_2022");
+    await screen.findByTestId(`compare-row-${COMPARE_CANOPY_MEASURE_ID}`);
+    const count = screen.getByTestId("compare-filter-count").textContent ?? "";
+    expect({
+      count,
+      requested: observationRequests.some((request) =>
+        request.includes("nclimgrid")
+      ),
+      row: screen.queryByTestId("compare-row-nclimgrid_tavg_county_day"),
+      source: screen.queryByTestId(
+        "compare-source-row-nclimgrid_tavg_county_day"
+      ),
+      text: screen.queryByText(/nClimGrid/i),
+    }).toStrictEqual({
+      count: expect.not.stringContaining("nClimGrid"),
+      requested: false,
+      row: null,
+      source: null,
+      text: null,
+    });
+  });
+
+  it("shows a plain missing value when no time bound returns observations", async () => {
+    extraCatalogMeasures = [
+      {
+        ...compareMeasuresFixture[0],
+        geography_semantics: "COUNTY_FIPS_5",
+        label: "Seasonal canopy",
+        measure_id: "unbound-gap",
+        temporal_grains: ["CUSTOM"],
+        temporal_semantics: "seasonal",
+      },
+    ];
+    emptyObservationMeasures.add("unbound-gap");
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const cell = await screen.findByTestId("compare-cell-unbound-gap-08001");
+    const bounds = observationRequests
+      .filter((request) => request.includes("unbound-gap"))
+      .map(
+        (request) =>
+          JSON.parse(request) as { start_date?: string; year?: number }
+      );
+    expect({
+      text: cell.textContent,
+      withheld: screen.queryByText(
+        /no governed period|Not available for this period/i
+      ),
+      years: bounds.map((bound) => bound.year ?? bound.start_date ?? ""),
+    }).toStrictEqual({
+      text: "No published value. This absence is not zero.",
+      withheld: null,
+      years: [2023, "2025-12-31"],
+    });
+  });
+
+  it("downloads one PDF per county from the share bar", async () => {
+    const NativeURL = globalThis.URL;
+    const urls: string[] = [];
+    class DownloadURL extends NativeURL {
+      static createObjectURL(): string {
+        return "blob:compare-pdf";
+      }
+
+      static revokeObjectURL(): void {
+        return undefined;
+      }
+    }
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      urls.push(String(input));
+      return Promise.resolve(
+        new Response(new Blob(["%PDF-1.7"]), {
+          headers: { "content-type": "application/pdf" },
+          status: 200,
+        })
+      );
+    });
+    vi.stubGlobal("URL", DownloadURL);
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const button = await screen.findByTestId("compare-download-pdfs");
+    await waitFor(() => {
+      if (button.hasAttribute("disabled")) {
+        throw new Error("Waiting for the PDF action.");
+      }
+    });
+    fireEvent.click(button);
+    const status = await screen.findByText("County PDFs downloaded.");
+    const paths = urls.map((url) => new NativeURL(url).pathname).toSorted();
+    expect({
+      paths,
+      release: urls.every((url) => url.includes("dataset_version=alpha-2026")),
+      status: status.textContent,
+    }).toStrictEqual({
+      paths: ["/v1/counties/08001/report.pdf", "/v1/counties/08013/report.pdf"],
+      release: true,
+      status: "County PDFs downloaded.",
     });
   });
 

@@ -106,8 +106,22 @@ export type CompareMeasureOutcome =
 
 const MISSING_MESSAGE = "No observation. This absence is not zero.";
 const FAILED_MESSAGE = "This measure response was not used.";
-const UNSUPPORTED_PERIOD_MESSAGE =
-  "This measure has no governed period for the selected release.";
+const NCLIMGRID_PATTERN = /nclim[\s_-]*grid/i;
+
+/** NClimGrid daily weather measures are not part of the Compare page. */
+export function isNclimgridMeasure(measure: {
+  label?: string | null;
+  measure_id?: string | null;
+  measureId?: string | null;
+  measureLabel?: string | null;
+}): boolean {
+  return [
+    measure.measure_id,
+    measure.measureId,
+    measure.label,
+    measure.measureLabel,
+  ].some((text) => text != null && NCLIMGRID_PATTERN.test(text));
+}
 
 function canonicalText(value: string | null | undefined): string {
   return value?.trim() ?? "";
@@ -377,7 +391,7 @@ function cellForOutcome(input: {
     return emptyCell("failed", outcome?.message ?? FAILED_MESSAGE);
   }
   if (outcome.status === "unsupported_period") {
-    return emptyCell("unsupported_period", UNSUPPORTED_PERIOD_MESSAGE);
+    return emptyCell("missing", MISSING_MESSAGE);
   }
   const records = recordsForFips(
     input.observations,
@@ -419,11 +433,13 @@ export function alignCompareEvidence(input: {
       outcomesByMeasure.set(outcome.measureId, outcome);
     }
   }
-  const measures = [...input.measures].toSorted(
-    (left, right) =>
-      left.measure_id.localeCompare(right.measure_id) ||
-      left.label.localeCompare(right.label, "en")
-  );
+  const measures = input.measures
+    .filter((measure) => !isNclimgridMeasure(measure))
+    .toSorted(
+      (left, right) =>
+        left.measure_id.localeCompare(right.measure_id) ||
+        left.label.localeCompare(right.label, "en")
+    );
   const rows: CompareAlignedRow[] = [];
   for (const measure of measures) {
     const outcome = outcomesByMeasure.get(measure.measure_id);

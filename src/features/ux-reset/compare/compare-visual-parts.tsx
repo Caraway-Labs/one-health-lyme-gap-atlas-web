@@ -22,8 +22,15 @@ import {
 import {
   compareBarFraction,
   compareBarScale,
+  COMPARE_NO_RECORD_NOTE,
+  compareCommunityDifference,
+  compareCommunityMetric,
+  compareCommunitySide,
+  type CompareCommunityMetric,
+  type CompareCommunitySide,
   compareProvenanceFacts,
   compareProvenanceUnknown,
+  compareRuralityRelation,
   type CompareMissingReason,
   type CompareSideValue,
   type CompareVisualRow,
@@ -497,6 +504,178 @@ function relationLabel(relation: CompareVisualRow["relation"]): string {
   }
 }
 
+type CommunityField = { label: string; value: string };
+
+function communityFields(
+  metric: CompareCommunityMetric,
+  info: CompareCommunitySide,
+  side: Extract<CompareSideValue, { kind: "value" }>
+): CommunityField[] {
+  const fields: CommunityField[] = [];
+  if (info.shown === null) {
+    fields.push({ label: "Published value", value: side.text });
+  } else if (metric.kind === "rucc") {
+    fields.push({
+      label: "Classification",
+      value: info.classification ?? side.text,
+    });
+    fields.push({ label: "RUCC", value: info.shown });
+  } else {
+    fields.push({ label: metric.valueLabel, value: info.shown });
+  }
+  if (info.year) {
+    fields.push({ label: "Year", value: info.year });
+  }
+  return fields;
+}
+
+function CommunitySide({
+  county,
+  info,
+  metric,
+  row,
+  side,
+}: {
+  county: CompareCountyIdentity;
+  info: CompareCommunitySide;
+  metric: CompareCommunityMetric;
+  row: CompareVisualRow;
+  side: CompareSideValue;
+}) {
+  return (
+    <SideFrame county={county} fips={county.fips} rowId={row.id} side={side}>
+      {side.kind === "missing" ? (
+        <CompareMissingMark side={side} />
+      ) : (
+        <div className="ux-reset-compare-cvalue">
+          <dl className="ux-reset-compare-cfields">
+            {communityFields(metric, info, side).map((field) => (
+              <div className="ux-reset-compare-cfield" key={field.label}>
+                <dt>{field.label}</dt>
+                <dd>{field.value}</dd>
+              </div>
+            ))}
+          </dl>
+          {info.detail ? (
+            <p className="ux-reset-compare-cdetail">{info.detail}</p>
+          ) : null}
+        </div>
+      )}
+      <SideInfo county={county} row={row} side={side} />
+    </SideFrame>
+  );
+}
+
+function scalePosition(value: number): string {
+  return `${Math.min(Math.max(value, 0), 100)}%`;
+}
+
+/** One shared 0 to 100 track. A is a filled marker, B is a ring. */
+function CommunityScale({
+  infos,
+  label,
+}: {
+  infos: readonly [CompareCommunitySide, CompareCommunitySide];
+  label: string;
+}) {
+  const letters = ["A", "B"] as const;
+  const described = letters.flatMap((letter, index) => {
+    const { number, shown } = infos[index];
+    return number === null || shown === null ? [] : [`${letter}: ${shown}`];
+  });
+  if (described.length === 0) {
+    return null;
+  }
+  return (
+    <div className="ux-reset-compare-cscale">
+      <div aria-hidden="true" className="ux-reset-compare-cscale-rail">
+        {letters.map((letter, index) => {
+          const { number, shown } = infos[index];
+          return number === null ? null : (
+            <span
+              className="ux-reset-compare-cscale-marker"
+              data-letter={letter}
+              key={letter}
+              style={{ left: scalePosition(number) }}
+            >
+              <span className="ux-reset-compare-cscale-dot">{letter}</span>
+              <span className="ux-reset-compare-cscale-value">{shown}</span>
+            </span>
+          );
+        })}
+      </div>
+      <p aria-hidden="true" className="ux-reset-compare-dot-scale">
+        <span>0</span>
+        <span>50</span>
+        <span>100</span>
+      </p>
+      <p className="sr-only">
+        {label} on a shared 0 to 100 scale. {described.join(". ")}.
+      </p>
+    </div>
+  );
+}
+
+function CommunityMetricBlock({
+  counties,
+  metric,
+  row,
+}: {
+  counties: readonly [CompareCountyIdentity, CompareCountyIdentity];
+  metric: CompareCommunityMetric;
+  row: CompareVisualRow;
+}) {
+  const sides = [row.left, row.right] as const;
+  const infos = [
+    compareCommunitySide(row.id, metric.kind, row.left),
+    compareCommunitySide(row.id, metric.kind, row.right),
+  ] as const;
+  const scalar = metric.kind !== "rucc";
+  const summary = scalar
+    ? (compareCommunityDifference(metric.kind, infos[0], infos[1]) ??
+      "No difference is shown because a published value is missing or not readable.")
+    : compareRuralityRelation(infos[0], infos[1], row.relation);
+  return (
+    <article
+      className="ux-reset-compare-vrow ux-reset-compare-cblock"
+      data-gap={row.gap ? "true" : "false"}
+      data-relation={row.relation}
+      data-row-id={row.id}
+      data-testid={`compare-profile-row-${row.id}`}
+    >
+      <header>
+        <h4>{metric.heading}</h4>
+        <span className="ux-reset-compare-relation">
+          {relationLabel(row.relation)}
+        </span>
+      </header>
+      {row.note ? <p className="type-small">{row.note}</p> : null}
+      <div className="ux-reset-compare-vbars">
+        {sides.map((side, index) => (
+          <CommunitySide
+            county={counties[index]}
+            info={infos[index]}
+            key={counties[index].letter}
+            metric={metric}
+            row={row}
+            side={side}
+          />
+        ))}
+      </div>
+      {scalar ? <CommunityScale infos={infos} label={metric.heading} /> : null}
+      <p
+        className="ux-reset-compare-cdiff"
+        data-testid={`compare-community-summary-${row.id}`}
+      >
+        {summary}
+      </p>
+      {metric.kind === "rucc" ? (
+        <p className="ux-reset-compare-cfoot">{COMPARE_NO_RECORD_NOTE}</p>
+      ) : null}
+    </article>
+  );
+}
+
 /** One measure, drawn with the visual that fits its data type. */
 export function CompareVisualRowView({
   counties,
@@ -505,6 +684,12 @@ export function CompareVisualRowView({
   counties: readonly [CompareCountyIdentity, CompareCountyIdentity];
   row: CompareVisualRow;
 }) {
+  const metric = compareCommunityMetric(row.id);
+  if (metric) {
+    return (
+      <CommunityMetricBlock counties={counties} metric={metric} row={row} />
+    );
+  }
   let visual: ReactNode;
   switch (row.visual) {
     case "bars": {

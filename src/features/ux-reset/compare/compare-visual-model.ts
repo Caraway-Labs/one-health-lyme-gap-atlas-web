@@ -6,6 +6,7 @@ import type {
   CompareProfileRowId,
 } from "@/features/ux-reset/compare/compare-county-profile";
 import type { EvidenceObjectModel } from "@/features/ux-reset/evidence/types";
+import { RUCC_2023_COMPACT_CLASSIFICATIONS } from "@/features/ux-reset/review/review-rationale";
 
 /**
  * Pure view model for the visual Compare results.
@@ -778,6 +779,208 @@ export function compareSectionCaption(
     }
   }
   return keys.size === 1 ? caption : null;
+}
+
+/**
+ * Community context, shaped like the Explore county summary panel.
+ * Every figure is read from the published display text. Nothing is estimated,
+ * and a side that is missing or unreadable yields no figure and no difference.
+ */
+export type CompareCommunityKind = "percent" | "percentile" | "rucc";
+
+export type CompareCommunityMetric = {
+  heading: string;
+  kind: CompareCommunityKind;
+  /** Explore field label for the headline figure. */
+  valueLabel: string;
+};
+
+const COMMUNITY_METRICS: Partial<
+  Record<CompareProfileRowId, CompareCommunityMetric>
+> = {
+  rucc_2023: {
+    heading: "Rurality",
+    kind: "rucc",
+    valueLabel: "Classification",
+  },
+  svi_percentile_2022: {
+    heading: "Social vulnerability",
+    kind: "percentile",
+    valueLabel: "Percentile",
+  },
+  uninsured_percent_2022: {
+    heading: "Uninsured population",
+    kind: "percent",
+    valueLabel: "Uninsured",
+  },
+};
+
+export function compareCommunityMetric(
+  rowId: CompareProfileRowId
+): CompareCommunityMetric | null {
+  return COMMUNITY_METRICS[rowId] ?? null;
+}
+
+export const COMPARE_NO_RECORD_NOTE = "No record does not mean absent or zero.";
+
+export type CompareCommunitySide = {
+  classification: string | null;
+  code: number | null;
+  /** Explore note under the classification, such as the metro population. */
+  detail: string | null;
+  /** Numeric position on the shared 0 to 100 scale. */
+  number: number | null;
+  /** The figure as published, such as "12th" or "4.7%". */
+  shown: string | null;
+  year: string | null;
+};
+
+const EMPTY_COMMUNITY_SIDE: CompareCommunitySide = {
+  classification: null,
+  code: null,
+  detail: null,
+  number: null,
+  shown: null,
+  year: null,
+};
+
+const ORDINAL_PATTERN = /(?<rank>\d{1,3})(?:st|nd|rd|th)\b/i;
+const PERCENT_PATTERN = /(?<amount>\d+(?:\.\d+)?)\s*%/;
+const YEAR_PATTERN = /\b(?<year>(?:19|20)\d{2})\b/;
+const ROW_YEAR_PATTERN = /_(?<year>\d{4})$/;
+
+function communityYear(
+  rowId: CompareProfileRowId,
+  evidence: EvidenceObjectModel
+): string | null {
+  const period = evidence.provenance.observationPeriod ?? "";
+  const fromPeriod = YEAR_PATTERN.exec(period)?.groups?.year;
+  if (fromPeriod) {
+    return fromPeriod;
+  }
+  return ROW_YEAR_PATTERN.exec(rowId)?.groups?.year ?? null;
+}
+
+function communityFigure(
+  kind: CompareCommunityKind,
+  text: string
+): Pick<
+  CompareCommunitySide,
+  "classification" | "code" | "detail" | "number" | "shown"
+> {
+  switch (kind) {
+    case "percentile": {
+      const matched = ORDINAL_PATTERN.exec(text);
+      const rank = Number(matched?.groups?.rank);
+      if (!matched || Number.isNaN(rank) || rank > 100) {
+        return { ...EMPTY_COMMUNITY_SIDE };
+      }
+      return {
+        ...EMPTY_COMMUNITY_SIDE,
+        number: rank,
+        shown: matched[0].toLowerCase(),
+      };
+    }
+    case "percent": {
+      const amount = PERCENT_PATTERN.exec(text)?.groups?.amount;
+      const value = Number(amount);
+      if (!amount || Number.isNaN(value) || value > 100) {
+        return { ...EMPTY_COMMUNITY_SIDE };
+      }
+      return { ...EMPTY_COMMUNITY_SIDE, number: value, shown: `${amount}%` };
+    }
+    case "rucc": {
+      const code = compareNumberToken(text);
+      const known =
+        code !== null && Number.isInteger(code)
+          ? RUCC_2023_COMPACT_CLASSIFICATIONS[code]
+          : undefined;
+      if (code === null || !known) {
+        return { ...EMPTY_COMMUNITY_SIDE };
+      }
+      return {
+        ...EMPTY_COMMUNITY_SIDE,
+        classification: known.title,
+        code,
+        detail: known.detail,
+        shown: String(code),
+      };
+    }
+    default: {
+      const exhaustive: never = kind;
+      return exhaustive;
+    }
+  }
+}
+
+export function compareCommunitySide(
+  rowId: CompareProfileRowId,
+  kind: CompareCommunityKind,
+  side: CompareSideValue
+): CompareCommunitySide {
+  if (side.kind !== "value") {
+    return { ...EMPTY_COMMUNITY_SIDE };
+  }
+  return {
+    ...communityFigure(kind, side.text),
+    year: communityYear(rowId, side.evidence),
+  };
+}
+
+function pointsPhrase(amount: number, unit: string): string {
+  return `${amount.toLocaleString("en-US", { maximumFractionDigits: 1 })} ${unit}${amount === 1 ? "" : "s"}`;
+}
+
+/**
+ * Plain difference between two published figures. Returns null when either
+ * side has no readable figure. It never says better, worse, or which is ahead.
+ */
+export function compareCommunityDifference(
+  kind: CompareCommunityKind,
+  left: CompareCommunitySide,
+  right: CompareCommunitySide
+): string | null {
+  if (kind === "rucc" || left.number === null || right.number === null) {
+    return null;
+  }
+  const unit = kind === "percentile" ? "percentile point" : "percentage point";
+  const places = kind === "percentile" ? 0 : 1;
+  const factor = 10 ** places;
+  const amount =
+    Math.round(Math.abs(right.number - left.number) * factor) / factor;
+  if (amount === 0) {
+    return "A and B have the same published value.";
+  }
+  const direction = right.number > left.number ? "higher" : "lower";
+  return `B is ${pointsPhrase(amount, unit)} ${direction} than A.`;
+}
+
+/** Whether the two rural-urban classifications match, from published text. */
+export function compareRuralityRelation(
+  left: CompareCommunitySide,
+  right: CompareCommunitySide,
+  relation: CompareRowRelation
+): string {
+  if (left.code !== null && right.code !== null) {
+    return left.code === right.code
+      ? "A and B have the same classification."
+      : "A and B have different classifications.";
+  }
+  switch (relation) {
+    case "same": {
+      return "A and B have the same classification.";
+    }
+    case "different": {
+      return "A and B have different classifications.";
+    }
+    case "incomparable": {
+      return "The classifications are not compared because a published value is missing.";
+    }
+    default: {
+      const exhaustive: never = relation;
+      return exhaustive;
+    }
+  }
 }
 
 export type CompareGlanceSide = {

@@ -5,6 +5,7 @@ import {
   type CompareCell,
   type CompareRelation,
 } from "@/features/ux-reset/compare/compare-alignment";
+import { compareReaderState } from "@/features/ux-reset/compare/compare-compact-evidence";
 import {
   COMPARE_PUBLIC_READ_LIMIT,
   resetCompareReadLimit,
@@ -722,5 +723,368 @@ describe("compare evidence loading through the generated client", () => {
     });
     controller.abort();
     await Promise.allSettled([evidence, profile]);
+  });
+
+  it("tries governed-date, shared day, 2023, then 2025-12-31 before a plain missing cell", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const measure: Measure = {
+      ...base,
+      label: "Seasonal canopy",
+      measure_id: "unbound-gap",
+      temporal_grains: ["CUSTOM"],
+      temporal_semantics: "2024-06-01",
+    };
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const year = url.searchParams.get("year");
+      const start = url.searchParams.get("start_date");
+      requests.push(year ? `year:${year}` : `day:${start ?? ""}`);
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: [],
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: [measure],
+      period: "2025-01-15",
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const cell = alignment.rows[0]?.left;
+    expect({
+      bounds: requests,
+      message: cell?.kind === "empty" ? cell.message : "",
+      reason: cell?.kind === "empty" ? cell.reason : "",
+      status: alignment.outcomes[0]?.status ?? "",
+      unsupported: alignment.outcomes.some(
+        (outcome) => outcome.status === "unsupported_period"
+      ),
+    }).toStrictEqual({
+      bounds: [
+        "day:2024-06-01",
+        "day:2025-01-15",
+        "year:2023",
+        "day:2025-12-31",
+      ],
+      message: "No observation. This absence is not zero.",
+      reason: "missing",
+      status: "ready",
+      unsupported: false,
+    });
+  });
+
+  it("falls through a rejected fallback bound and stops on the first observations", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const year = url.searchParams.get("year");
+      const start = url.searchParams.get("start_date");
+      requests.push(year ? `year:${year}` : `day:${start ?? ""}`);
+      if (year === "2023") {
+        return jsonResponse(
+          ObservationsV1ObservationsGetResponse.parse({
+            data: compareObservationsFor({
+              fips: url.searchParams.getAll("geography_id"),
+              measureId: "unbound-gap",
+            }),
+            links: { self: "/v1/observations" },
+            meta: {},
+          })
+        );
+      }
+      return jsonResponse(
+        {
+          code: "UNSUPPORTED_FILTER",
+          detail: "This time filter is not supported for the measure.",
+        },
+        400
+      );
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: [
+        {
+          ...base,
+          label: "Seasonal canopy",
+          measure_id: "unbound-gap",
+          temporal_grains: ["CUSTOM"],
+          temporal_semantics: "2024-06-01",
+        },
+      ],
+      period: "2025-01-15",
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    expect({
+      bounds: requests,
+      kind: alignment.rows[0]?.left.kind ?? "",
+    }).toStrictEqual({
+      bounds: ["day:2024-06-01", "day:2025-01-15", "year:2023"],
+      kind: "observations",
+    });
+  });
+
+  it("fails the measure when every fallback is unauthorized", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const statuses = [401, 403];
+    const loaded = [];
+    for (const status of statuses) {
+      requests.length = 0;
+      vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+        const url = new URL(String(input));
+        requests.push(
+          url.searchParams.get("start_date") ??
+            url.searchParams.get("year") ??
+            ""
+        );
+        return jsonResponse({ detail: "not allowed" }, status);
+      });
+      const alignment = await loadCompareEvidence({
+        leftFips: COMPARE_LEFT_FIPS,
+        leftLabel: "Denver, Colorado (08001)",
+        measures: [
+          {
+            ...base,
+            label: "Seasonal canopy",
+            measure_id: "unbound-gap",
+            temporal_grains: ["CUSTOM"],
+            temporal_semantics: "2024-06-01",
+          },
+        ],
+        period: null,
+        releaseId: COMPARE_RELEASE_ID,
+        rightFips: COMPARE_RIGHT_FIPS,
+        rightLabel: "Boulder, Colorado (08013)",
+        signal: new AbortController().signal,
+      });
+      const cell = alignment.rows[0]?.left;
+      loaded.push({
+        laterBound: requests.includes("2023"),
+        reader:
+          cell?.kind === "empty"
+            ? compareReaderState(cell.reason, cell.message)
+            : "",
+        reason: cell?.kind === "empty" ? cell.reason : "",
+        status: alignment.outcomes[0]?.status ?? "",
+      });
+    }
+    expect(loaded).toStrictEqual([
+      {
+        laterBound: false,
+        reader: "Couldn\u2019t load this evidence.",
+        reason: "failed",
+        status: "failed",
+      },
+      {
+        laterBound: false,
+        reader: "Couldn\u2019t load this evidence.",
+        reason: "failed",
+        status: "failed",
+      },
+    ]);
+  });
+
+  it("does not turn a rejected 400 or 422 into an empty read", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    const statuses = [400, 422];
+    const loaded = [];
+    for (const status of statuses) {
+      requests.length = 0;
+      vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+        const url = new URL(String(input));
+        requests.push(
+          url.searchParams.get("start_date") ??
+            url.searchParams.get("year") ??
+            ""
+        );
+        return jsonResponse(
+          { code: "INVALID_REQUEST", detail: "rejected filter" },
+          status
+        );
+      });
+      const alignment = await loadCompareEvidence({
+        leftFips: COMPARE_LEFT_FIPS,
+        leftLabel: "Denver, Colorado (08001)",
+        measures: [
+          {
+            ...base,
+            label: "Seasonal canopy",
+            measure_id: "unbound-gap",
+            temporal_grains: ["CUSTOM"],
+            temporal_semantics: "2024-06-01",
+          },
+        ],
+        period: null,
+        releaseId: COMPARE_RELEASE_ID,
+        rightFips: COMPARE_RIGHT_FIPS,
+        rightLabel: "Boulder, Colorado (08013)",
+        signal: new AbortController().signal,
+      });
+      const cell = alignment.rows[0]?.left;
+      loaded.push({
+        laterBound: requests.includes("2023"),
+        reason: cell?.kind === "empty" ? cell.reason : "",
+        status: alignment.outcomes[0]?.status ?? "",
+      });
+    }
+    expect(loaded).toStrictEqual([
+      { laterBound: false, reason: "failed", status: "failed" },
+      { laterBound: false, reason: "failed", status: "failed" },
+    ]);
+  });
+
+  it("does not report a missing value when every time filter is incompatible", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requests.push(
+        url.searchParams.get("start_date") ?? url.searchParams.get("year") ?? ""
+      );
+      return jsonResponse(
+        {
+          code: "UNSUPPORTED_FILTER",
+          detail: "This time filter is not supported for the measure.",
+        },
+        400
+      );
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: [
+        {
+          ...base,
+          label: "Seasonal canopy",
+          measure_id: "unbound-gap",
+          temporal_grains: ["CUSTOM"],
+          temporal_semantics: "2024-06-01",
+        },
+      ],
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    const cell = alignment.rows[0]?.left;
+    expect({
+      bounds: requests,
+      reader:
+        cell?.kind === "empty"
+          ? compareReaderState(cell.reason, cell.message)
+          : "",
+      status: alignment.outcomes[0]?.status ?? "",
+    }).toStrictEqual({
+      bounds: ["2024-06-01", "2023", "2025-12-31"],
+      reader: "Couldn\u2019t load this evidence.",
+      status: "failed",
+    });
+  });
+
+  it("does not try the next bound after a 429", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requests.push(
+        url.searchParams.get("start_date") ?? url.searchParams.get("year") ?? ""
+      );
+      return jsonResponse({ detail: "slow down" }, 429);
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: [
+        {
+          ...base,
+          label: "Seasonal canopy",
+          measure_id: "unbound-gap",
+          temporal_grains: ["CUSTOM"],
+          temporal_semantics: "2024-06-01",
+        },
+      ],
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    expect({
+      laterBound: requests.includes("2023"),
+      status: alignment.outcomes[0]?.status ?? "",
+      tried: new Set(requests),
+    }).toStrictEqual({
+      laterBound: false,
+      status: "failed",
+      tried: new Set(["2024-06-01"]),
+    });
+  });
+
+  it("never requests an nclimgrid measure", async () => {
+    const base = compareMeasuresFixture[0];
+    if (!base) {
+      throw new Error("Missing compare measure fixture.");
+    }
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requests.push(url.searchParams.get("measure_id") ?? "");
+      return jsonResponse(
+        ObservationsV1ObservationsGetResponse.parse({
+          data: compareObservationsFor({
+            fips: url.searchParams.getAll("geography_id"),
+            measureId: url.searchParams.get("measure_id") ?? "",
+          }),
+          links: { self: "/v1/observations" },
+          meta: {},
+        })
+      );
+    });
+    const alignment = await loadCompareEvidence({
+      leftFips: COMPARE_LEFT_FIPS,
+      leftLabel: "Denver, Colorado (08001)",
+      measures: [
+        base,
+        {
+          ...base,
+          label: "nClimGrid average temperature",
+          measure_id: "nclimgrid_tavg_county_day",
+        },
+      ],
+      period: null,
+      releaseId: COMPARE_RELEASE_ID,
+      rightFips: COMPARE_RIGHT_FIPS,
+      rightLabel: "Boulder, Colorado (08013)",
+      signal: new AbortController().signal,
+    });
+    expect(alignment.rows.map((row) => row.measureId)).toStrictEqual([
+      base.measure_id,
+    ]);
   });
 });

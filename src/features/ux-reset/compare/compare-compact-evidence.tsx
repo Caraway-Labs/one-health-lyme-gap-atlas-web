@@ -43,13 +43,13 @@ function visibleQualification(model: EvidenceObjectModel): string | null {
 export function compareReaderState(reason: string, message: string): string {
   switch (reason) {
     case "missing": {
-      return "No published county record. No record does not establish absence, and this absence is not zero.";
+      return "No published value. This absence is not zero.";
     }
     case "failed": {
       return "Couldn’t load this evidence.";
     }
     case "unsupported_period": {
-      return "Not available for this period.";
+      return "No published value. This absence is not zero.";
     }
     case "release_mismatch": {
       return message;
