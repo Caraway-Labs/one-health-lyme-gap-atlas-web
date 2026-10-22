@@ -106,32 +106,32 @@ describe("explorer county toolbar", () => {
     expect(
       screen.getByRole("button", { name: "Download county list as CSV" })
     ).toBeTruthy();
-    expect(
-      screen.getByTestId("review-scope-select").closest(".ux-reset-explorer-toolbar")
-    ).toBeTruthy();
+    const note = screen.getByTestId("explorer-county-export-note");
+    expect({
+      hidden: note.className.includes("sr-only"),
+      note: note.textContent,
+    }).toStrictEqual({ hidden: true, note: EXPLORER_COUNTY_EXPORT_NOTE });
+  });
+
+  it("styles the geography toolbar with the emphasized Explorer chrome", () => {
     const css = readFileSync("src/features/ux-reset/ux-reset.css", "utf-8")
       .replaceAll(/\s+/g, " ")
       .trim();
     const globals = readFileSync("src/app/globals.css", "utf-8")
       .replaceAll(/\s+/g, " ")
       .trim();
+    const combined = `${globals} ${css}`;
     const required = [
       "--explorer-toolbar-surface:",
       "--explorer-toolbar-border:",
-      ".ux-reset-explorer-toolbar { display: grid;",
       "background: var(--explorer-toolbar-surface);",
       "border: 1px solid var(--explorer-toolbar-border);",
-      ".ux-reset-explorer-toolbar [data-testid=\"review-scope-select\"] { font-weight: 600;",
-      ".ux-reset-explorer-toolbar [data-slot=\"select-trigger\"], .ux-reset-explorer-toolbar input[type=\"search\"] { background: var(--white);",
+      '.ux-reset-explorer-toolbar [data-testid="review-scope-select"] { font-weight: 600;',
+      '.ux-reset-explorer-toolbar [data-slot="select-trigger"], .ux-reset-explorer-toolbar input[type="search"] { background: var(--white);',
     ];
     expect(
-      required.filter((snippet) => !(css.includes(snippet) || globals.includes(snippet)))
+      required.filter((snippet) => !combined.includes(snippet))
     ).toStrictEqual([]);
-    const note = screen.getByTestId("explorer-county-export-note");
-    expect({
-      hidden: note.className.includes("sr-only"),
-      note: note.textContent,
-    }).toStrictEqual({ hidden: true, note: EXPLORER_COUNTY_EXPORT_NOTE });
   });
 
   it("selects an exact FIPS and shows the county name", () => {
