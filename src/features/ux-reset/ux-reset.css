@@ -375,6 +375,114 @@
   font-size: var(--type-small-size);
 }
 
+.ux-reset-feed-filters {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.ux-reset-feed-filters:focus {
+  outline: none;
+}
+
+.ux-reset-feed-filters:focus-visible {
+  outline: var(--focus-ring-width) solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ux-reset-feed-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+  min-width: 0;
+}
+
+.ux-reset-feed-field {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ux-reset-feed-field [data-slot="select-trigger"] {
+  width: 100%;
+  max-width: 100%;
+  height: var(--control-height);
+  min-height: var(--control-height);
+}
+
+.ux-reset-feed-field [data-slot="select-value"] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ux-reset-feed-help,
+.ux-reset-feed-summary,
+.ux-reset-feed-source-status {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-feed-source-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ux-reset-feed-source-status p {
+  margin: 0;
+}
+
+.ux-reset-feed-active {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ux-reset-feed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.ux-reset-feed-chip {
+  max-width: 100%;
+  min-height: var(--control-height);
+  overflow: visible;
+  white-space: normal;
+}
+
+.ux-reset-feed-filters button,
+.ux-reset-feed-chip-remove,
+.ux-reset-feed-clear {
+  min-height: var(--control-height);
+}
+
+.ux-reset-feed-chip-remove {
+  min-width: var(--control-height);
+}
+
+.ux-reset-feed-select-item {
+  min-height: var(--control-height);
+}
+
+.ux-reset-feed-summary:empty {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  .ux-reset-feed-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ux-reset-trust-section {
   display: grid;
   gap: var(--space-3);
@@ -2782,14 +2890,19 @@
   display: grid;
   width: 100%;
   min-height: 3.375rem;
-  grid-template-columns: 1.5rem minmax(0, 1fr) 2.5rem;
+  /* 3ch is three tabular digits in this row's rank size. The 0.15rem inset
+     matches the Counties heading. 0.375rem is the 6px gap before the name.
+     The score column and right inset stay put. */
+  grid-template-columns: 3ch minmax(0, 1fr) 2.5rem;
   align-items: center;
-  column-gap: 0.55rem;
-  padding: 0.55rem 0.65rem 0.55rem 0.7rem;
+  column-gap: 0.375rem;
+  padding: 0.55rem 0.65rem 0.55rem 0.15rem;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: var(--white);
   color: var(--navy);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
   text-align: left;
   cursor: pointer;
 }
@@ -2804,10 +2917,11 @@
 }
 
 .ux-reset-ranked-number {
+  min-width: 0;
   color: var(--muted-foreground);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
-  text-align: right;
+  text-align: left;
 }
 
 .ux-reset-ranked-name {

@@ -45,14 +45,14 @@ export const RESET_FEEDBACK_CATEGORIES = [
     label: "Suggest a dataset",
   },
   {
-    description: "Tell us what would make Atlas more useful.",
+    description: "Tell us what would make One Health Atlas more useful.",
     id: "idea",
     label: "Share an idea",
   },
   {
     description: "Suggest a disease, vector, topic, or research question.",
     id: "expand",
-    label: "Expand Atlas",
+    label: "Expand One Health Atlas",
   },
   {
     description: "Report a bug, a confusing step, or data that looks wrong.",
@@ -331,7 +331,7 @@ export function classifyFeedbackHttpStatus(
       return {
         kind: "rejected",
         message:
-          "Atlas could not accept this note. Shorten it or check the fields, then try again. Your draft is still here.",
+          "One Health Atlas could not accept this note. Shorten it or check the fields, then try again. Your draft is still here.",
         retryAfterSeconds: null,
       };
     }
@@ -347,7 +347,7 @@ export function classifyFeedbackHttpStatus(
       return {
         kind: "unavailable",
         message:
-          "Atlas could not save your feedback right now. Your draft is kept—try again with the same report.",
+          "One Health Atlas could not save your feedback right now. Your draft is kept—try again with the same report.",
         retryAfterSeconds: null,
       };
     }
@@ -483,7 +483,7 @@ function composeExpand(
 ): { error: string } | { message: string } {
   const topic = boundedText(
     draft.topic,
-    "What Atlas should cover",
+    "What One Health Atlas should cover",
     2,
     NARRATIVE_MAX
   );
@@ -499,7 +499,7 @@ function composeExpand(
   }
   const details = optionalLine(draft.details, "Details", OPTIONAL_TEXT_MAX);
   if ("error" in details) return details;
-  return finishMessage(pageLabel, "Expand Atlas", [
+  return finishMessage(pageLabel, "Expand One Health Atlas", [
     `Suggestion: ${topic.value}`,
     `Problem or outcome: ${outcome.value}`,
     sourceUrl.value ? `Public source: ${sourceUrl.value}` : null,

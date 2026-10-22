@@ -63,8 +63,13 @@ export type ResetRoute = {
   /** When set, navigation opens this href instead of an in-shell page. */
   externalHref?: string;
   /**
-   * Tooltip title when the visible navigation label is abbreviated.
-   * Feed stays labeled Feed; its tooltip title is Intelligence Feed.
+   * Sidebar label when the page heading in `label` stays different.
+   * Research & News keeps the feed page heading on `label`.
+   */
+  navLabel?: string;
+  /**
+   * Tooltip title on hover and focus.
+   * Research & News uses the same title as its visible sidebar label.
    */
   tooltipTitle?: string;
   /**
@@ -193,12 +198,13 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     label: "Feed",
     match: "prefix",
     navGroup: "access",
+    navLabel: "Research & News",
     pageDescription:
       "Scan recent items from approved trusted sources and open the publisher page.",
     pageTitle: "Feed | One Health Lyme Gap Atlas",
     tooltipDetail:
       "Track new findings and updates that may inform Lyme surveillance and research.",
-    tooltipTitle: "Intelligence Feed",
+    tooltipTitle: "Research & News",
   },
   {
     description: DATA_PROVENANCE_NAV_DESCRIPTION,
@@ -247,6 +253,13 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
 export const RESET_WORKSPACE_NAV = RESET_ROUTES.filter(
   (route) => route.navGroup === "workspace"
 );
+
+/** Visible sidebar label. Page headings stay on `label`. */
+export function resetNavigationLabel(
+  route: Pick<ResetRoute, "label" | "navLabel">
+): string {
+  return route.navLabel ?? route.label;
+}
 
 export const RESET_ACCESS_NAV = RESET_ROUTES.filter(
   (route) => route.navGroup === "access"
