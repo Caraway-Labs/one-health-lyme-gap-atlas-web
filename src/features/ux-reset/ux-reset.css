@@ -3734,6 +3734,7 @@
 
 .ux-reset-review-rationale .ux-reset-evidence-provenance summary {
   color: var(--muted-foreground);
+  font-size: 0.75rem;
   font-weight: 400;
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
