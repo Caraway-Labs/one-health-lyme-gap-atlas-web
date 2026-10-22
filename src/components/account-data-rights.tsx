@@ -92,6 +92,7 @@ export function AccountDataRights({
   const [pending, setPending] = useState<PrivacyAction | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const operationGenerationRef = useRef(0);
 
   const readSessionStamp =
     useCallback(async (): Promise<PrivacySessionSnapshot> => {
@@ -137,8 +138,20 @@ export function AccountDataRights({
 
   const executeRequest = useCallback(
     async (action: PrivacyAction, subjectId: string) => {
+      operationGenerationRef.current += 1;
+      const generation = operationGenerationRef.current;
+      const operationCurrent = () =>
+        operationGenerationRef.current === generation;
+      // `undefined` means this mount or a newer operation ended while the read was in flight.
+      const liveSubject = async (): Promise<string | null | undefined> => {
+        const stamp = await readSessionStamp();
+        if (!operationCurrent()) return undefined;
+        return stamp.userId;
+      };
+      const sameAccount = async () => (await liveSubject()) === subjectId;
+
       const createToken = await accessTokenForSubject(subjectId);
-      if (!createToken) return;
+      if (!createToken || !operationCurrent()) return;
       setBusy(true);
       setNotice(null);
       try {
@@ -146,17 +159,19 @@ export function AccountDataRights({
           { action },
           privacyRequestHeaders(createToken)
         );
+        if (!operationCurrent()) return;
         if (created.status !== 200) {
           throw new Error("Privacy request was not accepted.");
         }
         const confirmToken = await accessTokenForSubject(subjectId);
-        if (!confirmToken) return;
+        if (!confirmToken || !operationCurrent()) return;
         const confirmed =
           await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
             created.data.request_id,
             { nonce: created.data.confirmation_nonce },
             privacyRequestHeaders(confirmToken)
           );
+        if (!(await sameAccount())) return;
         if (confirmed.status !== 200) {
           throw new Error("Privacy request confirmation failed.");
         }
@@ -168,12 +183,13 @@ export function AccountDataRights({
         }
         if (action === "export") {
           const downloadToken = await accessTokenForSubject(subjectId);
-          if (!downloadToken) return;
+          if (!downloadToken || !operationCurrent()) return;
           const file =
             await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
               created.data.request_id,
               privacyRequestHeaders(downloadToken)
             );
+          if (!(await sameAccount())) return;
           if (file.status !== 200) {
             throw new Error("Export download failed.");
           }
@@ -182,15 +198,18 @@ export function AccountDataRights({
           return;
         }
         const result = await runWorkspaceSignOut(queryClient);
-        if (result === null) {
-          return;
-        }
+        const userId = await liveSubject();
+        const replacementAccount =
+          userId !== null && userId !== undefined && userId !== subjectId;
+        if (userId === undefined || replacementAccount) return;
+        if (result === null) return;
         if (!result.ok) {
-          setNotice(result.notice);
+          if (userId === subjectId) setNotice(result.notice);
           return;
         }
         followWorkspaceHref("/");
       } catch (error) {
+        if (!(await sameAccount())) return;
         if (error instanceof AtlasApiError && error.status === 401) {
           if (!workspaceSignOutSuppressesExpiryRedirect()) {
             router.push(signInHrefForReturnPath(returnPath));
@@ -203,11 +222,13 @@ export function AccountDataRights({
             : "";
         setNotice(`${PRIVACY_REQUEST_FAILURE}${reference}`);
       } finally {
-        setBusy(false);
-        setPending(null);
+        if (operationCurrent()) {
+          setBusy(false);
+          setPending(null);
+        }
       }
     },
-    [accessTokenForSubject, queryClient, returnPath, router]
+    [accessTokenForSubject, queryClient, readSessionStamp, returnPath, router]
   );
 
   const requireFreshSignIn = useCallback(
@@ -290,6 +311,7 @@ export function AccountDataRights({
     void resume();
     return () => {
       ignore = true;
+      operationGenerationRef.current += 1;
     };
   }, []);
 

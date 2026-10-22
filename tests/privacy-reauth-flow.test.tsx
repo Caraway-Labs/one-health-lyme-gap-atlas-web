@@ -155,6 +155,27 @@ function deferredSession() {
   return pending;
 }
 
+function sessionAfterHold(
+  next: "sign-out" | "switch" | "unmount",
+  issuedAtMs: number
+): Awaited<ReturnType<typeof getSession>> {
+  switch (next) {
+    case "switch": {
+      return sessionWithToken(issuedAtMs, "user-b");
+    }
+    case "sign-out": {
+      return { data: { session: null }, error: null };
+    }
+    case "unmount": {
+      return sessionWithToken(issuedAtMs, "user-a");
+    }
+    default: {
+      const exhaustive: never = next;
+      throw new Error(`Unsupported privacy hold: ${String(exhaustive)}`);
+    }
+  }
+}
+
 async function confirm(name: "Export my data" | "Remove all data") {
   fireEvent.click(screen.getByRole("button", { name }));
   fireEvent.click(screen.getAllByRole("button", { name }).at(-1)!);
@@ -858,5 +879,146 @@ describe("privacy reauth flow", () => {
     expect(signOut).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
     expect(createPrivacyRequest).not.toHaveBeenCalled();
+  });
+
+  it("discards export and deletion completions that arrive after the account is gone", async () => {
+    const objectUrl = vi.fn<() => string>(() => "blob:stale-export");
+    vi.stubGlobal("URL", {
+      createObjectURL: objectUrl,
+      revokeObjectURL: vi.fn<(url: string) => void>(),
+    });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    const cases = [
+      { action: "export", next: "switch" },
+      { action: "export", next: "sign-out" },
+      { action: "export", next: "unmount" },
+      { action: "deletion", next: "switch" },
+      { action: "deletion", next: "sign-out" },
+      { action: "deletion", next: "unmount" },
+    ] as const;
+
+    for (const [index, current] of cases.entries()) {
+      cleanup();
+      resetPrivacyReauthResumeForTests();
+      resetWorkspaceSignOutStateForTests();
+      objectUrl.mockClear();
+      click.mockClear();
+      createPrivacyRequest.mockClear();
+      confirmPrivacyRequest.mockReset();
+      confirmPrivacyRequest.mockResolvedValue({
+        status: 200,
+        data: {
+          download_available: true,
+          request_id: "req-export-1",
+          state: "completed",
+        },
+      });
+      downloadPrivacyExport.mockReset();
+      downloadPrivacyExport.mockResolvedValue({
+        status: 200,
+        data: { schema_version: "atlas-user-data-export/v1" },
+      });
+      followWorkspaceHref.mockClear();
+      push.mockClear();
+      signOut.mockClear();
+      getSession.mockReset();
+
+      const now = Date.now();
+      const issuedAtMs = secondAligned(now - 5000);
+      const token = accessTokenIssuedAt(issuedAtMs);
+      seedChallenge({
+        action: current.action,
+        challengedAtMs: now - 10_000,
+        nonce: `4444444${index}-4444-4444-8444-444444444444`,
+        previousIssuedAtMs: secondAligned(now - 60_000),
+        subjectId: "user-a",
+      });
+      getSession.mockResolvedValue(sessionWithToken(issuedAtMs, "user-a"));
+      const response = Promise.withResolvers<{
+        data: unknown;
+        status: number;
+      }>();
+      if (current.action === "export") {
+        downloadPrivacyExport.mockReturnValue(response.promise);
+      } else {
+        confirmPrivacyRequest.mockReturnValue(response.promise);
+      }
+
+      const view = render(<AccountDataRights />);
+      const exportCase = current.action === "export";
+      await waitFor(() => {
+        expect(confirmPrivacyRequest).toHaveBeenCalledOnce();
+        expect(downloadPrivacyExport).toHaveBeenCalledTimes(exportCase ? 1 : 0);
+      });
+      expect(confirmPrivacyRequest.mock.calls).toStrictEqual([
+        [
+          "req-export-1",
+          { nonce: "nonce-abcdefghijklmnopqrstuvwxyz" },
+          bearer(token),
+        ],
+      ]);
+      expect(downloadPrivacyExport.mock.calls).toStrictEqual(
+        exportCase ? [["req-export-1", bearer(token)]] : []
+      );
+
+      if (current.next === "unmount") view.unmount();
+      const reads = getSession.mock.calls.length;
+      const decision = deferredSession();
+      let released = false;
+      const release = async (
+        session: Awaited<ReturnType<typeof getSession>>
+      ) => {
+        released = true;
+        await act(async () => {
+          decision.resolve(session);
+          await decision.promise;
+          await Promise.resolve();
+        });
+      };
+      try {
+        await act(async () => {
+          response.resolve(
+            current.action === "export"
+              ? { data: { account: "user-a", private: true }, status: 200 }
+              : {
+                  data: {
+                    download_available: false,
+                    request_id: "req-export-1",
+                    state: "completed",
+                  },
+                  status: 200,
+                }
+          );
+          await response.promise;
+        });
+        await waitFor(() => {
+          expect(getSession.mock.calls.length).toBeGreaterThan(reads);
+        });
+        expect(objectUrl).not.toHaveBeenCalled();
+        expect(click).not.toHaveBeenCalled();
+        expect(signOut).not.toHaveBeenCalled();
+        await release(sessionAfterHold(current.next, issuedAtMs));
+        expect({
+          blob: objectUrl.mock.calls.length,
+          click: click.mock.calls.length,
+          home: followWorkspaceHref.mock.calls,
+          signIn: push.mock.calls,
+          signOut: signOut.mock.calls.length,
+        }).toStrictEqual({
+          blob: 0,
+          click: 0,
+          home: [],
+          signIn: [],
+          signOut: 0,
+        });
+        expect(screen.queryByText("Your data export downloaded.")).toBeNull();
+      } finally {
+        if (!released) {
+          decision.resolve({ data: { session: null }, error: null });
+        }
+      }
+    }
   });
 });
