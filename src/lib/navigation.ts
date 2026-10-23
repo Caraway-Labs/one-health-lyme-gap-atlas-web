@@ -306,7 +306,10 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
       "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
     pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
     placement: "footer",
-    shell: "public",
+    // The route stays public, but chrome matches Atlas Explorer. shell "none"
+    // skips the logo-only public header so the page layout can mount the
+    // shared professional sidebar and top bar.
+    shell: "none",
     status: "available",
   },
   {

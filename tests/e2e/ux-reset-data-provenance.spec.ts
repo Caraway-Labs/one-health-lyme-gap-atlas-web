@@ -63,13 +63,13 @@ test("public data provenance page lists every source and stays indexable", async
     })
   ).toHaveCount(1);
   await expect(page.locator("main.public-trust-page")).toBeVisible();
+  await expect(page.getByRole("main")).toHaveCount(1);
   await expect(page.getByRole("banner")).toHaveCount(1);
+  await expect(page.locator(".public-header")).toHaveCount(0);
+  await expect(page.locator(".ux-reset-pro-app")).toHaveCount(1);
   await expect(
-    page
-      .locator("footer.ux-reset-trust-footer")
-      .getByRole("link", { name: "Data Provenance" })
-  ).toHaveAttribute("href", "/data-provenance");
-  await expect(page.locator(".ux-reset-pro-app")).toHaveCount(0);
+    page.getByRole("link", { name: "Data Provenance" })
+  ).toHaveAttribute("aria-current", "page");
 
   await expect(
     page.getByRole("heading", { name: "Lyme disease surveillance" })
