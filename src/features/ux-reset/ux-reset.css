@@ -5867,3 +5867,59 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* Comparison identity is separate from review-category and score colors. */
+.ux-reset-compare-slot-marker,
+.ux-reset-compare-slot,
+.ux-reset-compare-glance-card {
+  --compare-slot-accent: var(--teal);
+}
+
+.ux-reset-compare-slot-marker[data-slot-letter="B"],
+.ux-reset-compare-slot[data-slot-letter="B"],
+.ux-reset-compare-glance-card[data-slot-letter="B"] {
+  --compare-slot-accent: var(--navy);
+}
+
+.ux-reset-compare-slot-marker {
+  height: auto;
+  min-height: 1.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--compare-slot-accent);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.ux-reset-compare-slot,
+.ux-reset-compare-glance-card {
+  border-top: 4px solid var(--compare-slot-accent);
+}
+
+.ux-reset-compare-glance-card {
+  padding-top: 0;
+}
+
+.ux-reset-compare-glance-card > [data-slot="card-header"] {
+  padding-block: var(--space-3);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--compare-slot-accent) 5%, var(--card));
+}
+
+.ux-reset-compare-glance-identity {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.ux-reset-compare-glance-identity > strong {
+  font-size: 1.125rem;
+  overflow-wrap: anywhere;
+}
+
+.ux-reset-compare-glance-identity > span {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
