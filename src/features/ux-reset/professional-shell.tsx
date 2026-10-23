@@ -147,6 +147,11 @@ export const RESET_PRO_SIDEBAR_STORAGE_KEY = "ux-reset-pro-sidebar";
 
 type ResetProfessionalShellProps = {
   children: ReactNode;
+  /**
+   * When the route already renders its own main landmark, the shell keeps
+   * the content classes on a div so the page stays the single main.
+   */
+  contentLandmark?: boolean;
   /** Used when this browser has no saved value for `sidebarStorageKey`. */
   sidebarDefaultOpen?: boolean;
   sidebarStorageKey?: string;
@@ -154,6 +159,7 @@ type ResetProfessionalShellProps = {
 
 export function ResetProfessionalShell({
   children,
+  contentLandmark = true,
   sidebarDefaultOpen = true,
   sidebarStorageKey = RESET_PRO_SIDEBAR_STORAGE_KEY,
 }: ResetProfessionalShellProps) {
@@ -165,7 +171,9 @@ export function ResetProfessionalShell({
       >
         <AskAtlasChromeProvider>
           <ResetFeedbackProvider>
-            <ResetProfessionalFrame>{children}</ResetProfessionalFrame>
+            <ResetProfessionalFrame contentLandmark={contentLandmark}>
+              {children}
+            </ResetProfessionalFrame>
           </ResetFeedbackProvider>
         </AskAtlasChromeProvider>
       </SidebarProvider>
@@ -173,7 +181,13 @@ export function ResetProfessionalShell({
   );
 }
 
-function ResetProfessionalFrame({ children }: { children: ReactNode }) {
+function ResetProfessionalFrame({
+  children,
+  contentLandmark,
+}: {
+  children: ReactNode;
+  contentLandmark: boolean;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { mobileOpen, open, setMobileOpen } = useSidebar();
@@ -539,7 +553,11 @@ function ResetProfessionalFrame({ children }: { children: ReactNode }) {
         </header>
         <div className="ux-reset-workspace-body">
           <div ref={scrollRef} className="ux-reset-pro-scroll">
-            <main className="app-content ux-reset-pro-main">{children}</main>
+            {contentLandmark ? (
+              <main className="app-content ux-reset-pro-main">{children}</main>
+            ) : (
+              <div className="app-content ux-reset-pro-main">{children}</div>
+            )}
             <ProfessionalTrustFooter />
           </div>
         </div>
