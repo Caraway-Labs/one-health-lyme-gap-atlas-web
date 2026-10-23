@@ -119,13 +119,17 @@ function GlanceCard({
   return (
     <Card
       className="ux-reset-compare-glance-card"
+      data-slot-letter={county.letter}
       data-testid={`compare-glance-${county.fips}`}
       size="sm"
     >
       <CardHeader>
         <CardTitle className="ux-reset-compare-glance-title">
-          <CompareSlotMarker letter={county.letter} />
-          <span>{county.label}</span>
+          <CompareSlotMarker expanded letter={county.letter} />
+          <span className="ux-reset-compare-glance-identity">
+            <strong>{county.countyName ?? county.label}</strong>
+            {county.stateLabel ? <span>{county.stateLabel}</span> : null}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="ux-reset-compare-glance-body">

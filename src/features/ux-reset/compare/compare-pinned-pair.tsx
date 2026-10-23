@@ -59,7 +59,7 @@ export function ComparePinnedPair({
           role="group"
         >
           <span className="ux-reset-compare-pinned-county">
-            <CompareSlotMarker letter="A" />
+            <CompareSlotMarker expanded letter="A" />
             <span>{leftLabel}</span>
           </span>
           <Button
@@ -72,7 +72,7 @@ export function ComparePinnedPair({
             <ArrowLeftRight aria-hidden="true" />
           </Button>
           <span className="ux-reset-compare-pinned-county">
-            <CompareSlotMarker letter="B" />
+            <CompareSlotMarker expanded letter="B" />
             <span>{rightLabel}</span>
           </span>
           <Button size="xs" type="button" variant="outline" onClick={onEdit}>
