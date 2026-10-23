@@ -317,8 +317,20 @@ function CompareExperienceInner() {
   const leftLabel = leftOption?.label ?? leftFips;
   const rightLabel = rightOption?.label ?? rightFips;
   const counties: readonly [CompareCountyIdentity, CompareCountyIdentity] = [
-    { fips: leftFips, label: leftLabel, letter: "A" },
-    { fips: rightFips, label: rightLabel, letter: "B" },
+    {
+      fips: leftFips,
+      label: leftLabel,
+      letter: "A",
+      countyName: leftOption?.countyName,
+      stateLabel: leftOption?.stateLabel,
+    },
+    {
+      fips: rightFips,
+      label: rightLabel,
+      letter: "B",
+      countyName: rightOption?.countyName,
+      stateLabel: rightOption?.stateLabel,
+    },
   ];
   const resultsReady = Boolean(workspace.profile) || reconciledRows.length > 0;
   const tier1Release = tier1ReleaseFromMetadata({

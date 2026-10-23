@@ -89,31 +89,24 @@ export function ReviewCategoryMark({
   }
 }
 
-/**
- * County identity marker. The letter plus the fill or ring shape keep A and B
- * distinguishable without relying on color.
- */
+/** County slot identity stays explicit in text as well as color. */
 export function CompareSlotMarker({
   className,
+  expanded = false,
   letter,
 }: {
   className?: string;
+  expanded?: boolean;
   letter: CompareSlotLetter;
 }) {
   return (
-    <span
+    <Badge
       aria-hidden="true"
-      className={cn(
-        "inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-        letter === "A"
-          ? "bg-primary text-primary-foreground"
-          : "border-primary text-primary border-2 bg-transparent",
-        className
-      )}
+      className={cn("ux-reset-compare-slot-marker", className)}
       data-slot-letter={letter}
     >
-      {letter}
-    </span>
+      {expanded ? `COUNTY ${letter}` : letter}
+    </Badge>
   );
 }
 
@@ -180,8 +173,8 @@ export function CompareCountyPicker({
     >
       <div className="ux-reset-compare-slot-label">
         <span className="flex items-center gap-1.5">
-          <CompareSlotMarker letter={letter} />
-          <span className="type-small">{label}</span>
+          <CompareSlotMarker expanded letter={letter} />
+          <span className="sr-only">{label}</span>
         </span>
         {reviewCategory && selectedFips ? (
           <ReviewCategoryMark badge={reviewCategory} fips={selectedFips} />

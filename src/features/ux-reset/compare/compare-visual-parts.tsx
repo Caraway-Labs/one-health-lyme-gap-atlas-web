@@ -40,6 +40,8 @@ import { evidenceAvailabilityLabel } from "@/features/ux-reset/evidence/value-st
 import { cn } from "@/lib/utils";
 
 export type CompareCountyIdentity = {
+  countyName?: string;
+  stateLabel?: string;
   fips: string;
   label: string;
   letter: CompareSlotLetter;

@@ -160,6 +160,48 @@ async function fulfillPdf(route: Route, filename: string) {
 }
 
 test.describe("two-county Compare", () => {
+  test("keeps teal A and navy B identity through a county swap", async ({
+    page,
+  }, testInfo) => {
+    await installCompareMocks(page, []);
+    await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const first = page.getByTestId("compare-glance-08001");
+    const second = page.getByTestId("compare-glance-08013");
+    await expect(first).toBeVisible();
+    await expect(first).toHaveAttribute("data-slot-letter", "A");
+    await expect(second).toHaveAttribute("data-slot-letter", "B");
+    await expect(first.locator(".ux-reset-compare-slot-marker")).toHaveText(
+      "COUNTY A"
+    );
+    await expect(second.locator(".ux-reset-compare-slot-marker")).toHaveText(
+      "COUNTY B"
+    );
+    await expect(first).toHaveCSS("border-top-color", "rgb(15, 119, 130)");
+    await expect(second).toHaveCSS("border-top-color", "rgb(8, 42, 77)");
+    await expect(
+      first.locator(".ux-reset-compare-glance-title")
+    ).not.toContainText("08001");
+    await expect(
+      second.locator(".ux-reset-compare-glance-identity > span")
+    ).toHaveText("Colorado");
+    const screenshotPath = testInfo.outputPath("county-identity.png");
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await testInfo.attach("county-identity-desktop", {
+      path: screenshotPath,
+      contentType: "image/png",
+    });
+    await page
+      .getByRole("button", { name: "Swap first and second county" })
+      .first()
+      .click();
+    await expect(second).toHaveAttribute("data-slot-letter", "A");
+    await expect(first).toHaveAttribute("data-slot-letter", "B");
+    await expect(second).toHaveCSS("border-top-color", "rgb(15, 119, 130)");
+    await expect(first).toHaveCSS("border-top-color", "rgb(8, 42, 77)");
+    const accessibility = await new AxeBuilder({ page }).analyze();
+    expect(accessibility.violations).toEqual([]);
+  });
+
   test("recovers empty, partial, invalid, and duplicate links", async ({
     page,
   }) => {
