@@ -508,8 +508,6 @@ function CompareExperienceInner() {
         <div className="ux-reset-compare-slots">
           <CompareCountyPicker
             clearLabel="Clear first county"
-            evidenceHref={leftFips ? workspace.investigateHref(leftFips) : null}
-            evidenceLabel={leftFips ? countyEvidenceLinkLabel(0) : null}
             label="First county"
             letter="A"
             options={leftOptions}
@@ -547,10 +545,6 @@ function CompareExperienceInner() {
           <CompareCountyPicker
             autoFocus={Boolean(originLabel)}
             clearLabel="Clear second county"
-            evidenceHref={
-              rightFips ? workspace.investigateHref(rightFips) : null
-            }
-            evidenceLabel={rightFips ? countyEvidenceLinkLabel(1) : null}
             label="Second county"
             letter="B"
             options={rightOptions}
@@ -786,21 +780,6 @@ function CompareExperienceInner() {
       </details>
     </div>
   );
-}
-
-function countyEvidenceLinkLabel(index: 0 | 1): string {
-  switch (index) {
-    case 0: {
-      return "View county evidence for the first county";
-    }
-    case 1: {
-      return "View county evidence for the second county";
-    }
-    default: {
-      const exhaustive: never = index;
-      return exhaustive;
-    }
-  }
 }
 
 export function ResetCompareExperience() {
