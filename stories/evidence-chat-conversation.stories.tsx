@@ -5,6 +5,7 @@ import { EvidenceChatConversationContent } from "@/components/evidence-chat/evid
 
 import { corpusGapResponse } from "./fixtures/story-chat";
 import {
+  OUTCOME_MATRIX_STORY_PRESETS,
   useStoryChatModel,
   type StoryChatPreset,
 } from "./support/story-chat-model";
@@ -16,6 +17,7 @@ const presets = [
   "structured-outcome",
   "client-failure",
   "near-limit",
+  ...OUTCOME_MATRIX_STORY_PRESETS,
 ] as const satisfies readonly StoryChatPreset[];
 
 export function ConversationStory({ preset }: { preset: StoryChatPreset }) {
@@ -73,3 +75,27 @@ export const StructuredOutcome: Story = {
 };
 export const ClientFailure: Story = { args: { preset: "client-failure" } };
 export const NearLimit: Story = { args: { preset: "near-limit" } };
+export const MatrixAnsweredSingleStudy: Story = {
+  args: { preset: "matrix-answered-single-study" },
+};
+export const MatrixAnsweredLimited: Story = {
+  args: { preset: "matrix-answered-limited" },
+};
+export const MatrixCorpusGap: Story = { args: { preset: "matrix-corpus-gap" } };
+export const MatrixSafetyRefusal: Story = {
+  args: { preset: "matrix-safety-refusal" },
+};
+export const MatrixEvidenceUnavailable: Story = {
+  args: { preset: "matrix-evidence-unavailable" },
+};
+export const MatrixCapacityLimited: Story = {
+  args: { preset: "matrix-capacity-limited" },
+};
+export const MatrixTimeout: Story = { args: { preset: "matrix-timeout" } };
+export const MatrixRateLimited: Story = {
+  args: { preset: "matrix-rate-limited" },
+};
+export const MatrixUnprocessable: Story = {
+  args: { preset: "matrix-unprocessable" },
+};
+export const MatrixNetwork: Story = { args: { preset: "matrix-network" } };

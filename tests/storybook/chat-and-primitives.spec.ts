@@ -26,6 +26,46 @@ const stories: { id: string; text?: string; name?: string }[] = [
     id: "ask-atlas-evidence-chat-conversation--near-limit",
     text: "900/1,000",
   },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-answered-single-study",
+    text: "Single-study evidence",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-answered-limited",
+    text: "Limited evidence",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-corpus-gap",
+    text: "does not support an answer",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-safety-refusal",
+    text: "Request not answered",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-evidence-unavailable",
+    text: "Evidence service unavailable",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-capacity-limited",
+    text: "Temporarily at capacity",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-timeout",
+    text: "Request timed out",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-rate-limited",
+    text: "Assistant is busy",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-unprocessable",
+    text: "Question not processed",
+  },
+  {
+    id: "ask-atlas-evidence-chat-conversation--matrix-network",
+    text: "Connection problem",
+  },
   { id: "ask-atlas-answer-sources--one-citation", text: "1 source" },
   { id: "ask-atlas-answer-sources--many-citations", text: "2 sources" },
   { id: "ask-atlas-answer-sources--limited", text: "Limited evidence" },
