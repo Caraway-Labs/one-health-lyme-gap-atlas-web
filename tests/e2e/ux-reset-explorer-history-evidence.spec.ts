@@ -1313,9 +1313,7 @@ test.describe("Explorer evidence-state accessibility", () => {
     await expect(missingClaim).toContainText("Unavailable");
     await expect(missingClaim).not.toContainText("0 cases");
     await expect(missing).not.toContainText("0 cases");
-    await expect(missing).toContainText(
-      "A missing published count is not a finding of zero cases."
-    );
+    await expect(missing).toContainText("A missing count is not zero cases.");
 
     await page.goto(
       exploreHref({
