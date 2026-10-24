@@ -67,6 +67,7 @@ vi.mock(import("@/lib/atlas-analytics"), async (importOriginal) => {
 });
 
 import {
+  ResetFeedbackPageButton,
   ResetFeedbackProvider,
   ResetFeedbackTrigger,
 } from "@/features/ux-reset/feedback/reset-feedback-dialog";
@@ -120,6 +121,25 @@ describe("reset feedback dialog", () => {
     cleanup();
     vi.unstubAllGlobals();
     vi.useRealTimers();
+  });
+
+  it("opens the same dialog from the Data Provenance page button", () => {
+    pathname.current = "/data-provenance";
+    render(
+      <TooltipProvider>
+        <ResetFeedbackProvider>
+          <ResetFeedbackTrigger />
+          <ResetFeedbackPageButton />
+        </ResetFeedbackProvider>
+      </TooltipProvider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Feedback" }));
+    expect(
+      screen.getByRole("dialog", { name: "Help shape One Health Atlas" })
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { hidden: true, name: "Give feedback" })
+    ).toBeTruthy();
   });
 
   it("opens the positive-first chooser without leaving the page", async () => {

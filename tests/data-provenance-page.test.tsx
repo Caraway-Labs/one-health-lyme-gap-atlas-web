@@ -73,6 +73,11 @@ describe("Data Provenance page", () => {
     screen.getByText(dataProvenanceContent.attribution);
     screen.getByText(dataProvenanceContent.bulletinNote);
     screen.getByRole("link", { name: "Return to the Atlas" });
+    const feedback = screen.getByRole("button", { name: "Feedback" });
+    const version = screen.getByLabelText("Data Provenance document version");
+    expect(feedback.compareDocumentPosition(version)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     expect(
       screen.getByLabelText("Data Provenance document version").textContent
     ).toContain("Version 1.0.0");
