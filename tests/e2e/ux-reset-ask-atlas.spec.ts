@@ -680,7 +680,7 @@ test.describe("Ask Atlas dedicated page", () => {
     await expect(comparability).toContainText(
       "1999-01-01 is not applied to these rows"
     );
-    await expect(page.getByTestId("compare-alignment")).not.toContainText(
+    await expect(page.locator(".compare-sheet-scroll")).not.toContainText(
       "1999"
     );
     const compareAsk = page.getByTestId("compare-ask-atlas");
