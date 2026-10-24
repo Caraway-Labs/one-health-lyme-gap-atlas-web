@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,19 +56,23 @@ const DIRECTORY = statesInAlphabeticalOrder();
 function ExternalResourceLink({
   className,
   link,
+  showIndicator = true,
+  ...linkProps
 }: {
   className?: string;
   link: Pick<CdcResourceLink, "title" | "url">;
-}) {
+  showIndicator?: boolean;
+} & Pick<ComponentProps<"a">, "aria-current">) {
   return (
     <a
       className={className}
       href={link.url}
       rel="noopener noreferrer"
       target="_blank"
+      {...linkProps}
     >
       <span>{link.title}</span>
-      <span aria-hidden="true"> ↗</span>
+      {showIndicator ? <span aria-hidden="true"> ↗</span> : null}
       <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
@@ -264,17 +268,16 @@ export function ResourcesPage() {
           <ul className="resources-directory-list">
             {DIRECTORY.map((state) => (
               <li key={state.code}>
-                <button
+                <ExternalResourceLink
                   aria-current={
                     selected?.code === state.code ? "true" : undefined
                   }
-                  type="button"
-                  onClick={() => {
-                    selectState(state);
+                  link={{
+                    title: state.name,
+                    url: state.url,
                   }}
-                >
-                  {state.name}
-                </button>
+                  showIndicator={false}
+                />
               </li>
             ))}
           </ul>
