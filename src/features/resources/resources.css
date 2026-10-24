@@ -300,7 +300,9 @@
   margin-top: 0.75rem;
 }
 
-.resources-directory-list button {
+.resources-directory-list a {
+  display: flex;
+  align-items: center;
   width: 100%;
   min-height: 2.75rem;
   padding: 0.4rem 0.55rem;
@@ -309,17 +311,19 @@
   background: var(--white);
   color: var(--navy);
   font: inherit;
+  line-height: 1.3;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
-.resources-directory-list button[aria-current="true"] {
+.resources-directory-list a[aria-current="true"] {
   border-color: var(--teal);
   background: var(--mint);
   color: var(--teal);
 }
 
-.resources-directory-list button:focus-visible {
+.resources-directory-list a:focus-visible {
   outline: 3px solid var(--navy);
   outline-offset: 2px;
 }
