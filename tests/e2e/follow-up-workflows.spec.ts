@@ -119,15 +119,15 @@ test.describe("five-category suggested follow-up", () => {
       "Conduct targeted follow-up"
     );
     for (const label of [
-      "Review county case information",
-      "Review tick and pathogen records",
-      "Clarify reporting, if needed",
-      "Consider prevention needs",
-      "Record the question and next step",
+      "Human disease surveillance",
+      "Vector and pathogen surveillance",
+      "Clinical and laboratory reporting",
+      "Community context and outreach",
+      "Coordination and documentation",
     ]) {
       await expect(followUp.getByText(label, { exact: true })).toBeVisible();
     }
-    await expect(followUp.getByText("Who can help:").first()).toBeVisible();
+    await expect(followUp.getByText("Partners:").first()).toBeVisible();
     await expect(followUp).not.toContainText(
       "Questions, partner roles, and official resources"
     );

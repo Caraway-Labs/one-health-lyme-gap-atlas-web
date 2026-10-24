@@ -135,21 +135,20 @@ export function CountyActionPlan({
         </p>
       ) : null}
       {explorer ? (
-        <ol className="action-list action-divider-rows">
-          {explorerRows.map((row, index) => (
+        <ul className="action-list action-divider-rows">
+          {explorerRows.map((row) => (
             <li data-testid={`follow-up-${row.id}`} key={row.id}>
-              <span className="action-row-index">{index + 1}</span>
               <div>
                 <strong>{row.heading}</strong>
                 <p>{row.explanation}</p>
                 <p className="action-who">
-                  <span>Who can help: </span>
+                  <span>Partners: </span>
                   {row.whoCanHelp}
                 </p>
               </div>
             </li>
           ))}
-        </ol>
+        </ul>
       ) : (
         <ol className="action-list">
           {workflow.rows.map((row) => (

@@ -2,16 +2,19 @@ import type { CountyDetail } from "@/generated/models";
 import { SUGGESTED_FOLLOW_UP_BY_COLOR } from "@/lib/atlas-ui";
 import {
   type CountyFollowUpWorkflow,
+  type FollowUpCategoryId,
   stateUnallocatedContext,
 } from "@/lib/follow-up-workflows";
 
-const WHO_CAN_HELP = [
-  "State or local surveillance staff",
-  "Vector-borne disease program or tick-surveillance partners",
-  "Surveillance staff, clinicians, and laboratories",
-  "Health educators or community partners",
-  "Staff coordinating the review",
-] as const;
+const PARTNERS_BY_CATEGORY: Record<FollowUpCategoryId, string> = {
+  "clinical-laboratory-reporting":
+    "Surveillance staff, clinicians, and laboratories",
+  "community-context-outreach": "Health educators or community partners",
+  "coordination-documentation": "Staff coordinating the review",
+  "human-disease-surveillance": "State or local surveillance staff",
+  "vector-pathogen-surveillance":
+    "Vector-borne disease program or tick-surveillance partners",
+};
 
 type ExplorerActionCopy = {
   explanation: string;
@@ -251,8 +254,11 @@ export function explorerFollowUpRows(
       index === 0 && unallocated
         ? `${action.explanation} ${unallocated}`
         : action.explanation,
-    heading: action.heading,
+    heading: workflow.rows[index]?.label ?? action.heading,
     id: workflow.rows[index]?.id ?? `follow-up-${index + 1}`,
-    whoCanHelp: WHO_CAN_HELP[index] ?? WHO_CAN_HELP[4],
+    whoCanHelp:
+      PARTNERS_BY_CATEGORY[
+        workflow.rows[index]?.id ?? "coordination-documentation"
+      ],
   }));
 }

@@ -2549,10 +2549,7 @@
 }
 
 .action-plan-explorer .action-divider-rows li {
-  display: grid;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
-  gap: 0.75rem;
-  align-items: start;
+  display: block;
   padding: 0.85rem 0;
   border: 0;
   border-radius: 0;
@@ -2561,19 +2558,6 @@
 
 .action-plan-explorer .action-divider-rows li + li {
   border-top: 1px solid var(--line);
-}
-
-.action-plan-explorer .action-row-index {
-  display: grid;
-  width: 1.75rem;
-  height: 1.75rem;
-  place-items: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--teal) 12%, white);
-  color: var(--navy);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1;
 }
 
 .action-plan-explorer .action-divider-rows strong {
