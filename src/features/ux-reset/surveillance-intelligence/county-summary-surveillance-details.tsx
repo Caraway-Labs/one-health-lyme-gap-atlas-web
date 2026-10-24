@@ -2,6 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
+import {
+  isSituationPerspective,
+  SituationInformation,
+} from "@/features/ux-reset/surveillance-intelligence/situation-information";
 import type { IntelligencePerspectiveView } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-model";
 
 export function CountySummarySurveillanceDetails({
@@ -23,6 +27,28 @@ export function CountySummarySurveillanceDetails({
       data-testid="surveillance-intelligence-details"
       id={id}
     >
+      {isSituationPerspective(perspective.id) ? (
+        <SituationInformation
+          onRetry={onRetry}
+          perspective={perspective}
+          showTitle
+        />
+      ) : (
+        <LegacyPerspectiveDetails onRetry={onRetry} perspective={perspective} />
+      )}
+    </section>
+  );
+}
+
+function LegacyPerspectiveDetails({
+  onRetry,
+  perspective,
+}: {
+  onRetry: () => void;
+  perspective: IntelligencePerspectiveView;
+}) {
+  return (
+    <>
       <p className="type-body m-0">{perspective.overview}</p>
       {perspective.fields.length > 0 ? (
         <dl className="m-0 grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-x-3 gap-y-2">
@@ -116,6 +142,6 @@ export function CountySummarySurveillanceDetails({
           ) : null}
         </details>
       ) : null}
-    </section>
+    </>
   );
 }

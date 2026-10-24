@@ -28,6 +28,32 @@ export function formatClassMembership(value: number): string {
   return `${percent}%`;
 }
 
+/**
+ * Plain-language membership. Ordinary values use one decimal place without a
+ * trailing .0. Positive values that would display as 0.0% stay distinct from
+ * a real zero. Full precision stays available to technical details.
+ */
+export function formatPlainMembershipPercent(value: number): string | null {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    return null;
+  }
+  if (value === 0 || Object.is(value, -0)) {
+    return "0%";
+  }
+  if (value === 1) {
+    return "100%";
+  }
+  const percent = (value * PERCENT_SCALE).toFixed(ONE_DECIMAL);
+  if (percent === "0.0") {
+    return "Less than 0.1%";
+  }
+  if (percent === "100.0") {
+    return "Less than 100%";
+  }
+  const display = percent.endsWith(".0") ? percent.slice(0, -2) : percent;
+  return `${display}%`;
+}
+
 export function formatPublishedGapScore(value: number): string {
   return value.toFixed(ONE_DECIMAL);
 }
