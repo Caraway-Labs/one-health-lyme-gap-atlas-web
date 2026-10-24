@@ -456,9 +456,6 @@ function humanRecommendation(
         intensityFor(level) === "targeted"
           ? "Review residence and likely exposure location."
           : "Include residence and likely exposure location.",
-        intensityFor(level) === "unassigned"
-          ? "No review level is assigned."
-          : null,
         unallocated,
       ]),
       verifyQuestion:
@@ -486,9 +483,6 @@ function humanRecommendation(
       "A missing published count is not a finding of zero cases. Include suppressed or unallocated reports.",
       intensityFor(level) === "targeted"
         ? "Review residence and likely exposure location."
-        : null,
-      intensityFor(level) === "unassigned"
-        ? "No review level is assigned."
         : null,
       unallocated,
     ]),
@@ -524,19 +518,11 @@ function vectorRecommendation(
   const tickMissing = tickRecordMissing(county);
   const pathogen = pathogenKind(county);
   const action = vectorAction(level);
-  const noted = (detail: string): string =>
-    joinDetail([
-      detail,
-      intensityFor(level) === "unassigned"
-        ? "No review level is assigned."
-        : null,
-    ]) ?? detail;
   if (tickDocumented && pathogen === "present") {
     return {
       action,
-      detail: noted(
-        "Published records include tick presence and a Borrelia burgdorferi detection. That detection is not a human transmission estimate."
-      ),
+      detail:
+        "Published records include tick presence and a Borrelia burgdorferi detection. That detection is not a human transmission estimate.",
       verifyQuestion:
         "How recent and local are these tick and pathogen records, and are newer local records available?",
     };
@@ -544,9 +530,8 @@ function vectorRecommendation(
   if (tickDocumented && pathogen === "negative") {
     return {
       action,
-      detail: noted(
-        "A tick presence record is published. The pathogen result is a documented negative finding, not a missing record. Confirm what was tested before reading it as countywide."
-      ),
+      detail:
+        "A tick presence record is published. The pathogen result is a documented negative finding, not a missing record. Confirm what was tested before reading it as countywide.",
       verifyQuestion:
         "What ticks were tested, and does the documented negative finding cover the collections relevant to this county?",
     };
@@ -554,9 +539,8 @@ function vectorRecommendation(
   if (tickDocumented && pathogen === "missing") {
     return {
       action,
-      detail: noted(
-        "A tick presence record is published, and no county-level pathogen result is published. Missing results are not documented negative findings."
-      ),
+      detail:
+        "A tick presence record is published, and no county-level pathogen result is published. Missing results are not documented negative findings.",
       verifyQuestion:
         "Was pathogen testing done, and do unpublished results exist? A missing result is not a negative test.",
     };
@@ -564,9 +548,7 @@ function vectorRecommendation(
   if (tickDocumented) {
     return {
       action,
-      detail: noted(
-        `The published Borrelia burgdorferi status is ${county.burgdorferi_status}. Do not read that status as absence.`
-      ),
+      detail: `The published Borrelia burgdorferi status is ${county.burgdorferi_status}. Do not read that status as absence.`,
       verifyQuestion:
         "How should this published pathogen status be read alongside the tick record and any newer local collections?",
     };
@@ -574,9 +556,8 @@ function vectorRecommendation(
   if (tickMissing && pathogen === "present") {
     return {
       action,
-      detail: noted(
-        "A pathogen detection is published without a tick-presence classification. Do not infer countywide tick distribution from that detection alone."
-      ),
+      detail:
+        "A pathogen detection is published without a tick-presence classification. Do not infer countywide tick distribution from that detection alone.",
       verifyQuestion:
         "Which collection does the pathogen detection come from, and is a tick-presence classification available locally?",
     };
@@ -584,9 +565,8 @@ function vectorRecommendation(
   if (tickMissing && pathogen === "negative") {
     return {
       action,
-      detail: noted(
-        "No tick-presence classification is published. The pathogen result is a documented negative finding, not a missing record."
-      ),
+      detail:
+        "No tick-presence classification is published. The pathogen result is a documented negative finding, not a missing record.",
       verifyQuestion:
         "What was tested, and do unpublished tick records exist outside this source?",
     };
@@ -594,9 +574,7 @@ function vectorRecommendation(
   if (tickMissing && pathogen === "other") {
     return {
       action,
-      detail: noted(
-        `No tick-presence classification is published. The Borrelia burgdorferi status is ${county.burgdorferi_status}, which is not absence.`
-      ),
+      detail: `No tick-presence classification is published. The Borrelia burgdorferi status is ${county.burgdorferi_status}, which is not absence.`,
       verifyQuestion:
         "Do local records explain this pathogen status and whether tick surveillance exists outside the published source?",
     };
@@ -604,18 +582,15 @@ function vectorRecommendation(
   if (tickMissing) {
     return {
       action,
-      detail: noted(
-        "No published tick or pathogen record is available outside the current source. Do not treat the gap as absence, and do not start field collection only because the published record is missing."
-      ),
+      detail:
+        "No published tick or pathogen record is available outside the current source. Do not treat the gap as absence, and do not start field collection only because the published record is missing.",
       verifyQuestion:
         "Do tick or pathogen records exist outside the current source?",
     };
   }
   return {
     action,
-    detail: noted(
-      `The published tick status is ${county.tick_status}. This is not a finding of tick absence.`
-    ),
+    detail: `The published tick status is ${county.tick_status}. This is not a finding of tick absence.`,
     verifyQuestion:
       "Do local vector records confirm or update this published tick status?",
   };
