@@ -12,13 +12,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FrontPorchTickIcon } from "@/features/front-porch/front-porch-icons";
 import { CountySummarySurveillanceDetails } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance-details";
 import {
   SURVEILLANCE_INTELLIGENCE_LABELS,
   type SurveillanceIntelligencePerspectiveId,
 } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import type { IntelligencePerspectiveView } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-model";
-import { TickOutlineIcon } from "@/features/ux-reset/surveillance-intelligence/tick-outline-icon";
 
 const PRIORITY_LEVELS = ["LOW", "MEDIUM", "HIGH"] as const;
 
@@ -161,7 +161,12 @@ function SituationIcon({
       <ClipboardList aria-hidden="true" className="county-summary-model-icon" />
     );
   }
-  return <TickOutlineIcon className="county-summary-model-icon" />;
+  return (
+    <FrontPorchTickIcon
+      bodyClassName=""
+      className="county-summary-model-icon county-summary-tick-icon"
+    />
+  );
 }
 
 function MarkVisual({
