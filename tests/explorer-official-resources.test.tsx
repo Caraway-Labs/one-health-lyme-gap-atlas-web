@@ -21,11 +21,7 @@ describe("Explorer official resources card", () => {
     expect(
       screen.getByRole("heading", { level: 3, name: "Official resources" })
     ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Authoritative references to support surveillance review, reporting, and public health action."
-      )
-    ).toBeVisible();
+    expect(screen.getByText("Guidance to support your review.")).toBeVisible();
     expect(screen.queryByText(/official resources & guidance/i)).toBeNull();
     expect(screen.queryByText("Resources for follow-up")).toBeNull();
     expect(

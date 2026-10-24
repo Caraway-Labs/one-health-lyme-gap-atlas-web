@@ -77,6 +77,39 @@ describe("published gap-score response categories", () => {
     expect(new Set(questions).size).toBe(6);
   });
 
+  it("uses the practical targeted actions without copying them into routine review", () => {
+    const targeted = buildCountyFollowUp(county({ color: "#efc64a" }));
+    const routine = buildCountyFollowUp(county({ color: "#a9d2db" }));
+    expect(targeted.rows.map((row) => row.label)).toStrictEqual([
+      "Review county case information",
+      "Review tick and pathogen records",
+      "Clarify reporting, if needed",
+      "Consider prevention needs",
+      "Record the question and next step",
+    ]);
+    expect(targeted.level.explanation).toBe(
+      "Review the county’s data with local partners to clarify the pattern and decide whether further follow-up would help."
+    );
+    expect(targeted.questions).toStrictEqual([
+      "Could travel, reporting practices, or suppressed counts explain the pattern?",
+      "How recent and geographically representative are the tick and pathogen records?",
+      "What do local partners know that is missing here?",
+      "What information would change your next step?",
+    ]);
+    expect({
+      action: targeted.rows[0]?.action,
+      distinctAction: routine.rows[0]?.action !== targeted.rows[0]?.action,
+      distinctQuestion: routine.questions[0] !== targeted.questions[0],
+      partners: targeted.rows[0]?.partners,
+    }).toStrictEqual({
+      action:
+        "Check whether local records clarify missing or suppressed counts.",
+      distinctAction: true,
+      distinctQuestion: true,
+      partners: "State or local surveillance staff",
+    });
+  });
+
   it("makes light blue and yellow differ in copy, not only the heading", () => {
     const lightBlue = buildCountyFollowUp(county({ color: "#a9d2db" }));
     const yellow = buildCountyFollowUp(county({ color: "#efc64a" }));

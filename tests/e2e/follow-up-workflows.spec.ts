@@ -99,6 +99,7 @@ test.describe("five-category suggested follow-up", () => {
   test("updates county evidence and keeps the desktop columns", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
     await installPublishedReview(page);
     await page.setViewportSize({ height: 850, width: 1792 });
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01003`);
@@ -119,27 +120,42 @@ test.describe("five-category suggested follow-up", () => {
       "Conduct targeted follow-up"
     );
     for (const label of [
-      "Human disease surveillance",
-      "Vector and pathogen surveillance",
-      "Clinical and laboratory reporting",
-      "Community context and outreach",
-      "Coordination and documentation",
+      "Review county case information",
+      "Review tick and pathogen records",
+      "Clarify reporting, if needed",
+      "Consider prevention needs",
+      "Record the question and next step",
     ]) {
       await expect(followUp.getByText(label, { exact: true })).toBeVisible();
     }
-    await expect(followUp.getByTestId("follow-up-interpretation")).toHaveCount(
-      0
+    await expect(followUp.getByTestId("follow-up-interpretation")).toHaveText(
+      "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted."
     );
     await expect(followUp).not.toContainText(
       "Atlas supports professional review, not individual risk measurement"
     );
     await expect(followUp).toContainText(
-      "compare the published minimum reported cases"
+      "Check whether local records clarify missing or suppressed counts."
     );
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
-      "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?"
+      "Could travel, reporting practices, or suppressed counts explain the pattern?"
     );
     await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
+    await page.getByTestId("explorer-what-if-summary").click();
+    const weight = page.getByRole("slider", { name: "Tick / pathogen weight" });
+    await weight.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(followUp.getByTestId("follow-up-what-if-note")).toContainText(
+      "Suggested follow-up remains based on the published Atlas gap-score category."
+    );
+    await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
+      "Conduct targeted follow-up"
+    );
+    await page.getByTestId("explorer-scenario-reset").click();
+    await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
+    await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
+      "Conduct targeted follow-up"
+    );
     await expect(followUp).toContainText("not documented negative findings");
     await expect(followUp).not.toContainText("within 2 weeks");
     const resources = page.getByTestId("explorer-official-resources");
@@ -147,9 +163,7 @@ test.describe("five-category suggested follow-up", () => {
     await expect(
       resources.getByRole("heading", { name: "Official resources" })
     ).toBeVisible();
-    await expect(resources).toContainText(
-      "Authoritative references to support surveillance review, reporting, and public health action."
-    );
+    await expect(resources).toContainText("Guidance to support your review.");
     await expect(resources).not.toContainText("Official resources & guidance");
     await expect(resources).not.toContainText("Resources for follow-up");
     for (const topic of [
@@ -216,6 +230,14 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-available-1792.png",
     });
+    await page.getByTestId("explorer-lower-workspace").screenshot({
+      path: "test-results/follow-up-desktop-1792.png",
+    });
+    await page.setViewportSize({ height: 900, width: 800 });
+    await page.getByTestId("explorer-lower-workspace").screenshot({
+      path: "test-results/follow-up-stacked-targeted-800.png",
+    });
+    await page.setViewportSize({ height: 850, width: 1792 });
 
     await page.setViewportSize({ height: 900, width: 1440 });
     await followUp.screenshot({
@@ -246,7 +268,7 @@ test.describe("five-category suggested follow-up", () => {
 
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
     await expect(followUp).toContainText(
-      "check whether additional county case information is available"
+      "A missing published count is not a finding of zero cases."
     );
     await expect(followUp).not.toContainText(
       "Compare the published minimum reported cases"
@@ -294,5 +316,8 @@ test.describe("five-category suggested follow-up", () => {
       followFirst: true,
       similarWidth: true,
     });
+    await page
+      .getByTestId("explorer-lower-workspace")
+      .screenshot({ path: "test-results/follow-up-stacked-800.png" });
   });
 });
