@@ -4,7 +4,7 @@ Status: implemented product and operations contract for live account/profile dat
 
 Owner: One Health Lyme Gap Atlas product and engineering leads
 
-Last reviewed: 2026-09-11
+Last reviewed: 2026-10-24
 
 ## Scope and boundaries
 
@@ -19,7 +19,7 @@ No export or deletion request may alter a public Atlas dataset, methodology, rel
 | Atlas account service (Supabase) | account ID, email, verified-authentication metadata, account settings | Yes, excluding credentials and security secrets | Delete account profile and revoke sessions after confirmation; retain security/audit record only as below | API + web |
 | Atlas personalization service | saved views, jurisdictions, user-created labels, preferences | Yes | Delete all user-scoped records | API + web |
 | Atlas feedback service and Snowflake feedback storage | feedback contact fields, request metadata, status, outcome | Yes | Delete contact and request linkage; retain original submitted feedback text and a redacted, non-identifying operational record when integrity, safety, or legal retention requires it | API + data |
-| Approved product-analytics processor | approved pseudonymous analytics identity and allowlisted events | Yes when the processor supports an account-linked export | Delete linked identity and events according to the approved processor contract | Web + API |
+| Approved product-analytics processor (Amplitude) | Session-scoped pseudonymous allowlisted events only. No account identity. Events are not sold, rented, or used for advertising. Production events are retained 90 days. | No person-level export. Amplitude stays in `omissions[]` while events have no account identity. | No person-level deletion. Events age out under the 90-day retention. Do not stitch a session to an account to satisfy a request. | Web |
 | Browser-only Atlas preferences | analytics choice, local evidence-chat history | Browser-specific; not part of an account export unless explicitly linked after approval | User clears local chat history or browser storage; account deletion cannot silently control another device | Web |
 | Operational security/audit systems | request ID, action, actor class, timestamps, result, redacted failure code | Not included in self-service export | Retain the minimum redacted record needed for security, fraud prevention, and compliance; publish the retention period before launch | Platform |
 
