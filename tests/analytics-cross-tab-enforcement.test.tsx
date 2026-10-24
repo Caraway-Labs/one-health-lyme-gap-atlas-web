@@ -18,7 +18,7 @@ import {
   atlasAnalytics,
   trackRouteView,
 } from "@/lib/atlas-analytics";
-import { getRouteShell } from "@/lib/navigation";
+import { getRouteShell, routeMountsAnalyticsClient } from "@/lib/navigation";
 
 const amplitude = vi.hoisted(() => ({
   init: vi.fn<(apiKey: string, options: Record<string, unknown>) => unknown>(),
@@ -42,18 +42,19 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 }));
 
 function ConsentedTab() {
-  if (getRouteShell(pathname) === "none") {
-    return <p>Professional shell</p>;
-  }
   return (
     <>
-      <AnalyticsClient />
-      <button
-        type="button"
-        {...analyticsControlAttributes("hero_explore_counties")}
-      >
-        Explore counties
-      </button>
+      {routeMountsAnalyticsClient(pathname) ? <AnalyticsClient /> : null}
+      {getRouteShell(pathname) === "none" ? (
+        <p>Professional shell</p>
+      ) : (
+        <button
+          type="button"
+          {...analyticsControlAttributes("hero_explore_counties")}
+        >
+          Explore counties
+        </button>
+      )}
     </>
   );
 }

@@ -184,9 +184,9 @@ test("honors Do Not Track on Settings opened from the footer", async ({
     { key: PREFERENCE_KEY, preference: seededGrant(Date.now()) }
   );
 
-  // `/` mounts AnalyticsClient. Workspace shell "none" routes, including
-  // Settings, do not, so a Settings-only check would miss a startup that
-  // ignored Do Not Track for an existing grant.
+  // `/` mounts AnalyticsClient from the front porch page. Settings mounts the
+  // shared professional-shell client as well. Do Not Track has to suppress
+  // startup for an existing grant on both.
   await page.goto("/");
   await expect(
     page.getByRole("button", { name: "Privacy settings" })

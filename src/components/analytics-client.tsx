@@ -120,10 +120,10 @@ export function AnalyticsClient() {
 }
 
 export function notifyAnalyticsPreferenceChanged(): void {
-  // Stop here, not only in AnalyticsClient. The professional /app shell does
-  // not mount that listener, and a grant made on legacy Atlas keeps the
-  // module-global SDK alive after the listener unmounts. Cross-tab storage
-  // events call this same path.
+  // Stop here, not only in AnalyticsClient. Docs, the design system, and auth
+  // utilities do not mount that listener, and a grant keeps the module-global
+  // SDK alive after the listener unmounts. Cross-tab storage events call this
+  // same path.
   enforceStoredAnalyticsPreference();
   window.dispatchEvent(new Event(ANALYTICS_PREFERENCE_CHANGED_EVENT));
 }
