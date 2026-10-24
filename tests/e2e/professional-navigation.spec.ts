@@ -156,8 +156,8 @@ test.describe("professional navigation desktop", () => {
         "Ask Atlas",
         "Research & News",
         "Resources",
-        "Data Provenance",
         "Settings",
+        "Data Provenance",
         "Docs, opens in a new tab",
       ]);
       const active = nav.getByRole("link", { exact: true, name: activeName });
@@ -427,8 +427,8 @@ test.describe("professional navigation mobile", () => {
         "Ask Atlas",
         "Research & News",
         "Resources",
-        "Data Provenance",
         "Settings",
+        "Data Provenance",
         "Docs, opens in a new tab",
       ]);
       const activeName = path === "/explore" ? "Atlas Explorer" : "Compare";

@@ -5,7 +5,7 @@ import {
   FingerprintPattern,
   GitCompare,
   LayoutDashboard,
-  Library,
+  LibraryBig,
   Map,
   Microscope,
   Newspaper,
@@ -201,7 +201,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     id: "feed",
     label: "Feed",
     match: "prefix",
-    navGroup: "access",
+    navGroup: "workspace",
     navLabel: "Research & News",
     pageDescription:
       "Scan recent items from approved trusted sources and open the publisher page.",
@@ -213,27 +213,14 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
   {
     description: RESOURCES_PAGE_SUBTITLE,
     href: RESET_RESOURCES_PATH,
-    icon: Library,
+    icon: LibraryBig,
     id: "resources",
     label: "Resources",
     match: "prefix",
-    navGroup: "access",
+    navGroup: "workspace",
     pageDescription: RESOURCES_PAGE_SUBTITLE,
     pageTitle: "Resources | One Health Lyme Gap Atlas",
     tooltipDetail: RESOURCES_PAGE_SUBTITLE,
-  },
-  {
-    description: DATA_PROVENANCE_NAV_DESCRIPTION,
-    href: RESET_DATA_PROVENANCE_PATH,
-    icon: FingerprintPattern,
-    id: "data-provenance",
-    label: "Data Provenance",
-    match: "prefix",
-    navGroup: "access",
-    pageDescription:
-      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
-    pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
-    tooltipDetail: DATA_PROVENANCE_NAV_DESCRIPTION,
   },
   {
     description:
@@ -249,6 +236,19 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Settings | One Health Lyme Gap Atlas",
     tooltipDetail:
       "Manage your account, preferences, and One Health Atlas experience.",
+  },
+  {
+    description: DATA_PROVENANCE_NAV_DESCRIPTION,
+    href: RESET_DATA_PROVENANCE_PATH,
+    icon: FingerprintPattern,
+    id: "data-provenance",
+    label: "Data Provenance",
+    match: "prefix",
+    navGroup: "access",
+    pageDescription:
+      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
+    pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
+    tooltipDetail: DATA_PROVENANCE_NAV_DESCRIPTION,
   },
   {
     description: "Open the canonical One Health Atlas documentation center.",

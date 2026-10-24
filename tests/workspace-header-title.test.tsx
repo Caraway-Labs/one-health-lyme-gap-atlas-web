@@ -92,19 +92,19 @@ describe("workspace header title resolution", () => {
       overviewTitle: pageMetadataForResetRoute("overview").title,
       workspace: RESET_WORKSPACE_NAV.map((route) => route.label),
     }).toStrictEqual({
-      access: [
-        "Research & News",
-        "Resources",
-        "Data Provenance",
-        "Settings",
-        "Docs",
-      ],
+      access: ["Settings", "Data Provenance", "Docs"],
       compareTitle: "Compare | One Health Lyme Gap Atlas",
       feedPageLabel: "Feed",
       feedTitle: "Feed | One Health Lyme Gap Atlas",
       navigationLabel: "Professional workspace",
       overviewTitle: "Professional workspace | One Health Lyme Gap Atlas",
-      workspace: ["Atlas Explorer", "Compare", "Ask Atlas"],
+      workspace: [
+        "Atlas Explorer",
+        "Compare",
+        "Ask Atlas",
+        "Feed",
+        "Resources",
+      ],
     });
   });
 

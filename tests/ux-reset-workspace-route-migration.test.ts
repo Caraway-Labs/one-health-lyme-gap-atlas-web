@@ -116,12 +116,12 @@ describe("six-page workspace route migration", () => {
       { id: "ask-atlas", label: "Ask Atlas", path: "/askatlas" },
       { id: "feed", label: "Feed", path: "/app/feed" },
       { id: "resources", label: "Resources", path: "/resources" },
+      { id: "settings", label: "Settings", path: "/app/settings" },
       {
         id: "data-provenance",
         label: "Data Provenance",
         path: "/data-provenance",
       },
-      { id: "settings", label: "Settings", path: "/app/settings" },
       { id: "docs", label: "Docs", path: "/docs" },
     ]);
     expect({
