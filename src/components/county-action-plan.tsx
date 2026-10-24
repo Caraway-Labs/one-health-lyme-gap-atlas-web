@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { explorerFollowUpRows } from "@/features/ux-reset/review/explorer-follow-up-display";
 import type { CountyDetail } from "@/generated/models";
 import {
   FOLLOW_UP_QUESTIONS_INTRO,
@@ -52,6 +53,7 @@ export function CountyActionPlan({
   reviewContext,
   omitDisclaimers = false,
   showEyebrow = true,
+  variant = "document",
   whatIfActive = false,
 }: {
   detail: CountyDetail;
@@ -60,6 +62,8 @@ export function CountyActionPlan({
   omitDisclaimers?: boolean;
   reviewContext?: FollowUpReviewContext;
   showEyebrow?: boolean;
+  /** Explorer rows stay out of the county profile and other document views. */
+  variant?: "document" | "explorer";
   whatIfActive?: boolean;
 }) {
   const workflow = buildCountyFollowUp(detail, reviewContext);
@@ -80,11 +84,13 @@ export function CountyActionPlan({
     (resource, index) =>
       resources.findIndex((entry) => entry.id === resource.id) === index
   );
+  const explorer = variant === "explorer";
+  const explorerRows = explorer ? explorerFollowUpRows(workflow, detail) : [];
 
   return (
     <section
       aria-labelledby={headingId}
-      className="action-plan"
+      className={explorer ? "action-plan action-plan-explorer" : "action-plan"}
       data-review-level={workflow.level.status}
       data-testid="suggested-follow-up"
       data-unavailable-reason={workflow.level.reason ?? ""}
@@ -111,12 +117,12 @@ export function CountyActionPlan({
         </p>
       )}
       <p className="action-summary">{workflow.level.explanation}</p>
-      {workflow.level.colorResponseNote ? (
+      {workflow.level.colorResponseNote && !explorer ? (
         <p className="action-summary" data-testid="follow-up-color-note">
           {workflow.level.colorResponseNote}
         </p>
       ) : null}
-      {workflow.level.governedNextCheck ? (
+      {workflow.level.governedNextCheck && !explorer ? (
         <p className="action-summary" data-testid="follow-up-next-check">
           Returned next check: {workflow.level.governedNextCheck}
         </p>
@@ -131,85 +137,118 @@ export function CountyActionPlan({
           <strong>{FOLLOW_UP_WHAT_IF_TITLE}</strong> {FOLLOW_UP_WHAT_IF_NOTE}
         </p>
       ) : null}
-      <ol className="action-list">
-        {workflow.rows.map((row) => (
-          <FollowUpRow key={row.id} row={row} />
-        ))}
-      </ol>
-      <details
-        className="action-disclosure ux-reset-follow-up-questions"
-        data-testid="follow-up-questions"
-      >
-        <summary>Questions before acting</summary>
-        <p>{FOLLOW_UP_QUESTIONS_INTRO}</p>
-        <ol>
-          {workflow.questions.map((question) => (
-            <li key={question}>{question}</li>
+      {explorer ? (
+        <ul className="action-list action-divider-rows">
+          {explorerRows.map((row) => (
+            <li data-testid={`follow-up-${row.id}`} key={row.id}>
+              <div>
+                <strong>{row.heading}</strong>
+                <p>{row.explanation}</p>
+                <p className="action-who">
+                  <span>Partners: </span>
+                  {row.whoCanHelp}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ol className="action-list">
+          {workflow.rows.map((row) => (
+            <FollowUpRow key={row.id} row={row} />
           ))}
         </ol>
-      </details>
-      <details className="action-resources">
-        <summary>Questions, partner roles, and official resources</summary>
-        <p>
-          Partner roles are suggestions for local judgment.
-          {omitDisclaimers ? null : " Atlas does not assign them."}
-        </p>
-        <p>Questions to verify locally</p>
-        <ul>
-          {questions.map((question) => (
-            <li key={question.id}>{question.question}</li>
-          ))}
-        </ul>
-        <p>Potential partner roles</p>
-        <ul>
-          {partners.map((partner) => (
-            <li key={partner.id}>
-              <strong>{partner.label}.</strong> {partner.partners}
-            </li>
-          ))}
-        </ul>
-        <p>Relevant official resources</p>
-        <ul>
-          {uniqueResources.map((resource) => (
-            <li key={resource.id}>
-              <a
-                aria-label={`${resource.label} (opens in a new tab)`}
-                href={resource.href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {resource.label}
-                <span aria-hidden="true"> ↗</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <p>
-          These examples show approaches used by other state vector-borne
-          disease programs. Follow the selected county&apos;s own state
-          requirements.
-        </p>
-        <ul>
-          {PROGRAM_RESOURCES.map((resource) => (
-            <li key={resource.href}>
-              <a
-                aria-label={`${resource.label} (opens in a new tab)`}
-                href={resource.href}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                {resource.label}
-                <span aria-hidden="true"> ↗</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <p>
-          <Link href={resourcesPageHref(detail.state)}>
-            View all resources →
-          </Link>
-        </p>
-      </details>
+      )}
+      {explorer ? (
+        <section
+          className="action-questions-inset"
+          data-testid="follow-up-questions"
+        >
+          <h4>Questions before acting</h4>
+          <ul>
+            {workflow.questions.map((question) => (
+              <li key={question}>{question}</li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <details
+          className="action-disclosure ux-reset-follow-up-questions"
+          data-testid="follow-up-questions"
+        >
+          <summary>Questions before acting</summary>
+          <p>{FOLLOW_UP_QUESTIONS_INTRO}</p>
+          <ol>
+            {workflow.questions.map((question) => (
+              <li key={question}>{question}</li>
+            ))}
+          </ol>
+        </details>
+      )}
+      {explorer ? null : (
+        <details className="action-resources">
+          <summary>Questions, partner roles, and official resources</summary>
+          <p>
+            Partner roles are suggestions for local judgment.
+            {omitDisclaimers ? null : " Atlas does not assign them."}
+          </p>
+          <p>Questions to verify locally</p>
+          <ul>
+            {questions.map((question) => (
+              <li key={question.id}>{question.question}</li>
+            ))}
+          </ul>
+          <p>Potential partner roles</p>
+          <ul>
+            {partners.map((partner) => (
+              <li key={partner.id}>
+                <strong>{partner.label}.</strong> {partner.partners}
+              </li>
+            ))}
+          </ul>
+          <p>Relevant official resources</p>
+          <ul>
+            {uniqueResources.map((resource) => (
+              <li key={resource.id}>
+                <a
+                  aria-label={`${resource.label} (opens in a new tab)`}
+                  href={resource.href}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {resource.label}
+                  <span aria-hidden="true"> ↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p>
+            These examples show approaches used by other state vector-borne
+            disease programs. Follow the selected county&apos;s own state
+            requirements.
+          </p>
+          <ul>
+            {PROGRAM_RESOURCES.map((resource) => (
+              <li key={resource.href}>
+                <a
+                  aria-label={`${resource.label} (opens in a new tab)`}
+                  href={resource.href}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {resource.label}
+                  <span aria-hidden="true"> ↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p>
+            <Link href={resourcesPageHref(detail.state)}>
+              View all resources →
+            </Link>
+          </p>
+        </details>
+      )}
     </section>
   );
 }

@@ -1227,7 +1227,9 @@ test.describe("Explorer evidence-state accessibility", () => {
       "Unavailable. No county-linked record."
     );
     await expect(unavailable).toContainText("Published input coverage is 0%.");
-    await expect(unavailable).toContainText("Do not treat the gap as absence");
+    await expect(unavailable).toContainText(
+      "A missing count is not zero cases."
+    );
     await expect(unavailable).not.toContainText("0 cases");
     await expect(unavailable).not.toContainText("pathogen is absent");
     const pathogen = unavailable
@@ -1311,9 +1313,7 @@ test.describe("Explorer evidence-state accessibility", () => {
     await expect(missingClaim).toContainText("Unavailable");
     await expect(missingClaim).not.toContainText("0 cases");
     await expect(missing).not.toContainText("0 cases");
-    await expect(missing).toContainText(
-      "A missing published count is not a finding of zero cases."
-    );
+    await expect(missing).toContainText("A missing count is not zero cases.");
 
     await page.goto(
       exploreHref({
