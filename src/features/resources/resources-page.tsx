@@ -120,6 +120,12 @@ export function ResourcesPage() {
         id={RESOURCE_SECTION_IDS.cdc}
       >
         <div className="resources-cdc-heading">
+          <div className="resources-cdc-heading-copy">
+            <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
+            <p className="resources-section-intro">
+              Surveillance, interpretation, and prevention references.
+            </p>
+          </div>
           <Image
             alt="Centers for Disease Control and Prevention"
             className="resources-cdc-logo"
@@ -128,13 +134,6 @@ export function ResourcesPage() {
             unoptimized
             width={228}
           />
-          <div className="resources-cdc-heading-copy">
-            <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
-            <p className="resources-section-intro">
-              National references for surveillance, interpretation, and
-              prevention.
-            </p>
-          </div>
         </div>
         <div className="resources-topic-grid">
           {CDC_RESOURCE_TOPICS.map((topic) => {

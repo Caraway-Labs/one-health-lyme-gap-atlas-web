@@ -140,14 +140,24 @@ describe("Resources page", () => {
     ).toBeVisible();
   });
 
-  it("places the official CDC logo beside the guidance heading", () => {
+  it("places the official CDC logo to the right of the guidance heading", () => {
     render(<ResourcesPage />);
+    const heading = screen.getByRole("heading", {
+      name: "CDC guidance & tools",
+    });
+    const logo = screen.getByRole("img", {
+      name: "Centers for Disease Control and Prevention",
+    });
 
+    expect(logo).toHaveAttribute("src", "/resources/cdc-logo.svg");
+    expect(heading.compareDocumentPosition(logo)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     expect(
-      screen.getByRole("img", {
-        name: "Centers for Disease Control and Prevention",
-      })
-    ).toHaveAttribute("src", "/resources/cdc-logo.svg");
+      screen.getByText(
+        "Surveillance, interpretation, and prevention references."
+      )
+    ).toBeVisible();
   });
 
   it("initializes the selector from a state query", () => {
