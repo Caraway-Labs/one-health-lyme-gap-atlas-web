@@ -217,7 +217,7 @@ test.describe("Compare county surveillance intelligence", () => {
     expect(placement?.intelligenceBeforeHuman).toBe(true);
 
     const situation = section.getByRole("button", {
-      name: "Surveillance Situation",
+      name: "Combined surveillance pattern",
     });
     await situation.focus();
     await page.keyboard.press("Enter");

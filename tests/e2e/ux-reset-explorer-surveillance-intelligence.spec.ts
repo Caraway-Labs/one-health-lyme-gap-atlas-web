@@ -195,7 +195,7 @@ test.describe("Explorer county surveillance intelligence", () => {
     await expect(gap).toHaveAttribute("aria-expanded", "true");
     await expect(details).toContainText("Human/ecological discordance");
     const situation = section.getByRole("button", {
-      name: /Surveillance Situation/,
+      name: /Combined surveillance pattern/,
     });
     await situation.focus();
     await page.keyboard.press(" ");
