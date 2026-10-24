@@ -203,27 +203,25 @@ describe("Resources page", () => {
     );
   });
 
-  it("filters regional centers without dropping their links", () => {
+  it("shows every regional center without filter buttons", () => {
     render(<ResourcesPage />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Centers of Excellence" })
-    );
     const regional = screen.getByRole("region", {
       name: "Regional expertise & training",
     });
-    expect(within(regional).getAllByRole("link")).toHaveLength(4);
+
     expect(
-      within(regional).getByRole("heading", { name: "NewVec" })
-    ).toBeVisible();
-    expect(within(regional).queryByRole("link", { name: /NEVBD/ })).toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Training & Evaluation" })
+      within(regional).queryByRole("button", { name: "All centers" })
+    ).toBeNull();
+    expect(
+      within(regional).queryByRole("button", { name: "Centers of Excellence" })
+    ).toBeNull();
+    expect(within(regional).getAllByRole("link")).toHaveLength(9);
+    expect(within(regional).getAllByText("Center of Excellence")).toHaveLength(
+      4
     );
-    expect(within(regional).getAllByRole("link")).toHaveLength(5);
-    expect(
-      within(regional).getByRole("link", { name: /NEVBD/ })
-    ).toHaveAttribute("href", "https://www.neregionalvectorcenter.com/");
+    expect(within(regional).getAllByText("Training & Evaluation")).toHaveLength(
+      5
+    );
   });
 
   it("places a verified logo beside each center name without hiding the name", () => {
@@ -268,18 +266,5 @@ describe("Resources page", () => {
         name: "Tropical Islands Training & Evaluation Center",
       })
     ).toBeVisible();
-  });
-
-  it("returns every center from the all-centers filter", () => {
-    render(<ResourcesPage />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Training & Evaluation" })
-    );
-    fireEvent.click(screen.getByRole("button", { name: "All centers" }));
-    expect(
-      within(
-        screen.getByRole("region", { name: "Regional expertise & training" })
-      ).getAllByRole("link")
-    ).toHaveLength(9);
   });
 });
