@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  explorerFitGeographyTarget,
   explorerFocusCountyMismatch,
   explorerMapDrillAction,
   explorerStateFromCountyFips,
@@ -61,6 +62,48 @@ describe("explorer map focus", () => {
     expect(explorerStateFromCountyFips("11001")).toBe("DC");
     expect(explorerStateFromCountyFips("02013")).toBeNull();
     expect(explorerStateFromCountyFips("1600")).toBeNull();
+  });
+
+  it("fits the selected county, then the focused state, then the country", () => {
+    expect({
+      all: explorerFitGeographyTarget({
+        fitSelectedCounty: false,
+        focusedState: "ALL",
+        selectedCountyFips: "",
+      }),
+      countyInState: explorerFitGeographyTarget({
+        fitSelectedCounty: true,
+        focusedState: "KS",
+        selectedCountyFips: "20091",
+      }),
+      countyWithoutFocus: explorerFitGeographyTarget({
+        fitSelectedCounty: true,
+        focusedState: null,
+        selectedCountyFips: "20091",
+      }),
+      empty: explorerFitGeographyTarget({
+        fitSelectedCounty: false,
+        focusedState: null,
+        selectedCountyFips: "",
+      }),
+      stateOnly: explorerFitGeographyTarget({
+        fitSelectedCounty: false,
+        focusedState: "KS",
+        selectedCountyFips: "",
+      }),
+      stateScopedCounty: explorerFitGeographyTarget({
+        fitSelectedCounty: false,
+        focusedState: "KS",
+        selectedCountyFips: "20091",
+      }),
+    }).toStrictEqual({
+      all: { kind: "national" },
+      countyInState: { fips: "20091", kind: "county" },
+      countyWithoutFocus: { fips: "20091", kind: "county" },
+      empty: { kind: "national" },
+      stateOnly: { kind: "state", state: "KS" },
+      stateScopedCounty: { kind: "state", state: "KS" },
+    });
   });
 
   it("focuses the state on the first click and selects a county on the next", () => {
