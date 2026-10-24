@@ -128,11 +128,12 @@ const GEOGRAPHIC_STATE_OUTLINE = "#000000";
  */
 const NATIONAL_SELECTED_STATE_LINE_WIDTH = 2.5;
 /**
- * Selected county perimeter. A constant screen-pixel width keeps the same CSS
- * thickness through pan and zoom. Solid black, with no casing, blur, or halo.
+ * Selected county perimeter. A numeric MapLibre line width is CSS pixels and
+ * does not scale with zoom. Solid black at full opacity, with no casing,
+ * blur, or halo.
  */
 const SELECTED_COUNTY_OUTLINE_COLOR = "#000000";
-const SELECTED_COUNTY_OUTLINE_WIDTH = 3;
+const SELECTED_COUNTY_OUTLINE_WIDTH = 5;
 const ATLAS_COUNTY_MAP_KEY = "atlasCountyMap";
 
 export type AtlasMapCountyPointer = {
