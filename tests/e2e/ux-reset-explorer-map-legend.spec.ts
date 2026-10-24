@@ -542,6 +542,27 @@ async function tickLegendGeometry(
   });
 }
 
+async function layerMenuFits(control: Locator) {
+  return control.evaluate((trigger) => {
+    const value = trigger.querySelector("[data-slot='select-value']");
+    const field = trigger.closest(".ux-reset-review-scope-field");
+    const label = field?.querySelector("label");
+    const triggerRect = trigger.getBoundingClientRect();
+    const labelRect = label?.getBoundingClientRect();
+    const overlapsLabel = labelRect
+      ? triggerRect.left < labelRect.right - 1 &&
+        triggerRect.right > labelRect.left + 1 &&
+        triggerRect.top < labelRect.bottom - 1 &&
+        triggerRect.bottom > labelRect.top + 1
+      : false;
+    const clipped = value
+      ? value.scrollWidth > value.clientWidth + 1 ||
+        value.scrollHeight > value.clientHeight + 1
+      : true;
+    return { clipped, overlapsLabel };
+  });
+}
+
 async function chooseLayer(page: Page, name: string) {
   await page.getByTestId("explorer-map-layer").click();
   await page.getByRole("option", { name, exact: true }).click();
@@ -595,6 +616,40 @@ test.describe("Atlas Explorer layer legends", () => {
         name: "Minimum reported Lyme incidence",
       })
     ).toHaveCount(0);
+  });
+
+  test("spells Borrelia burgdorferi in the layer menu and keeps the legend abbreviation", async ({
+    page,
+  }) => {
+    await page.goto("/explore?scope=ALL&layer=pathogen_status");
+    const control = page.getByTestId("explorer-map-layer");
+    const legend = page.getByTestId("explorer-map-legend");
+    await expect(control).toContainText("Borrelia burgdorferi status");
+    await expect(page).toHaveURL(/layer=pathogen_status/);
+    await expect(legend).toHaveAttribute(
+      "data-legend-layer",
+      "pathogen_status"
+    );
+    await expect(legend).toContainText("B. burgdorferi status");
+    await expect(legend).not.toContainText("Borrelia burgdorferi status");
+    await expect
+      .poll(() => layerMenuFits(control))
+      .toEqual({
+        clipped: false,
+        overlapsLabel: false,
+      });
+    await control.click();
+    await page
+      .getByRole("option", {
+        exact: true,
+        name: "Borrelia burgdorferi status",
+      })
+      .click();
+    await expect(control).toContainText("Borrelia burgdorferi status");
+    await expect(legend).toHaveAttribute(
+      "data-legend-layer",
+      "pathogen_status"
+    );
   });
 
   test("explains every national gap-score color, then stays accurate across state and layer changes", async ({
@@ -732,7 +787,7 @@ test.describe("Atlas Explorer layer legends", () => {
         visible: true,
       });
 
-    await chooseLayer(page, "B. burgdorferi status");
+    await chooseLayer(page, "Borrelia burgdorferi status");
     await expect(legend).toContainText("B. burgdorferi status");
     await expect(
       legend.getByRole("button", { name: /Absent \(observed zero/ })
@@ -825,7 +880,9 @@ test.describe("Atlas Explorer layer legends", () => {
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "Blacklegged tick status" }).click();
     await page.getByTestId("explorer-map-layer").click();
-    await page.getByRole("option", { name: "B. burgdorferi status" }).click();
+    await page
+      .getByRole("option", { name: "Borrelia burgdorferi status" })
+      .click();
     await page.getByTestId("explorer-map-layer").click();
     await page.getByRole("option", { name: "Gap review score" }).click();
     await expect(
@@ -1229,7 +1286,7 @@ test.describe("Blacklegged tick status legend", () => {
     await page.keyboard.press("Escape");
     await expect(tip).toBeHidden();
 
-    await chooseLayer(page, "B. burgdorferi status");
+    await chooseLayer(page, "Borrelia burgdorferi status");
     await expect(legend).toHaveAttribute(
       "data-legend-layer",
       "pathogen_status"
@@ -1463,7 +1520,7 @@ test.describe("B. burgdorferi status legend", () => {
     }, PATHOGEN_STATUS_PRESENT_COLOR);
     expect(tickSwatch).not.toBe(presentProbe);
 
-    await chooseLayer(page, "B. burgdorferi status");
+    await chooseLayer(page, "Borrelia burgdorferi status");
     await expect(legend).toHaveAttribute(
       "data-legend-layer",
       "pathogen_status"
