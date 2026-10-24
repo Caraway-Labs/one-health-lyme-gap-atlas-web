@@ -3,11 +3,11 @@
 Owner: One Health Lyme Gap Atlas product and engineering leads  
 Last reviewed: 2026-09-11
 
-## Disable optional analytics
+## Disable product analytics
 
 1. Remove or blank `NEXT_PUBLIC_AMPLITUDE_API_KEY` in GitHub Actions secrets and DigitalOcean App Platform build-time env.
 2. Redeploy the web app. The client will not initialize Amplitude without a key.
-3. Visitors can also withdraw consent in footer Privacy settings; that clears vendor storage in the browser.
+3. Visitors can opt out in Privacy settings; that clears vendor storage in the browser. Default-on collection, Do Not Track, and storage-unavailable behavior are governed by [ADR 0022](adr/0022-default-on-amplitude-product-analytics.md). Events stay session-scoped, are retained 90 days, and are not sold or used for advertising.
 
 Do not replace the disabled Browser SDK with a server collector or proxy without a new ADR.
 

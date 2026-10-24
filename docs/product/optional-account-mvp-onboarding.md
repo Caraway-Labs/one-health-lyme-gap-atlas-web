@@ -59,7 +59,7 @@ All states need keyboard operation, visible focus, programmatic labels, error su
 
 Do not collect or transmit PHI, health data, diagnosis/treatment information, exact address, county/FIPS, role/jurisdiction analytics, prompt/chat content, or browser/session identifiers for product analytics. Selected state is private profile data, not analytics data.
 
-Only after explicit analytics consent, the approved telemetry boundary may emit allowlisted lifecycle events without profile values: account-entry shown, authentication completed/cancelled/failed, onboarding skipped, and profile-save success/failure. The event catalogue and negative privacy tests must be updated before such events are implemented.
+When product analytics is allowed under [ADR 0022](../adr/0022-default-on-amplitude-product-analytics.md) (on by default unless the visitor opts out, Do Not Track is on, or storage is unavailable), the approved telemetry boundary may emit allowlisted lifecycle events without profile values: account-entry shown, authentication completed/cancelled/failed, onboarding skipped, and profile-save success/failure. The event catalogue and negative privacy tests must be updated before such events are implemented.
 
 ## Prerequisites and policy gates
 
