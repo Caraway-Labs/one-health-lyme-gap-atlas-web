@@ -217,6 +217,34 @@ describe("professional shell analytics client", () => {
     });
   });
 
+  it("keeps a stored grant and vendor storage on a fresh professional route", async () => {
+    writeBrowserAnalyticsPreference("granted");
+    sessionStorage.setItem("AMP_session", "vendor-session");
+    localStorage.setItem("amplitude_unsent", "vendor-local");
+    pathname = "/explore";
+    render(
+      <RouteChrome>
+        <p>Atlas Explorer</p>
+      </RouteChrome>
+    );
+    await waitFor(() => {
+      if (amplitude.init.mock.calls.length !== 1) {
+        throw new Error("professional route did not start analytics");
+      }
+    });
+    expect({
+      optOut: amplitude.setOptOut.mock.lastCall?.[0] ?? null,
+      resetCalls: amplitude.reset.mock.calls.length,
+      session: sessionStorage.getItem("AMP_session"),
+      unsent: localStorage.getItem("amplitude_unsent"),
+    }).toStrictEqual({
+      optOut: false,
+      resetCalls: 0,
+      session: "vendor-session",
+      unsent: "vendor-local",
+    });
+  });
+
   it("does not start analytics on an excluded route", () => {
     writeBrowserAnalyticsPreference("granted");
     pathname = "/docs/evidence-and-uncertainty";

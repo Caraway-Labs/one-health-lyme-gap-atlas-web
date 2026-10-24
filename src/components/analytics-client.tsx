@@ -79,8 +79,13 @@ export function AnalyticsClient() {
   }, []);
 
   useEffect(() => {
+    // The first render still has the "not-decided" placeholder. Read storage
+    // in this effect so a stored grant does not stop the SDK and clear vendor
+    // storage before the preference state catches up.
+    const storedConsent =
+      consent === "not-decided" ? readBrowserAnalyticsPreference() : consent;
     const mayStart = analyticsMayStart({
-      consent,
+      consent: storedConsent,
       doNotTrack: honorsDoNotTrack(window.navigator),
     });
 
