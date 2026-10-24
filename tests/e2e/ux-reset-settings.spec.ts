@@ -479,7 +479,7 @@ test.describe("Settings profile and default jurisdiction", () => {
     expect(api.writes).toEqual([]);
 
     await privacy
-      .getByRole("button", { name: "Keep optional analytics off" })
+      .getByRole("button", { name: "Turn off optional analytics" })
       .click();
     await expect(privacy.getByRole("status")).toHaveText(
       "Optional analytics are off for this browser."
@@ -536,7 +536,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       )
       .toContain('"decision":"granted"');
     await privacy
-      .getByRole("button", { name: "Keep optional analytics off" })
+      .getByRole("button", { name: "Turn off optional analytics" })
       .click();
     await expect
       .poll(() =>
@@ -565,7 +565,7 @@ test.describe("Settings profile and default jurisdiction", () => {
       privacy.getByRole("button", { name: "Allow optional analytics" })
     ).toBeVisible();
     await expect(
-      privacy.getByRole("button", { name: "Keep optional analytics off" })
+      privacy.getByRole("button", { name: "Turn off optional analytics" })
     ).toBeVisible();
     const box = await privacy.boundingBox();
     expect(box?.width ?? 0).toBeLessThanOrEqual(390);

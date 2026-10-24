@@ -185,7 +185,13 @@ export function ResourcesPage() {
         className="resources-section"
         id={RESOURCE_SECTION_IDS.state}
       >
-        <h2 id="state-resources-heading">Find your state&apos;s resources</h2>
+        <h2 id="state-resources-heading">
+          Explore resources from other states
+        </h2>
+        <p className="resources-section-intro">
+          See how states approach Lyme disease surveillance, prevention, and
+          education. Find materials and ideas that may help your program.
+        </p>
         <div className="resources-state-panel">
           <StateResourceMap
             selectedCode={selected?.code ?? null}

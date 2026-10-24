@@ -48,10 +48,10 @@ export function describeAnalyticsRuntime({
   let blocker: AnalyticsRuntimeBlocker | null = null;
   if (consent === "storage-unavailable") {
     blocker = "storage_unavailable";
-  } else if (consent !== "granted") {
-    blocker = "consent_not_granted";
   } else if (doNotTrack) {
     blocker = "do_not_track";
+  } else if (consent === "denied") {
+    blocker = "consent_not_granted";
   } else if (!apiKey) {
     blocker = "missing_api_key";
   }

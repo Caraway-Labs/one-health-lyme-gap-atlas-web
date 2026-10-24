@@ -158,7 +158,7 @@ describe("cross-tab analytics enforcement", () => {
     });
   });
 
-  it("shuts the SDK down when another tab clears storage, including after the professional shell", async () => {
+  it("keeps the SDK running when another tab clears the preference", async () => {
     writeBrowserAnalyticsPreference("granted");
     const view = render(<ConsentedTab />);
     await waitFor(() => {
@@ -166,6 +166,8 @@ describe("cross-tab analytics enforcement", () => {
         throw new Error("consented tab did not start analytics");
       }
     });
+    sessionStorage.setItem("AMP_session", "vendor-session");
+    localStorage.setItem("amplitude_unsent", "vendor-local");
     const tracksBeforeClear = amplitude.track.mock.calls.length;
     localStorage.removeItem(ANALYTICS_PREFERENCE_KEY);
     dispatchPreferenceStorage(null);
@@ -174,13 +176,59 @@ describe("cross-tab analytics enforcement", () => {
     view.rerender(<ConsentedTab />);
     trackRouteView("/app");
 
-    expect(sdkSnapshot()).toStrictEqual({
+    const afterClear = sdkSnapshot();
+    expect(afterClear).toMatchObject({
       initCalls: 1,
-      optOut: true,
-      resetCalls: 1,
-      session: null,
-      trackCalls: tracksBeforeClear,
-      unsent: null,
+      optOut: false,
+      resetCalls: 0,
+      session: "vendor-session",
+      unsent: "vendor-local",
     });
+    expect(afterClear.trackCalls).toBeGreaterThan(tracksBeforeClear);
+    expect(localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).toBeNull();
+  });
+
+  it("starts analytics when storage works and no preference is stored", async () => {
+    render(<ConsentedTab />);
+    await waitFor(() => {
+      if (amplitude.init.mock.calls.length !== 1) {
+        throw new Error("default-on visit did not start analytics");
+      }
+    });
+    expect({
+      optOut: amplitude.setOptOut.mock.lastCall?.[0] ?? null,
+      preference: localStorage.getItem(ANALYTICS_PREFERENCE_KEY),
+      tracked: amplitude.track.mock.calls.length > 0,
+    }).toStrictEqual({
+      optOut: false,
+      preference: null,
+      tracked: true,
+    });
+  });
+
+  it("does not start analytics when Do Not Track is on", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, "doNotTrack");
+    Object.defineProperty(navigator, "doNotTrack", {
+      configurable: true,
+      get: () => "1",
+    });
+    try {
+      const view = render(<ConsentedTab />);
+      fireEvent.click(view.getByRole("button", { name: "Explore counties" }));
+      expect(sdkSnapshot()).toStrictEqual({
+        initCalls: 0,
+        optOut: null,
+        resetCalls: 0,
+        session: null,
+        trackCalls: 0,
+        unsent: null,
+      });
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(navigator, "doNotTrack", descriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "doNotTrack");
+      }
+    }
   });
 });

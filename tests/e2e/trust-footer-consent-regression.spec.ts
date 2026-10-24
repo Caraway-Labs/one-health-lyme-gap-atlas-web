@@ -11,7 +11,8 @@ import { releaseViewportRuns } from "./release-phone-viewport";
 
 const PREFERENCE_KEY = "atlas.analytics-preference.v1";
 
-const NOT_DECIDED = "Optional analytics are off until you make a choice.";
+const NOT_DECIDED =
+  "Optional analytics are on for this browser until you turn them off.";
 const DENIED = "Optional analytics are off for this browser.";
 const ALLOWED =
   "Optional analytics are allowed for this browser until this preference expires or you change it.";
@@ -127,7 +128,7 @@ test("persists deny, allow, and withdraw from the footer Settings link", async (
   });
 
   await privacy
-    .getByRole("button", { name: "Keep optional analytics off" })
+    .getByRole("button", { name: "Turn off optional analytics" })
     .click();
   await expect(privacy.getByRole("status")).toHaveText(DENIED);
   expect(await storedDecision(page)).toBe("denied");
@@ -151,7 +152,7 @@ test("persists deny, allow, and withdraw from the footer Settings link", async (
   });
 
   await privacy
-    .getByRole("button", { name: "Keep optional analytics off" })
+    .getByRole("button", { name: "Turn off optional analytics" })
     .click();
   await expect(privacy.getByRole("status")).toHaveText(DENIED);
   expect(await storedDecision(page)).toBe("denied");
@@ -234,7 +235,7 @@ test("reaches Settings consent controls from the footer on a phone viewport", as
     privacy.getByRole("button", { name: "Allow optional analytics" })
   ).toBeVisible();
   await expect(
-    privacy.getByRole("button", { name: "Keep optional analytics off" })
+    privacy.getByRole("button", { name: "Turn off optional analytics" })
   ).toBeVisible();
   const box = await privacy.boundingBox();
   expect(box?.width ?? 0).toBeLessThanOrEqual(390);
