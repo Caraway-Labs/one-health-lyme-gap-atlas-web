@@ -431,7 +431,7 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     const situationButton = await screen.findByRole("button", {
-      name: "Surveillance Situation",
+      name: "Combined surveillance pattern",
     });
     await user.click(situationButton);
     const table = screen.getByTestId("compare-surveillance-intelligence-table");
@@ -453,14 +453,18 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     await user.click(
-      await screen.findByRole("button", { name: "Surveillance Situation" })
+      await screen.findByRole("button", {
+        name: "Combined surveillance pattern",
+      })
     );
     const panels = screen.getAllByTestId("surveillance-intelligence-details");
     expect(panels[0]).toHaveAttribute("data-fips", LEFT);
     expect(panels[0]).toHaveTextContent("class-3");
     expect(panels[0]).toHaveTextContent("87.3%");
     expect(panels[0]).toHaveTextContent("0.873");
-    expect(panels[1]).toHaveTextContent(/incompatible/i);
+    expect(panels[1]).toHaveTextContent(
+      "This model result cannot be shown with the data release used by this page."
+    );
   });
 
   it("replaces the open perspective from the keyboard and closes it with Space", async () => {
@@ -468,7 +472,7 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     const situationButton = await screen.findByRole("button", {
-      name: "Surveillance Situation",
+      name: "Combined surveillance pattern",
     });
     await user.click(situationButton);
     const gapButton = screen.getByRole("button", {
@@ -509,7 +513,7 @@ describe("Compare County Surveillance Intelligence", () => {
       releaseLabel: true,
     });
     await user.click(
-      screen.getByRole("button", { name: "Ecological Situation" })
+      screen.getByRole("button", { name: "Tick and pathogen pattern" })
     );
     const ecological = screen.getAllByTestId(
       "surveillance-intelligence-details"
@@ -517,7 +521,7 @@ describe("Compare County Surveillance Intelligence", () => {
     const leftText = ecological[0]?.textContent ?? "";
     const rightText = ecological[1]?.textContent ?? "";
     expect({
-      leftUnpublished: leftText.includes("Not published"),
+      leftUnpublished: leftText.includes("not published"),
       rightRelease: rightText.includes("other-release"),
     }).toStrictEqual({
       leftUnpublished: true,

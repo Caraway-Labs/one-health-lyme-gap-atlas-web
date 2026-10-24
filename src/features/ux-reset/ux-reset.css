@@ -556,6 +556,7 @@
   flex-direction: column;
   gap: 0.5rem;
   min-width: 0;
+  container-type: inline-size;
 }
 
 .county-summary-marks {
@@ -564,6 +565,12 @@
   gap: 0.35rem 0.6rem;
   align-items: start;
   min-width: 0;
+}
+
+@container (max-width: 22rem) {
+  .county-summary-marks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .county-summary-mark-cell {
@@ -602,7 +609,7 @@
   font-weight: 650;
   letter-spacing: 0.02em;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .county-summary-marks .ux-reset-ranked-score {
@@ -658,25 +665,123 @@
   overflow-wrap: anywhere;
 }
 
-.county-summary-ring {
-  width: 28px;
-  height: 28px;
+.county-summary-model-icon {
+  width: 1.75rem;
+  height: 1.75rem;
   flex: none;
+  color: var(--navy);
 }
 
-.county-summary-ring-track,
-.county-summary-ring-value {
-  fill: none;
-  stroke-width: 3;
+.county-summary-popup-title,
+.county-summary-popup-label {
+  margin: 0;
+  color: var(--navy);
+  font-weight: 650;
+  line-height: 1.3;
 }
 
-.county-summary-ring-track {
-  stroke: var(--border);
+.county-summary-popup-title {
+  font-size: 1rem;
 }
 
-.county-summary-ring-value {
-  stroke: var(--foreground);
-  stroke-linecap: round;
+.county-summary-popup-label,
+.county-summary-disclosure summary {
+  font-size: 0.8125rem;
+}
+
+.county-summary-popup-copy {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.county-summary-situation-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.county-summary-disclosure summary {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  color: var(--navy);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.county-summary-memberships,
+.county-summary-technical,
+.county-summary-limitations {
+  margin: 0.35rem 0 0;
+}
+
+.county-summary-memberships {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0;
+  list-style: none;
+}
+
+.county-summary-membership-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.county-summary-membership-label span:first-child {
+  min-width: 0;
+}
+
+.county-summary-membership-track {
+  height: 0.4rem;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 16%, var(--pale));
+}
+
+.county-summary-membership-track div {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--teal);
+}
+
+.county-summary-technical {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.county-summary-technical dd,
+.county-summary-limitations,
+.county-summary-mark-popover {
+  overflow-wrap: anywhere;
+}
+
+.county-summary-mark-popover {
+  max-height: var(--available-height, min(32rem, calc(100dvh - 1.5rem)));
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.county-summary-technical dd,
+.county-summary-limitations {
+  margin: 0;
+}
+
+.county-summary-limitations {
+  padding-left: 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 .county-summary-mark-details {
