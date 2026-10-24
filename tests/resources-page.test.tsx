@@ -19,6 +19,7 @@ import {
   resourcesPageHref,
   selectedStateFromQuery,
 } from "@/lib/resources/catalog";
+import { REGIONAL_CENTER_LOGOS } from "@/lib/resources/regional-center-logos";
 import { RESOURCE_STATE_PATHS } from "@/lib/resources/state-map-paths";
 
 const replace = vi.fn<(href: string, options?: { scroll?: boolean }) => void>();
@@ -71,6 +72,17 @@ describe("resource catalog", () => {
   it("keeps nine centers and a real boundary for every state", () => {
     const stateCodes = STATE_RESOURCES.map((state) => state.code);
     expect(REGIONAL_CENTERS).toHaveLength(9);
+    expect(REGIONAL_CENTERS.map((center) => center.name)).toStrictEqual([
+      "Gulf South VECTOR",
+      "Midwest Center",
+      "NEVBD",
+      "NewVec",
+      "PacVec",
+      "RaHPVEC",
+      "Southeastern Center",
+      "Tropical Islands Training & Evaluation Center",
+      "VectorED Network",
+    ]);
     expect(
       REGIONAL_CENTERS.filter(
         (center) => center.type === "Center of Excellence"
@@ -126,6 +138,16 @@ describe("Resources page", () => {
     expect(
       screen.getByRole("heading", { name: "CDC guidance & tools" })
     ).toBeVisible();
+  });
+
+  it("places the official CDC logo beside the guidance heading", () => {
+    render(<ResourcesPage />);
+
+    expect(
+      screen.getByRole("img", {
+        name: "Centers for Disease Control and Prevention",
+      })
+    ).toHaveAttribute("src", "/resources/cdc-logo.svg");
   });
 
   it("initializes the selector from a state query", () => {
@@ -202,6 +224,50 @@ describe("Resources page", () => {
     expect(
       within(regional).getByRole("link", { name: /NEVBD/ })
     ).toHaveAttribute("href", "https://www.neregionalvectorcenter.com/");
+  });
+
+  it("places a verified logo beside each center name without hiding the name", () => {
+    render(<ResourcesPage />);
+    const regional = screen.getByRole("region", {
+      name: "Regional expertise & training",
+    });
+    const centersWithLogos = REGIONAL_CENTERS.filter(
+      (center) => REGIONAL_CENTER_LOGOS[center.id]
+    );
+    const centersWithoutLogos = REGIONAL_CENTERS.filter(
+      (center) => !REGIONAL_CENTER_LOGOS[center.id]
+    );
+
+    for (const center of centersWithLogos) {
+      const heading = within(regional).getByRole("heading", {
+        name: center.name,
+      });
+      const logo = REGIONAL_CENTER_LOGOS[center.id];
+      const copy = heading.parentElement;
+      const image = copy?.nextElementSibling?.querySelector("img");
+      expect(heading).toBeVisible();
+      expect(copy).toHaveClass("resources-center-copy");
+      expect(copy?.nextElementSibling).toHaveClass("resources-center-logo");
+      expect(image).toHaveAttribute("src", logo?.src);
+      expect(image).toHaveAttribute("alt", "");
+    }
+
+    for (const center of centersWithoutLogos) {
+      const heading = within(regional).getByRole("heading", {
+        name: center.name,
+      });
+      expect(heading.closest("article")?.querySelector("img")).toBeNull();
+    }
+
+    expect(within(regional).getAllByRole("link")).toHaveLength(9);
+    expect(
+      within(regional).getByText("Research and entomology training.")
+    ).toBeVisible();
+    expect(
+      within(regional).getByRole("heading", {
+        name: "Tropical Islands Training & Evaluation Center",
+      })
+    ).toBeVisible();
   });
 
   it("returns every center from the all-centers filter", () => {
