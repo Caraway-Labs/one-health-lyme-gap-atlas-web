@@ -17,7 +17,7 @@ const STAGE_HEADING =
   "Illustrative data view for the Montgomery County example";
 const COUNTY_MARKERS = [
   { cx: 344, cy: 140, halo: 14, point: 5, opacity: 0.22 },
-  { cx: 230, cy: 290, halo: 16, point: 6, opacity: 0.18 },
+  { cx: 260, cy: 288, halo: 16, point: 6, opacity: 0.18 },
   { cx: 392, cy: 272, halo: 16, point: 5, opacity: 0.2 },
 ] as const;
 const COUNTY_PLACEMENT = { x: 301.4, y: 260.3, scale: 1.08, lift: 18 } as const;
