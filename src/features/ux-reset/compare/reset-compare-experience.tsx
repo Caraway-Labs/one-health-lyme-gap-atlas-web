@@ -504,8 +504,6 @@ function CompareExperienceInner() {
           <div data-county-label="County A" data-slot="a">
             <CompareCountyPicker
               clearLabel="Clear first county"
-              evidenceHref={null}
-              evidenceLabel={null}
               label="First county"
               letter="A"
               options={leftOptions}
@@ -533,8 +531,6 @@ function CompareExperienceInner() {
             <CompareCountyPicker
               autoFocus={Boolean(originLabel)}
               clearLabel="Clear second county"
-              evidenceHref={null}
-              evidenceLabel={null}
               label="Second county"
               letter="B"
               options={rightOptions}

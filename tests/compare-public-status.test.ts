@@ -124,6 +124,7 @@ function perspective(
     reasons: [],
     reviewCategory: null,
     retryable: false,
+    situationPlain: null,
     sufficiency: null,
     supporting: "",
     tier: null,
