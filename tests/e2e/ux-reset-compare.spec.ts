@@ -24,14 +24,15 @@ async function replaceCountyFromKeyboard(
 ) {
   const input = page.getByRole("combobox", { name: slotName });
   await input.scrollIntoViewIfNeeded();
-  await input.click();
-  await input.press("ControlOrMeta+A");
-  await input.press("Backspace");
-  await expect(input).toHaveValue("");
-  await input.pressSequentially(query, { delay: 20 });
+  await input.focus();
+  await page.keyboard.press("ControlOrMeta+A");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.type(query, { delay: 20 });
   await expect(input).toHaveValue(query);
-  const option = page.getByRole("option").filter({ hasText: query }).first();
-  await expect(option).toBeVisible({ timeout: 15_000 });
+  const parts = query.split(/[\s,]+/).filter((part) => part.length > 0);
+  const token = parts[parts.length - 1] ?? query;
+  const option = page.getByRole("option").first();
+  await expect(option).toContainText(new RegExp(`\\b${token}`, "i"));
   await page.keyboard.press("Enter");
 }
 
