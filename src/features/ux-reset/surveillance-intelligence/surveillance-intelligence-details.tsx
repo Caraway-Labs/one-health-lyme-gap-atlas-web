@@ -1,6 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import {
+  isSituationPerspective,
+  SituationInformation,
+} from "@/features/ux-reset/surveillance-intelligence/situation-information";
 import type { IntelligencePerspectiveView } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-model";
 
 export function SurveillanceIntelligenceDetails({
@@ -35,6 +39,35 @@ export function SurveillanceIntelligenceDetails({
       <h3 className="type-card m-0" id={headingId}>
         {heading ?? `${perspective.label} details`}
       </h3>
+      {isSituationPerspective(perspective.id) ? (
+        <SituationInformation
+          onRetry={onRetry}
+          perspective={perspective}
+          retryLabel={retryLabel}
+          showTitle={false}
+        />
+      ) : (
+        <LegacyPerspectiveBody
+          onRetry={onRetry}
+          perspective={perspective}
+          retryLabel={retryLabel}
+        />
+      )}
+    </section>
+  );
+}
+
+function LegacyPerspectiveBody({
+  onRetry,
+  perspective,
+  retryLabel,
+}: {
+  onRetry: () => void;
+  perspective: IntelligencePerspectiveView;
+  retryLabel?: string;
+}) {
+  return (
+    <>
       <p className="type-body m-0">{perspective.overview}</p>
       {perspective.qualifier ? (
         <p className="type-small m-0">{perspective.qualifier}</p>
@@ -97,6 +130,6 @@ export function SurveillanceIntelligenceDetails({
           </dl>
         </details>
       ) : null}
-    </section>
+    </>
   );
 }

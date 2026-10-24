@@ -1,17 +1,20 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Bell,
   Compass,
   FileText,
   FingerprintPattern,
   GitCompare,
   LayoutDashboard,
+  LibraryBig,
   Map,
   Microscope,
+  Newspaper,
   Settings,
   Sparkles,
   Zap,
 } from "lucide-react";
+
+import { RESOURCES_PAGE_SUBTITLE } from "@/lib/resources/catalog";
 
 export {
   ATLAS_EXPLORER_PATH,
@@ -41,6 +44,7 @@ import {
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
+  RESET_RESOURCES_PATH,
   RESET_SETTINGS_PATH,
   UX_RESET_APP_PREFIX,
 } from "@/features/ux-reset/routes";
@@ -193,11 +197,11 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     description:
       "Scan recent items from approved trusted sources and open the publisher page.",
     href: RESET_FEED_PATH,
-    icon: Bell,
+    icon: Newspaper,
     id: "feed",
     label: "Feed",
     match: "prefix",
-    navGroup: "access",
+    navGroup: "workspace",
     navLabel: "Research & News",
     pageDescription:
       "Scan recent items from approved trusted sources and open the publisher page.",
@@ -207,17 +211,16 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     tooltipTitle: "Research & News",
   },
   {
-    description: DATA_PROVENANCE_NAV_DESCRIPTION,
-    href: RESET_DATA_PROVENANCE_PATH,
-    icon: FingerprintPattern,
-    id: "data-provenance",
-    label: "Data Provenance",
+    description: RESOURCES_PAGE_SUBTITLE,
+    href: RESET_RESOURCES_PATH,
+    icon: LibraryBig,
+    id: "resources",
+    label: "Resources",
     match: "prefix",
-    navGroup: "access",
-    pageDescription:
-      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
-    pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
-    tooltipDetail: DATA_PROVENANCE_NAV_DESCRIPTION,
+    navGroup: "workspace",
+    pageDescription: RESOURCES_PAGE_SUBTITLE,
+    pageTitle: "Resources | One Health Lyme Gap Atlas",
+    tooltipDetail: RESOURCES_PAGE_SUBTITLE,
   },
   {
     description:
@@ -233,6 +236,19 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     pageTitle: "Settings | One Health Lyme Gap Atlas",
     tooltipDetail:
       "Manage your account, preferences, and One Health Atlas experience.",
+  },
+  {
+    description: DATA_PROVENANCE_NAV_DESCRIPTION,
+    href: RESET_DATA_PROVENANCE_PATH,
+    icon: FingerprintPattern,
+    id: "data-provenance",
+    label: "Data Provenance",
+    match: "prefix",
+    navGroup: "access",
+    pageDescription:
+      "The public datasets behind One Health Atlas, who publishes them, how Atlas validates and releases them, and how to read the evidence responsibly.",
+    pageTitle: "Data Provenance | One Health Lyme Gap Atlas",
+    tooltipDetail: DATA_PROVENANCE_NAV_DESCRIPTION,
   },
   {
     description: "Open the canonical One Health Atlas documentation center.",

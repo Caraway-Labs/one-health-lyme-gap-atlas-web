@@ -44,7 +44,7 @@ Missing treatment today:
 - An omitted requested county, or a row that is not painted, adds one `No published value` swatch colored `var(--explorer-boundary)` (`#e4e9ea`).
 - Geometry counties with no paint entry fall back to that same boundary token in `review-national-picture.tsx`.
 
-County and state outlines are shared map chrome in `src/components/atlas-map.tsx` (`GEOGRAPHIC_STATE_OUTLINE` `#000000`, selected county `#061f3d`). This change does not recolor them.
+County and state outlines are shared map chrome in `src/components/atlas-map.tsx` (`GEOGRAPHIC_STATE_OUTLINE` `#000000`, selected county `#000000` at a constant width `5`). This change does not recolor them.
 
 ## Final mapping
 

@@ -34,13 +34,26 @@ describe("Explorer official resources card", () => {
         name: "Official resources",
       }).textContent,
       unique: new Set(links.map((link) => link.getAttribute("href"))).size,
+      viewAll: screen.getByRole("link", { name: "View all resources →" })
+        .getAttribute("href"),
     }).toStrictEqual({
       groups: [...TOPICS],
       intro: "Guidance to support your review.",
-      links: 15,
+      links: 16,
       note: expect.stringContaining("Examples from other state programs"),
       title: "Official resources",
-      unique: 15,
+      unique: 16,
+      viewAll: "/resources",
     });
+  });
+
+  it("carries a selected county state into the resources page once", () => {
+    render(<ExplorerOfficialResources stateCode="ID" />);
+
+    expect(
+      screen
+        .getByRole("link", { name: "View all resources →" })
+        .getAttribute("href")
+    ).toBe("/resources?state=ID#state-resources");
   });
 });

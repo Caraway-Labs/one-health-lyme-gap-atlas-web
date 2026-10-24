@@ -5,8 +5,14 @@ import { Button } from "@/components/ui/button";
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
+/**
+ * True for both corpus-gap origins. Retrieval may find nothing, or it may find
+ * passages that support no claim. The API uses one evidence state for both and
+ * does not say which origin applied, so this copy must not claim that literature
+ * is absent or that scientific evidence does not exist.
+ */
 const CORPUS_LIMIT =
-  "Atlas does not currently have relevant reviewed literature in its governed corpus for this question. This does not mean no scientific evidence exists elsewhere.";
+  "The governed Atlas corpus does not contain reviewed evidence that supports an answer to this question. This is a limit of that corpus. It is not a finding that scientific evidence does not exist.";
 const CORPUS_NEXT_STEP =
   "Edit this question and submit it again, or narrow it by species or pathogen, geography, study period, or a more specific scope. The Atlas literature corpus is expanding.";
 const LITERATURE_HELP_HREF = "/docs/ai-enabled-decision-intelligence";
@@ -44,7 +50,7 @@ export function AssistantOutcome({
           data-assistant-state="no_relevant_corpus_evidence"
         >
           <p>
-            <strong>No relevant literature in the Atlas corpus.</strong>{" "}
+            <strong>The Atlas corpus does not support an answer.</strong>{" "}
             {CORPUS_LIMIT}
           </p>
           <p>{CORPUS_NEXT_STEP}</p>

@@ -9,6 +9,7 @@ import {
   PublicTrustPage,
 } from "@/features/public-trust/public-trust-page";
 import { TrustCard } from "@/features/public-trust/trust-card";
+import { ResetFeedbackPageButton } from "@/features/ux-reset/feedback/reset-feedback-dialog";
 
 import "@/features/ux-reset/trust-footer.css";
 import { dataProvenanceContent } from "@/lib/data-provenance-content";
@@ -131,6 +132,7 @@ export function DataProvenancePage() {
             <strong>{content.feedback.emphasis}</strong>
             {content.feedback.after}
           </p>
+          <ResetFeedbackPageButton />
         </div>
       </section>
 

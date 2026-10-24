@@ -4,6 +4,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -482,35 +483,39 @@ function ResetProfessionalFrame({
                   const navigationLabel = resetNavigationLabel(item);
                   const opensDocsTab = Boolean(item.externalHref);
                   return (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        active={current}
-                        aria-current={current ? "page" : undefined}
-                        aria-label={
-                          opensDocsTab
-                            ? `${navigationLabel}, opens in a new tab`
-                            : navigationLabel
-                        }
-                        href={shellHref(item)}
-                        onClick={closeMobileNavigation}
-                        rel={opensDocsTab ? "noopener noreferrer" : undefined}
-                        target={opensDocsTab ? "_blank" : undefined}
-                        tooltip={item.tooltipTitle ?? navigationLabel}
-                        tooltipDetail={item.tooltipDetail}
-                      >
-                        <Icon aria-hidden="true" />
-                        <span className="sidebar-item-label">
-                          {navigationLabel}
-                        </span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <Fragment key={item.id}>
+                      {item.id === "data-provenance" ? (
+                        <ResetFeedbackTrigger
+                          onActivate={() => {
+                            if (isMobileViewport) setMobileOpen(false);
+                          }}
+                        />
+                      ) : null}
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          active={current}
+                          aria-current={current ? "page" : undefined}
+                          aria-label={
+                            opensDocsTab
+                              ? `${navigationLabel}, opens in a new tab`
+                              : navigationLabel
+                          }
+                          href={shellHref(item)}
+                          onClick={closeMobileNavigation}
+                          rel={opensDocsTab ? "noopener noreferrer" : undefined}
+                          target={opensDocsTab ? "_blank" : undefined}
+                          tooltip={item.tooltipTitle ?? navigationLabel}
+                          tooltipDetail={item.tooltipDetail}
+                        >
+                          <Icon aria-hidden="true" />
+                          <span className="sidebar-item-label">
+                            {navigationLabel}
+                          </span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </Fragment>
                   );
                 })}
-                <ResetFeedbackTrigger
-                  onActivate={() => {
-                    if (isMobileViewport) setMobileOpen(false);
-                  }}
-                />
               </SidebarMenu>
             </SidebarGroup>
           </nav>

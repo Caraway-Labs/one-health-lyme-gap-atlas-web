@@ -21,6 +21,7 @@ export interface ClientFailure {
   title: string;
 }
 
+/** Operational statuses arrive on HTTP 200. The same body on 502/503 is legacy. */
 export function isOperationalStatus(
   status: KnowledgeChatResponse["status"] | undefined
 ): boolean {

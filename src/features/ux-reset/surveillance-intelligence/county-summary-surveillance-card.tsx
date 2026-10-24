@@ -1,5 +1,7 @@
 "use client";
 
+import { ClipboardList } from "lucide-react";
+
 import {
   Popover,
   PopoverContent,
@@ -10,21 +12,23 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { FrontPorchTickIcon } from "@/features/front-porch/front-porch-icons";
 import { CountySummarySurveillanceDetails } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance-details";
-import type { SurveillanceIntelligencePerspectiveId } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
+import {
+  SURVEILLANCE_INTELLIGENCE_LABELS,
+  type SurveillanceIntelligencePerspectiveId,
+} from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import type { IntelligencePerspectiveView } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-model";
 
 const PRIORITY_LEVELS = ["LOW", "MEDIUM", "HIGH"] as const;
-const RING_RADIUS = 10;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-const FULL_CLASS_PERCENT = 99.95;
-const TRACE_CLASS_PERCENT = 0.05;
 
 const MARK_CAPTIONS = {
-  "ecological-situation": "Ecology",
+  "ecological-situation":
+    SURVEILLANCE_INTELLIGENCE_LABELS["ecological-situation"],
   "gap-score": "Score",
   "ml-review-priority": "Priority",
-  "surveillance-situation": "Surveillance",
+  "surveillance-situation":
+    SURVEILLANCE_INTELLIGENCE_LABELS["surveillance-situation"],
 } as const satisfies Record<SurveillanceIntelligencePerspectiveId, string>;
 
 function spokenResult(perspective: IntelligencePerspectiveView): string {
@@ -47,32 +51,16 @@ function spokenResult(perspective: IntelligencePerspectiveView): string {
     }
     case "ecological-situation":
     case "surveillance-situation": {
-      const membership = perspective.track?.label ?? perspective.supporting;
-      return `${perspective.label}. ${perspective.primary}. ${membership}`;
+      if (perspective.kind !== "ready") {
+        return perspective.overview;
+      }
+      return `Assigned group: ${perspective.primary}.`;
     }
     default: {
       const exhaustive: never = perspective.id;
       return exhaustive;
     }
   }
-}
-
-function situationPercent(
-  perspective: IntelligencePerspectiveView
-): number | null {
-  if (perspective.kind !== "ready" || perspective.fullValue === null) {
-    return perspective.track?.value ?? null;
-  }
-  const probability = Number(perspective.fullValue);
-  if (Number.isFinite(probability) && probability >= 0 && probability <= 1) {
-    return probability * 100;
-  }
-  return perspective.track?.value ?? null;
-}
-
-function displayPercent(value: number): string {
-  const fixed = value.toFixed(1);
-  return fixed.endsWith(".0") ? fixed.slice(0, -2) : fixed;
 }
 
 function tierWords(tier: string): string {
@@ -90,39 +78,6 @@ function tierWords(tier: string): string {
       return tier;
     }
   }
-}
-
-const SITUATION_TOOLTIP = {
-  "ecological-situation":
-    "The pattern in tick and pathogen evidence alone. Compare it with Surveillance.",
-  "surveillance-situation":
-    "The pattern in human, tick, and pathogen reporting. Compare it with Ecology.",
-} as const satisfies Record<
-  "ecological-situation" | "surveillance-situation",
-  string
->;
-
-function situationFit(percent: number | null): string {
-  if (percent === null) {
-    return "Membership was not returned.";
-  }
-  if (percent >= FULL_CLASS_PERCENT) {
-    return "Strong fit.";
-  }
-  if (percent === 0) {
-    return "No fit.";
-  }
-  if (percent < TRACE_CLASS_PERCENT) {
-    return "Partial fit, below 0.1%.";
-  }
-  return `Partial fit, ${displayPercent(percent)}%.`;
-}
-
-function situationTooltip(
-  id: "ecological-situation" | "surveillance-situation",
-  percent: number | null
-): string {
-  return `${SITUATION_TOOLTIP[id]} ${situationFit(percent)}`;
 }
 
 function markTooltip(perspective: IntelligencePerspectiveView): string {
@@ -146,9 +101,9 @@ function markTooltip(perspective: IntelligencePerspectiveView): string {
     case "ecological-situation":
     case "surveillance-situation": {
       if (perspective.kind !== "ready") {
-        return perspective.primary;
+        return perspective.overview;
       }
-      return situationTooltip(perspective.id, situationPercent(perspective));
+      return `${perspective.overview} Assigned group: ${perspective.primary}.`;
     }
     default: {
       const exhaustive: never = perspective.id;
@@ -196,44 +151,21 @@ function PriorityMarks({ tier }: { tier: string | null }) {
   );
 }
 
-function MembershipRing({
-  label,
-  value,
+function SituationIcon({
+  id,
 }: {
-  label: string;
-  value: number | null;
+  id: "ecological-situation" | "surveillance-situation";
 }) {
-  const filled =
-    value === null
-      ? 0
-      : (Math.min(100, Math.max(0, value)) / 100) * RING_CIRCUMFERENCE;
+  if (id === "surveillance-situation") {
+    return (
+      <ClipboardList aria-hidden="true" className="county-summary-model-icon" />
+    );
+  }
   return (
-    <svg
-      aria-label={value === null ? undefined : label}
-      aria-valuemax={value === null ? undefined : 100}
-      aria-valuemin={value === null ? undefined : 0}
-      aria-valuenow={value === null ? undefined : value}
-      className="county-summary-ring"
-      role={value === null ? undefined : "meter"}
-      viewBox="0 0 28 28"
-    >
-      <circle
-        className="county-summary-ring-track"
-        cx="14"
-        cy="14"
-        r={RING_RADIUS}
-      />
-      {value === null ? null : (
-        <circle
-          className="county-summary-ring-value"
-          cx="14"
-          cy="14"
-          r={RING_RADIUS}
-          strokeDasharray={`${filled} ${RING_CIRCUMFERENCE - filled}`}
-          transform="rotate(-90 14 14)"
-        />
-      )}
-    </svg>
+    <FrontPorchTickIcon
+      bodyClassName=""
+      className="county-summary-model-icon county-summary-tick-icon"
+    />
   );
 }
 
@@ -251,13 +183,9 @@ function MarkVisual({
     }
     case "ecological-situation":
     case "surveillance-situation": {
-      const value = situationPercent(perspective);
       return (
         <span className="county-summary-situation">
-          <MembershipRing
-            label={perspective.track?.label ?? perspective.supporting}
-            value={value}
-          />
+          <SituationIcon id={perspective.id} />
           {perspective.kind === "ready" ? (
             <span className="county-summary-class-name">
               {perspective.primary}
@@ -328,7 +256,7 @@ export function CountySummarySurveillanceCard({
         </Tooltip>
         <PopoverContent
           align="start"
-          className="county-summary-mark-popover"
+          className="county-summary-mark-popover w-[min(22rem,calc(100vw-1.5rem))] max-w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto"
           side="bottom"
         >
           <CountySummarySurveillanceDetails

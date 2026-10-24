@@ -8,8 +8,9 @@ const DESTINATION_LABELS = [
   "Compare",
   "Ask Atlas",
   "Research & News",
-  "Data Provenance",
+  "Resources",
   "Settings",
+  "Data Provenance",
   "Docs, opens in a new tab",
 ] as const;
 
@@ -24,7 +25,7 @@ test.describe("six-destination redirects", () => {
     await page.goto("/app/review?scope=CO");
     const nav = page.locator("nav[aria-label='Professional workspace']");
     const links = nav.locator("a");
-    await expect(links).toHaveCount(7);
+    await expect(links).toHaveCount(8);
     const labels = await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("aria-label"))
     );

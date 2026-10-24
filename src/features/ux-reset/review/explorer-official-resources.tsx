@@ -7,6 +7,7 @@ import {
   type OfficialFollowUpResource,
   STATE_PROGRAM_EXAMPLES_NOTE,
 } from "@/lib/follow-up-workflows";
+import { resourcesPageHref } from "@/lib/resources/catalog";
 
 const OFFICIAL_RESOURCES_INTRO = "Guidance to support your review.";
 const STATE_PROGRAMS = "Examples from state programs";
@@ -52,7 +53,11 @@ function OfficialResourceLink({
   return <Link href={resource.href}>{resource.label}</Link>;
 }
 
-export function ExplorerOfficialResources() {
+export function ExplorerOfficialResources({
+  stateCode = null,
+}: {
+  stateCode?: string | null;
+}) {
   const groups = groupOfficialResources(OFFICIAL_FOLLOW_UP_RESOURCES);
 
   return (
@@ -84,6 +89,9 @@ export function ExplorerOfficialResources() {
           </section>
         ))}
       </div>
+      <p className="ux-reset-explorer-resources-all">
+        <Link href={resourcesPageHref(stateCode)}>View all resources →</Link>
+      </p>
     </Card>
   );
 }

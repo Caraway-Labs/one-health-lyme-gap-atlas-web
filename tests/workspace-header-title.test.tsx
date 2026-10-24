@@ -73,6 +73,7 @@ describe("workspace header title resolution", () => {
       docs: "Documentation",
       explorer: "Atlas Explorer",
       feed: "Intelligence Feed",
+      resources: "Resources",
       settings: "Settings",
     });
     expect(Object.values(WORKSPACE_HEADER_TITLES)).not.toContain(
@@ -91,13 +92,19 @@ describe("workspace header title resolution", () => {
       overviewTitle: pageMetadataForResetRoute("overview").title,
       workspace: RESET_WORKSPACE_NAV.map((route) => route.label),
     }).toStrictEqual({
-      access: ["Research & News", "Data Provenance", "Settings", "Docs"],
+      access: ["Settings", "Data Provenance", "Docs"],
       compareTitle: "Compare | One Health Lyme Gap Atlas",
       feedPageLabel: "Feed",
       feedTitle: "Feed | One Health Lyme Gap Atlas",
       navigationLabel: "Professional workspace",
       overviewTitle: "Professional workspace | One Health Lyme Gap Atlas",
-      workspace: ["Atlas Explorer", "Compare", "Ask Atlas"],
+      workspace: [
+        "Atlas Explorer",
+        "Compare",
+        "Ask Atlas",
+        "Feed",
+        "Resources",
+      ],
     });
   });
 
@@ -114,6 +121,8 @@ describe("workspace header title resolution", () => {
         "/askatlas/thread",
         "/app/feed",
         "/app/feed/item",
+        "/resources",
+        "/resources?state=ID",
         "/data-provenance",
         "/data-provenance/source",
         `${RESET_SETTINGS_PATH}#account`,
@@ -136,6 +145,8 @@ describe("workspace header title resolution", () => {
       "/explore": "Atlas Explorer",
       "/explore/": "Atlas Explorer",
       "/explore/counties?scope=CO": "Atlas Explorer",
+      "/resources": "Resources",
+      "/resources?state=ID": "Resources",
     });
   });
 
@@ -246,14 +257,14 @@ describe("workspace header in the professional shell", () => {
     pathname = "/compare";
     render(
       <ResetProfessionalShell>
-        <h1>Two counties. A clearer picture.</h1>
+        <h1>Compare counties</h1>
       </ResetProfessionalShell>
     );
 
     expect({
       header: headerLabel(),
       heading: screen.getByRole("heading", {
-        name: "Two counties. A clearer picture.",
+        name: "Compare counties",
       }).textContent,
       navigation: screen
         .getByRole("navigation", {
@@ -266,7 +277,7 @@ describe("workspace header in the professional shell", () => {
       staticLabel: screen.queryByText("Professional workspace"),
     }).toStrictEqual({
       header: "Compare Counties",
-      heading: "Two counties. A clearer picture.",
+      heading: "Compare counties",
       navigation: "Professional workspace",
       shell: "Professional workspace",
       staticLabel: null,

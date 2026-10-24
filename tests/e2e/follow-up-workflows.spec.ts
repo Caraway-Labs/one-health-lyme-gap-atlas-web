@@ -169,10 +169,13 @@ test.describe("five-category suggested follow-up", () => {
         resources.getByRole("heading", { name: topic })
       ).toBeVisible();
     }
-    await expect(resources.getByRole("link")).toHaveCount(15);
+    await expect(resources.getByRole("link")).toHaveCount(16);
     await expect(resources).toContainText(
       "Examples from other state programs. Follow your own state’s reporting requirements and procedures."
     );
+    await expect(
+      resources.getByRole("link", { name: "View all resources →" })
+    ).toBeVisible();
     await expect(
       resources.getByRole("link", { name: /Lyme surveillance case definition/ })
     ).toHaveAttribute(
@@ -280,7 +283,7 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
     });
-    await expect(resources.getByRole("link")).toHaveCount(15);
+    await expect(resources.getByRole("link")).toHaveCount(16);
     await expect(followUp).toContainText(
       "Missing data are not zero cases, and this is not a low or high review priority."
     );

@@ -4999,15 +4999,10 @@ export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse429 = {
   status: 429
 }
 
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse503 = {
-  data: KnowledgeChatResponse
-  status: 503
-}
-
 export type knowledgeGraphChatV1KnowledgeGraphChatPostResponseSuccess = (knowledgeGraphChatV1KnowledgeGraphChatPostResponse200) & {
   headers: Headers;
 };
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponseError = (knowledgeGraphChatV1KnowledgeGraphChatPostResponse422 | knowledgeGraphChatV1KnowledgeGraphChatPostResponse429 | knowledgeGraphChatV1KnowledgeGraphChatPostResponse503) & {
+export type knowledgeGraphChatV1KnowledgeGraphChatPostResponseError = (knowledgeGraphChatV1KnowledgeGraphChatPostResponse422 | knowledgeGraphChatV1KnowledgeGraphChatPostResponse429) & {
   headers: Headers;
 };
 
@@ -5039,7 +5034,7 @@ export const knowledgeGraphChatV1KnowledgeGraphChatPost = async (knowledgeChatRe
 
 
 
-export const getKnowledgeGraphChatV1KnowledgeGraphChatPostMutationOptions = <TError = HTTPValidationError | ProblemDetails | KnowledgeChatResponse,
+export const getKnowledgeGraphChatV1KnowledgeGraphChatPostMutationOptions = <TError = HTTPValidationError | ProblemDetails,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, TError,{data: KnowledgeChatRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
 ): UseMutationOptions<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, TError,{data: KnowledgeChatRequest}, TContext> => {
 
@@ -5068,12 +5063,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationResult = NonNullable<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>>
     export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationBody = KnowledgeChatRequest
-    export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationError = HTTPValidationError | ProblemDetails | KnowledgeChatResponse
+    export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationError = HTTPValidationError | ProblemDetails
 
     /**
  * @summary Knowledge Graph Chat
  */
-export const useKnowledgeGraphChatV1KnowledgeGraphChatPost = <TError = HTTPValidationError | ProblemDetails | KnowledgeChatResponse,
+export const useKnowledgeGraphChatV1KnowledgeGraphChatPost = <TError = HTTPValidationError | ProblemDetails,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, TError,{data: KnowledgeChatRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>,

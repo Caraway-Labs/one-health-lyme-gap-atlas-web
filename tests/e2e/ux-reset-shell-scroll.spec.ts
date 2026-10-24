@@ -636,7 +636,7 @@ test.describe("professional shell scroll containment", () => {
     });
     await page
       .locator("#ux-reset-pro-navigation")
-      .getByRole("link", { exact: true, name: "Settings" })
+      .getByRole("link", { exact: true, name: "Data Provenance" })
       .focus();
     await page.keyboard.press("Tab");
     const docsLink = page.getByRole("link", {
@@ -1013,6 +1013,61 @@ test.describe("professional shell scroll containment", () => {
     });
     expect(overflow).toBe("visible");
     expect(mainOverflow).toBe("visible");
+  });
+
+  test("ends the explorer scroll at the trust footer", async ({ page }) => {
+    await page.setViewportSize(DESKTOP);
+    await installArizonaReview(page);
+    await page.goto("/explore?scope=AZ");
+    await expect(page.getByTestId("review-state-panel")).toBeVisible();
+    const report = await page.evaluate(() => {
+      const scroll = document.querySelector(".ux-reset-pro-scroll");
+      const footer = document.querySelector(".ux-reset-trust-footer");
+      if (
+        !(scroll instanceof HTMLElement) ||
+        !(footer instanceof HTMLElement)
+      ) {
+        throw new Error("explorer footer scroll is missing its shell");
+      }
+      scroll.scrollTop = scroll.scrollHeight;
+      const footerBox = footer.getBoundingClientRect();
+      const scrollBox = scroll.getBoundingClientRect();
+      let past = 0;
+      for (const node of scroll.querySelectorAll("*")) {
+        if (!(node instanceof HTMLElement)) {
+          continue;
+        }
+        const box = node.getBoundingClientRect();
+        if (box.height > 8 && box.bottom > footerBox.bottom + 8) {
+          past += 1;
+        }
+      }
+      return {
+        gap: Math.round(
+          scroll.scrollHeight -
+            (footerBox.bottom - scrollBox.top + scroll.scrollTop)
+        ),
+        past,
+      };
+    });
+    expect(report.gap).toBeLessThanOrEqual(1);
+    expect(report.past).toBe(0);
+    const footer = await footerFlow(page);
+    expect(footer.footerBottom).toBeLessThanOrEqual(footer.viewportHeight + 1);
+    expect(footer.footerBottom).toBeGreaterThan(
+      footer.mainBottom - footer.footerHeight - 2
+    );
+
+    await page.locator("details.ux-reset-explorer-release > summary").click();
+    await expect(page.getByText("Governed county release")).toBeVisible();
+    await setMainScroll(page, 100_000);
+    const expanded = await footerFlow(page);
+    expect(expanded.footerBottom).toBeLessThanOrEqual(
+      expanded.viewportHeight + 1
+    );
+    expect(expanded.footerBottom).toBeGreaterThan(
+      expanded.mainBottom - expanded.footerHeight - 2
+    );
   });
 });
 

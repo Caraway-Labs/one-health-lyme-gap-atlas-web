@@ -214,11 +214,15 @@ describe("professional workspace navigation", () => {
     );
 
     const feedback = screen.getByRole("button", { name: "Give feedback" });
-    const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
+    const settings = screen.getByRole("link", { name: "Settings" });
+    const provenance = screen.getByRole("link", { name: "Data Provenance" });
     const account = screen.getByTestId("workspace-account-menu");
     expect({
-      afterDocs:
-        docs.compareDocumentPosition(feedback) ===
+      afterSettings:
+        settings.compareDocumentPosition(feedback) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      beforeProvenance:
+        feedback.compareDocumentPosition(provenance) ===
         Node.DOCUMENT_POSITION_FOLLOWING,
       beforeAccount:
         feedback.compareDocumentPosition(account) ===
@@ -227,7 +231,8 @@ describe("professional workspace navigation", () => {
       sharedButton: feedback.className.includes("group/button"),
       slot: feedback.dataset.slot ?? null,
     }).toStrictEqual({
-      afterDocs: true,
+      afterSettings: true,
+      beforeProvenance: true,
       beforeAccount: true,
       icon: expect.stringContaining("message-square-plus"),
       sharedButton: true,
@@ -254,10 +259,11 @@ describe("professional workspace navigation", () => {
       "Compare",
       "Ask Atlas",
       "Research & News",
-      "Data Provenance",
+      "Resources",
       "Settings",
-      "Docs",
       RESET_FEEDBACK_ACTION.label,
+      "Data Provenance",
+      "Docs",
     ]);
 
     const described = [...RESET_WORKSPACE_NAV, ...RESET_ACCESS_NAV].map(
@@ -301,15 +307,21 @@ describe("professional workspace navigation", () => {
       },
       {
         description:
-          "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
-        label: "Data Provenance",
-        title: "Data Provenance",
+          "Guidance, state programs, and regional expertise for tick-borne disease review.",
+        label: "Resources",
+        title: "Resources",
       },
       {
         description:
           "Manage your account, preferences, and One Health Atlas experience.",
         label: "Settings",
         title: "Settings",
+      },
+      {
+        description:
+          "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
+        label: "Data Provenance",
+        title: "Data Provenance",
       },
       {
         description:
@@ -335,6 +347,44 @@ describe("professional workspace navigation", () => {
       tooltipDetail:
         "Help shape One Health Atlas by sharing ideas, questions, and product feedback.",
       tooltipTitle: "Give Feedback",
+    });
+  });
+
+  it("uses the LibraryBig icon for Resources", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Resources</p>
+      </ResetProfessionalShell>
+    );
+    const resources = screen.getByRole("link", { name: "Resources" });
+    const icon = resources.querySelector("svg");
+    expect({
+      decorative: icon?.getAttribute("aria-hidden"),
+      icon: icon?.getAttribute("class"),
+      label: resources.querySelector(".sidebar-item-label")?.textContent,
+    }).toStrictEqual({
+      decorative: "true",
+      icon: expect.stringContaining("lucide-library-big"),
+      label: "Resources",
+    });
+  });
+
+  it("uses the outlined newspaper icon for Research & News", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Feed</p>
+      </ResetProfessionalShell>
+    );
+    const research = screen.getByRole("link", { name: "Research & News" });
+    const icon = research.querySelector("svg");
+    expect({
+      decorative: icon?.getAttribute("aria-hidden"),
+      icon: icon?.getAttribute("class"),
+      label: research.querySelector(".sidebar-item-label")?.textContent,
+    }).toStrictEqual({
+      decorative: "true",
+      icon: expect.stringContaining("lucide-newspaper"),
+      label: "Research & News",
     });
   });
 });

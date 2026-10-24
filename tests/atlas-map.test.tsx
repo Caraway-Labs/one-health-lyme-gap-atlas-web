@@ -5,7 +5,11 @@ import { AtlasDashboard } from "@/components/atlas-dashboard";
 import { AtlasMap, type AtlasMapFillColor } from "@/components/atlas-map";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { CountyScoreSummary } from "@/generated/models";
-import { estimatedFitZoom } from "@/lib/atlas-map-camera";
+import {
+  estimatedFitZoom,
+  EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+  EXPLICIT_GEOGRAPHY_FIT_PADDING,
+} from "@/lib/atlas-map-camera";
 import { parseCountyDisplayGeometry } from "@/lib/county-geography";
 
 const engine = vi.hoisted(() => {
@@ -22,6 +26,7 @@ const engine = vi.hoisted(() => {
       }
     >();
     layers = new Set<string>();
+    layerOrder: string[] = [];
     paint = new Map<string, Record<string, unknown>>();
     filters = new Map<string, unknown>();
     center = { lat: 38.5, lng: -96.5 };
@@ -122,12 +127,16 @@ const engine = vi.hoisted(() => {
       });
       this.sources.set(id, record);
     }
-    addLayer(layer: {
-      filter?: unknown;
-      id: string;
-      paint?: Record<string, unknown>;
-    }) {
+    addLayer(
+      layer: {
+        filter?: unknown;
+        id: string;
+        paint?: Record<string, unknown>;
+      },
+      beforeId?: string
+    ) {
       this.layers.add(layer.id);
+      this.placeLayer(layer.id, beforeId);
       if (layer.paint) {
         this.paint.set(layer.id, { ...layer.paint });
       }
@@ -135,11 +144,30 @@ const engine = vi.hoisted(() => {
         this.filters.set(layer.id, layer.filter);
       }
     }
+    moveLayer(id: string, beforeId?: string) {
+      if (!this.layers.has(id)) {
+        return;
+      }
+      this.placeLayer(id, beforeId);
+    }
+    placeLayer(id: string, beforeId?: string) {
+      this.layerOrder = this.layerOrder.filter((layerId) => layerId !== id);
+      const beforeIndex =
+        beforeId === undefined ? -1 : this.layerOrder.indexOf(beforeId);
+      if (beforeIndex >= 0) {
+        this.layerOrder.splice(beforeIndex, 0, id);
+        return;
+      }
+      this.layerOrder.push(id);
+    }
     getSource(id: string) {
       return this.sources.get(id);
     }
     getLayer(id: string) {
       return this.layers.has(id);
+    }
+    getStyle() {
+      return { layers: this.layerOrder.map((id) => ({ id })) };
     }
     getCenter() {
       return this.center;
@@ -161,16 +189,17 @@ const engine = vi.hoisted(() => {
         getWest: () => this.west,
       };
     }
+    canvas = {
+      getContext: (kind: string) => {
+        if (webgl.fail && kind === "webgl2") {
+          return null;
+        }
+        return this.removed ? null : {};
+      },
+      style: { cursor: "" },
+    };
     getCanvas() {
-      return {
-        getContext: (kind: string) => {
-          if (webgl.fail && kind === "webgl2") {
-            return null;
-          }
-          return this.removed ? null : {};
-        },
-        style: { cursor: this.removed ? "" : "" },
-      };
+      return this.canvas;
     }
     triggerRepaint() {
       return this.removed;
@@ -180,6 +209,7 @@ const engine = vi.hoisted(() => {
     }
     removeLayer(id: string) {
       this.layers.delete(id);
+      this.layerOrder = this.layerOrder.filter((layerId) => layerId !== id);
       this.paint.delete(id);
       this.filters.delete(id);
     }
@@ -663,6 +693,165 @@ describe("AtlasMap county camera", () => {
     expect(map?.zoom).toBe(camera?.zoom);
   });
 
+  it("refits the active state or county after a pan and leaves the selection alone", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const adaBounds: [number, number, number, number] = [
+      -117, 42.6, -114.4, 44,
+    ];
+    const stateBounds: [number, number, number, number] = [
+      -117.2, 42.6, -111, 48.9,
+    ];
+    const idahoGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [adaBounds[0], adaBounds[1]],
+                [adaBounds[2], adaBounds[1]],
+                [adaBounds[2], adaBounds[3]],
+                [adaBounds[0], adaBounds[3]],
+                [adaBounds[0], adaBounds[1]],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44.2],
+                [-111, 44.2],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44.2],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+    const explicitFit = {
+      duration: 450,
+      maxZoom: 8,
+      padding: EXPLICIT_GEOGRAPHY_FIT_PADDING,
+    };
+    const view = render(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    act(() => {
+      map?.emit("move", { originalEvent: new Event("wheel") });
+      map?.jumpTo({ center: [-105, 39], zoom: 4 });
+    });
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        fitSignal={1}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        fitSignal={2}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(stateBounds, explicitFit);
+
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        fitSignal={2}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    act(() => {
+      map?.jumpTo({ center: [-96, 38], zoom: 4 });
+    });
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        fitSignal={3}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        fitSignal={4}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(adaBounds, {
+      ...explicitFit,
+      maxZoom: EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+    });
+
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSelectedCounty
+        fitSignal={5}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(adaBounds, {
+      ...explicitFit,
+      maxZoom: EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+    });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it("fits the national camera to the pane and keeps a deliberate pan on resize", () => {
     stubPrefersReducedMotion(false);
     const observers: RecordedResizeObserver[] = [];
@@ -1141,14 +1330,21 @@ describe("AtlasMap county camera", () => {
       />
     );
     const map = loadMap();
+    const canvas = map?.getCanvas();
     act(() => {
       map?.emit("click:counties-fill", {
-        features: [{ properties: { fips: "08001" } }],
-        originalEvent: { detail: 1 },
+        features: [{ properties: { fips: "08013" } }],
+        originalEvent: { detail: 1, target: canvas },
       });
+      map?.emit("mousedown", { originalEvent: { target: canvas } });
       map?.emit("click:counties-fill", {
         features: [{ properties: { fips: "08001" } }],
-        originalEvent: { detail: 2 },
+        originalEvent: { detail: 1, target: canvas },
+      });
+      map?.emit("mousedown", { originalEvent: { target: canvas } });
+      map?.emit("click:counties-fill", {
+        features: [{ properties: { fips: "08001" } }],
+        originalEvent: { detail: 2, target: canvas },
       });
     });
     expect({
@@ -1271,7 +1467,12 @@ describe("AtlasMap county camera", () => {
       selectedFips,
     }).toStrictEqual({
       attribute: "accent",
-      countyOutline: { "line-color": "#061f3d", "line-width": 3 },
+      countyOutline: {
+        "line-blur": 0,
+        "line-color": "#000000",
+        "line-opacity": 1,
+        "line-width": 5,
+      },
       fill: fillColor,
       filter: ["==", ["get", "selectedState"], true],
       outline: { "line-color": "#000000", "line-width": 2.5 },
@@ -1531,13 +1732,23 @@ describe("AtlasMap county camera", () => {
         selectedFips: ["08001", "08005"],
       },
       idahoFrame: {
-        countyOutline: { "line-color": "#061f3d", "line-width": 3 },
+        countyOutline: {
+          "line-blur": 0,
+          "line-color": "#000000",
+          "line-opacity": 1,
+          "line-width": 5,
+        },
         outline: black,
         selectedFips: ["16001", "16085"],
       },
       initial: {
         attribute: "accent",
-        countyOutline: { "line-color": "#061f3d", "line-width": 3 },
+        countyOutline: {
+          "line-blur": 0,
+          "line-color": "#000000",
+          "line-opacity": 1,
+          "line-width": 5,
+        },
         fill: gapFill,
         filter: ["==", ["get", "selectedState"], true],
         outline: black,
@@ -1635,7 +1846,12 @@ describe("AtlasMap county camera", () => {
       boundaryLines: false,
       fillOutline: "rgba(255,255,255,.9)",
       palette: undefined,
-      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedCounty: {
+        "line-blur": 0,
+        "line-color": "#000000",
+        "line-opacity": 1,
+        "line-width": 5,
+      },
     });
   });
 
@@ -1679,7 +1895,12 @@ describe("AtlasMap county camera", () => {
     }).toStrictEqual({
       countyStroke: "#4B5563",
       layers: [true, true, true],
-      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedCounty: {
+        "line-blur": 0,
+        "line-color": "#000000",
+        "line-opacity": 1,
+        "line-width": 5,
+      },
       selectedPerimeter: { "line-color": "#000000", "line-width": 2.5 },
       selectedStateOpacity: 0,
       stateStroke: "#1F2937",
@@ -1707,8 +1928,150 @@ describe("AtlasMap county camera", () => {
       ],
     }).toStrictEqual({
       countyLines: false,
-      selectedCounty: { "line-color": "#061f3d", "line-width": 3 },
+      selectedCounty: {
+        "line-blur": 0,
+        "line-color": "#000000",
+        "line-opacity": 1,
+        "line-width": 5,
+      },
       selectedStateOpacity: 1,
+    });
+  });
+
+  it("draws one constant black selected county perimeter above other boundaries", () => {
+    stubPrefersReducedMotion(false);
+    const light = { ...adams, color: "#d7efe8" };
+    const dark = { ...adams, color: "#1d4e89" };
+    const gray = { ...losAngeles, color: "#d1d5db" };
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        neutralCountyBoundaries
+        scores={[light, gray]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    if (!map) {
+      throw new Error("expected a map instance");
+    }
+    const selectedOutline = {
+      "line-blur": 0,
+      "line-color": "#000000",
+      "line-opacity": 1,
+      "line-width": 5,
+    };
+    const featureColors = () => {
+      const source = map.sources.get("counties");
+      const data = source?.data as GeoJSON.FeatureCollection | undefined;
+      return Object.fromEntries(
+        (data?.features ?? []).map((feature) => [
+          feature.properties?.fips,
+          feature.properties?.color,
+        ])
+      );
+    };
+    const selectedFlags = () => {
+      const source = map.sources.get("counties");
+      const data = source?.data as GeoJSON.FeatureCollection | undefined;
+      return Object.fromEntries(
+        (data?.features ?? []).map((feature) => [
+          feature.properties?.fips,
+          feature.properties?.selected,
+        ])
+      );
+    };
+    expect({
+      casing: map.layers.has("selected-county-casing"),
+      countyStroke: map.paint.get("county-boundary-lines")?.["line-color"],
+      fills: featureColors(),
+      hoverOpacity: map.paint.get("county-hover-line")?.["line-opacity"],
+      order: map.layerOrder.at(-1),
+      outline: map.paint.get("selected-outline"),
+      selected: selectedFlags(),
+      stateStroke: map.paint.get("state-boundary-lines")?.["line-color"],
+      widthIsScreenPixels:
+        typeof map.paint.get("selected-outline")?.["line-width"] === "number",
+    }).toStrictEqual({
+      casing: false,
+      countyStroke: "#4B5563",
+      fills: { "06037": "#d1d5db", "08001": "#d7efe8" },
+      hoverOpacity: [
+        "case",
+        [
+          "all",
+          ["boolean", ["feature-state", "hover"], false],
+          ["!=", ["get", "selected"], true],
+        ],
+        1,
+        0,
+      ],
+      order: "selected-outline",
+      outline: selectedOutline,
+      selected: { "06037": false, "08001": true },
+      stateStroke: "#1F2937",
+      widthIsScreenPixels: true,
+    });
+    expect({
+      aboveCountyLines:
+        map.layerOrder.indexOf("selected-outline") >
+        map.layerOrder.indexOf("county-boundary-lines"),
+      aboveHover:
+        map.layerOrder.indexOf("selected-outline") >
+        map.layerOrder.indexOf("county-hover-line"),
+    }).toStrictEqual({ aboveCountyLines: true, aboveHover: true });
+
+    act(() => {
+      map.emit("mousemove:counties-fill", {
+        features: [countyPointerFeature(map, "08001")],
+      });
+      map.jumpTo({ center: [-104.5, 39.5], zoom: 8 });
+    });
+    expect({
+      hoverCalls: map.setFeatureState.mock.calls,
+      outline: map.paint.get("selected-outline"),
+      zoom: map.zoom,
+    }).toStrictEqual({
+      hoverCalls: [],
+      outline: selectedOutline,
+      zoom: 8,
+    });
+
+    act(() => {
+      map.addLayer({ id: "later-layer" });
+      map.emit("mousemove:counties-fill", {
+        features: [countyPointerFeature(map, "06037")],
+      });
+    });
+    view.rerender(
+      <AtlasMap
+        geographicStateOutline
+        geometry={geometry}
+        neutralCountyBoundaries
+        scores={[dark, gray]}
+        selectedFips="06037"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    expect({
+      fills: featureColors(),
+      hoveredNeighbor: map.setFeatureState.mock.calls.at(-2),
+      order: map.layerOrder.at(-1),
+      outline: map.paint.get("selected-outline"),
+      restoredHover: map.setFeatureState.mock.calls.at(-1),
+      selected: selectedFlags(),
+    }).toStrictEqual({
+      fills: { "06037": "#d1d5db", "08001": "#1d4e89" },
+      hoveredNeighbor: [{ id: "06037", source: "counties" }, { hover: true }],
+      order: "selected-outline",
+      outline: selectedOutline,
+      restoredHover: [{ id: "06037", source: "counties" }, { hover: false }],
+      selected: { "06037": true, "08001": false },
     });
   });
 

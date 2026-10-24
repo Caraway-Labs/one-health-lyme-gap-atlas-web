@@ -63,6 +63,7 @@ describe("UX Reset professional workspace", () => {
       "Compare",
       "Ask Atlas",
       "Research & News",
+      "Resources",
       "Data Provenance",
       "Settings",
       "Docs",
@@ -84,8 +85,9 @@ describe("UX Reset professional workspace", () => {
       "Compare",
       "Ask Atlas",
       "Research & News",
-      "Data Provenance",
+      "Resources",
       "Settings",
+      "Data Provenance",
       "Docs, opens in a new tab",
     ]);
     for (const label of labels) {

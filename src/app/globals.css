@@ -20,6 +20,8 @@
   --atlas-muted-text: #506772;
   --teal: #0f7782;
   --teal-dark: #075760;
+  /* Brighter teal from the Resources reference. Scoped to that page. */
+  --teal-bright: #007d8c;
   --mint: #dff1eb;
   --pale: #f3f7f5;
   --line: #d8e2df;
@@ -2494,6 +2496,25 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
   border: 1px solid var(--line);
   border-radius: 0.3rem;
   background: white;
+}
+.chat-evidence-scope {
+  margin: 0.55rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.chat-claim-list {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.chat-claim + .chat-claim {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+.chat-turn .chat-claim > p {
+  margin: 0;
 }
 .chat-state {
   min-width: 0;

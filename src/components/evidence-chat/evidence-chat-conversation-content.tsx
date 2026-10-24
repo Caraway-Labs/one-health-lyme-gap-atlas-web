@@ -290,10 +290,17 @@ export function EvidenceChatConversationContent({
                 const decision = turn.response
                   ? classifyKnowledgeChatResponse(turn.response)
                   : null;
+                const groundedAnswer =
+                  turn.role === "assistant" &&
+                  decision?.kind === "grounded" &&
+                  turn.response
+                    ? turn.response
+                    : null;
                 const visibleAnswer =
                   turn.role === "assistant" &&
                   decision &&
                   decision.kind !== "closed" &&
+                  !groundedAnswer &&
                   turn.response
                     ? turn.response.answer
                     : "";
@@ -306,8 +313,8 @@ export function EvidenceChatConversationContent({
                       <p>{turn.text}</p>
                     ) : null}
                     {visibleAnswer ? <p>{visibleAnswer}</p> : null}
-                    {decision?.kind === "grounded" && turn.response ? (
-                      <EvidenceChatAnswerSources response={turn.response} />
+                    {groundedAnswer ? (
+                      <EvidenceChatAnswerSources response={groundedAnswer} />
                     ) : null}
                     {turn.response && decision && decision.kind !== "closed" ? (
                       <AssistantOutcome

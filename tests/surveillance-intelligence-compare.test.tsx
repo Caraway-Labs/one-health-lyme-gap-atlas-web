@@ -15,10 +15,7 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CompareSurveillanceIntelligence } from "@/features/ux-reset/compare/compare-surveillance-intelligence";
-import {
-  SURVEILLANCE_INTELLIGENCE_GUIDE,
-  SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
-} from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
+import { SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models/tier1CountyPriority";
 import { AtlasApiError } from "@/lib/api-mutator";
@@ -307,7 +304,7 @@ describe("Compare County Surveillance Intelligence", () => {
         screen.getByTestId(`compare-surveillance-cell-gap-score-${LEFT}`)
       ).toHaveTextContent("36.6");
     });
-    const rows = within(table).getAllByRole("listitem");
+    const rows = within(table).getAllByTestId(/^compare-surveillance-row-/);
     expect(rows.map((row) => row.dataset.perspective)).toStrictEqual([
       ...SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
     ]);
@@ -369,7 +366,8 @@ describe("Compare County Surveillance Intelligence", () => {
     await waitFor(() => {
       expect(situationLeft).toHaveTextContent("Pathogen not recorded");
     });
-    expect(situationLeft).toHaveTextContent("Class membership 87.3%");
+    expect(situationLeft).toHaveTextContent("class-3: 87.3%");
+    expect(situationLeft).toHaveTextContent("Assigned group");
     expect(
       screen.getByTestId(
         `compare-surveillance-cell-ecological-situation-${LEFT}`
@@ -384,7 +382,7 @@ describe("Compare County Surveillance Intelligence", () => {
       screen.getByTestId(
         `compare-surveillance-cell-ecological-situation-${RIGHT}`
       )
-    ).toHaveTextContent("Established blacklegged tick");
+    ).toHaveTextContent("Blacklegged tick records predominate");
   });
 
   it("reuses the fixed guide and does not invent a comparison verdict", async () => {
@@ -392,8 +390,14 @@ describe("Compare County Surveillance Intelligence", () => {
     renderPair();
     await screen.findByText("Pathogen not recorded");
     expect(screen.getByTestId("compare-intelligence-guide")).toHaveTextContent(
-      SURVEILLANCE_INTELLIGENCE_GUIDE
+      "not personal disease risk"
     );
+    expect(
+      screen.getByTestId("compare-model-interpretation")
+    ).toHaveTextContent("Combined surveillance pattern");
+    expect(
+      screen.getByTestId("compare-model-interpretation")
+    ).toHaveTextContent("Tick and pathogen pattern");
     expect(
       screen.getByTestId("compare-surveillance-intelligence")
     ).not.toHaveTextContent(
@@ -431,7 +435,7 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     const situationButton = await screen.findByRole("button", {
-      name: "Surveillance Situation",
+      name: "Combined surveillance pattern",
     });
     await user.click(situationButton);
     const table = screen.getByTestId("compare-surveillance-intelligence-table");
@@ -453,14 +457,18 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     await user.click(
-      await screen.findByRole("button", { name: "Surveillance Situation" })
+      await screen.findByRole("button", {
+        name: "Combined surveillance pattern",
+      })
     );
     const panels = screen.getAllByTestId("surveillance-intelligence-details");
     expect(panels[0]).toHaveAttribute("data-fips", LEFT);
     expect(panels[0]).toHaveTextContent("class-3");
     expect(panels[0]).toHaveTextContent("87.3%");
     expect(panels[0]).toHaveTextContent("0.873");
-    expect(panels[1]).toHaveTextContent(/incompatible/i);
+    expect(panels[1]).toHaveTextContent(
+      "This model result cannot be shown with the data release used by this page."
+    );
   });
 
   it("replaces the open perspective from the keyboard and closes it with Space", async () => {
@@ -468,11 +476,11 @@ describe("Compare County Surveillance Intelligence", () => {
     installHappyPath();
     renderPair();
     const situationButton = await screen.findByRole("button", {
-      name: "Surveillance Situation",
+      name: "Combined surveillance pattern",
     });
     await user.click(situationButton);
     const gapButton = screen.getByRole("button", {
-      name: "Surveillance Gap Score",
+      name: "Gap review score",
     });
     gapButton.focus();
     await user.keyboard("{Enter}");
@@ -493,7 +501,7 @@ describe("Compare County Surveillance Intelligence", () => {
     renderPair();
     await screen.findByText("LOW");
     await user.click(
-      screen.getByRole("button", { name: "ML Review Priority" })
+      screen.getByRole("button", { name: "ML review priority" })
     );
     const priority = screen.getAllByTestId("surveillance-intelligence-details");
     const priorityText = priority[0]?.textContent ?? "";
@@ -509,7 +517,7 @@ describe("Compare County Surveillance Intelligence", () => {
       releaseLabel: true,
     });
     await user.click(
-      screen.getByRole("button", { name: "Ecological Situation" })
+      screen.getByRole("button", { name: "Tick and pathogen pattern" })
     );
     const ecological = screen.getAllByTestId(
       "surveillance-intelligence-details"
@@ -517,7 +525,7 @@ describe("Compare County Surveillance Intelligence", () => {
     const leftText = ecological[0]?.textContent ?? "";
     const rightText = ecological[1]?.textContent ?? "";
     expect({
-      leftUnpublished: leftText.includes("Not published"),
+      leftUnpublished: leftText.includes("not published"),
       rightRelease: rightText.includes("other-release"),
     }).toStrictEqual({
       leftUnpublished: true,
@@ -726,7 +734,7 @@ describe("Compare County Surveillance Intelligence", () => {
     );
     renderPair();
     const gapButton = await screen.findByRole("button", {
-      name: "Surveillance Gap Score",
+      name: "Gap review score",
     });
     gapButton.focus();
     await user.keyboard("{Enter}");
@@ -749,11 +757,11 @@ describe("Compare County Surveillance Intelligence", () => {
     renderPair();
     await expect(
       screen.findByRole("heading", {
-        name: "County Surveillance Intelligence",
+        name: "Model results",
       })
     ).resolves.toBeInTheDocument();
     const button = screen.getByRole("button", {
-      name: "Surveillance Gap Score",
+      name: "Gap review score",
     });
     expect(button).toHaveAttribute("aria-expanded", "false");
     expect(button.className).toContain("motion-reduce:transition-none");

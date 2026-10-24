@@ -110,7 +110,7 @@ const WORKSPACE_DESTINATIONS = [
     title: "Atlas Explorer | One Health Lyme Gap Atlas",
   },
   {
-    heading: "Two counties. A clearer picture.",
+    heading: "Compare counties",
     path: "/compare",
     title: "Compare | One Health Lyme Gap Atlas",
   },
@@ -136,8 +136,9 @@ const WORKSPACE_NAV_LABELS = [
   "Compare",
   "Ask Atlas",
   "Research & News",
-  "Data Provenance",
+  "Resources",
   "Settings",
+  "Data Provenance",
   "Docs",
 ] as const;
 

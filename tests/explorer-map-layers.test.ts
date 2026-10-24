@@ -6,6 +6,7 @@ import {
   DEFAULT_EXPLORER_MAP_LAYER_ID,
   EXPLORER_MAP_LAYERS,
   explorerMapLayerById,
+  BORRELIA_BURGDORFERI_STATUS_MENU_LABEL,
   explorerMapLayerMenuLabel,
   LYME_DISEASE_INCIDENCE_MENU_LABEL,
   paintExplorerMapLayer,
@@ -156,15 +157,21 @@ const legendSources = [
 ];
 
 describe("Explorer map layers", () => {
-  it("renames only the gap-score and incidence dropdown labels", () => {
+  it("renames only the gap-score, incidence, and pathogen dropdown labels", () => {
     const gapScore = EXPLORER_MAP_LAYERS.find(
       (layer) => layer.id === "gap_score"
     );
     const incidence = EXPLORER_MAP_LAYERS.find(
       (layer) => layer.id === "incidence_floor"
     );
+    const pathogen = EXPLORER_MAP_LAYERS.find(
+      (layer) => layer.id === "pathogen_status"
+    );
     const otherLayers = EXPLORER_MAP_LAYERS.filter(
-      (layer) => layer.id !== "gap_score" && layer.id !== "incidence_floor"
+      (layer) =>
+        layer.id !== "gap_score" &&
+        layer.id !== "incidence_floor" &&
+        layer.id !== "pathogen_status"
     );
     expect({
       gap: {
@@ -176,6 +183,11 @@ describe("Explorer map layers", () => {
         id: incidence?.id,
         label: incidence?.label,
         menu: incidence ? explorerMapLayerMenuLabel(incidence) : null,
+      },
+      pathogen: {
+        id: pathogen?.id,
+        label: pathogen?.label,
+        menu: pathogen ? explorerMapLayerMenuLabel(pathogen) : null,
       },
       otherMenus: otherLayers.map((layer) => explorerMapLayerMenuLabel(layer)),
       otherLabels: otherLayers.map((layer) => layer.label),
@@ -189,6 +201,11 @@ describe("Explorer map layers", () => {
         id: "incidence_floor",
         label: "Minimum reported Lyme incidence",
         menu: LYME_DISEASE_INCIDENCE_MENU_LABEL,
+      },
+      pathogen: {
+        id: "pathogen_status",
+        label: "B. burgdorferi status",
+        menu: BORRELIA_BURGDORFERI_STATUS_MENU_LABEL,
       },
       otherMenus: otherLayers.map((layer) => layer.label),
       otherLabels: otherLayers.map((layer) => layer.label),
@@ -205,7 +222,7 @@ describe("Explorer map layers", () => {
       "Gap review score",
       LYME_DISEASE_INCIDENCE_MENU_LABEL,
       "Blacklegged tick status",
-      "B. burgdorferi status",
+      BORRELIA_BURGDORFERI_STATUS_MENU_LABEL,
       "Social vulnerability",
       "Uninsured population",
       "Rurality",

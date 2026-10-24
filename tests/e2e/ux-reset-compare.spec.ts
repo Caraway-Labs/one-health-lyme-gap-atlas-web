@@ -23,11 +23,16 @@ async function replaceCountyFromKeyboard(
   query: string
 ) {
   const input = page.getByRole("combobox", { name: slotName });
+  await input.scrollIntoViewIfNeeded();
   await input.focus();
   await page.keyboard.press("ControlOrMeta+A");
   await page.keyboard.press("Backspace");
   await page.keyboard.type(query, { delay: 20 });
-  await expect(page.getByRole("option").first()).toBeVisible();
+  await expect(input).toHaveValue(query);
+  const parts = query.split(/[\s,]+/).filter((part) => part.length > 0);
+  const token = parts[parts.length - 1] ?? query;
+  const option = page.getByRole("option").first();
+  await expect(option).toContainText(new RegExp(`\\b${token}`, "i"));
   await page.keyboard.press("Enter");
 }
 
@@ -165,25 +170,28 @@ test.describe("two-county Compare", () => {
   }, testInfo) => {
     await installCompareMocks(page, []);
     await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
-    const first = page.getByTestId("compare-glance-08001");
-    const second = page.getByTestId("compare-glance-08013");
+    await expect(page.getByTestId("compare-evidence")).toBeVisible({
+      timeout: 20_000,
+    });
+    const first = page.locator(".compare-sheet-scroll thead th[data-slot='a']");
+    const second = page.locator(
+      ".compare-sheet-scroll thead th[data-slot='b']"
+    );
     await expect(first).toBeVisible();
-    await expect(first).toHaveAttribute("data-slot-letter", "A");
-    await expect(second).toHaveAttribute("data-slot-letter", "B");
-    await expect(first.locator(".ux-reset-compare-slot-marker")).toHaveText(
-      "COUNTY A"
+    await expect(first).toContainText("County A");
+    await expect(second).toContainText("County B");
+    await expect(first.locator(".compare-col-kicker")).toHaveCSS(
+      "color",
+      "rgb(7, 87, 96)"
     );
-    await expect(second.locator(".ux-reset-compare-slot-marker")).toHaveText(
-      "COUNTY B"
+    await expect(second.locator(".compare-col-kicker")).toHaveCSS(
+      "color",
+      "rgb(8, 42, 77)"
     );
-    await expect(first).toHaveCSS("border-top-color", "rgb(15, 119, 130)");
-    await expect(second).toHaveCSS("border-top-color", "rgb(8, 42, 77)");
-    await expect(
-      first.locator(".ux-reset-compare-glance-title")
-    ).not.toContainText("08001");
-    await expect(
-      second.locator(".ux-reset-compare-glance-identity > span")
-    ).toHaveText("Colorado");
+    await expect(first.locator("strong")).not.toContainText("08001");
+    await expect(second).toContainText("Colorado");
+    const leftName = await first.locator("strong").innerText();
+    const rightName = await second.locator("strong").innerText();
     const screenshotPath = testInfo.outputPath("county-identity.png");
     await page.screenshot({ path: screenshotPath, fullPage: true });
     await testInfo.attach("county-identity-desktop", {
@@ -194,12 +202,77 @@ test.describe("two-county Compare", () => {
       .getByRole("button", { name: "Swap first and second county" })
       .first()
       .click();
-    await expect(second).toHaveAttribute("data-slot-letter", "A");
-    await expect(first).toHaveAttribute("data-slot-letter", "B");
-    await expect(second).toHaveCSS("border-top-color", "rgb(15, 119, 130)");
-    await expect(first).toHaveCSS("border-top-color", "rgb(8, 42, 77)");
+    await expect(first.locator("strong")).toHaveText(rightName);
+    await expect(second.locator("strong")).toHaveText(leftName);
+    await expect(first.locator(".compare-col-kicker")).toHaveCSS(
+      "color",
+      "rgb(7, 87, 96)"
+    );
+    await expect(second.locator(".compare-col-kicker")).toHaveCSS(
+      "color",
+      "rgb(8, 42, 77)"
+    );
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations).toEqual([]);
+  });
+
+  test("keeps county names visible while scrolling and opens details from the keyboard", async ({
+    page,
+  }, testInfo) => {
+    await installCompareMocks(page, []);
+    await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
+    const sheet = page.getByTestId("compare-evidence");
+    await expect(sheet).toBeVisible();
+    await page.screenshot({
+      path: "docs/evidence/web-865/compare-desktop.png",
+    });
+    await expect(
+      page.getByTestId("compare-chart-Social vulnerability (percentile)")
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("compare-chart-Uninsured population (%)")
+    ).toBeVisible();
+    const scroller = page.locator(".ux-reset-pro-scroll");
+    const header = page.locator(".compare-sheet-scroll thead th").first();
+    await header.scrollIntoViewIfNeeded();
+    await scroller.evaluate((node) => {
+      node.scrollTop += 900;
+    });
+    const pinned = page.locator(".ux-reset-compare-pinned-bar");
+    await expect(pinned).toBeVisible();
+    const headerTop = await pinned.evaluate(
+      (node) => node.getBoundingClientRect().top
+    );
+    const scrollerTop = await scroller.evaluate(
+      (node) => node.getBoundingClientRect().top
+    );
+    expect(headerTop).toBeGreaterThanOrEqual(scrollerTop - 2);
+    expect(headerTop).toBeLessThan(scrollerTop + 90);
+    const score = page.getByText("How the score is calculated", {
+      exact: true,
+    });
+    await score.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("compare-score-calculation")).toHaveAttribute(
+      "open",
+      ""
+    );
+    if (releaseViewportRuns(testInfo.project.name, 390)) {
+      await page.setViewportSize({ height: 800, width: 390 });
+      await page.screenshot({
+        path: "docs/evidence/web-865/compare-narrow.png",
+      });
+      await expect(
+        page.getByRole("columnheader", { name: "Measure" })
+      ).toBeVisible();
+    }
+    await page.evaluate(() => {
+      document.documentElement.style.zoom = "1.5";
+    });
+    await expect(sheet).toBeVisible();
+    await page.screenshot({
+      path: "docs/evidence/web-865/compare-zoomed.png",
+    });
   });
 
   test("recovers empty, partial, invalid, and duplicate links", async ({
@@ -255,7 +328,7 @@ test.describe("two-county Compare", () => {
     await installCompareMocks(page, requested);
     await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
     const floorRow = page.getByTestId("compare-profile-row-human_case_floor");
-    await expect(floorRow).toBeVisible();
+    await expect(floorRow).toBeVisible({ timeout: 20_000 });
     await expect(floorRow).toHaveAttribute("data-gap", "true");
     await expect(floorRow).not.toContainText("differ by");
     const publishedFloor = page.getByTestId(
@@ -267,7 +340,11 @@ test.describe("two-county Compare", () => {
       "compare-profile-cell-human_case_floor-08013"
     );
     await expect(suppressedFloor).toContainText("Suppressed");
-    await expect(suppressedFloor).toContainText("Limited");
+    await expect(suppressedFloor).toHaveAttribute(
+      "data-evidence-availability",
+      "limited"
+    );
+    await expect(suppressedFloor).toContainText("not zero");
     await expect(
       suppressedFloor.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
     ).toHaveCount(0);
@@ -279,24 +356,12 @@ test.describe("two-county Compare", () => {
       missing.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
     ).toHaveCount(0);
     await expect(page.getByTestId("compare-action")).toHaveCount(0);
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
-      "href",
-      /compare=08001(?:%2C|,)08013/
-    );
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveText(
-      "County evidence"
-    );
-    await expect(page.getByTestId("compare-investigate-08013")).toHaveText(
-      "County evidence"
-    );
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
-      "aria-label",
-      "View county evidence for the first county"
-    );
-    await expect(page.getByTestId("compare-investigate-08013")).toHaveAttribute(
-      "aria-label",
-      "View county evidence for the second county"
-    );
+    await expect(
+      page.getByRole("link", { name: /county evidence/i })
+    ).toHaveCount(0);
+    await expect(
+      page.locator("[data-testid^='compare-investigate-']")
+    ).toHaveCount(0);
     const incidence = page.getByTestId(
       "compare-profile-cell-incidence_floor-08013"
     );
@@ -312,14 +377,14 @@ test.describe("two-county Compare", () => {
       page.getByText("Some measures could not be loaded")
     ).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: "Social vulnerability" })
-    ).toBeVisible();
+      page.getByTestId("compare-profile-row-svi_percentile_2022")
+    ).toContainText("Social vulnerability");
     await expect(
-      page.getByTestId("compare-community-summary-svi_percentile_2022")
+      page.getByTestId("compare-chart-Social vulnerability (percentile)")
     ).toBeVisible();
     await expect(
       page.getByTestId("compare-profile-cell-svi_percentile_2022-08013")
-    ).toContainText("No record");
+    ).toContainText("not zero");
     await expect(page.getByTestId("compare-ask-atlas")).toHaveAttribute(
       "href",
       /\/askatlas/
@@ -329,9 +394,9 @@ test.describe("two-county Compare", () => {
       /page_ref=/
     );
     await expect(page.getByTestId("compare-return")).toHaveCount(0);
-    await expect(page.getByTestId("compare-at-a-glance")).toBeVisible();
+    await expect(page.getByTestId("compare-model-results")).toBeVisible();
     await expect(page.getByTestId("compare-group-human")).toBeVisible();
-    await expect(page.getByTestId("compare-summary")).toBeVisible();
+    await expect(page.getByTestId("compare-summary")).toHaveCount(0);
     if (testInfo.project.name.includes("mobile")) {
       const scrolls = await page
         .getByTestId("compare-profile")
@@ -672,7 +737,7 @@ test.describe("two-county Compare", () => {
     await page.goto("/compare?compare=08001,08013");
     await expect(page.getByTestId("compare-alignment")).toBeVisible();
     await expect(page.getByTestId("compare-return")).toHaveCount(0);
-    await expect(page.getByTestId("compare-at-a-glance")).toBeVisible();
+    await expect(page.getByTestId("compare-model-results")).toBeVisible();
     await expect(page.getByTestId("compare-group-human")).toBeVisible();
     await page.reload();
     await expect(page.getByTestId("compare-pair")).toHaveAttribute(

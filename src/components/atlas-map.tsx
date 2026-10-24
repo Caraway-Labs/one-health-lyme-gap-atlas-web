@@ -21,7 +21,10 @@ import {
   clearCountyBoundaryHover,
   setCountyBoundaryHover,
 } from "@/features/ux-reset/review/county-boundaries-map";
-import { explorerStateGeometryBounds } from "@/features/ux-reset/review/explorer-map-focus";
+import {
+  explorerFitGeographyTarget,
+  explorerStateGeometryBounds,
+} from "@/features/ux-reset/review/explorer-map-focus";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import { stateFipsPrefix } from "@/features/ux-reset/review/review-state-fips";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
@@ -32,9 +35,12 @@ import {
 import {
   countyFeatureBounds,
   countyIsSubstantiallyVisible,
+  EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+  EXPLICIT_GEOGRAPHY_FIT_PADDING,
   fitCountyBounds,
   mapCameraDuration,
   type CountyBounds,
+  type FitBoundsPadding,
 } from "@/lib/atlas-map-camera";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
 import { cn } from "@/lib/utils";
@@ -121,6 +127,13 @@ const GEOGRAPHIC_STATE_OUTLINE = "#000000";
  * and still lighter than the selected-county line.
  */
 const NATIONAL_SELECTED_STATE_LINE_WIDTH = 2.5;
+/**
+ * Selected county perimeter. A numeric MapLibre line width is CSS pixels and
+ * does not scale with zoom. Solid black at full opacity, with no casing,
+ * blur, or halo.
+ */
+const SELECTED_COUNTY_OUTLINE_COLOR = "#000000";
+const SELECTED_COUNTY_OUTLINE_WIDTH = 5;
 const ATLAS_COUNTY_MAP_KEY = "atlasCountyMap";
 
 export type AtlasMapCountyPointer = {
@@ -221,6 +234,30 @@ function atlasMapContainerRole(role: "img" | "none"): "img" | undefined {
   }
 }
 
+function fitMapGeography(
+  instance: MapLibreMap,
+  bounds: CountyBounds,
+  generation: { current: number },
+  applyingExternalMove: { current: boolean },
+  options?: { maxZoom?: number; padding?: FitBoundsPadding }
+): void {
+  applyingExternalMove.current = true;
+  const nextGeneration = generation.current + 1;
+  generation.current = nextGeneration;
+  instance.stop();
+  instance.once("moveend", () => {
+    if (generation.current === nextGeneration) {
+      applyingExternalMove.current = false;
+    }
+  });
+  fitCountyBounds(instance, bounds, {
+    duration: mapCameraDuration(),
+    maxZoom: options?.maxZoom,
+    padding: options?.padding,
+    stop: false,
+  });
+}
+
 function viewportBoundsFromMap(map: MapLibreMap): CountyBounds {
   const viewport = map.getBounds();
   return [
@@ -274,9 +311,9 @@ export function AtlasMap({
    */
   resetNationalView?: boolean;
   /**
-   * National Explorer county stage. When a state frame and a selected county
-   * arrive together, fit that county. State-scoped maps omit this and keep
-   * fitting the whole state.
+   * National Explorer county fit. An explicit fit uses this county even when
+   * the camera frame is still the national extent. State-scoped maps omit
+   * this and keep fitting the whole state.
    */
   fitSelectedCounty?: boolean;
   /**
@@ -328,6 +365,7 @@ export function AtlasMap({
   const neutralCountyBoundariesRef = useRef(neutralCountyBoundaries);
   const hoveredCountyIdRef = useRef<number | string | null>(null);
   const selectedStateRef = useRef(selectedState);
+  const selectedFipsRef = useRef(selectedFips);
   const userAdjustedNationalRef = useRef(false);
   const initialNationalFitRef = useRef(false);
   const fitNationalViewRef = useRef<(instance: MapLibreMap) => boolean>(
@@ -353,6 +391,7 @@ export function AtlasMap({
     geographicStateOutlineRef.current = geographicStateOutline;
     neutralCountyBoundariesRef.current = neutralCountyBoundaries;
     selectedStateRef.current = selectedState;
+    selectedFipsRef.current = selectedFips;
   });
   fitNationalViewRef.current = (instance) => {
     const element = container.current;
@@ -544,11 +583,28 @@ export function AtlasMap({
       instance.addLayer({
         filter: ["==", ["get", "selected"], true],
         id: "selected-outline",
-        paint: { "line-color": "#061f3d", "line-width": 3 },
+        paint: {
+          "line-blur": 0,
+          "line-color": SELECTED_COUNTY_OUTLINE_COLOR,
+          "line-opacity": 1,
+          "line-width": SELECTED_COUNTY_OUTLINE_WIDTH,
+        },
         source: "counties",
         type: "line",
       });
+      const canvas = instance.getCanvas();
+      let pointerDownOnCanvas = false;
+      instance.on("mousedown", (event) => {
+        pointerDownOnCanvas = event.originalEvent?.target === canvas;
+      });
       instance.on("click", "counties-fill", (event) => {
+        const startedOnCanvas = pointerDownOnCanvas;
+        pointerDownOnCanvas = false;
+        // A menu that closes on press can release the pointer on the map.
+        // That click did not start on a county, so it must not select one.
+        if (event.originalEvent && !startedOnCanvas) {
+          return;
+        }
         const fips = event.features?.[0]?.properties?.fips;
         if (typeof fips !== "string") {
           return;
@@ -570,8 +626,18 @@ export function AtlasMap({
         if (!neutralCountyBoundariesRef.current) {
           return;
         }
-        const nextId = event.features?.[0]?.id;
+        const feature = event.features?.[0];
+        const nextId = feature?.id;
         if (typeof nextId !== "string" && typeof nextId !== "number") {
+          return;
+        }
+        const fips = feature?.properties?.fips;
+        const persistentSelection =
+          nextId === selectedFipsRef.current ||
+          (typeof fips === "string" && fips === selectedFipsRef.current);
+        if (persistentSelection) {
+          clearCountyBoundaryHover(instance, hoveredCountyIdRef.current);
+          hoveredCountyIdRef.current = null;
           return;
         }
         const previousId = hoveredCountyIdRef.current;
@@ -681,8 +747,39 @@ export function AtlasMap({
       selectedStateFips:
         selectedState === "ALL" ? null : stateFipsPrefix(selectedState),
     });
-    if (neutralCountyBoundaries && hoveredCountyIdRef.current !== null) {
+    map.current.setPaintProperty("selected-outline", "line-blur", 0);
+    map.current.setPaintProperty(
+      "selected-outline",
+      "line-color",
+      SELECTED_COUNTY_OUTLINE_COLOR
+    );
+    map.current.setPaintProperty("selected-outline", "line-opacity", 1);
+    map.current.setPaintProperty(
+      "selected-outline",
+      "line-width",
+      SELECTED_COUNTY_OUTLINE_WIDTH
+    );
+    // moveLayer always marks the style dirty, even when the outline is already
+    // on top. Doing that on every render keeps the map from going idle, so the
+    // Explorer loading overlay stays up and county clicks never land.
+    const styleLayers = map.current.getStyle?.().layers;
+    const topLayerId =
+      styleLayers === undefined ? undefined : styleLayers.at(-1)?.id;
+    if (
+      topLayerId !== "selected-outline" &&
+      typeof map.current.moveLayer === "function"
+    ) {
+      map.current.moveLayer("selected-outline");
+    }
+    if (
+      neutralCountyBoundaries &&
+      hoveredCountyIdRef.current !== null &&
+      hoveredCountyIdRef.current !== selectedFips
+    ) {
       setCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
+    } else if (hoveredCountyIdRef.current !== null) {
+      clearCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
+      hoveredCountyIdRef.current = null;
     }
   });
 
@@ -721,21 +818,53 @@ export function AtlasMap({
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
     }
-    const fitRequested = previousFitSignal.current !== fitSignal;
-    if (fitRequested) {
+    const fitRequested = fitSignal > previousFitSignal.current;
+    if (fitSignal !== previousFitSignal.current) {
       previousFitSignal.current = fitSignal;
     }
     const frameState =
       cameraFrameState && cameraFrameState !== "ALL" ? cameraFrameState : null;
-    if (fitRequested && resetNationalView && !frameState) {
-      userAdjustedNationalRef.current = false;
-      fitNationalViewRef.current(instance);
-      previousFramedState.current = null;
-      previousSelectedFips.current = selectedFips;
-      return;
-    }
     if (fitRequested) {
-      previousFramedState.current = null;
+      const target = explorerFitGeographyTarget({
+        fitSelectedCounty,
+        focusedState: frameState,
+        selectedCountyFips: selectedFips,
+      });
+      const selectedFeature = geometry.features.find(
+        (item) => item.properties.fips === selectedFips
+      );
+      const countyBounds =
+        target.kind === "county"
+          ? countyFeatureBounds(selectedFeature ?? null)
+          : null;
+      const stateCode = target.kind === "state" ? target.state : frameState;
+      const stateBounds =
+        countyBounds !== null || stateCode === null
+          ? null
+          : explorerStateGeometryBounds(geometry, stateCode);
+      const geographyBounds = countyBounds ?? stateBounds;
+      if (geographyBounds) {
+        fitMapGeography(
+          instance,
+          geographyBounds,
+          cameraFitGeneration,
+          applyingExternalMove,
+          {
+            maxZoom: countyBounds ? EXPLICIT_COUNTY_FIT_MAX_ZOOM : undefined,
+            padding: EXPLICIT_GEOGRAPHY_FIT_PADDING,
+          }
+        );
+        previousFramedState.current = frameState;
+        previousSelectedFips.current = selectedFips;
+        return;
+      }
+      if (resetNationalView && !frameState) {
+        userAdjustedNationalRef.current = false;
+        fitNationalViewRef.current(instance);
+        previousFramedState.current = null;
+        previousSelectedFips.current = selectedFips;
+        return;
+      }
     }
     if (!frameState) {
       const shouldResetNational =

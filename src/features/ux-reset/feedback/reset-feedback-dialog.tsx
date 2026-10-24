@@ -574,6 +574,25 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Page-level control for the same dialog as the sidebar “Give feedback” action. */
+export function ResetFeedbackPageButton() {
+  const controller = useContext(ResetFeedbackContext);
+  return (
+    <Button
+      className="min-h-11 w-fit justify-self-start"
+      data-reset-feedback-page=""
+      onClick={() => {
+        controller?.openFeedback();
+      }}
+      type="button"
+      {...analyticsControlAttributes("feedback_open")}
+    >
+      <MessageSquarePlus aria-hidden="true" />
+      Feedback
+    </Button>
+  );
+}
+
 export function ResetFeedbackTrigger({
   onActivate,
 }: {

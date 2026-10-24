@@ -35,6 +35,7 @@ import {
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
+  RESET_RESOURCES_PATH,
   RESET_SETTINGS_PATH,
   UX_RESET_APP_PREFIX,
 } from "@/features/ux-reset/routes";
@@ -120,14 +121,19 @@ export const WORKSPACE_DESTINATIONS = [
     path: RESET_FEED_PATH,
   },
   {
-    id: "data-provenance",
-    label: "Data Provenance",
-    path: RESET_DATA_PROVENANCE_PATH,
+    id: "resources",
+    label: "Resources",
+    path: RESET_RESOURCES_PATH,
   },
   {
     id: "settings",
     label: "Settings",
     path: RESET_SETTINGS_PATH,
+  },
+  {
+    id: "data-provenance",
+    label: "Data Provenance",
+    path: RESET_DATA_PROVENANCE_PATH,
   },
   {
     id: "docs",
@@ -203,6 +209,8 @@ function isCanonicalDestination(pathname: string): boolean {
     pathname === RESET_COMPARE_PATH ||
     pathname === RESET_ASSISTANT_PATH ||
     pathname === RESET_FEED_PATH ||
+    pathname === RESET_RESOURCES_PATH ||
+    pathname.startsWith(`${RESET_RESOURCES_PATH}/`) ||
     pathname === RESET_DATA_PROVENANCE_PATH ||
     pathname.startsWith(`${RESET_DATA_PROVENANCE_PATH}/`) ||
     pathname === RESET_SETTINGS_PATH ||

@@ -7,12 +7,12 @@
  */
 export const PAGE_INTRODUCTION_COPY = {
   compare: {
-    headline: "Two counties. A clearer picture.",
+    headline: "Compare counties",
     stripBody:
-      "Differences in reporting, coverage, and data availability can affect comparisons. Atlas makes these limitations visible alongside the evidence.",
+      "Differences in reporting, coverage, and data availability can affect comparisons. Atlas makes these limitations visible alongside the data.",
     stripHeading: "Compare with context",
     supporting:
-      "Compare surveillance evidence across counties to uncover meaningful differences, shared patterns, and gaps in what we know.",
+      "Review county data, reporting gaps, and model results side by side.",
   },
   explorer: {
     eyebrow: "ONE HEALTH LYME GAP ATLAS",

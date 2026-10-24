@@ -48,6 +48,32 @@ export function explorerStateFromCountyFips(fips: string): string | null {
   return postal;
 }
 
+export type ExplorerFitGeographyTarget =
+  | { fips: string; kind: "county" }
+  | { kind: "national" }
+  | { kind: "state"; state: string };
+
+/**
+ * Fit geography target at click time.
+ * A selected county wins, then a focused state, then the national extent.
+ * The viewport center is not a selection.
+ */
+export function explorerFitGeographyTarget(input: {
+  fitSelectedCounty: boolean;
+  focusedState: string | null;
+  selectedCountyFips: string;
+}): ExplorerFitGeographyTarget {
+  const fips = input.selectedCountyFips.trim();
+  if (input.fitSelectedCounty && fips.length > 0) {
+    return { fips, kind: "county" };
+  }
+  const state = input.focusedState?.trim() ?? "";
+  if (state.length > 0 && state !== "ALL") {
+    return { kind: "state", state };
+  }
+  return { kind: "national" };
+}
+
 export type ExplorerMapDrillAction =
   | { type: "ignore" }
   | { type: "focus-state"; state: string }

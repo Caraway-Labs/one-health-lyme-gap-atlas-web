@@ -58,26 +58,35 @@ export function ComparePinnedPair({
           className="ux-reset-compare-pinned-bar"
           role="group"
         >
-          <span className="ux-reset-compare-pinned-county">
-            <CompareSlotMarker expanded letter="A" />
-            <span>{leftLabel}</span>
-          </span>
-          <Button
-            aria-label="Swap first and second county"
-            size="icon-xs"
-            type="button"
-            variant="ghost"
-            onClick={onSwap}
-          >
-            <ArrowLeftRight aria-hidden="true" />
-          </Button>
-          <span className="ux-reset-compare-pinned-county">
-            <CompareSlotMarker expanded letter="B" />
-            <span>{rightLabel}</span>
-          </span>
-          <Button size="xs" type="button" variant="outline" onClick={onEdit}>
-            Change counties
-          </Button>
+          <div className="ux-reset-compare-pinned-track compare-ab-grid">
+            <div className="ux-reset-compare-pinned-tools">
+              <Button
+                aria-label="Swap first and second county"
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+                onClick={onSwap}
+              >
+                <ArrowLeftRight aria-hidden="true" />
+              </Button>
+              <Button
+                size="xs"
+                type="button"
+                variant="outline"
+                onClick={onEdit}
+              >
+                Change counties
+              </Button>
+            </div>
+            <span className="ux-reset-compare-pinned-county" data-slot="a">
+              <CompareSlotMarker expanded letter="A" />
+              <span>{leftLabel}</span>
+            </span>
+            <span className="ux-reset-compare-pinned-county" data-slot="b">
+              <CompareSlotMarker expanded letter="B" />
+              <span>{rightLabel}</span>
+            </span>
+          </div>
         </div>
       ) : null}
     </div>

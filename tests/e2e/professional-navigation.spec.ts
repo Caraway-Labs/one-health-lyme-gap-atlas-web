@@ -143,7 +143,7 @@ test.describe("professional navigation desktop", () => {
 
       const activeName = path === "/explore" ? "Atlas Explorer" : "Compare";
       const otherName = path === "/explore" ? "Compare" : "Atlas Explorer";
-      await expect(nav.getByRole("link")).toHaveCount(7);
+      await expect(nav.getByRole("link")).toHaveCount(8);
       expect(
         await nav
           .locator("a")
@@ -155,8 +155,9 @@ test.describe("professional navigation desktop", () => {
         "Compare",
         "Ask Atlas",
         "Research & News",
-        "Data Provenance",
+        "Resources",
         "Settings",
+        "Data Provenance",
         "Docs, opens in a new tab",
       ]);
       const active = nav.getByRole("link", { exact: true, name: activeName });
@@ -425,8 +426,9 @@ test.describe("professional navigation mobile", () => {
         "Compare",
         "Ask Atlas",
         "Research & News",
-        "Data Provenance",
+        "Resources",
         "Settings",
+        "Data Provenance",
         "Docs, opens in a new tab",
       ]);
       const activeName = path === "/explore" ? "Atlas Explorer" : "Compare";

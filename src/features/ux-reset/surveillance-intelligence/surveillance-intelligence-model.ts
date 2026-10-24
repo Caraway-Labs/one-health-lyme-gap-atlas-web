@@ -2,6 +2,7 @@ import {
   formatClassMembership,
   formatFullProbability,
   formatPercentileOneDecimal,
+  formatPlainMembershipPercent,
   formatPublishedGapScore,
 } from "@/features/ux-reset/surveillance-intelligence/format-surveillance-intelligence";
 import {
@@ -10,6 +11,9 @@ import {
   PERCENTILE_QUALIFIER,
   SUFFICIENCY_QUALIFIER,
   SURVEILLANCE_INTELLIGENCE_LABELS,
+  UNRECOGNIZED_MODEL_VERSION_DESCRIPTION,
+  situationGroupCopy,
+  situationModelDescription,
   type SurveillanceIntelligencePerspectiveId,
 } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
 import {
@@ -41,6 +45,7 @@ import {
   type Tier1CountyPriorityPriorityTier as PriorityTier,
 } from "@/generated/models/tier1CountyPriorityPriorityTier";
 import { logUnverifiedApiResponse } from "@/lib/api-response-validation";
+import { describeReleaseAssembly } from "@/lib/atlas-evidence-metadata";
 import { responseTierPresentationForColor } from "@/lib/response-tier";
 
 export type IntelligenceField = {
@@ -76,6 +81,24 @@ export type IntelligenceMembership = {
   text: string;
 };
 
+/** Plain-language row for one returned group. Probability stays on the 0–1 scale. */
+export type SituationPlainMembership = {
+  assigned: boolean;
+  classId: string;
+  label: string;
+  probability: number;
+  text: string;
+};
+
+export type SituationPlainView = {
+  assignedLabel: string;
+  groupMeaning: string;
+  memberships: readonly SituationPlainMembership[] | null;
+  methods: readonly string[];
+  modelDescription: string;
+  technical: readonly IntelligenceField[];
+};
+
 export type IntelligencePerspectiveView = {
   description: string | null;
   disclosure: readonly IntelligenceField[];
@@ -95,6 +118,8 @@ export type IntelligencePerspectiveView = {
   /** Map-ramp color for the published gap score chip. */
   swatch?: string | null;
   retryable: boolean;
+  /** Plain-language situation summary. Null for other perspectives and non-ready results. */
+  situationPlain: SituationPlainView | null;
   sufficiency: EvidenceSufficiency | null;
   supporting: string;
   tier: string | null;
@@ -232,6 +257,7 @@ function emptyPerspective(
     reasons: [],
     reviewCategory: null,
     retryable,
+    situationPlain: null,
     sufficiency: null,
     supporting,
     tier: null,
@@ -472,6 +498,7 @@ function mapGapScore(
     reasons: [],
     reviewCategory: reviewCategoryTitle(county.color),
     retryable: false,
+    situationPlain: null,
     swatch: county.color ?? null,
     sufficiency: null,
     supporting: GAP_SCORE_DESCRIPTOR,
@@ -600,6 +627,7 @@ function mapTier1(
       reasons,
       reviewCategory: null,
       retryable: false,
+      situationPlain: null,
       sufficiency: result.evidence_sufficiency,
       supporting,
       tier: null,
@@ -649,6 +677,7 @@ function mapTier1(
     reasons,
     reviewCategory: null,
     retryable: false,
+    situationPlain: null,
     sufficiency: result.evidence_sufficiency,
     supporting,
     tier: result.priority_tier,
@@ -664,17 +693,161 @@ function mapTier1(
   };
 }
 
-function situationOverview(id: SurveillanceIntelligencePerspectiveId): string {
-  switch (id) {
-    case "surveillance-situation": {
-      return "Surveillance Situation groups human, tick, and pathogen reporting patterns for this county.";
+const RELEASE_ASSEMBLED_PREFIX = "Governed county release assembled ";
+const LOADING_MODEL_RESULT = "Loading model result…";
+const MODEL_RESULT_UNAVAILABLE =
+  "No model result is available for this county.";
+const MODEL_RESULT_INCOMPATIBLE =
+  "This model result cannot be shown with the data release used by this page.";
+const MODEL_RESULT_FAILED = "The model result could not be loaded.";
+const MODEL_RESULT_UNVERIFIED = "The model response could not be verified.";
+const EXACT_RELEASE_SENTENCE =
+  "Model results use the same data release as this page.";
+const CARRY_FORWARD_SENTENCE =
+  "These model results were produced using an earlier data release and approved for use with this page’s release.";
+
+function plainUnavailableReason(reason: SituationUnavailableReason): string {
+  switch (reason) {
+    case SituationVariantUnavailableReason.DEACTIVATED: {
+      return "This result was withdrawn.";
     }
-    case "ecological-situation": {
-      return "Ecological Situation groups tick and pathogen evidence without using human reporting.";
+    case SituationVariantUnavailableReason.NOT_PUBLISHED: {
+      return "This result is not published.";
+    }
+    case SituationVariantUnavailableReason.UNAPPROVED_BATCH: {
+      return "Publication of this result is not approved.";
+    }
+    case SituationVariantUnavailableReason.INCOMPATIBLE_RELEASE: {
+      return MODEL_RESULT_INCOMPATIBLE;
+    }
+    case SituationVariantUnavailableReason.MISSING_ASSIGNMENT: {
+      return "No group assignment is available.";
+    }
+    case null: {
+      return MODEL_RESULT_UNAVAILABLE;
+    }
+    default: {
+      const exhaustive: never = reason;
+      return exhaustive;
+    }
+  }
+}
+
+function releaseDateSentence(releaseId: string, label: string): string | null {
+  const described = describeReleaseAssembly(releaseId);
+  if (!described.startsWith(RELEASE_ASSEMBLED_PREFIX)) {
+    return null;
+  }
+  return `${label}: ${described.slice(RELEASE_ASSEMBLED_PREFIX.length)}.`;
+}
+
+function situationMethods(
+  presentationReleaseId: string,
+  variant: SituationVariant,
+  classification: SituationClassification
+): string[] {
+  const inputReleaseId =
+    variant.input_release_id ?? classification.input_release_id;
+  if (variant.compatibility === SituationVariantCompatibility.EXACT_INPUT) {
+    const date = releaseDateSentence(
+      presentationReleaseId,
+      "Data release used"
+    );
+    return date === null
+      ? [EXACT_RELEASE_SENTENCE]
+      : [EXACT_RELEASE_SENTENCE, date];
+  }
+  if (
+    variant.compatibility ===
+    SituationVariantCompatibility.ADMITTED_CARRY_FORWARD
+  ) {
+    const date = releaseDateSentence(
+      inputReleaseId,
+      "Data release used by the model"
+    );
+    return date === null
+      ? [CARRY_FORWARD_SENTENCE]
+      : [CARRY_FORWARD_SENTENCE, date];
+  }
+  return [];
+}
+
+function situationMembershipRows(
+  classification: SituationClassification
+): SituationPlainMembership[] | null {
+  const selectedId = classification.class_id;
+  const selectedCount = classification.probabilities.filter(
+    (entry) => entry.class_id === selectedId
+  ).length;
+  const rows: SituationPlainMembership[] = [];
+  for (const entry of classification.probabilities) {
+    const copy = situationGroupCopy(
+      classification.model_id,
+      classification.model_version,
+      entry.class_id
+    );
+    const text = Number.isFinite(entry.probability)
+      ? formatPlainMembershipPercent(entry.probability)
+      : null;
+    if (!copy || text === null) {
+      return null;
+    }
+    rows.push({
+      assigned: selectedCount === 1 && entry.class_id === selectedId,
+      classId: entry.class_id,
+      label: copy.label,
+      probability: entry.probability,
+      text,
+    });
+  }
+  return rows.sort((left, right) => {
+    if (left.assigned !== right.assigned) {
+      return left.assigned ? -1 : 1;
+    }
+    if (left.probability !== right.probability) {
+      return right.probability - left.probability;
+    }
+    return left.classId.localeCompare(right.classId);
+  });
+}
+
+function buildSituationPlain(
+  presentationReleaseId: string,
+  variant: SituationVariant,
+  classification: SituationClassification
+): SituationPlainView {
+  const group = situationGroupCopy(
+    classification.model_id,
+    classification.model_version,
+    classification.class_id
+  );
+  return {
+    assignedLabel: group?.label ?? classification.class_name,
+    groupMeaning: group?.meaning ?? classification.class_description,
+    memberships: situationMembershipRows(classification),
+    methods: situationMethods(presentationReleaseId, variant, classification),
+    modelDescription:
+      situationModelDescription(
+        classification.model_id,
+        classification.model_version
+      ) ?? UNRECOGNIZED_MODEL_VERSION_DESCRIPTION,
+    technical: membershipFields(classification),
+  };
+}
+
+function situationStatus(
+  id: SurveillanceIntelligencePerspectiveId,
+  view: IntelligencePerspectiveView,
+  overview: string
+): IntelligencePerspectiveView {
+  switch (id) {
+    case "ecological-situation":
+    case "surveillance-situation": {
+      return { ...view, overview };
     }
     case "gap-score":
     case "ml-review-priority": {
-      return "";
+      return view;
     }
     default: {
       const exhaustive: never = id;
@@ -816,6 +989,11 @@ function mapAvailableSituation(
     classification.probabilities,
     classification.class_id
   );
+  const plain = buildSituationPlain(
+    presentationReleaseId,
+    variant,
+    classification
+  );
   return {
     description: classification.class_description,
     disclosure: situationLineageDisclosure(
@@ -830,12 +1008,13 @@ function mapAvailableSituation(
     label: SURVEILLANCE_INTELLIGENCE_LABELS[id],
     limitations: classification.limitations,
     memberships: membershipBars(classification),
-    overview: situationOverview(id),
-    primary: classification.class_name,
+    overview: plain.modelDescription,
+    primary: plain.assignedLabel,
     qualifier: CLASS_MEMBERSHIP_QUALIFIER,
     reasons: [],
     reviewCategory: null,
     retryable: false,
+    situationPlain: plain,
     sufficiency: null,
     supporting:
       membership === null
@@ -853,13 +1032,17 @@ function mapSituationVariant(
   countyMatched: boolean
 ): IntelligencePerspectiveView {
   if (!countyMatched) {
-    return emptyPerspective(
+    return situationStatus(
       id,
-      "unavailable",
-      UNAVAILABLE_PRIMARY,
-      MEMBERSHIP_NOT_RETURNED,
-      "This classification did not match the selected county, so it was not shown.",
-      false
+      emptyPerspective(
+        id,
+        "unavailable",
+        UNAVAILABLE_PRIMARY,
+        MEMBERSHIP_NOT_RETURNED,
+        "This classification did not match the selected county, so it was not shown.",
+        false
+      ),
+      MODEL_RESULT_UNAVAILABLE
     );
   }
   const incompatible =
@@ -868,48 +1051,60 @@ function mapSituationVariant(
     (variant.availability === SituationVariantAvailability.AVAILABLE &&
       variant.compatibility === SituationVariantCompatibility.UNAVAILABLE);
   if (incompatible) {
-    return {
-      ...emptyPerspective(
-        id,
-        "incompatible",
-        INCOMPATIBLE_PRIMARY,
-        "This model release is not compatible with the evidence release. Incompatible is not a class and is not zero.",
-        "Compatibility is unavailable or the release is incompatible. No class is shown.",
-        false
-      ),
-      disclosure: situationLineageDisclosure(
-        presentationReleaseId,
-        variant,
-        null
-      ),
-    };
+    return situationStatus(
+      id,
+      {
+        ...emptyPerspective(
+          id,
+          "incompatible",
+          INCOMPATIBLE_PRIMARY,
+          "This model release is not compatible with the evidence release. Incompatible is not a class and is not zero.",
+          "Compatibility is unavailable or the release is incompatible. No class is shown.",
+          false
+        ),
+        disclosure: situationLineageDisclosure(
+          presentationReleaseId,
+          variant,
+          null
+        ),
+      },
+      MODEL_RESULT_INCOMPATIBLE
+    );
   }
   if (variant.availability === SituationVariantAvailability.UNAVAILABLE) {
     const reason = unavailableReasonLabel(variant.unavailable_reason);
-    return {
-      ...emptyPerspective(
+    return situationStatus(
+      id,
+      {
+        ...emptyPerspective(
+          id,
+          "unavailable",
+          UNAVAILABLE_PRIMARY,
+          reason,
+          `${reason}. No class was published for this model. Unavailable is not a class name and is not zero.`,
+          false
+        ),
+        disclosure: situationLineageDisclosure(
+          presentationReleaseId,
+          variant,
+          null
+        ),
+      },
+      plainUnavailableReason(variant.unavailable_reason)
+    );
+  }
+  if (!variant.data) {
+    return situationStatus(
+      id,
+      emptyPerspective(
         id,
         "unavailable",
         UNAVAILABLE_PRIMARY,
-        reason,
-        `${reason}. No class was published for this model. Unavailable is not a class name and is not zero.`,
+        MEMBERSHIP_NOT_RETURNED,
+        "No classification was returned for this model.",
         false
       ),
-      disclosure: situationLineageDisclosure(
-        presentationReleaseId,
-        variant,
-        null
-      ),
-    };
-  }
-  if (!variant.data) {
-    return emptyPerspective(
-      id,
-      "unavailable",
-      UNAVAILABLE_PRIMARY,
-      MEMBERSHIP_NOT_RETURNED,
-      "No classification was returned for this model.",
-      false
+      "No group assignment is available."
     );
   }
   return mapAvailableSituation(
@@ -928,57 +1123,100 @@ function mapSituations(
   const tickId = "ecological-situation" as const;
   if (state.phase === "loading") {
     return [
-      loadingPerspective(fourId, "Class membership is loading."),
-      loadingPerspective(tickId, "Class membership is loading."),
+      situationStatus(
+        fourId,
+        loadingPerspective(fourId, "Class membership is loading."),
+        LOADING_MODEL_RESULT
+      ),
+      situationStatus(
+        tickId,
+        loadingPerspective(tickId, "Class membership is loading."),
+        LOADING_MODEL_RESULT
+      ),
     ];
   }
   if (state.phase === "idle") {
     return [
-      emptyPerspective(
+      situationStatus(
         fourId,
-        "unavailable",
-        UNAVAILABLE_PRIMARY,
-        MEMBERSHIP_NOT_RETURNED,
-        "Surveillance situation was not requested for this county identifier.",
-        false
-      ),
-      emptyPerspective(
-        tickId,
-        "unavailable",
-        UNAVAILABLE_PRIMARY,
-        MEMBERSHIP_NOT_RETURNED,
-        "Ecological situation was not requested for this county identifier.",
-        false
-      ),
-    ];
-  }
-  if (state.phase === "error") {
-    if (state.unverified) {
-      return [unverifiedPerspective(fourId), unverifiedPerspective(tickId)];
-    }
-    if (state.errorStatus === 404) {
-      return [
         emptyPerspective(
           fourId,
           "unavailable",
           UNAVAILABLE_PRIMARY,
           MEMBERSHIP_NOT_RETURNED,
-          "No surveillance situation was returned for this county.",
+          "Surveillance situation was not requested for this county identifier.",
           false
         ),
+        MODEL_RESULT_UNAVAILABLE
+      ),
+      situationStatus(
+        tickId,
         emptyPerspective(
           tickId,
           "unavailable",
           UNAVAILABLE_PRIMARY,
           MEMBERSHIP_NOT_RETURNED,
-          "No ecological situation was returned for this county.",
+          "Ecological situation was not requested for this county identifier.",
           false
+        ),
+        MODEL_RESULT_UNAVAILABLE
+      ),
+    ];
+  }
+  if (state.phase === "error") {
+    if (state.unverified) {
+      return [
+        situationStatus(
+          fourId,
+          unverifiedPerspective(fourId),
+          MODEL_RESULT_UNVERIFIED
+        ),
+        situationStatus(
+          tickId,
+          unverifiedPerspective(tickId),
+          MODEL_RESULT_UNVERIFIED
+        ),
+      ];
+    }
+    if (state.errorStatus === 404) {
+      return [
+        situationStatus(
+          fourId,
+          emptyPerspective(
+            fourId,
+            "unavailable",
+            UNAVAILABLE_PRIMARY,
+            MEMBERSHIP_NOT_RETURNED,
+            "No surveillance situation was returned for this county.",
+            false
+          ),
+          MODEL_RESULT_UNAVAILABLE
+        ),
+        situationStatus(
+          tickId,
+          emptyPerspective(
+            tickId,
+            "unavailable",
+            UNAVAILABLE_PRIMARY,
+            MEMBERSHIP_NOT_RETURNED,
+            "No ecological situation was returned for this county.",
+            false
+          ),
+          MODEL_RESULT_UNAVAILABLE
         ),
       ];
     }
     return [
-      errorPerspective(fourId, "Class membership could not be loaded."),
-      errorPerspective(tickId, "Class membership could not be loaded."),
+      situationStatus(
+        fourId,
+        errorPerspective(fourId, "Class membership could not be loaded."),
+        MODEL_RESULT_FAILED
+      ),
+      situationStatus(
+        tickId,
+        errorPerspective(tickId, "Class membership could not be loaded."),
+        MODEL_RESULT_FAILED
+      ),
     ];
   }
   const result = state.result;

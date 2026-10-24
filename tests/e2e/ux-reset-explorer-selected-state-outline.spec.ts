@@ -332,20 +332,23 @@ test.describe("State-scoped Explorer boundaries", () => {
       });
     const idaho = await readOutline(page);
     expect(idaho.selected).not.toContain("08001");
-    expect(idaho.selectedCountyColor).toBe("#061f3d");
-    expect(idaho.selectedCountyWidth).toBe(3);
+    expect(idaho.selectedCountyColor).toBe("#000000");
+    expect(idaho.selectedCountyWidth).toBe(5);
 
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
     await expect
       .poll(async () => (await readOutline(page)).lineColor)
       .toBe("#000000");
-    expect((await readOutline(page)).selectedCountyColor).toBe("#061f3d");
+    expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
+    expect((await readOutline(page)).selectedCountyWidth).toBe(5);
 
     await nudgeStateCamera(page);
     await expect
-      .poll(async () => (await readOutline(page)).lineColor)
-      .toBe("#000000");
+      .poll(async () => (await readOutline(page)).selectedCountyWidth)
+      .toBe(5);
+    expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
+    expect((await readOutline(page)).lineColor).toBe("#000000");
 
     await chooseLayer(page, "Uninsured population");
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
@@ -361,7 +364,7 @@ test.describe("State-scoped Explorer boundaries", () => {
 
     for (const layerName of [
       "Blacklegged tick status",
-      "B. burgdorferi status",
+      "Borrelia burgdorferi status",
       "Evidence completeness",
       "Gap review score",
     ]) {
@@ -471,8 +474,8 @@ test.describe("Selected state outlines at U.S. zoom", () => {
         stage: "national",
       });
     const idaho = await readOutline(page);
-    expect(idaho.selectedCountyColor).toBe("#061f3d");
-    expect(idaho.selectedCountyWidth).toBe(3);
+    expect(idaho.selectedCountyColor).toBe("#000000");
+    expect(idaho.selectedCountyWidth).toBe(5);
     expect(idaho.selected).not.toContain("08001");
     expect(idaho.selected).not.toContain("56039");
 
@@ -509,7 +512,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     expect(tick.selected).toEqual(["16001", "16085"]);
     expect(tick.colors["16001"]).not.toBe(uninsured.colors["16001"]);
     for (const layerName of [
-      "B. burgdorferi status",
+      "Borrelia burgdorferi status",
       "Evidence completeness",
       "Gap review score",
     ]) {

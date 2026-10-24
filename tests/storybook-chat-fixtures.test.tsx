@@ -122,10 +122,22 @@ describe("Storybook chat fixtures", () => {
       "sources-story-chat-long",
       "sources-story-chat-unsafe",
     ]);
-    const labelled = [
-      ...view.container.querySelectorAll<HTMLElement>("ol[aria-labelledby]"),
-    ].map((element) => element.getAttribute("aria-labelledby"));
-    expect(labelled).toStrictEqual(ids);
+    const claimLists = [
+      ...view.container.querySelectorAll<HTMLOListElement>("ol.citation-list"),
+    ];
+    expect(claimLists).toHaveLength(6);
+    expect(
+      claimLists.every(
+        (list) => list.getAttribute("aria-label") === "Sources for this claim"
+      )
+    ).toBeTruthy();
+    for (const list of claimLists) {
+      expect(
+        list
+          .closest("[data-claim-id]")
+          ?.querySelector("a, .citation-source-static")
+      ).toBeTruthy();
+    }
   });
 
   it("resets the chat transcript when the preset changes", () => {
@@ -158,7 +170,7 @@ describe("Storybook chat fixtures", () => {
     sources.unmount();
     const outcome = render(<OutcomeStory preset="corpus" />);
     expect(
-      screen.getByText("No relevant literature in the Atlas corpus.")
+      screen.getByText("The Atlas corpus does not support an answer.")
     ).toBeTruthy();
     outcome.rerender(<OutcomeStory preset="answered" />);
     expect(document.querySelector("[data-assistant-state]")).toBeNull();
