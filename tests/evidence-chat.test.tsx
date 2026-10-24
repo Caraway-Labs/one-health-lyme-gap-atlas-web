@@ -219,7 +219,7 @@ describe(EvidenceChat, () => {
       document.querySelector("[data-assistant-state='evidence_unavailable']")
     ).toBeTruthy();
     expect(
-      screen.queryByText("No relevant literature in the Atlas corpus.")
+      screen.queryByText("The Atlas corpus does not support an answer.")
     ).toBeNull();
     expect(screen.queryByLabelText("Evidence details")).toBeNull();
     await waitFor(() =>
@@ -255,9 +255,9 @@ describe(EvidenceChat, () => {
     await submit();
     await screen.findByText("No passages matched this question.");
     expect({
-      corpus: screen.getByText(/governed corpus for this question/).textContent,
+      corpus: screen.getByText(/governed Atlas corpus/).textContent,
       elsewhere: screen.queryByText(
-        /does not mean no scientific evidence exists elsewhere/
+        /not a finding that scientific evidence does not exist/
       )?.textContent,
       evidenceDetails: screen.queryByLabelText("Evidence details"),
       helpHref: screen
@@ -268,16 +268,61 @@ describe(EvidenceChat, () => {
       pubmed: screen.queryByText(/PubMed/i),
       source: screen.queryByText("Source: Literature evidence"),
     }).toStrictEqual({
-      corpus: expect.stringContaining("governed corpus for this question"),
+      corpus: expect.stringContaining("governed Atlas corpus"),
       elsewhere: expect.stringContaining(
-        "does not mean no scientific evidence exists elsewhere"
+        "not a finding that scientific evidence does not exist"
       ),
       evidenceDetails: null,
       helpHref: "/docs/ai-enabled-decision-intelligence",
       pubmed: null,
       source: null,
     });
+    expect(
+      document.querySelector(
+        "[data-assistant-state='no_relevant_corpus_evidence']"
+      )
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit question" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
+
+  it.each([
+    "single_study",
+    "consistent",
+    "limited",
+    "mixed",
+    "conflicting",
+    "insufficient_to_compare",
+    "evidence_unavailable",
+    "not_applicable",
+  ] as const)(
+    "does not present a corpus gap when no_evidence is paired with %s",
+    async (evidenceState) => {
+      chatRequest.mockResolvedValue({
+        data: response(
+          "no_evidence",
+          evidenceState,
+          "The service returned an unmatched evidence state."
+        ),
+      });
+      render(<EvidenceChat />);
+      await submit();
+      const alert = await screen.findByRole("alert");
+      expect({
+        corpus: document.querySelector(
+          "[data-assistant-state='no_relevant_corpus_evidence']"
+        ),
+        edit: screen.queryByRole("button", { name: "Edit question" }),
+        reason: alert.dataset.closeReason,
+        state: alert.dataset.assistantState,
+      }).toStrictEqual({
+        corpus: null,
+        edit: null,
+        reason: "partial",
+        state: "response_unverified",
+      });
+    }
+  );
 
   it("keeps the question focused for editing and announces corpus results", async () => {
     chatRequest.mockResolvedValue({
@@ -290,7 +335,7 @@ describe(EvidenceChat, () => {
     render(<EvidenceChat />);
     await submit();
     const question = screen.getByLabelText("Your question");
-    await screen.findByText(/governed corpus for this question/);
+    await screen.findByText(/governed Atlas corpus/);
     await waitFor(() => expect(document.activeElement).toBe(question));
     expect({
       live: document
@@ -350,10 +395,10 @@ describe(EvidenceChat, () => {
     await submit();
     await screen.findByText("The assistant is at capacity. Please retry.");
     expect({
-      corpus: screen.queryByText(/governed corpus/i),
+      corpus: screen.queryByText(/governed Atlas corpus/i),
       evidenceDetails: screen.queryByLabelText("Evidence details"),
       literature: screen.queryByText(
-        "No relevant literature in the Atlas corpus."
+        "The Atlas corpus does not support an answer."
       ),
       retryLater: screen.getByRole("button", { name: "Retry later" })
         .textContent,
@@ -460,7 +505,7 @@ describe(EvidenceChat, () => {
       });
     render(<EvidenceChat />);
     await submit();
-    await screen.findByText(/governed corpus for this question/);
+    await screen.findByText(/governed Atlas corpus/);
     fireEvent.click(screen.getByRole("button", { name: "Edit question" }));
     const question = screen.getByLabelText("Your question");
     expect(document.activeElement).toBe(question);
@@ -473,13 +518,12 @@ describe(EvidenceChat, () => {
     await screen.findByText("Evidence: Single-study evidence");
     const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}");
     expect({
-      corpusRemains: screen.getByText(/governed corpus for this question/)
-        .textContent,
+      corpusRemains: screen.getByText(/governed Atlas corpus/).textContent,
       id: stored.conversations[0].id,
       savedConversations: stored.conversations.length,
       turns: stored.conversations[0].turns.length,
     }).toStrictEqual({
-      corpusRemains: expect.stringContaining("governed corpus"),
+      corpusRemains: expect.stringContaining("governed Atlas corpus"),
       id: "conversation-1",
       savedConversations: 1,
       turns: 4,
@@ -521,7 +565,7 @@ describe(EvidenceChat, () => {
     chatRequest.mockResolvedValue({ data: gap });
     render(<EvidenceChat />);
     await submit();
-    await screen.findByText(/governed corpus for this question/);
+    await screen.findByText(/governed Atlas corpus/);
     expect(screen.queryByRole("link", { name: "A paper" })).toBeNull();
     expect(screen.queryByText("A paper")).toBeNull();
   });
@@ -654,7 +698,7 @@ describe(EvidenceChat, () => {
     await submit();
     const alert = await screen.findByRole("alert");
     expect({
-      corpus: screen.queryByText(/governed corpus/i),
+      corpus: screen.queryByText(/governed Atlas corpus/i),
       message: alert.textContent,
       question: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
         .value,

@@ -192,11 +192,25 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
     "No reviewed passages matched this question."
   );
   await expect(lastAssistant).toContainText(
-    "Atlas does not currently have relevant reviewed literature in its governed corpus for this question."
+    "The governed Atlas corpus does not contain reviewed evidence that supports an answer to this question."
   );
   await expect(lastAssistant).toContainText(
-    "This does not mean no scientific evidence exists elsewhere."
+    "It is not a finding that scientific evidence does not exist."
   );
+  await expect(lastAssistant).toContainText(
+    "The Atlas corpus does not support an answer."
+  );
+  await expect(
+    lastAssistant.locator(
+      "[data-assistant-state='no_relevant_corpus_evidence']"
+    )
+  ).toBeVisible();
+  await expect(
+    lastAssistant.getByRole("button", { name: "Edit question" })
+  ).toBeVisible();
+  await expect(
+    lastAssistant.getByRole("button", { name: "Retry", exact: true })
+  ).toHaveCount(0);
   await expect(lastAssistant).not.toContainText("PubMed");
   await expect(lastAssistant.locator(".citation-list")).toHaveCount(0);
   await expect(lastAssistant.locator(".chat-answer-sources")).toHaveCount(0);
@@ -221,7 +235,7 @@ test("corpus availability, conflicting evidence, refusal, unavailable and capaci
   );
   await expect(lastAssistant.locator(".chat-answer-sources")).toHaveCount(0);
   await expect(lastAssistant).toContainText("Evidence service unavailable.");
-  await expect(lastAssistant).not.toContainText("governed corpus");
+  await expect(lastAssistant).not.toContainText("governed Atlas corpus");
   const unavailableRetry = page.getByRole("button", {
     name: "Retry",
     exact: true,
@@ -272,7 +286,7 @@ test("network and rate-limit errors preserve the question for retry", async ({
     "data-assistant-state",
     "rate_limited"
   );
-  await expect(page.getByText(/governed corpus/)).toHaveCount(0);
+  await expect(page.getByText(/governed Atlas corpus/)).toHaveCount(0);
   await expect(page.getByLabel("Your question")).toHaveValue("Rate limited?");
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(page.getByText("Evidence: Single-study evidence")).toBeVisible();
@@ -309,16 +323,14 @@ test("network failure, corpus edit, keyboard focus, and mobile overflow stay dis
     "data-assistant-state",
     "network_failure"
   );
-  await expect(page.getByText(/governed corpus/)).toHaveCount(0);
+  await expect(page.getByText(/governed Atlas corpus/)).toHaveCount(0);
   await expect(page.locator(".chat-turn")).toHaveCount(0);
   mode = "gap";
   const retry = page.getByRole("button", { name: "Retry", exact: true });
   await retry.focus();
   await expect(retry).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByText(/governed corpus for this question/)
-  ).toBeVisible();
+  await expect(page.getByText(/governed Atlas corpus/)).toBeVisible();
   await expect(page.locator(".chat-error")).toHaveCount(0);
   await expect(page.locator(".citation-list")).toHaveCount(0);
   const edit = page.getByRole("button", { name: "Edit question" });
@@ -332,9 +344,7 @@ test("network failure, corpus edit, keyboard focus, and mobile overflow stay dis
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.getByText("Evidence: Limited evidence")).toBeVisible();
   await expect(page.locator(".chat-turn.user")).toHaveCount(2);
-  await expect(
-    page.getByText(/governed corpus for this question/)
-  ).toBeVisible();
+  await expect(page.getByText(/governed Atlas corpus/)).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth <= window.innerWidth + 1
   );
