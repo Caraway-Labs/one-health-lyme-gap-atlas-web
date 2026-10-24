@@ -39,8 +39,9 @@ export function StateResourceMap({
               d={shape.d}
               role="button"
               tabIndex={0}
-              onClick={() => {
+              onClick={(event) => {
                 onSelect(shape.code);
+                event.currentTarget.blur();
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {

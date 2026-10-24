@@ -305,29 +305,35 @@ export function ResourcesPage() {
             No centers match this filter.
           </p>
         ) : (
-          <ul className="resources-center-list">
+          <div className="resources-center-grid">
             {centers.map((center) => (
-              <CenterEntry center={center} key={center.id} />
+              <CenterCard center={center} key={center.id} />
             ))}
-          </ul>
+          </div>
         )}
       </section>
     </div>
   );
 }
 
-function CenterEntry({ center }: { center: RegionalCenter }) {
+function CenterCard({ center }: { center: RegionalCenter }) {
   return (
-    <li>
+    <article className="resources-card resources-center-card">
       {center.focus ? (
         <p className="resources-center-kicker">{center.focus}</p>
       ) : null}
-      <a href={center.url} rel="noopener noreferrer" target="_blank">
-        {center.name}
-        <span aria-hidden="true"> ↗</span>
-        <span className="sr-only"> (opens in a new tab)</span>
-      </a>
+      <h3>{center.name}</h3>
+      <p className="resources-center-type">{center.type}</p>
       <p>{center.purpose}</p>
-    </li>
+      <a
+        aria-label={`Visit ${center.name} (opens in a new tab)`}
+        href={center.url}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        Visit center
+        <span aria-hidden="true"> ↗</span>
+      </a>
+    </article>
   );
 }

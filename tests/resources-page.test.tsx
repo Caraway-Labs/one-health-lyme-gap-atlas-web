@@ -192,7 +192,7 @@ describe("Resources page", () => {
     });
     expect(within(regional).getAllByRole("link")).toHaveLength(4);
     expect(
-      within(regional).getByRole("link", { name: /NewVec/ })
+      within(regional).getByRole("heading", { name: "NewVec" })
     ).toBeVisible();
     expect(within(regional).queryByRole("link", { name: /NEVBD/ })).toBeNull();
     fireEvent.click(
