@@ -1890,6 +1890,14 @@
   scroll-margin-bottom: 1.5rem;
 }
 
+/* Chrome keeps a layout box for closed `::details-content` (`content-visibility:
+   hidden`, height 0) whose descendants still extend past that box. Those boxes
+   were added to the workspace scroll after the trust footer, so the pane could
+   scroll into a blank region. `display: none` removes the box until opened. */
+.ux-reset-pro-app details:not([open])::details-content {
+  display: none;
+}
+
 .ux-reset-ask-atlas-storage,
 .ux-reset-ask-atlas-heading {
   display: grid;

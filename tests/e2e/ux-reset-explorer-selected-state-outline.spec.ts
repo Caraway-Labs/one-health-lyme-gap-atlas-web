@@ -364,7 +364,7 @@ test.describe("State-scoped Explorer boundaries", () => {
 
     for (const layerName of [
       "Blacklegged tick status",
-      "B. burgdorferi status",
+      "Borrelia burgdorferi status",
       "Evidence completeness",
       "Gap review score",
     ]) {
@@ -512,7 +512,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     expect(tick.selected).toEqual(["16001", "16085"]);
     expect(tick.colors["16001"]).not.toBe(uninsured.colors["16001"]);
     for (const layerName of [
-      "B. burgdorferi status",
+      "Borrelia burgdorferi status",
       "Evidence completeness",
       "Gap review score",
     ]) {
