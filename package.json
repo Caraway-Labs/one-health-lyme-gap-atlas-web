@@ -94,7 +94,8 @@
     "orval": {
       "js-yaml": "4.3.2"
     },
-    "undici": "7.30.1"
+    "undici": "7.30.1",
+    "zod": "$zod"
   },
   "engines": {
     "node": ">=22.13.0"
