@@ -106,6 +106,8 @@ export type CompareMissingReason =
 
 export type CompareSideValue =
   | {
+      /** Present when a published record existed but had no usable value. */
+      evidence?: EvidenceObjectModel;
       kind: "missing";
       reason: CompareMissingReason;
       /** Full reader-state sentence, kept for screen readers and details. */
@@ -169,6 +171,7 @@ export function compareSideValue(
       const { evidence } = cell;
       if (evidence.availability === "unavailable") {
         return {
+          evidence,
           kind: "missing",
           reason: missingReasonFor(evidence.displayValue),
           text: evidence.displayValue,

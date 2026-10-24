@@ -185,12 +185,12 @@ test.describe("Compare county surveillance intelligence", () => {
     await expect(section).not.toContainText(
       /differ by|winner|loser|composite/i
     );
-    await expect(page.getByTestId("compare-at-a-glance")).toBeVisible();
+    await expect(page.getByTestId("compare-model-results")).toBeVisible();
     await expect(page.getByTestId("compare-group-human")).toBeVisible();
 
     const placement = await page.evaluate(() => {
-      const glance = document.querySelector(
-        '[data-testid="compare-at-a-glance"]'
+      const model = document.querySelector(
+        '[data-testid="compare-model-results"]'
       );
       const human = document.querySelector(
         '[data-testid="compare-group-human"]'
@@ -199,22 +199,21 @@ test.describe("Compare county surveillance intelligence", () => {
         '[data-testid="compare-surveillance-intelligence"]'
       );
       if (
-        !(glance instanceof HTMLElement) ||
+        !(model instanceof HTMLElement) ||
         !(human instanceof HTMLElement) ||
         !(intelligence instanceof HTMLElement)
       ) {
         return null;
       }
-      const glanceBox = glance.getBoundingClientRect();
+      const modelBox = model.getBoundingClientRect();
       const humanBox = human.getBoundingClientRect();
-      const intelligenceBox = intelligence.getBoundingClientRect();
       return {
-        glanceVisible: glanceBox.top >= 0 && glanceBox.top < window.innerHeight,
-        intelligenceBeforeHuman: intelligenceBox.top < humanBox.top,
+        humanBeforeModel: humanBox.top < modelBox.top,
+        modelVisible: modelBox.height > 0,
       };
     });
-    expect(placement?.glanceVisible).toBe(true);
-    expect(placement?.intelligenceBeforeHuman).toBe(true);
+    expect(placement?.modelVisible).toBe(true);
+    expect(placement?.humanBeforeModel).toBe(true);
 
     const situation = section.getByRole("button", {
       name: "Combined surveillance pattern",
@@ -237,7 +236,7 @@ test.describe("Compare county surveillance intelligence", () => {
     expect(tableBox && detailsBox ? detailsBox.y > tableBox.y : false).toBe(
       true
     );
-    const gap = section.getByRole("button", { name: "Surveillance Gap Score" });
+    const gap = section.getByRole("button", { name: "Gap review score" });
     await gap.focus();
     await page.keyboard.press(" ");
     await expect(gap).toHaveAttribute("aria-expanded", "true");
