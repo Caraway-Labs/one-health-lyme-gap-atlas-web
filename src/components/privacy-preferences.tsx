@@ -25,7 +25,7 @@ import {
 } from "@/lib/analytics-consent";
 
 const ANALYTICS_PURPOSE =
-  "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas uses product analytics only after you explicitly allow them.";
+  "Atlas exploration works the same whether optional product analytics stay on or you turn them off. Product analytics are on by default in this browser, and you can turn them off at any time.";
 
 const STORAGE_LIMITATION =
   "This setting stores only your choice, its date, expiry, and a format version in this browser for up to six months. It does not create an analytics identifier or send an event.";
@@ -106,7 +106,7 @@ function analyticsChoiceSummary(
       return "Atlas cannot save a preference in this browser, so optional analytics remain off.";
     }
     case "not-decided": {
-      return "Optional analytics are off until you make a choice.";
+      return "Optional analytics are on for this browser until you turn them off.";
     }
     default: {
       const exhaustive: never = consent;
@@ -129,7 +129,7 @@ function PrivacyChoiceActions({
         type="button"
         variant="secondary"
       >
-        Keep optional analytics off
+        Turn off optional analytics
       </Button>
       <Button
         disabled={doNotTrack}
@@ -224,7 +224,7 @@ export function PrivacyPreferences({
       </DialogTrigger>
       <DialogContent aria-labelledby="privacy-settings-title">
         <DialogHeader>
-          <span className="eyebrow">Your choice</span>
+          <span className="eyebrow">This browser</span>
           <DialogTitle id="privacy-settings-title">
             Privacy settings
           </DialogTitle>

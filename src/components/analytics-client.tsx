@@ -39,8 +39,8 @@ function onCrossTabAnalyticsPreference(event: StorageEvent): void {
   if (!isAnalyticsPreferenceStorageEvent(event)) {
     return;
   }
-  // Another tab changed or cleared the preference. Stop before any later
-  // track, including after this tab has entered the professional shell.
+  // Another tab wrote or cleared the preference. Opt-out and Do Not Track
+  // stop before any later track. A missing preference is the default-on path.
   notifyAnalyticsPreferenceChanged();
 }
 
@@ -51,11 +51,13 @@ if (typeof window !== "undefined") {
 export function AnalyticsClient() {
   const pathname = usePathname();
   const [consent, setConsent] = useState<AnalyticsConsentState>("not-decided");
+  const [preferenceReady, setPreferenceReady] = useState(false);
 
   useEffect(() => {
     const refreshPreference = () => {
       enforceStoredAnalyticsPreference();
       setConsent(readBrowserAnalyticsPreference());
+      setPreferenceReady(true);
     };
     const onStorage = (event: StorageEvent) => {
       if (!isAnalyticsPreferenceStorageEvent(event)) {
@@ -79,6 +81,12 @@ export function AnalyticsClient() {
   }, []);
 
   useEffect(() => {
+    // The first render still has the placeholder consent. Wait until the
+    // preference effect has read storage so an opt-out, Do Not Track signal,
+    // or storage failure cannot initialize the SDK for one frame.
+    if (!preferenceReady) {
+      return;
+    }
     const mayStart = analyticsMayStart({
       consent,
       doNotTrack: honorsDoNotTrack(window.navigator),
@@ -100,7 +108,7 @@ export function AnalyticsClient() {
     return () => {
       cancelled = true;
     };
-  }, [consent, pathname]);
+  }, [consent, pathname, preferenceReady]);
 
   useEffect(() => {
     const onInteraction = (event: MouseEvent) => {
