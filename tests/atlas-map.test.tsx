@@ -1300,7 +1300,7 @@ describe("AtlasMap county camera", () => {
         "line-blur": 0,
         "line-color": "#000000",
         "line-opacity": 1,
-        "line-width": 3,
+        "line-width": 5,
       },
       fill: fillColor,
       filter: ["==", ["get", "selectedState"], true],
@@ -1565,7 +1565,7 @@ describe("AtlasMap county camera", () => {
           "line-blur": 0,
           "line-color": "#000000",
           "line-opacity": 1,
-          "line-width": 3,
+          "line-width": 5,
         },
         outline: black,
         selectedFips: ["16001", "16085"],
@@ -1576,7 +1576,7 @@ describe("AtlasMap county camera", () => {
           "line-blur": 0,
           "line-color": "#000000",
           "line-opacity": 1,
-          "line-width": 3,
+          "line-width": 5,
         },
         fill: gapFill,
         filter: ["==", ["get", "selectedState"], true],
@@ -1679,7 +1679,7 @@ describe("AtlasMap county camera", () => {
         "line-blur": 0,
         "line-color": "#000000",
         "line-opacity": 1,
-        "line-width": 3,
+        "line-width": 5,
       },
     });
   });
@@ -1728,7 +1728,7 @@ describe("AtlasMap county camera", () => {
         "line-blur": 0,
         "line-color": "#000000",
         "line-opacity": 1,
-        "line-width": 3,
+        "line-width": 5,
       },
       selectedPerimeter: { "line-color": "#000000", "line-width": 2.5 },
       selectedStateOpacity: 0,
@@ -1761,7 +1761,7 @@ describe("AtlasMap county camera", () => {
         "line-blur": 0,
         "line-color": "#000000",
         "line-opacity": 1,
-        "line-width": 3,
+        "line-width": 5,
       },
       selectedStateOpacity: 1,
     });
@@ -1792,7 +1792,7 @@ describe("AtlasMap county camera", () => {
       "line-blur": 0,
       "line-color": "#000000",
       "line-opacity": 1,
-      "line-width": 3,
+      "line-width": 5,
     };
     const featureColors = () => {
       const source = map.sources.get("counties");
