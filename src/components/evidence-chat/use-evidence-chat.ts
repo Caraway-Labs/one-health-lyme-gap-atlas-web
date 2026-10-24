@@ -43,6 +43,17 @@ import {
 } from "./client-failure";
 import type { AssistantChatLayoutMode } from "./types";
 
+/**
+ * Browser deadline for one Ask Atlas request.
+ * The answer service gives up at 28s. This waits longer so that deadline can
+ * still return a typed outcome before the browser aborts a stalled request.
+ * It is a fixed client limit, not a public environment setting.
+ */
+export const ASK_ATLAS_CLIENT_DEADLINE_MS = 35_000;
+
+/** Hold the searching announcement until a wait is long enough to read. */
+export const ASK_ATLAS_PENDING_STATUS_DELAY_MS = 300;
+
 export interface EvidenceChatConversationModel {
   active: LocalConversation | undefined;
   activeId: string;
@@ -64,6 +75,7 @@ export interface EvidenceChatConversationModel {
   mobileHistoryToggleRef: RefObject<HTMLButtonElement | null>;
   mode: AssistantChatLayoutMode;
   pending: boolean;
+  pendingStatusVisible: boolean;
   requestsEnabled: boolean;
   retryQuestion: string;
   selectConversation: (id: string) => void;
@@ -88,6 +100,9 @@ export function useEvidenceChat({
   const requestSerial = useRef(0);
   const ownerAlive = useRef(true);
   const requestAbort = useRef<Set<AbortController>>(new Set());
+  const requestDeadline = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deadlineSettledSerial = useRef<number | null>(null);
   const [conversations, setConversations] = useState<LocalConversation[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [activeId, setActiveId] = useState(
@@ -100,6 +115,7 @@ export function useEvidenceChat({
   const [message, setMessage] = useState("");
   const submittedDraftRef = useRef("");
   const [pending, setPending] = useState(false);
+  const [pendingStatusVisible, setPendingStatusVisible] = useState(false);
   const [failure, setFailure] = useState<ClientFailure | null>(null);
   const [retryQuestion, setRetryQuestion] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -149,20 +165,26 @@ export function useEvidenceChat({
 
   useLayoutEffect(() => {
     ownerAlive.current = true;
-    const controllers = requestAbort.current;
     return () => {
       ownerAlive.current = false;
-      requestSerial.current += 1;
-      for (const controller of controllers) {
-        controller.abort();
-      }
-      controllers.clear();
+      abandonOwnedRequest(
+        requestSerial,
+        requestAbort,
+        requestDeadline,
+        pendingStatusTimer
+      );
     };
   }, []);
 
   const startNewChat = useCallback(
     (focusComposer = true) => {
-      abandonOwnedRequest(requestSerial, requestAbort);
+      abandonOwnedRequest(
+        requestSerial,
+        requestAbort,
+        requestDeadline,
+        pendingStatusTimer
+      );
+      setPendingStatusVisible(false);
       setPending(false);
       activeIdRef.current = "__new__";
       setActiveId("__new__");
@@ -211,7 +233,13 @@ export function useEvidenceChat({
       const loaded = loadConversations();
       const selection = resolveConversationSelection(requestedId, loaded);
       if (selection.activeId !== activeIdRef.current) {
-        abandonOwnedRequest(requestSerial, requestAbort);
+        abandonOwnedRequest(
+          requestSerial,
+          requestAbort,
+          requestDeadline,
+          pendingStatusTimer
+        );
+        setPendingStatusVisible(false);
         setPending(false);
         setFailure(null);
         setRetryQuestion("");
@@ -370,6 +398,7 @@ export function useEvidenceChat({
     }
     const serial = requestSerial.current + 1;
     requestSerial.current = serial;
+    deadlineSettledSerial.current = null;
     submittedDraftRef.current = question;
     const replaceOperationalTurn = shouldReplaceOperationalTurn(
       active,
@@ -377,6 +406,40 @@ export function useEvidenceChat({
     );
     const controller = new AbortController();
     requestAbort.current.add(controller);
+    clearRequestDeadline(requestDeadline);
+    const deadline = setTimeout(() => {
+      if (requestDeadline.current === deadline) {
+        requestDeadline.current = null;
+      }
+      if (!requestStillCurrent(serial)) {
+        return;
+      }
+      // Abort carries TimeoutError so a late settlement stays on the abort
+      // path. User-initiated aborts use the default AbortError and do not
+      // settle here, because they already moved the serial.
+      const timeoutError = new DOMException(
+        "The assistant did not answer before the request timed out.",
+        "TimeoutError"
+      );
+      deadlineSettledSerial.current = serial;
+      controller.abort(timeoutError);
+      setRetryQuestion(question);
+      setFailure(clientFailure(timeoutError));
+      focusQuestionOnSettle.current = true;
+      setPendingStatusVisible(false);
+      setPending(false);
+    }, ASK_ATLAS_CLIENT_DEADLINE_MS);
+    requestDeadline.current = deadline;
+    clearOwnedTimer(pendingStatusTimer);
+    const statusTimer = setTimeout(() => {
+      if (pendingStatusTimer.current === statusTimer) {
+        pendingStatusTimer.current = null;
+      }
+      if (requestStillCurrent(serial)) {
+        setPendingStatusVisible(true);
+      }
+    }, ASK_ATLAS_PENDING_STATUS_DELAY_MS);
+    pendingStatusTimer.current = statusTimer;
     setPending(true);
     setFailure(null);
     try {
@@ -442,9 +505,18 @@ export function useEvidenceChat({
       setRetryQuestion(nextFailure.retry ? question : "");
       setFailure(nextFailure);
     } finally {
+      if (requestDeadline.current === deadline) {
+        clearRequestDeadline(requestDeadline);
+      }
+      if (pendingStatusTimer.current === statusTimer) {
+        clearOwnedTimer(pendingStatusTimer);
+      }
       requestAbort.current.delete(controller);
       if (requestStillCurrent(serial)) {
-        focusQuestionOnSettle.current = true;
+        if (deadlineSettledSerial.current !== serial) {
+          focusQuestionOnSettle.current = true;
+        }
+        setPendingStatusVisible(false);
         setPending(false);
       }
     }
@@ -461,7 +533,13 @@ export function useEvidenceChat({
     if (activeIdRef.current !== id) {
       return;
     }
-    abandonOwnedRequest(requestSerial, requestAbort);
+    abandonOwnedRequest(
+      requestSerial,
+      requestAbort,
+      requestDeadline,
+      pendingStatusTimer
+    );
+    setPendingStatusVisible(false);
     setPending(false);
     const nextId = next[0]?.id ?? "__new__";
     activeIdRef.current = nextId;
@@ -480,7 +558,13 @@ export function useEvidenceChat({
 
   function selectConversation(id: string) {
     if (id !== activeIdRef.current) {
-      abandonOwnedRequest(requestSerial, requestAbort);
+      abandonOwnedRequest(
+        requestSerial,
+        requestAbort,
+        requestDeadline,
+        pendingStatusTimer
+      );
+      setPendingStatusVisible(false);
       setPending(false);
     }
     activeIdRef.current = id;
@@ -515,6 +599,7 @@ export function useEvidenceChat({
     mobileHistoryToggleRef,
     mode,
     pending,
+    pendingStatusVisible,
     requestsEnabled,
     retryQuestion,
     selectConversation,
@@ -534,13 +619,33 @@ function isAbortError(error: unknown): boolean {
 /** Drop a response that no longer belongs to the selected conversation. */
 function abandonOwnedRequest(
   requestSerial: { current: number },
-  requestAbort: { current: Set<AbortController> }
+  requestAbort: { current: Set<AbortController> },
+  requestDeadline: { current: ReturnType<typeof setTimeout> | null },
+  pendingStatusTimer: { current: ReturnType<typeof setTimeout> | null }
 ): void {
   requestSerial.current += 1;
   for (const controller of requestAbort.current) {
     controller.abort();
   }
   requestAbort.current.clear();
+  clearRequestDeadline(requestDeadline);
+  clearOwnedTimer(pendingStatusTimer);
+}
+
+function clearRequestDeadline(requestDeadline: {
+  current: ReturnType<typeof setTimeout> | null;
+}): void {
+  clearOwnedTimer(requestDeadline);
+}
+
+function clearOwnedTimer(timer: {
+  current: ReturnType<typeof setTimeout> | null;
+}): void {
+  if (timer.current === null) {
+    return;
+  }
+  clearTimeout(timer.current);
+  timer.current = null;
 }
 
 /** Move focus only while the user is still in this chat. A docked page keeps its control. */

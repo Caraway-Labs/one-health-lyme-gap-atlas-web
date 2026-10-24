@@ -95,11 +95,21 @@ function storedConversations(): {
 }
 
 async function ask(question: string) {
+  const callsBefore = chatRequest.mock.calls.length;
   fireEvent.change(screen.getByLabelText("Your research question"), {
     target: { value: question },
   });
   fireEvent.click(screen.getByRole("button", { name: /^Ask$/ }));
-  await screen.findByText("Searching reviewed evidence…");
+  await waitFor(() => {
+    const started = chatRequest.mock.calls.length > callsBefore;
+    const pending = (
+      screen.getByLabelText("Your research question") as HTMLTextAreaElement
+    ).disabled;
+    const announced = screen.queryByText("Searching reviewed evidence…");
+    // A fast answer settles before the status delay, so it never flashes.
+    // A request that is still pending must reach that announcement.
+    expect(started && (!pending || announced)).toBeTruthy();
+  });
 }
 
 describe("Ask Atlas research workspace", () => {
