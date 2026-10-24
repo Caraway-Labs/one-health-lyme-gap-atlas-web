@@ -310,11 +310,11 @@ describe("Explorer County Surveillance Intelligence", () => {
       priority: priority.textContent,
       score: screen.getByTestId("selected-county-gap-score").textContent,
       situation: situation.textContent,
-      zero: within(ecological).getByRole("meter").getAttribute("aria-valuenow"),
+      zero: within(ecological).queryByRole("meter"),
     }).toStrictEqual({
       collapsed: null,
       confidence: false,
-      ecological: expect.stringContaining("Class membership 0.0%"),
+      ecological: expect.stringContaining("Established blacklegged tick"),
       guideOpen: false,
       percentile: expect.stringContaining(
         "Within-batch percentile 30.7 out of 100"
@@ -324,7 +324,7 @@ describe("Explorer County Surveillance Intelligence", () => {
       situation: expect.stringContaining(
         "A very long surveillance class name that must wrap inside the tile"
       ),
-      zero: "0",
+      zero: null,
     });
     await user.click(
       within(priority).getByRole("button", { name: /ML Review Priority/ })
@@ -382,13 +382,160 @@ describe("Explorer County Surveillance Intelligence", () => {
       score: tooltip("gap-score"),
       surveillance: tooltip("surveillance-situation"),
     }).toStrictEqual({
-      ecology:
-        "The pattern in tick and pathogen evidence alone. Compare it with Surveillance. Strong fit.",
+      ecology: expect.stringContaining(
+        "Assigned group: Established blacklegged tick."
+      ),
       priority: "Low · 30.7",
       score: "Published score",
-      surveillance:
-        "The pattern in human, tick, and pathogen reporting. Compare it with Ecology. Partial fit, 25%.",
+      surveillance: expect.stringContaining(
+        "Assigned group: Pathogen not recorded."
+      ),
     });
+    expect(tooltip("surveillance-situation")).not.toMatch(
+      /strong fit|partial fit|no fit/i
+    );
+    expect(
+      within(
+        screen.getByTestId(
+          "surveillance-intelligence-card-surveillance-situation"
+        )
+      )
+        .getByRole("button")
+        .querySelector(".lucide-clipboard-list")
+    ).toBeTruthy();
+    expect(
+      within(
+        screen.getByTestId(
+          "surveillance-intelligence-card-ecological-situation"
+        )
+      )
+        .getByRole("button")
+        .querySelector("svg")
+    ).toBeTruthy();
+  });
+
+  it("keeps v1 grouping and technical details collapsed until requested", async () => {
+    const user = userEvent.setup();
+    const four = classification(
+      "surveillance-situation-four-state.v1.class-3",
+      "Pathogen not recorded",
+      0.8734583879465485
+    );
+    four.model_id = "surveillance-situation-four-state";
+    four.model_version = "v1";
+    four.probabilities = [
+      {
+        class_id: "surveillance-situation-four-state.v1.class-0",
+        probability: 0.12654161205345155,
+      },
+      {
+        class_id: "surveillance-situation-four-state.v1.class-1",
+        probability: 0,
+      },
+      {
+        class_id: "surveillance-situation-four-state.v1.class-2",
+        probability: 5.481617999014906e-238,
+      },
+      {
+        class_id: "surveillance-situation-four-state.v1.class-3",
+        probability: 0.8734583879465485,
+      },
+    ];
+    const tick = classification(
+      "surveillance-situation-tick-pathogen.v1.class-1",
+      "Blacklegged tick not established, pathogen not recorded",
+      0.64
+    );
+    tick.model_id = "surveillance-situation-tick-pathogen";
+    tick.model_version = "v1";
+    tick.probabilities = [
+      {
+        class_id: "surveillance-situation-tick-pathogen.v1.class-0",
+        probability: 0.2,
+      },
+      {
+        class_id: "surveillance-situation-tick-pathogen.v1.class-1",
+        probability: 0.64,
+      },
+      {
+        class_id: "surveillance-situation-tick-pathogen.v1.class-2",
+        probability: 0.16,
+      },
+      {
+        class_id: "surveillance-situation-tick-pathogen.v1.class-3",
+        probability: 0,
+      },
+    ];
+    scoresGet.mockResolvedValue(ok(reviewScopeScoresFixture));
+    tier1Get.mockResolvedValue(
+      ok(tier1PriorityForCounty(tier1LowInsufficientFixture, "08001"))
+    );
+    situationsGet.mockResolvedValue(situationsResponse("08001", four, tick));
+    renderView(<CountySummarySurveillance fips="08001" release={release} />);
+    const situation = await screen.findByTestId(
+      "surveillance-intelligence-card-surveillance-situation"
+    );
+    await waitFor(() => {
+      expect(situation).toHaveTextContent("Pathogen not recorded");
+    });
+    expect({
+      jargon: situation.textContent?.includes("Class membership") ?? false,
+      label: situation.textContent,
+    }).toStrictEqual({
+      jargon: false,
+      label: expect.stringContaining("Pathogen not recorded"),
+    });
+    await user.click(
+      within(situation).getByRole("button", {
+        name: /Combined surveillance pattern/,
+      })
+    );
+    const details = screen.getByTestId("surveillance-intelligence-details");
+    const grouping = within(details)
+      .getByText("Model grouping details")
+      .closest("details");
+    const technical = within(details)
+      .getByText("Technical details")
+      .closest("details");
+    expect({
+      absence: details.textContent,
+      classId: technical?.textContent,
+      groupingOpen: grouping?.hasAttribute("open") ?? true,
+      notation: technical?.textContent,
+      release: details.textContent,
+      technicalOpen: technical?.hasAttribute("open") ?? true,
+    }).toStrictEqual({
+      absence: expect.stringContaining(
+        "No record does not mean the tick or pathogen is absent."
+      ),
+      classId: expect.stringContaining(
+        "surveillance-situation-four-state.v1.class-3"
+      ),
+      groupingOpen: false,
+      notation: expect.stringContaining("5.481617999014906e-238"),
+      release: expect.stringContaining(
+        "Model results use the same data release as this page."
+      ),
+      technicalOpen: false,
+    });
+    await user.click(within(details).getByText("Model grouping details"));
+    expect({
+      less: details.textContent?.includes("Less than 0.1%") ?? false,
+      selected:
+        details.textContent?.includes("87.3% — Assigned group") ?? false,
+    }).toStrictEqual({ less: true, selected: true });
+    await user.click(
+      within(
+        screen.getByTestId(
+          "surveillance-intelligence-card-ecological-situation"
+        )
+      ).getByRole("button", {
+        name: /Tick and pathogen pattern/,
+      })
+    );
+    expect(
+      screen.getByTestId("surveillance-intelligence-details").textContent
+    ).toContain("Limited tick and pathogen records");
   });
 
   it("keeps a situation visible when Tier 1 fails, then retries only that model", async () => {
@@ -461,7 +608,7 @@ describe("Explorer County Surveillance Intelligence", () => {
       await screen.findByTestId(
         "surveillance-intelligence-card-surveillance-situation"
       )
-    ).getByRole("button", { name: /Surveillance Situation/ });
+    ).getByRole("button", { name: /Combined surveillance pattern/ });
     await user.click(situationButton);
     expect(situationButton).toHaveAttribute("aria-expanded", "true");
     expect(
@@ -639,7 +786,9 @@ describe("Explorer County Surveillance Intelligence", () => {
     await within(card).findByText("Pathogen not recorded");
     expect(card).not.toHaveTextContent("Not shown for this page release");
     await user.click(
-      within(card).getByRole("button", { name: /Surveillance Situation/ })
+      within(card).getByRole("button", {
+        name: /Combined surveillance pattern/,
+      })
     );
     const disclosure = screen.getByTestId(
       "surveillance-intelligence-disclosure"
@@ -674,7 +823,9 @@ describe("Explorer County Surveillance Intelligence", () => {
       "surveillance-intelligence-card-surveillance-situation"
     );
     await user.click(
-      within(card).getByRole("button", { name: /Surveillance Situation/ })
+      within(card).getByRole("button", {
+        name: /Combined surveillance pattern/,
+      })
     );
     expect(
       screen.getByTestId("surveillance-intelligence-disclosure")
