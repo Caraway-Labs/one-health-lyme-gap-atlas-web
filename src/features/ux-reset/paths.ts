@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Bell,
   Compass,
   FileText,
   FingerprintPattern,
@@ -8,6 +7,7 @@ import {
   LayoutDashboard,
   Map,
   Microscope,
+  Newspaper,
   Settings,
   Sparkles,
   Zap,
@@ -193,7 +193,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     description:
       "Scan recent items from approved trusted sources and open the publisher page.",
     href: RESET_FEED_PATH,
-    icon: Bell,
+    icon: Newspaper,
     id: "feed",
     label: "Feed",
     match: "prefix",
