@@ -9,6 +9,7 @@ import {
   EXPLORER_MODE_PARAM,
 } from "@/features/ux-reset/review/explorer-mode";
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { cn } from "@/lib/utils";
 
 export function ViewFullCountyEvidence({
@@ -23,6 +24,7 @@ export function ViewFullCountyEvidence({
   if (onViewCountyEvidence) {
     return (
       <Button
+        {...analyticsControlAttributes("explorer_view_county_evidence")}
         data-county={fips}
         data-testid="review-view-county-evidence"
         type="button"
@@ -39,6 +41,7 @@ export function ViewFullCountyEvidence({
   params.set(EXPLORER_MODE_PARAM, EXPLORER_EVIDENCE_MODE);
   return (
     <Link
+      {...analyticsControlAttributes("explorer_view_county_evidence")}
       className={cn(buttonVariants(), "ux-reset-review-open")}
       data-county={fips}
       data-testid="review-view-county-evidence"
