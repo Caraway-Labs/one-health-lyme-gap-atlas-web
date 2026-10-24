@@ -217,7 +217,7 @@ test.describe("two-county Compare", () => {
 
   test("keeps county names visible while scrolling and opens details from the keyboard", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installCompareMocks(page, []);
     await page.goto("/compare?compare=08001,08013&scope=CO&dataset=alpha-2026");
     const sheet = page.getByTestId("compare-evidence");
@@ -256,13 +256,15 @@ test.describe("two-county Compare", () => {
       "open",
       ""
     );
-    await page.setViewportSize({ height: 800, width: 390 });
-    await page.screenshot({
-      path: "docs/evidence/web-865/compare-narrow.png",
-    });
-    await expect(
-      page.getByRole("columnheader", { name: "Measure" })
-    ).toBeVisible();
+    if (releaseViewportRuns(testInfo.project.name, 390)) {
+      await page.setViewportSize({ height: 800, width: 390 });
+      await page.screenshot({
+        path: "docs/evidence/web-865/compare-narrow.png",
+      });
+      await expect(
+        page.getByRole("columnheader", { name: "Measure" })
+      ).toBeVisible();
+    }
     await page.evaluate(() => {
       document.documentElement.style.zoom = "1.5";
     });
