@@ -350,6 +350,25 @@ describe("professional workspace navigation", () => {
     });
   });
 
+  it("uses the LibraryBig icon for Resources", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Resources</p>
+      </ResetProfessionalShell>
+    );
+    const resources = screen.getByRole("link", { name: "Resources" });
+    const icon = resources.querySelector("svg");
+    expect({
+      decorative: icon?.getAttribute("aria-hidden"),
+      icon: icon?.getAttribute("class"),
+      label: resources.querySelector(".sidebar-item-label")?.textContent,
+    }).toStrictEqual({
+      decorative: "true",
+      icon: expect.stringContaining("lucide-library-big"),
+      label: "Resources",
+    });
+  });
+
   it("uses the outlined newspaper icon for Research & News", () => {
     render(
       <ResetProfessionalShell>

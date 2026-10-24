@@ -5,7 +5,7 @@ import {
   FingerprintPattern,
   GitCompare,
   LayoutDashboard,
-  Library,
+  LibraryBig,
   Map,
   Microscope,
   Newspaper,
@@ -213,7 +213,7 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
   {
     description: RESOURCES_PAGE_SUBTITLE,
     href: RESET_RESOURCES_PATH,
-    icon: Library,
+    icon: LibraryBig,
     id: "resources",
     label: "Resources",
     match: "prefix",
