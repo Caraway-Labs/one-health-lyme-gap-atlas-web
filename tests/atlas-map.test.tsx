@@ -162,6 +162,9 @@ const engine = vi.hoisted(() => {
     getLayer(id: string) {
       return this.layers.has(id);
     }
+    getStyle() {
+      return { layers: this.layerOrder.map((id) => ({ id })) };
+    }
     getCenter() {
       return this.center;
     }
@@ -1868,6 +1871,7 @@ describe("AtlasMap county camera", () => {
     });
 
     act(() => {
+      map.addLayer({ id: "later-layer" });
       map.emit("mousemove:counties-fill", {
         features: [countyPointerFeature(map, "06037")],
       });
@@ -1886,12 +1890,14 @@ describe("AtlasMap county camera", () => {
     expect({
       fills: featureColors(),
       hoveredNeighbor: map.setFeatureState.mock.calls.at(-2),
+      order: map.layerOrder.at(-1),
       outline: map.paint.get("selected-outline"),
       restoredHover: map.setFeatureState.mock.calls.at(-1),
       selected: selectedFlags(),
     }).toStrictEqual({
       fills: { "06037": "#d1d5db", "08001": "#1d4e89" },
       hoveredNeighbor: [{ id: "06037", source: "counties" }, { hover: true }],
+      order: "selected-outline",
       outline: selectedOutline,
       restoredHover: [{ id: "06037", source: "counties" }, { hover: false }],
       selected: { "06037": true, "08001": false },

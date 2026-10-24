@@ -716,7 +716,16 @@ export function AtlasMap({
       "line-width",
       SELECTED_COUNTY_OUTLINE_WIDTH
     );
-    if (typeof map.current.moveLayer === "function") {
+    // moveLayer always marks the style dirty, even when the outline is already
+    // on top. Doing that on every render keeps the map from going idle, so the
+    // Explorer loading overlay stays up and county clicks never land.
+    const styleLayers = map.current.getStyle?.().layers;
+    const topLayerId =
+      styleLayers === undefined ? undefined : styleLayers.at(-1)?.id;
+    if (
+      topLayerId !== "selected-outline" &&
+      typeof map.current.moveLayer === "function"
+    ) {
       map.current.moveLayer("selected-outline");
     }
     if (
