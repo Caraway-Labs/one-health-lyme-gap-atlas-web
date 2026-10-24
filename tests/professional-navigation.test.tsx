@@ -337,4 +337,23 @@ describe("professional workspace navigation", () => {
       tooltipTitle: "Give Feedback",
     });
   });
+
+  it("uses the outlined newspaper icon for Research & News", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Feed</p>
+      </ResetProfessionalShell>
+    );
+    const research = screen.getByRole("link", { name: "Research & News" });
+    const icon = research.querySelector("svg");
+    expect({
+      decorative: icon?.getAttribute("aria-hidden"),
+      icon: icon?.getAttribute("class"),
+      label: research.querySelector(".sidebar-item-label")?.textContent,
+    }).toStrictEqual({
+      decorative: "true",
+      icon: expect.stringContaining("lucide-newspaper"),
+      label: "Research & News",
+    });
+  });
 });
