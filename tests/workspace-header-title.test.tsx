@@ -257,14 +257,14 @@ describe("workspace header in the professional shell", () => {
     pathname = "/compare";
     render(
       <ResetProfessionalShell>
-        <h1>Two counties. A clearer picture.</h1>
+        <h1>Compare counties</h1>
       </ResetProfessionalShell>
     );
 
     expect({
       header: headerLabel(),
       heading: screen.getByRole("heading", {
-        name: "Two counties. A clearer picture.",
+        name: "Compare counties",
       }).textContent,
       navigation: screen
         .getByRole("navigation", {
@@ -277,7 +277,7 @@ describe("workspace header in the professional shell", () => {
       staticLabel: screen.queryByText("Professional workspace"),
     }).toStrictEqual({
       header: "Compare Counties",
-      heading: "Two counties. A clearer picture.",
+      heading: "Compare counties",
       navigation: "Professional workspace",
       shell: "Professional workspace",
       staticLabel: null,
