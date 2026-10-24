@@ -189,16 +189,17 @@ const engine = vi.hoisted(() => {
         getWest: () => this.west,
       };
     }
+    canvas = {
+      getContext: (kind: string) => {
+        if (webgl.fail && kind === "webgl2") {
+          return null;
+        }
+        return this.removed ? null : {};
+      },
+      style: { cursor: "" },
+    };
     getCanvas() {
-      return {
-        getContext: (kind: string) => {
-          if (webgl.fail && kind === "webgl2") {
-            return null;
-          }
-          return this.removed ? null : {};
-        },
-        style: { cursor: this.removed ? "" : "" },
-      };
+      return this.canvas;
     }
     triggerRepaint() {
       return this.removed;
@@ -1329,14 +1330,21 @@ describe("AtlasMap county camera", () => {
       />
     );
     const map = loadMap();
+    const canvas = map?.getCanvas();
     act(() => {
       map?.emit("click:counties-fill", {
-        features: [{ properties: { fips: "08001" } }],
-        originalEvent: { detail: 1 },
+        features: [{ properties: { fips: "08013" } }],
+        originalEvent: { detail: 1, target: canvas },
       });
+      map?.emit("mousedown", { originalEvent: { target: canvas } });
       map?.emit("click:counties-fill", {
         features: [{ properties: { fips: "08001" } }],
-        originalEvent: { detail: 2 },
+        originalEvent: { detail: 1, target: canvas },
+      });
+      map?.emit("mousedown", { originalEvent: { target: canvas } });
+      map?.emit("click:counties-fill", {
+        features: [{ properties: { fips: "08001" } }],
+        originalEvent: { detail: 2, target: canvas },
       });
     });
     expect({

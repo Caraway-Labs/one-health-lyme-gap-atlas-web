@@ -591,7 +591,19 @@ export function AtlasMap({
         source: "counties",
         type: "line",
       });
+      const canvas = instance.getCanvas();
+      let pointerDownOnCanvas = false;
+      instance.on("mousedown", (event) => {
+        pointerDownOnCanvas = event.originalEvent?.target === canvas;
+      });
       instance.on("click", "counties-fill", (event) => {
+        const startedOnCanvas = pointerDownOnCanvas;
+        pointerDownOnCanvas = false;
+        // A menu that closes on press can release the pointer on the map.
+        // That click did not start on a county, so it must not select one.
+        if (event.originalEvent && !startedOnCanvas) {
+          return;
+        }
         const fips = event.features?.[0]?.properties?.fips;
         if (typeof fips !== "string") {
           return;
