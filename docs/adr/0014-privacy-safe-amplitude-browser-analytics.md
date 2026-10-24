@@ -1,6 +1,8 @@
 # 0014: Privacy-safe direct Amplitude Browser analytics
 
-Status: Accepted Date: 2026-09-07 Decision owner: One Health Lyme Gap Atlas product and engineering leads
+Status: Superseded by [ADR 0022](0022-default-on-amplitude-product-analytics.md) Date: 2026-09-07 Decision owner: One Health Lyme Gap Atlas product and engineering leads
+
+ADR 0022 supersedes the opt-in-only posture in this record, including the requirement to wait for an explicit grant before Amplitude storage or egress. It also includes the signed-in professional workspace. The direct Browser SDK choice, typed allowlist, session-scoped pseudonymous identity, disabled autocapture and Session Replay, 90-day retention, and the prohibition on account identity remain in force through ADR 0022. The decision text below is the historical record.
 
 ## Context
 
