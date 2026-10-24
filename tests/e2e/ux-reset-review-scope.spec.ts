@@ -122,10 +122,17 @@ test.describe("Review national and state scope controls", () => {
       "data-rendered-scope",
       "CO"
     );
-    await page.getByTestId("review-scope-select").click();
-    // Pointer release can fall through the closing menu onto the map and
-    // select a county instead of committing United States.
-    await page.getByRole("option", { name: "United States" }).press("Enter");
+    const scopeSelect = page.getByTestId("review-scope-select");
+    await scopeSelect.focus();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("option", { name: "United States" })
+    ).toBeVisible();
+    // Keep the pointer off the menu. A click there can fall through onto the
+    // map and select a county instead of United States.
+    await page.keyboard.press("Home");
+    await page.keyboard.press("Enter");
+    await expect(scopeSelect).toContainText("United States");
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();
     await page.reload();
