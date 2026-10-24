@@ -12,12 +12,26 @@ const ICON_PROPS = {
   xmlns: "http://www.w3.org/2000/svg",
 } as const;
 
-function TickIcon() {
+const TICK_LEG_PATH =
+  "M10.5 5V3M13.5 5V3M8 8 5 6 4 3M8 11 4 10 2 8M8 14 4 15 2 18M9 17 6 19 5 22M16 8 19 6 20 3M16 11 20 10 22 8M16 14 20 15 22 18M15 17 18 19 19 22";
+
+/**
+ * Scrollytelling tick outline. The body class supplies the mint fill used
+ * inside the front-porch evidence tile. Callers that want the outline alone
+ * omit that class.
+ */
+export function FrontPorchTickIcon({
+  bodyClassName = "front-porch-tick-body",
+  className,
+}: {
+  bodyClassName?: string;
+  className?: string;
+}) {
   return (
-    <svg {...ICON_PROPS}>
-      <path d="M10.5 5V3M13.5 5V3M8 8 5 6 4 3M8 11 4 10 2 8M8 14 4 15 2 18M9 17 6 19 5 22M16 8 19 6 20 3M16 11 20 10 22 8M16 14 20 15 22 18M15 17 18 19 19 22" />
+    <svg {...ICON_PROPS} className={className}>
+      <path d={TICK_LEG_PATH} />
       <ellipse
-        className="front-porch-tick-body"
+        className={bodyClassName || undefined}
         cx="12"
         cy="12"
         rx="4.3"
@@ -43,7 +57,7 @@ export function FrontPorchEvidenceIcon({ index }: { index: number }) {
     return <UserRound aria-hidden="true" size={16} strokeWidth={1.7} />;
   }
   if (index === 1) {
-    return <TickIcon />;
+    return <FrontPorchTickIcon />;
   }
   return <CommunityIcon />;
 }
