@@ -217,7 +217,7 @@ test.describe("Compare county surveillance intelligence", () => {
     expect(placement?.intelligenceBeforeHuman).toBe(true);
 
     const situation = section.getByRole("button", {
-      name: "Surveillance Situation",
+      name: "Combined surveillance pattern",
     });
     await situation.focus();
     await page.keyboard.press("Enter");
@@ -284,9 +284,8 @@ test.describe("Compare county surveillance intelligence", () => {
     await expect(
       page.getByTestId("compare-surveillance-intelligence")
     ).toBeVisible();
-    await expect(page.getByTestId("compare-investigate-01001")).toHaveAttribute(
-      "href",
-      /compare=01001(?:%2C|,)08001/
-    );
+    await expect(
+      page.locator("[data-testid^='compare-investigate-']")
+    ).toHaveCount(0);
   });
 });

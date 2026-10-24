@@ -122,10 +122,10 @@ describe("Resources page", () => {
     expect(
       screen.queryByRole("link", { name: /Visit state resources/ })
     ).toBeNull();
-    expect(screen.getByRole("link", { name: "CDC guidance" })).toHaveAttribute(
-      "href",
-      "#cdc-guidance"
-    );
+    expect(screen.queryByRole("link", { name: "CDC guidance" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "CDC guidance & tools" })
+    ).toBeVisible();
   });
 
   it("initializes the selector from a state query", () => {
@@ -137,9 +137,7 @@ describe("Resources page", () => {
         name: "DHW — Mosquito and Tick Disease Prevention",
       })
     ).toBeVisible();
-    expect(
-      screen.getAllByText("State education resource").length
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("State education resource")).toHaveLength(1);
     expect(
       screen.getByRole("link", { name: /Visit state resources/ })
     ).toHaveAttribute(
@@ -189,17 +187,21 @@ describe("Resources page", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Centers of Excellence" })
     );
-    expect(screen.getAllByRole("link", { name: /Visit / })).toHaveLength(4);
-    expect(screen.getByRole("heading", { name: "NewVec" })).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "NEVBD" })).toBeNull();
+    const regional = screen.getByRole("region", {
+      name: "Regional expertise & training",
+    });
+    expect(within(regional).getAllByRole("link")).toHaveLength(4);
+    expect(
+      within(regional).getByRole("link", { name: /NewVec/ })
+    ).toBeVisible();
+    expect(within(regional).queryByRole("link", { name: /NEVBD/ })).toBeNull();
     fireEvent.click(
       screen.getByRole("button", { name: "Training & Evaluation" })
     );
-    expect(screen.getAllByRole("link", { name: /Visit / })).toHaveLength(5);
-    expect(screen.getByRole("link", { name: /Visit NEVBD/ })).toHaveAttribute(
-      "href",
-      "https://www.neregionalvectorcenter.com/"
-    );
+    expect(within(regional).getAllByRole("link")).toHaveLength(5);
+    expect(
+      within(regional).getByRole("link", { name: /NEVBD/ })
+    ).toHaveAttribute("href", "https://www.neregionalvectorcenter.com/");
   });
 
   it("returns every center from the all-centers filter", () => {
@@ -208,6 +210,10 @@ describe("Resources page", () => {
       screen.getByRole("button", { name: "Training & Evaluation" })
     );
     fireEvent.click(screen.getByRole("button", { name: "All centers" }));
-    expect(screen.getAllByRole("link", { name: /Visit / })).toHaveLength(9);
+    expect(
+      within(
+        screen.getByRole("region", { name: "Regional expertise & training" })
+      ).getAllByRole("link")
+    ).toHaveLength(9);
   });
 });

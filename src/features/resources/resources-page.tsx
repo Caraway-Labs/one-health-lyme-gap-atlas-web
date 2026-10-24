@@ -2,7 +2,6 @@
 
 import {
   BarChart3,
-  ChevronDown,
   FileText,
   Search,
   Shield,
@@ -51,10 +50,6 @@ const TOPIC_ICONS: Record<string, LucideIcon> = {
 };
 
 const DIRECTORY = statesInAlphabeticalOrder();
-
-function externalLabel(title: string): string {
-  return `${title} (opens in a new tab)`;
-}
 
 function ExternalResourceLink({
   className,
@@ -120,25 +115,6 @@ export function ResourcesPage() {
       <header className="resources-intro">
         <h1>{RESOURCES_PAGE_TITLE}</h1>
         <p className="resources-subtitle">{RESOURCES_PAGE_SUBTITLE}</p>
-        <nav aria-label="On this page">
-          <ul className="resources-jumps">
-            <li>
-              <a href={RESOURCE_SECTION_HREFS.cdc}>
-                CDC guidance <ChevronDown aria-hidden="true" size={16} />
-              </a>
-            </li>
-            <li>
-              <a href={RESOURCE_SECTION_HREFS.state}>
-                State resources <ChevronDown aria-hidden="true" size={16} />
-              </a>
-            </li>
-            <li>
-              <a href={RESOURCE_SECTION_HREFS.regional}>
-                Regional centers <ChevronDown aria-hidden="true" size={16} />
-              </a>
-            </li>
-          </ul>
-        </nav>
       </header>
 
       <section
@@ -241,12 +217,11 @@ export function ResourcesPage() {
               </Combobox>
             </div>
             {selected ? (
-              <div aria-live="polite">
-                <p aria-hidden="true" className="resources-state-badge">
+              <div aria-live="polite" className="resources-state-summary">
+                <p className="resources-state-badge">
                   {selected.destinationType}
                 </p>
                 <h3>{selected.organization}</h3>
-                <p>{selected.destinationType}</p>
                 <ExternalResourceLink
                   className="resources-visit"
                   link={{
@@ -330,39 +305,29 @@ export function ResourcesPage() {
             No centers match this filter.
           </p>
         ) : (
-          <div className="resources-center-grid">
+          <ul className="resources-center-list">
             {centers.map((center) => (
-              <CenterCard center={center} key={center.id} />
+              <CenterEntry center={center} key={center.id} />
             ))}
-          </div>
+          </ul>
         )}
-        <p className="resources-footer-note">
-          Visit each organization for current guidance, services, and training
-          opportunities.
-        </p>
       </section>
     </div>
   );
 }
 
-function CenterCard({ center }: { center: RegionalCenter }) {
+function CenterEntry({ center }: { center: RegionalCenter }) {
   return (
-    <article className="resources-card resources-center-card">
+    <li>
       {center.focus ? (
         <p className="resources-center-kicker">{center.focus}</p>
       ) : null}
-      <h3>{center.name}</h3>
-      <p className="resources-center-type">{center.type}</p>
-      <p className="resources-center-purpose">{center.purpose}</p>
-      <a
-        aria-label={externalLabel(`Visit ${center.name}`)}
-        href={center.url}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        Visit center
+      <a href={center.url} rel="noopener noreferrer" target="_blank">
+        {center.name}
         <span aria-hidden="true"> ↗</span>
+        <span className="sr-only"> (opens in a new tab)</span>
       </a>
-    </article>
+      <p>{center.purpose}</p>
+    </li>
   );
 }

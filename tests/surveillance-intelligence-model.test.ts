@@ -4,9 +4,11 @@ import {
   formatClassMembership,
   formatFullProbability,
   formatPercentileOneDecimal,
+  formatPlainMembershipPercent,
 } from "@/features/ux-reset/surveillance-intelligence/format-surveillance-intelligence";
 import {
   GAP_SCORE_DESCRIPTOR,
+  situationGroupCopy,
   SURVEILLANCE_INTELLIGENCE_GUIDE,
   SURVEILLANCE_INTELLIGENCE_LABELS,
   SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
@@ -38,6 +40,7 @@ const SHA = "a".repeat(64);
 function classification(input: {
   classId: string;
   className: string;
+  modelId?: string;
   modelVersion: string;
   probabilities: SituationClassification["probabilities"];
 }): SituationClassification {
@@ -58,7 +61,7 @@ function classification(input: {
     input_bundle_sha256: SHA,
     input_release_id: PAGE_RELEASE,
     limitations: ["Not disease risk.", "No records is not absence."],
-    model_id: "model",
+    model_id: input.modelId ?? "model",
     model_provenance: {},
     model_version: input.modelVersion,
     probabilities: input.probabilities,
@@ -150,7 +153,8 @@ function mapped(input?: {
 const fourClass = classification({
   classId: "surveillance-situation-four-state.v1.class-3",
   className: "Pathogen not recorded",
-  modelVersion: "four-state-v1",
+  modelId: "surveillance-situation-four-state",
+  modelVersion: "v1",
   probabilities: [
     {
       class_id: "surveillance-situation-four-state.v1.class-0",
@@ -174,7 +178,8 @@ const fourClass = classification({
 const tickClass = classification({
   classId: "surveillance-situation-tick-pathogen.v1.class-0",
   className: "Established blacklegged tick",
-  modelVersion: "tick-pathogen-v1",
+  modelId: "surveillance-situation-tick-pathogen",
+  modelVersion: "v1",
   probabilities: [
     {
       class_id: "surveillance-situation-tick-pathogen.v1.class-0",
@@ -324,7 +329,7 @@ describe("County Surveillance Intelligence mapping", () => {
     expect(views[2]?.fullValue).toBe("0.8734583879465485");
     expect(views[3]).toMatchObject({
       kind: "ready",
-      primary: "Established blacklegged tick",
+      primary: "Blacklegged tick records predominate",
       supporting: "Class membership 99.9%",
     });
     expect(SURVEILLANCE_INTELLIGENCE_GUIDE).toContain(
@@ -466,7 +471,7 @@ describe("County Surveillance Intelligence mapping", () => {
     });
     expect(views[3]).toMatchObject({
       kind: "ready",
-      primary: "Established blacklegged tick",
+      primary: "Blacklegged tick records predominate",
     });
     expect(JSON.stringify([views[2], views[3]])).not.toContain(
       "Not shown for this page release"
@@ -589,10 +594,309 @@ describe("County Surveillance Intelligence mapping", () => {
         result: null,
       },
     });
-    expect(views[0]).toMatchObject({ kind: "error", retryable: true });
-    expect(views[1]).toMatchObject({ kind: "unavailable", retryable: false });
-    expect(views[2]).toMatchObject({ kind: "error", retryable: true });
-    expect(views[3]).toMatchObject({ kind: "error", retryable: true });
-    expect(views[0]?.primary).not.toBe("0.0");
+    expect({
+      gap: views[0],
+      priority: views[1],
+      surveillance: views[2],
+      tick: views[3],
+    }).toMatchObject({
+      gap: {
+        kind: "error",
+        primary: expect.not.stringMatching(/^0\.0$/),
+        retryable: true,
+      },
+      priority: { kind: "unavailable", retryable: false },
+      surveillance: {
+        kind: "error",
+        overview: "The model result could not be loaded.",
+        primary: "Could not be loaded",
+        retryable: true,
+      },
+      tick: { kind: "error", retryable: true },
+    });
+  });
+
+  it("keeps an unrecognized model version on its reviewed label", () => {
+    const future = classification({
+      classId: "surveillance-situation-four-state.v2.class-0",
+      className: "Established blacklegged tick",
+      modelId: "surveillance-situation-four-state",
+      modelVersion: "v2",
+      probabilities: fourClass.probabilities.map((entry) => ({
+        ...entry,
+        class_id: entry.class_id.replace(".v1.", ".v2."),
+      })),
+    });
+    const view = mapped({
+      situations: readySituations(
+        situations(
+          variant("AVAILABLE", future),
+          variant("AVAILABLE", tickClass)
+        )
+      ),
+    })[2];
+    expect({
+      meaning: view?.situationPlain?.groupMeaning,
+      memberships: view?.situationPlain?.memberships,
+      overview: view?.overview,
+      primary: view?.primary,
+      reviewed: view?.fields.map((field) => field.value).join(" "),
+    }).toStrictEqual({
+      meaning: future.class_description,
+      memberships: null,
+      overview:
+        "This page does not have a plain-language description for this model version. The reviewed group label is shown unchanged.",
+      primary: "Established blacklegged tick",
+      reviewed: expect.stringContaining("Established blacklegged tick"),
+    });
+  });
+
+  it("uses the reviewed v1 explanation for every current group", () => {
+    const cases = [
+      [
+        "surveillance-situation-four-state",
+        "class-0",
+        "Blacklegged tick records predominate",
+      ],
+      [
+        "surveillance-situation-four-state",
+        "class-1",
+        "Tick and pathogen status unknown",
+      ],
+      [
+        "surveillance-situation-four-state",
+        "class-2",
+        "Western blacklegged tick records predominate",
+      ],
+      ["surveillance-situation-four-state", "class-3", "Pathogen not recorded"],
+      [
+        "surveillance-situation-tick-pathogen",
+        "class-0",
+        "Blacklegged tick records predominate",
+      ],
+      [
+        "surveillance-situation-tick-pathogen",
+        "class-1",
+        "Limited tick and pathogen records",
+      ],
+      [
+        "surveillance-situation-tick-pathogen",
+        "class-2",
+        "Established western blacklegged tick pattern",
+      ],
+      [
+        "surveillance-situation-tick-pathogen",
+        "class-3",
+        "Tick and pathogen status unknown",
+      ],
+    ] as const;
+    expect({
+      copied: cases.map(([modelId, classSuffix, label]) => {
+        const copy = situationGroupCopy(
+          modelId,
+          "v1",
+          `${modelId}.v1.${classSuffix}`
+        );
+        return {
+          label: copy?.label,
+          meaning: (copy?.meaning.length ?? 0) > 0,
+          requested: label,
+        };
+      }),
+      crossed: situationGroupCopy(
+        "surveillance-situation-four-state",
+        "v1",
+        "surveillance-situation-tick-pathogen.v1.class-0"
+      ),
+      distinct:
+        situationGroupCopy(
+          "surveillance-situation-four-state",
+          "v1",
+          "surveillance-situation-four-state.v1.class-0"
+        )?.meaning ===
+        situationGroupCopy(
+          "surveillance-situation-tick-pathogen",
+          "v1",
+          "surveillance-situation-tick-pathogen.v1.class-0"
+        )?.meaning,
+    }).toStrictEqual({
+      copied: cases.map((entry) => ({
+        label: entry[2],
+        meaning: true,
+        requested: entry[2],
+      })),
+      crossed: null,
+      distinct: false,
+    });
+  });
+
+  it("names the screenshot county groups without changing the probabilities", () => {
+    const view = mapped({
+      situations: readySituations(
+        situations(
+          variant("AVAILABLE", fourClass),
+          variant("AVAILABLE", tickClass)
+        )
+      ),
+    })[2];
+    expect({
+      fullValue: view?.fullValue,
+      methods: view?.situationPlain?.methods,
+      rows: view?.situationPlain?.memberships?.map((row) => ({
+        assigned: row.assigned,
+        label: row.label,
+        text: row.text,
+      })),
+      technical: JSON.stringify(view?.fields),
+    }).toStrictEqual({
+      fullValue: "0.8734583879465485",
+      methods: [
+        "Model results use the same data release as this page.",
+        "Data release used: October 15, 2026.",
+      ],
+      rows: [
+        { assigned: true, label: "Pathogen not recorded", text: "87.3%" },
+        {
+          assigned: false,
+          label: "Blacklegged tick records predominate",
+          text: "12.7%",
+        },
+        {
+          assigned: false,
+          label: "Western blacklegged tick records predominate",
+          text: "Less than 0.1%",
+        },
+        {
+          assigned: false,
+          label: "Tick and pathogen status unknown",
+          text: "0%",
+        },
+      ],
+      technical: expect.stringContaining("5.481617999014906e-238"),
+    });
+  });
+
+  it("formats plain membership without scientific notation", () => {
+    expect({
+      exact: formatPlainMembershipPercent(1),
+      nearOne: formatPlainMembershipPercent(0.999961073640964),
+      ordinary: formatPlainMembershipPercent(0.8734583879465485),
+      tiny: formatPlainMembershipPercent(5.481617999014906e-238),
+      whole: formatPlainMembershipPercent(0.2),
+      zero: formatPlainMembershipPercent(0),
+    }).toStrictEqual({
+      exact: "100%",
+      nearOne: "Less than 100%",
+      ordinary: "87.3%",
+      tiny: "Less than 0.1%",
+      whole: "20%",
+      zero: "0%",
+    });
+  });
+
+  it("states unavailable, incompatible, and carry-forward results in plain language", () => {
+    const unpublished = variant(
+      "UNAVAILABLE",
+      null,
+      "NOT_PUBLISHED",
+      "UNAVAILABLE"
+    );
+    const withdrawn = variant(
+      "UNAVAILABLE",
+      null,
+      "DEACTIVATED",
+      "UNAVAILABLE"
+    );
+    const unapproved = variant(
+      "UNAVAILABLE",
+      null,
+      "UNAPPROVED_BATCH",
+      "UNAVAILABLE"
+    );
+    const missing = variant(
+      "UNAVAILABLE",
+      null,
+      "MISSING_ASSIGNMENT",
+      "UNAVAILABLE"
+    );
+    const incompatible = variant(
+      "UNAVAILABLE",
+      null,
+      "INCOMPATIBLE_RELEASE",
+      "UNAVAILABLE"
+    );
+    const admitted = variant(
+      "AVAILABLE",
+      {
+        ...fourClass,
+        input_release_id: "governed-2026-09-18-unknown-coverage",
+      },
+      null,
+      "ADMITTED_CARRY_FORWARD"
+    );
+    admitted.input_release_id = "governed-2026-09-18-unknown-coverage";
+    const views = mapped({
+      situations: readySituations(situations(unpublished, withdrawn)),
+    });
+    const other = mapped({
+      situations: readySituations(situations(unapproved, missing)),
+    });
+    const blocked = mapped({
+      situations: readySituations(
+        situations(variant("AVAILABLE", fourClass), incompatible)
+      ),
+    })[3];
+    expect({
+      blocked: {
+        kind: blocked?.kind,
+        overview: blocked?.overview,
+        primary: blocked?.primary,
+      },
+      carryForward: mapped({
+        situations: readySituations(
+          situations(admitted, variant("AVAILABLE", tickClass))
+        ),
+      })[2]?.situationPlain?.methods,
+      loading: mapped({
+        situations: { errorStatus: null, phase: "loading", result: null },
+      })[2]?.overview,
+      missing: other[3]?.overview,
+      unapproved: other[2]?.overview,
+      unpublished: {
+        kind: views[2]?.kind,
+        overview: views[2]?.overview,
+        primary: views[2]?.primary,
+      },
+      unverified: mapped({
+        situations: {
+          errorStatus: null,
+          phase: "error",
+          result: null,
+          unverified: true,
+        },
+      })[3]?.overview,
+      withdrawn: views[3]?.overview,
+    }).toStrictEqual({
+      blocked: {
+        kind: "incompatible",
+        overview:
+          "This model result cannot be shown with the data release used by this page.",
+        primary: "Incompatible",
+      },
+      carryForward: [
+        "These model results were produced using an earlier data release and approved for use with this page’s release.",
+        "Data release used by the model: September 18, 2026.",
+      ],
+      loading: "Loading model result…",
+      missing: "No group assignment is available.",
+      unapproved: "Publication of this result is not approved.",
+      unpublished: {
+        kind: "unavailable",
+        overview: "This result is not published.",
+        primary: "Unavailable",
+      },
+      unverified: "The model response could not be verified.",
+      withdrawn: "This result was withdrawn.",
+    });
   });
 });
