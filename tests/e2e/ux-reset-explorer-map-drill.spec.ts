@@ -293,6 +293,9 @@ async function clickCounty(page: Page, longitude: number, latitude: number) {
     });
     point = await projectedCountyPoint(page, longitude, latitude);
   }
+  // Zoom can settle while the loading overlay still covers the canvas.
+  await expect(page.getByTestId("explorer-map-loading")).toHaveCount(0);
+  point = await projectedCountyPoint(page, longitude, latitude);
   await page.mouse.click(point.x, point.y);
 }
 
