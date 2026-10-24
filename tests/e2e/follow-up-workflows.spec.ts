@@ -119,14 +119,18 @@ test.describe("five-category suggested follow-up", () => {
       "Conduct targeted follow-up"
     );
     for (const label of [
-      "Human disease surveillance",
-      "Vector and pathogen surveillance",
-      "Clinical and laboratory reporting",
-      "Community context and outreach",
-      "Coordination and documentation",
+      "Review county case information",
+      "Review tick and pathogen records",
+      "Clarify reporting, if needed",
+      "Consider prevention needs",
+      "Record the question and next step",
     ]) {
       await expect(followUp.getByText(label, { exact: true })).toBeVisible();
     }
+    await expect(followUp.getByText("Who can help:").first()).toBeVisible();
+    await expect(followUp).not.toContainText(
+      "Questions, partner roles, and official resources"
+    );
     await expect(followUp.getByTestId("follow-up-interpretation")).toHaveCount(
       0
     );
@@ -134,34 +138,41 @@ test.describe("five-category suggested follow-up", () => {
       "Atlas supports professional review, not individual risk measurement"
     );
     await expect(followUp).toContainText(
-      "compare the published minimum reported cases"
+      "Check whether local records clarify missing or suppressed counts."
     );
+    await expect(followUp).toContainText(
+      "Alabama has 29 published 2023 human-surveillance records"
+    );
+    await expect(followUp).toContainText("are not Baldwin County cases");
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
-      "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?"
+      "Could travel, reporting practices, or suppressed counts explain the pattern?"
     );
     await expect(followUp.getByTestId("follow-up-what-if-note")).toHaveCount(0);
-    await expect(followUp).toContainText("not documented negative findings");
     await expect(followUp).not.toContainText("within 2 weeks");
     const resources = page.getByTestId("explorer-official-resources");
     await expect(resources).toBeVisible();
     await expect(
       resources.getByRole("heading", { name: "Official resources" })
     ).toBeVisible();
-    await expect(resources).toContainText(
-      "Authoritative references to support surveillance review, reporting, and public health action."
-    );
+    await expect(resources).toContainText("Guidance to support your review.");
     await expect(resources).not.toContainText("Official resources & guidance");
     await expect(resources).not.toContainText("Resources for follow-up");
     for (const topic of [
-      "Lyme disease surveillance",
-      "Tick and vector surveillance",
-      "Clinical testing and reporting",
+      "Human disease surveillance",
+      "Tick and pathogen surveillance",
+      "Clinical and laboratory testing",
+      "Prevention and outreach",
+      "Community context",
+      "Examples from state programs",
     ]) {
       await expect(
         resources.getByRole("heading", { name: topic })
       ).toBeVisible();
     }
-    await expect(resources.getByRole("link")).toHaveCount(5);
+    await expect(resources.getByRole("link")).toHaveCount(15);
+    await expect(resources).toContainText(
+      "Examples from other state programs. Follow your own state’s reporting requirements and procedures."
+    );
     await expect(
       resources.getByRole("link", { name: /Lyme surveillance case definition/ })
     ).toHaveAttribute(
@@ -216,6 +227,9 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-available-1792.png",
     });
+    await page.getByTestId("explorer-lower-workspace").screenshot({
+      path: "test-results/follow-up-panels-desktop.png",
+    });
 
     await page.setViewportSize({ height: 900, width: 1440 });
     await followUp.screenshot({
@@ -245,12 +259,11 @@ test.describe("five-category suggested follow-up", () => {
     expect(narrow?.preview).toBeGreaterThan(0.28);
 
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
-    await expect(followUp).toContainText(
-      "check whether additional county case information is available"
+    await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
+      "Verify with local information"
     );
-    await expect(followUp).not.toContainText(
-      "Compare the published minimum reported cases"
-    );
+    await expect(followUp).toContainText("are not Autauga County cases");
+    await expect(followUp).not.toContainText("are not Baldwin County cases");
 
     await page.setViewportSize({ height: 850, width: 1792 });
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01005`);
@@ -267,7 +280,10 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
     });
-    await expect(resources.getByRole("link")).toHaveCount(5);
+    await expect(resources.getByRole("link")).toHaveCount(15);
+    await expect(followUp).toContainText(
+      "Missing data are not zero cases, and this is not a low or high review priority."
+    );
 
     await page.setViewportSize({ height: 900, width: 800 });
     const stacked = await page.evaluate(() => {
@@ -293,6 +309,9 @@ test.describe("five-category suggested follow-up", () => {
     expect(stacked).toStrictEqual({
       followFirst: true,
       similarWidth: true,
+    });
+    await page.getByTestId("explorer-lower-workspace").screenshot({
+      path: "test-results/follow-up-panels-mobile.png",
     });
   });
 });

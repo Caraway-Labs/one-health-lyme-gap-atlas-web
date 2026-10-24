@@ -597,9 +597,9 @@
 
 .county-summary-mark-caption {
   max-width: 100%;
-  color: var(--muted-foreground);
-  font-size: 0.65rem;
-  font-weight: 650;
+    color: var(--muted-foreground);
+    font-size: 0.65rem;
+    font-weight: 650;
   letter-spacing: 0.02em;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -651,9 +651,9 @@
 }
 
 .county-summary-class-name {
-  min-width: 0;
-  font-size: 0.75rem;
-  font-weight: 650;
+    min-width: 0;
+    font-size: 0.75rem;
+    font-weight: 650;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -2496,6 +2496,10 @@
   background: var(--action-plan-surface);
 }
 
+.ux-reset-explorer-map-follow-up[data-follow-up-accent="ready"] {
+  box-shadow: inset 0 3px 0 var(--follow-up-accent, var(--muted-foreground));
+}
+
 .ux-reset-explorer-map-follow-up:focus {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
@@ -2532,6 +2536,98 @@
   padding: 0;
   border: 0;
   background: transparent;
+}
+
+.action-plan-explorer .action-summary {
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.action-plan-explorer .action-divider-rows {
+  gap: 0;
+}
+
+.action-plan-explorer .action-divider-rows li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.85rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.action-plan-explorer .action-divider-rows li + li {
+  border-top: 1px solid var(--line);
+}
+
+.action-plan-explorer .action-row-index {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 12%, white);
+  color: var(--navy);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.action-plan-explorer .action-divider-rows strong {
+  display: block;
+  color: var(--navy);
+  font-size: 0.975rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.action-plan-explorer .action-divider-rows p {
+  margin: 0.2rem 0 0;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.action-plan-explorer .action-who {
+  color: var(--muted-foreground);
+}
+
+.action-plan-explorer .action-who span {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.action-questions-inset {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--teal) 10%, white);
+}
+
+.action-questions-inset h4 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.action-questions-inset ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.action-questions-inset li {
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.action-questions-inset li + li {
+  margin-top: 0.35rem;
 }
 
 .ux-reset-explorer-lower {
@@ -2611,6 +2707,18 @@
 
 .ux-reset-explorer-resource-list li {
   min-width: 0;
+}
+
+.ux-reset-pro-main .ux-reset-explorer-resource-list a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ux-reset-explorer-resource-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .ux-reset-pro-main .ux-reset-explorer-resource-list a {
@@ -4260,8 +4368,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   .ux-reset-explorer-lower {
     grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
+    align-items: start;
   }
 
   /* State orientation keeps the map and state list in one column. The
@@ -5040,9 +5148,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-compare-section-title {
   margin: 0;
-  color: var(--foreground);
-  font-size: 1.05rem;
-  font-weight: 650;
+    color: var(--foreground);
+    font-size: 1.05rem;
+    font-weight: 650;
 }
 
 .ux-reset-compare-glance,
@@ -5135,9 +5243,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 .ux-reset-compare-ring-text {
   position: relative;
   color: var(--foreground);
-  font-size: 1rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 650;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
 }
 
 .ux-reset-compare-mini {
@@ -5615,8 +5723,8 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   margin: 0 0 var(--space-2);
 }
 
-.ux-reset-compare-info-title {
-  font-weight: 650;
+  .ux-reset-compare-info-title {
+    font-weight: 650;
 }
 
 .ux-reset-compare-info dl {
