@@ -1,3 +1,6 @@
+import { accessSync, constants, copyFileSync } from "node:fs";
+import { join } from "node:path";
+
 import AxeBuilder from "@axe-core/playwright";
 import {
   expect,
@@ -5,6 +8,7 @@ import {
   type Locator,
   type Page,
   type Route,
+  type TestInfo,
 } from "@playwright/test";
 
 import {
@@ -27,6 +31,23 @@ import {
 } from "../fixtures/explore-api-fixtures";
 
 const WORKSPACE_URL = "/askatlas";
+const OPTIONAL_ARTIFACT_DIRECTORY = "/opt/cursor/artifacts";
+
+/** Required images go to the Playwright output dir. Artifact copies are optional. */
+async function saveOutcomeScreenshot(
+  root: Locator,
+  testInfo: TestInfo,
+  filename: string
+) {
+  const outputPath = testInfo.outputPath(filename);
+  await root.screenshot({ path: outputPath });
+  try {
+    accessSync(OPTIONAL_ARTIFACT_DIRECTORY, constants.W_OK);
+    copyFileSync(outputPath, join(OPTIONAL_ARTIFACT_DIRECTORY, filename));
+  } catch {
+    // CI checkouts have no writable /opt/cursor/artifacts directory.
+  }
+}
 
 async function fulfillJson(route: Route, body: unknown, status = 200) {
   await route.fulfill({ json: body, status });
@@ -228,7 +249,7 @@ async function exerciseKeyboard(
 for (const outcome of ASK_ATLAS_OUTCOME_MATRIX) {
   test(`Ask Atlas outcome ${outcome.id} keeps its state, controls, and question`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     await installExploreMocks(page);
     const messages = await installOutcomeRoute(page, outcome);
     await page.goto(WORKSPACE_URL);
@@ -238,9 +259,11 @@ for (const outcome of ASK_ATLAS_OUTCOME_MATRIX) {
       page.getByRole("heading", { name: "What would you like to explore?" })
     ).toBeVisible();
     if (outcome.id === "answered-single-study") {
-      await root.screenshot({
-        path: "/opt/cursor/artifacts/ask-atlas-outcome-before-empty.png",
-      });
+      await saveOutcomeScreenshot(
+        root,
+        testInfo,
+        "ask-atlas-outcome-before-empty.png"
+      );
     }
     await ask(page, outcome.question);
 
@@ -296,9 +319,11 @@ for (const outcome of ASK_ATLAS_OUTCOME_MATRIX) {
       .include("[data-testid='ask-atlas-workspace']")
       .analyze();
     expect(accessibility.violations).toEqual([]);
-    await root.screenshot({
-      path: `/opt/cursor/artifacts/ask-atlas-outcome-${outcome.id}.png`,
-    });
+    await saveOutcomeScreenshot(
+      root,
+      testInfo,
+      `ask-atlas-outcome-${outcome.id}.png`
+    );
 
     if (outcome.keyboard) {
       await exerciseKeyboard(page, root, outcome, messages);
