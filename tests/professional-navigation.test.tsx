@@ -214,11 +214,15 @@ describe("professional workspace navigation", () => {
     );
 
     const feedback = screen.getByRole("button", { name: "Give feedback" });
-    const docs = screen.getByRole("link", { name: "Docs, opens in a new tab" });
+    const settings = screen.getByRole("link", { name: "Settings" });
+    const provenance = screen.getByRole("link", { name: "Data Provenance" });
     const account = screen.getByTestId("workspace-account-menu");
     expect({
-      afterDocs:
-        docs.compareDocumentPosition(feedback) ===
+      afterSettings:
+        settings.compareDocumentPosition(feedback) ===
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      beforeProvenance:
+        feedback.compareDocumentPosition(provenance) ===
         Node.DOCUMENT_POSITION_FOLLOWING,
       beforeAccount:
         feedback.compareDocumentPosition(account) ===
@@ -227,7 +231,8 @@ describe("professional workspace navigation", () => {
       sharedButton: feedback.className.includes("group/button"),
       slot: feedback.dataset.slot ?? null,
     }).toStrictEqual({
-      afterDocs: true,
+      afterSettings: true,
+      beforeProvenance: true,
       beforeAccount: true,
       icon: expect.stringContaining("message-square-plus"),
       sharedButton: true,
@@ -255,10 +260,10 @@ describe("professional workspace navigation", () => {
       "Ask Atlas",
       "Research & News",
       "Resources",
-      "Data Provenance",
       "Settings",
-      "Docs",
       RESET_FEEDBACK_ACTION.label,
+      "Data Provenance",
+      "Docs",
     ]);
 
     const described = [...RESET_WORKSPACE_NAV, ...RESET_ACCESS_NAV].map(
@@ -308,15 +313,15 @@ describe("professional workspace navigation", () => {
       },
       {
         description:
-          "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
-        label: "Data Provenance",
-        title: "Data Provenance",
-      },
-      {
-        description:
           "Manage your account, preferences, and One Health Atlas experience.",
         label: "Settings",
         title: "Settings",
+      },
+      {
+        description:
+          "Explore data sources, lineage, methods, and limitations behind One Health Atlas.",
+        label: "Data Provenance",
+        title: "Data Provenance",
       },
       {
         description:

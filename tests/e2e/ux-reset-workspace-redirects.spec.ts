@@ -9,8 +9,8 @@ const DESTINATION_LABELS = [
   "Ask Atlas",
   "Research & News",
   "Resources",
-  "Data Provenance",
   "Settings",
+  "Data Provenance",
   "Docs, opens in a new tab",
 ] as const;
 

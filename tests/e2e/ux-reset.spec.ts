@@ -137,8 +137,8 @@ const WORKSPACE_NAV_LABELS = [
   "Ask Atlas",
   "Research & News",
   "Resources",
-  "Data Provenance",
   "Settings",
+  "Data Provenance",
   "Docs",
 ] as const;
 
