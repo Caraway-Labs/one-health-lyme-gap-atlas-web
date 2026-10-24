@@ -284,9 +284,8 @@ test.describe("Compare county surveillance intelligence", () => {
     await expect(
       page.getByTestId("compare-surveillance-intelligence")
     ).toBeVisible();
-    await expect(page.getByTestId("compare-investigate-01001")).toHaveAttribute(
-      "href",
-      /compare=01001(?:%2C|,)08001/
-    );
+    await expect(
+      page.locator("[data-testid^='compare-investigate-']")
+    ).toHaveCount(0);
   });
 });
