@@ -604,9 +604,9 @@
 
 .county-summary-mark-caption {
   max-width: 100%;
-    color: var(--muted-foreground);
-    font-size: 0.65rem;
-    font-weight: 650;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  font-weight: 650;
   letter-spacing: 0.02em;
   line-height: 1.2;
   overflow-wrap: break-word;
@@ -658,9 +658,9 @@
 }
 
 .county-summary-class-name {
-    min-width: 0;
-    font-size: 0.75rem;
-    font-weight: 650;
+  min-width: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -5257,9 +5257,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 
 .ux-reset-compare-section-title {
   margin: 0;
-    color: var(--foreground);
-    font-size: 1.05rem;
-    font-weight: 650;
+  color: var(--foreground);
+  font-size: 1.05rem;
+  font-weight: 650;
 }
 
 .ux-reset-compare-glance,
@@ -5352,9 +5352,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 .ux-reset-compare-ring-text {
   position: relative;
   color: var(--foreground);
-    font-size: 1rem;
-    font-variant-numeric: tabular-nums;
-    font-weight: 650;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
 }
 
 .ux-reset-compare-mini {
@@ -5832,8 +5832,8 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
   margin: 0 0 var(--space-2);
 }
 
-  .ux-reset-compare-info-title {
-    font-weight: 650;
+.ux-reset-compare-info-title {
+  font-weight: 650;
 }
 
 .ux-reset-compare-info dl {

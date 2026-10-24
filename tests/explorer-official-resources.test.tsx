@@ -34,7 +34,8 @@ describe("Explorer official resources card", () => {
         name: "Official resources",
       }).textContent,
       unique: new Set(links.map((link) => link.getAttribute("href"))).size,
-      viewAll: screen.getByRole("link", { name: "View all resources →" })
+      viewAll: screen
+        .getByRole("link", { name: "View all resources →" })
         .getAttribute("href"),
     }).toStrictEqual({
       groups: [...TOPICS],
