@@ -239,6 +239,7 @@ export function useStoryChatModel(
       mobileHistoryToggleRef as RefObject<HTMLButtonElement | null>,
     mode: "drawer",
     pending,
+    pendingStatusVisible: pending,
     requestsEnabled: false,
     retryQuestion,
     selectConversation: () => {},

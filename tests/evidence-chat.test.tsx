@@ -27,6 +27,10 @@ vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
 }));
 
 import { EvidenceChat } from "../src/components/evidence-chat";
+import {
+  ASK_ATLAS_CLIENT_DEADLINE_MS,
+  ASK_ATLAS_PENDING_STATUS_DELAY_MS,
+} from "../src/components/evidence-chat/use-evidence-chat";
 import { AtlasApiError } from "../src/lib/api-mutator";
 import { atlasAnalytics } from "../src/lib/atlas-analytics";
 import {
@@ -125,7 +129,10 @@ describe(EvidenceChat, () => {
     localStorage.clear();
     chatRequest.mockReset();
   });
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   it("shows literature starter prompts that populate the composer without submitting", async () => {
     render(<EvidenceChat />);
@@ -1271,6 +1278,261 @@ describe(EvidenceChat, () => {
       state: "evidence_unavailable",
       timedOut: null,
     });
+  });
+
+  it("hides the searching status until the wait is long enough to announce", async () => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    });
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValue(held.promise);
+    render(<EvidenceChat />);
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "What does the evidence say?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    const question = screen.getByLabelText(
+      "Your question"
+    ) as HTMLTextAreaElement;
+    expect({
+      askBusy: screen
+        .getByRole("button", { name: "Ask" })
+        .getAttribute("aria-busy"),
+      disabled: question.disabled,
+      searching: screen.queryByText("Searching reviewed evidence…"),
+    }).toStrictEqual({
+      askBusy: "true",
+      disabled: true,
+      searching: null,
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_PENDING_STATUS_DELAY_MS - 1);
+    });
+    expect(screen.queryByText("Searching reviewed evidence…")).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    const searching = screen.getByText("Searching reviewed evidence…");
+    expect({
+      atomic: searching.getAttribute("aria-atomic"),
+      className: searching.className,
+      live: searching.getAttribute("aria-live"),
+      role: searching.getAttribute("role"),
+    }).toStrictEqual({
+      atomic: "true",
+      className: "processing",
+      live: "polite",
+      role: "status",
+    });
+    await act(async () => {
+      held.resolve({ data: response() });
+    });
+    expect({
+      answer: screen.getByText("Evidence: Limited evidence").textContent,
+      searching: screen.queryByText("Searching reviewed evidence…"),
+    }).toStrictEqual({
+      answer: "Evidence: Limited evidence",
+      searching: null,
+    });
+  });
+
+  it("keeps a fast answer from flashing the searching status", async () => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    });
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValue(held.promise);
+    render(<EvidenceChat />);
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "What does the evidence say?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    expect(
+      (screen.getByLabelText("Your question") as HTMLTextAreaElement).disabled
+    ).toBeTruthy();
+    await act(async () => {
+      held.resolve({ data: response() });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_PENDING_STATUS_DELAY_MS);
+    });
+    expect({
+      answer: screen.getByText("Evidence: Limited evidence").textContent,
+      disabled: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
+        .disabled,
+      searching: screen.queryByText("Searching reviewed evidence…"),
+    }).toStrictEqual({
+      answer: "Evidence: Limited evidence",
+      disabled: false,
+      searching: null,
+    });
+  });
+
+  it("ends a stalled request at the client deadline and ignores a late answer", async () => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    });
+    const held = Promise.withResolvers<unknown>();
+    chatRequest.mockReturnValue(held.promise);
+    render(<EvidenceChat />);
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "What does the evidence say?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_CLIENT_DEADLINE_MS);
+    });
+    const timeout = screen.getByRole("alert");
+    const question = screen.getByLabelText(
+      "Your question"
+    ) as HTMLTextAreaElement;
+    expect({
+      message: timeout.textContent,
+      question: question.value,
+      retry: screen.getByRole("button", { name: "Retry" }).textContent,
+      searching: screen.queryByText("Searching reviewed evidence…"),
+      state: timeout.dataset.assistantState,
+      stored: loadConversations(),
+      title: timeout.querySelector("strong")?.textContent,
+    }).toStrictEqual({
+      message: expect.stringContaining(
+        "The assistant did not answer before the request timed out. This is not a finding that the Atlas corpus lacks relevant literature."
+      ),
+      question: "What does the evidence say?",
+      retry: "Retry",
+      searching: null,
+      state: "timeout",
+      stored: [],
+      title: "Request timed out.",
+    });
+    await act(async () => {
+      held.resolve({
+        data: response(
+          "answered",
+          "limited",
+          "Late answer must stay gone.",
+          "request-late"
+        ),
+      });
+    });
+    expect({
+      focus: document.activeElement,
+      late: screen.queryByText("Late answer must stay gone."),
+      question: question.value,
+      state: screen.getByRole("alert").dataset.assistantState,
+      stored: loadConversations().length,
+    }).toStrictEqual({
+      focus: screen.getByRole("button", { name: "Retry" }),
+      late: null,
+      question: "What does the evidence say?",
+      state: "timeout",
+      stored: 0,
+    });
+  });
+
+  it("does not show a timeout when New chat, another conversation, or unmount cancels the request", async () => {
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    });
+    chatRequest.mockReturnValue(Promise.withResolvers<unknown>().promise);
+    const future = "2030-01-01T00:00:00.000Z";
+    saveConversations([
+      {
+        createdAt: "2026-01-02T00:00:00.000Z",
+        expiresAt: future,
+        id: "second-conversation",
+        title: "Second saved question",
+        turns: [
+          {
+            createdAt: "2026-01-02T00:00:00.000Z",
+            id: "turn-user-2",
+            role: "user",
+            text: "Second question",
+          },
+          storedAnswer(
+            "turn-assistant-2",
+            "Second answer",
+            "2026-01-02T00:00:00.000Z"
+          ),
+        ],
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+      {
+        createdAt: "2026-01-01T00:00:00.000Z",
+        expiresAt: future,
+        id: "first-conversation",
+        title: "First saved question",
+        turns: [
+          {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            id: "turn-user-1",
+            role: "user",
+            text: "First question",
+          },
+          storedAnswer(
+            "turn-assistant-1",
+            "First answer",
+            "2026-01-01T00:00:00.000Z"
+          ),
+        ],
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    const view = render(
+      <EvidenceChat initialConversationId="first-conversation" />
+    );
+    screen.getByText("First question");
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A question still in flight" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_PENDING_STATUS_DELAY_MS);
+    });
+    expect(screen.getByText("Searching reviewed evidence…").className).toBe(
+      "processing"
+    );
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Second saved question/ })[0]
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_CLIENT_DEADLINE_MS);
+    });
+    expect({
+      answer: screen.getByText("Second answer").textContent,
+      searching: screen.queryByText("Searching reviewed evidence…"),
+      timeout: screen.queryByText("Request timed out."),
+    }).toStrictEqual({
+      answer: "Second answer",
+      searching: null,
+      timeout: null,
+    });
+
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "Another question still in flight" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    fireEvent.click(screen.getByRole("button", { name: "New chat" }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_CLIENT_DEADLINE_MS);
+    });
+    expect({
+      searching: screen.queryByText("Searching reviewed evidence…"),
+      timeout: screen.queryByText("Request timed out."),
+    }).toStrictEqual({
+      searching: null,
+      timeout: null,
+    });
+
+    fireEvent.change(screen.getByLabelText("Your question"), {
+      target: { value: "A question abandoned on unmount" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+    view.unmount();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ASK_ATLAS_CLIENT_DEADLINE_MS);
+    });
+    expect(screen.queryByText("Request timed out.")).toBeNull();
   });
 
   it("keeps a bare 504 on the timeout state", async () => {
