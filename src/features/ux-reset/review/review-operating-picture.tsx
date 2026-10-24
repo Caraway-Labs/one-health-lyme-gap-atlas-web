@@ -1157,6 +1157,7 @@ export function ReviewOperatingPicture({
           governedNextCheck={preview?.followUp ?? null}
           releaseId={releaseId}
           reviewResultState={authoritativeResultState}
+          stateCode={scopeCode}
           whatIfActive={scenarioByFips !== null && mapLayer === "gap_score"}
         />
 

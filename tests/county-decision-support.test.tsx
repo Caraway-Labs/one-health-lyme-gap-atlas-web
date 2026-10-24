@@ -147,6 +147,11 @@ describe("Investigation Workspace county decision support", () => {
         })
         .getAttribute("target")
     ).toBe("_blank");
+    expect(
+      screen
+        .getByRole("link", { name: "View all resources →" })
+        .getAttribute("href")
+    ).toBe("/resources?state=CO#state-resources");
   });
 
   it("does not call an unavailable review level a recommendation", () => {
