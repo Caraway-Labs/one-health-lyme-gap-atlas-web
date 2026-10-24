@@ -147,7 +147,7 @@ export function unsafeCitationResponse(): KnowledgeChatResponse {
 export function corpusGapResponse(): KnowledgeChatResponse {
   return {
     answer:
-      "Synthetic corpus note. Atlas does not currently have relevant reviewed literature for this question.",
+      "Synthetic corpus note. No relevant evidence is currently admitted in the Atlas corpus for this question. This does not mean scientific evidence does not exist.",
     assistant_policy_version: "story-policy",
     citations: [],
     claims: [],

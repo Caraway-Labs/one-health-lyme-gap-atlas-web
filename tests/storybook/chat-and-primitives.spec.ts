@@ -16,7 +16,7 @@ const stories: { id: string; text?: string; name?: string }[] = [
   },
   {
     id: "ask-atlas-evidence-chat-conversation--structured-outcome",
-    text: "No relevant literature",
+    text: "does not support an answer",
   },
   {
     id: "ask-atlas-evidence-chat-conversation--client-failure",
@@ -43,7 +43,7 @@ const stories: { id: string; text?: string; name?: string }[] = [
   },
   {
     id: "ask-atlas-assistant-outcome--corpus-absence",
-    text: "No relevant literature",
+    text: "does not support an answer",
   },
   {
     id: "ask-atlas-assistant-outcome--service-unavailable",
@@ -292,12 +292,69 @@ test.describe("Chat and primitive catalog", () => {
   }) => {
     const blocked = track(page);
     await openStory(page, "ask-atlas-assistant-outcome--corpus-absence");
-    await page.getByRole("button", { name: "Edit question" }).click();
+    const corpus = page.locator(
+      "[data-assistant-state='no_relevant_corpus_evidence']"
+    );
+    await expect(corpus).toBeVisible();
+    await expect(corpus.getByRole("button", { name: "Retry" })).toHaveCount(0);
+    const help = corpus.getByRole("link", {
+      name: "Read how Atlas Assistant uses reviewed literature",
+    });
+    await help.focus();
+    await expect(help).toBeFocused();
+    await page.keyboard.press("Tab");
+    const edit = corpus.getByRole("button", { name: "Edit question" });
+    await expect(edit).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(page.getByTestId("outcome-action")).toContainText("Editing:");
+    const corpusAxe = await new AxeBuilder({ page }).analyze();
+    expect(corpusAxe.violations).toEqual([]);
+
     await openStory(page, "ask-atlas-assistant-outcome--service-unavailable");
+    const outage = page.locator(
+      "[data-assistant-state='evidence_unavailable']"
+    );
+    await expect(outage).toBeVisible();
+    await expect(outage.getByRole("button", { name: "Retry" })).toBeEnabled();
+    await expect(
+      page.locator("[data-assistant-state='no_relevant_corpus_evidence']")
+    ).toHaveCount(0);
     await page.getByRole("button", { name: "Retry" }).click();
     await expect(page.getByTestId("outcome-action")).toContainText("Retried:");
+    const outageAxe = await new AxeBuilder({ page }).analyze();
+    expect(outageAxe.violations).toEqual([]);
     expect(blocked).toEqual([]);
+  });
+
+  test("conversation corpus gap passes axe and edit restores the question", async ({
+    page,
+  }) => {
+    await openStory(
+      page,
+      "ask-atlas-evidence-chat-conversation--structured-outcome"
+    );
+    const corpus = page.locator(
+      "[data-assistant-state='no_relevant_corpus_evidence']"
+    );
+    await expect(corpus).toBeVisible();
+    await expect(corpus.getByRole("button", { name: "Retry" })).toHaveCount(0);
+    const help = corpus.getByRole("link", {
+      name: "Read how Atlas Assistant uses reviewed literature",
+    });
+    await help.focus();
+    await page.keyboard.press("Tab");
+    await expect(
+      corpus.getByRole("button", { name: "Edit question" })
+    ).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByLabel("Your question")).toHaveValue(
+      "What do peer-reviewed studies report about Lyme disease surveillance and reporting practices?"
+    );
+    await expect(page.getByTestId("chat-story-action")).toContainText(
+      "Editing:"
+    );
+    const accessibility = await new AxeBuilder({ page }).analyze();
+    expect(accessibility.violations).toEqual([]);
   });
 
   test("tooltip opens from the keyboard", async ({ page }) => {
