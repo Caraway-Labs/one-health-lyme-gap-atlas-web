@@ -14,6 +14,7 @@ import {
   RESET_ASSISTANT_PATH,
   RESET_COMPARE_PATH,
   RESET_DATA_PROVENANCE_PATH,
+  RESET_RESOURCES_PATH,
 } from "@/features/ux-reset/routes";
 
 export type NavigationGroupId = "explore" | "research" | "reference";
@@ -309,6 +310,22 @@ export const ATLAS_ROUTES: readonly RouteMetadata[] = [
     // The route stays public, but chrome matches Atlas Explorer. shell "none"
     // skips the logo-only public header so the page layout can mount the
     // shared professional sidebar and top bar.
+    shell: "none",
+    status: "available",
+  },
+  {
+    description:
+      "Guidance, state programs, and regional expertise for tick-borne disease review.",
+    href: RESET_RESOURCES_PATH,
+    id: "resources",
+    label: "Resources",
+    match: "prefix",
+    pageDescription:
+      "Guidance, state programs, and regional expertise for tick-borne disease review.",
+    pageTitle: "Resources | One Health Lyme Gap Atlas",
+    placement: "none",
+    // Public page inside the professional shell. shell "none" skips the
+    // legacy analytical chrome so the route layout can mount that shell.
     shell: "none",
     status: "available",
   },

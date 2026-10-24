@@ -6,6 +6,7 @@ import {
   OFFICIAL_FOLLOW_UP_RESOURCES,
   type OfficialFollowUpResource,
 } from "@/lib/follow-up-workflows";
+import { resourcesPageHref } from "@/lib/resources/catalog";
 
 const OFFICIAL_RESOURCES_INTRO =
   "Authoritative references to support surveillance review, reporting, and public health action.";
@@ -51,7 +52,11 @@ function OfficialResourceLink({
   return <Link href={resource.href}>{resource.label}</Link>;
 }
 
-export function ExplorerOfficialResources() {
+export function ExplorerOfficialResources({
+  stateCode = null,
+}: {
+  stateCode?: string | null;
+}) {
   const groups = groupOfficialResources(OFFICIAL_FOLLOW_UP_RESOURCES);
 
   return (
@@ -78,6 +83,9 @@ export function ExplorerOfficialResources() {
           </section>
         ))}
       </div>
+      <p className="ux-reset-explorer-resources-all">
+        <Link href={resourcesPageHref(stateCode)}>View all resources →</Link>
+      </p>
     </Card>
   );
 }
