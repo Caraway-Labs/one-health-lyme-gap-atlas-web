@@ -34,6 +34,7 @@ import {
   hrefWithExplorerMode,
   type ExplorerCountyMode,
 } from "@/features/ux-reset/review/explorer-mode";
+import { ExplorerOfficialResources } from "@/features/ux-reset/review/explorer-official-resources";
 import {
   ExplorerReviewPriority,
   ExplorerSuggestedFollowUpPanel,
@@ -608,6 +609,7 @@ export function ExplorerCountyEvidence({
         reviewContext={followUpReviewContext(followUp, reviewResultState)}
         status={followUpStatus}
       />
+      <ExplorerOfficialResources stateCode={workspace.scope} />
 
       <section
         aria-label="Sources and methods"
