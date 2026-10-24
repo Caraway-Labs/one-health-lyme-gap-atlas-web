@@ -1474,8 +1474,7 @@
   min-width: 0;
 }
 
-.ux-reset-compare-slot-actions [data-slot="button"],
-.ux-reset-compare-slot-actions a {
+.ux-reset-compare-slot-actions [data-slot="button"] {
   width: auto;
 }
 

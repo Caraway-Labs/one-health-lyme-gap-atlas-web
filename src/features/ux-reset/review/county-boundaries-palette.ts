@@ -20,14 +20,7 @@ export const COUNTY_BOUNDARIES_HOVER_STROKE = "#111827";
 
 export const COUNTY_BOUNDARIES_HOVER_CASING = "#F8FAFC";
 
-export const COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING = "#000000";
-
-/** Matches the shared selected-county core so selection stays a weight change. */
-export const COUNTY_BOUNDARIES_SELECTED_COUNTY_CORE = "#061f3d";
-
 export const COUNTY_BOUNDARIES_SELECTED_STATE_LINE_WIDTH = 2.5;
-
-export const COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING_WIDTH = 6;
 
 /**
  * Display geometry does not share vertices. A county edge whose midpoint is
@@ -99,10 +92,17 @@ export const COUNTY_BOUNDARY_HOVER_CASING_LINE_WIDTH = [
   5.2,
 ] as const;
 
-/** Feature-state only. Zoom stays in the width expressions above. */
+/**
+ * Feature-state only, and never on the persistently selected county.
+ * Zoom stays in the width expressions above.
+ */
 export const COUNTY_BOUNDARY_HOVER_OPACITY = [
   "case",
-  ["boolean", ["feature-state", "hover"], false],
+  [
+    "all",
+    ["boolean", ["feature-state", "hover"], false],
+    ["!=", ["get", "selected"], true],
+  ],
   1,
   0,
 ] as const;

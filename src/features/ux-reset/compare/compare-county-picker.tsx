@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowUpRight, X } from "lucide-react";
-import Link from "next/link";
+import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AtlasPriorityBadge } from "@/components/atlas-priority-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -123,8 +122,6 @@ function resultsStatus(total: number, shown: number): string {
 export function CompareCountyPicker({
   autoFocus = false,
   clearLabel,
-  evidenceHref,
-  evidenceLabel,
   label,
   letter,
   onClear,
@@ -136,8 +133,6 @@ export function CompareCountyPicker({
 }: {
   autoFocus?: boolean;
   clearLabel: string;
-  evidenceHref: string | null;
-  evidenceLabel: string | null;
   label: string;
   letter: CompareSlotLetter;
   onClear: (() => void) | null;
@@ -277,24 +272,8 @@ export function CompareCountyPicker({
               {selectedFips}
             </span>
           </p>
-          <div className="ux-reset-compare-slot-actions">
-            {evidenceHref && evidenceLabel ? (
-              <Link
-                aria-label={evidenceLabel}
-                className={cn(
-                  buttonVariants({ size: "xs", variant: "link" }),
-                  "ux-reset-compare-action"
-                )}
-                data-fips={selectedFips}
-                data-testid={`compare-investigate-${selectedFips}`}
-                data-variant="link"
-                href={evidenceHref}
-              >
-                County evidence
-                <ArrowUpRight aria-hidden="true" />
-              </Link>
-            ) : null}
-            {onClear ? (
+          {onClear ? (
+            <div className="ux-reset-compare-slot-actions">
               <Button
                 aria-label={clearLabel}
                 size="icon-xs"
@@ -304,8 +283,8 @@ export function CompareCountyPicker({
               >
                 <X aria-hidden="true" />
               </Button>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
