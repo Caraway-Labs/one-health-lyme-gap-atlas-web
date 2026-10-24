@@ -346,7 +346,7 @@ test.describe("State-scoped Explorer boundaries", () => {
     await nudgeStateCamera(page);
     await expect
       .poll(async () => (await readOutline(page)).selectedCountyWidth)
-      .toBe(3);
+      .toBe(5);
     expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
     expect((await readOutline(page)).lineColor).toBe("#000000");
 
