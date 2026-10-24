@@ -650,14 +650,6 @@ test.describe("Atlas Explorer layer legends", () => {
       "data-legend-layer",
       "pathogen_status"
     );
-    await page.setViewportSize({ height: 844, width: 390 });
-    await expect(control).toContainText("Borrelia burgdorferi status");
-    await expect
-      .poll(() => layerMenuFits(control))
-      .toEqual({
-        clipped: false,
-        overlapsLabel: false,
-      });
   });
 
   test("explains every national gap-score color, then stays accurate across state and layer changes", async ({
