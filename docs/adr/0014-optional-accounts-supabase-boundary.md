@@ -39,7 +39,7 @@ Atlas is a general-audience service, not a child-directed service. The account f
 
 - Do not collect PHI, health status, diagnosis/treatment information, exact addresses, professional-verification claims, arbitrary free text, or county identifiers in the MVP.
 - Selected jurisdictions are private account data. Do not use them for advertising, identity inference, or analytics.
-- Do not send role or jurisdiction values to product analytics. Any lifecycle telemetry is consent-gated, aggregate-safe, and uses the existing approved privacy contract.
+- Do not send role or jurisdiction values to product analytics. Lifecycle telemetry stays aggregate-safe and uses the approved privacy contract. [ADR 0022](0022-default-on-amplitude-product-analytics.md) supersedes the earlier opt-in gate with default-on analytics and explicit opt-out.
 - Users need a self-service deletion path. The later self-service export flow may asynchronously deliver a ZIP by email; it is out of scope for this integration-validation MVP and needs a separate authenticated delivery contract.
 - Delete dormant accounts and their profile data automatically after one year of inactivity. Deletion is irreversible from Atlas's perspective.
 - No application-managed backups are planned; deleted profile data need not be recoverable by Atlas. Provider-managed recovery behavior, if any, does not change that Atlas policy.
@@ -59,7 +59,7 @@ Atlas is a general-audience service, not a child-directed service. The account f
 
 ## Rollout, observability, and rollback
 
-Start with a development-only, account-optional pilot. The authentication entry must offer a clear cancellation path, preserve public exploration, and expose a controlled unavailable state if the hosted project is paused. Record only privacy-approved, consent-gated lifecycle outcomes. Roll back by disabling the account entry and private API routes; public Atlas routes continue unchanged.
+Start with a development-only, account-optional pilot. The authentication entry must offer a clear cancellation path, preserve public exploration, and expose a controlled unavailable state if the hosted project is paused. Record only privacy-approved lifecycle outcomes under the current analytics contract. Roll back by disabling the account entry and private API routes; public Atlas routes continue unchanged.
 
 ## Links to affected contracts and tests
 
