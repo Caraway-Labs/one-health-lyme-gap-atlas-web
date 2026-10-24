@@ -8,8 +8,7 @@ import {
 } from "@/lib/follow-up-workflows";
 import { resourcesPageHref } from "@/lib/resources/catalog";
 
-const OFFICIAL_RESOURCES_INTRO =
-  "Authoritative references to support surveillance review, reporting, and public health action.";
+const OFFICIAL_RESOURCES_INTRO = "Guidance to support your review.";
 
 type OfficialResourceGroup = {
   category: string;

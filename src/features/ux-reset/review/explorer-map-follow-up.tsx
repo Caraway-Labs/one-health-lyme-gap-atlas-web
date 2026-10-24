@@ -92,6 +92,7 @@ export function ExplorerMapFollowUp({
             reviewResultState,
           }}
           showEyebrow={false}
+          showResourceAppendix={false}
           whatIfActive={whatIfActive}
         />
       ) : null}

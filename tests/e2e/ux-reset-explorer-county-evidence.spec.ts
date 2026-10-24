@@ -100,7 +100,7 @@ test.describe("Atlas Explorer county evidence", () => {
     );
     const resource = page
       .locator("summary", {
-        hasText: "Questions, partner roles, and official resources",
+        hasText: "Related official resources",
       })
       .first();
     await resource.focus();
