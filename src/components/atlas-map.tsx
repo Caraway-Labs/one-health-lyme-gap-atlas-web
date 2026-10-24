@@ -21,7 +21,10 @@ import {
   clearCountyBoundaryHover,
   setCountyBoundaryHover,
 } from "@/features/ux-reset/review/county-boundaries-map";
-import { explorerStateGeometryBounds } from "@/features/ux-reset/review/explorer-map-focus";
+import {
+  explorerFitGeographyTarget,
+  explorerStateGeometryBounds,
+} from "@/features/ux-reset/review/explorer-map-focus";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import { stateFipsPrefix } from "@/features/ux-reset/review/review-state-fips";
 import type { GeographySelectionSurface } from "@/lib/atlas-analytics";
@@ -32,9 +35,12 @@ import {
 import {
   countyFeatureBounds,
   countyIsSubstantiallyVisible,
+  EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+  EXPLICIT_GEOGRAPHY_FIT_PADDING,
   fitCountyBounds,
   mapCameraDuration,
   type CountyBounds,
+  type FitBoundsPadding,
 } from "@/lib/atlas-map-camera";
 import { countyBelongsToDistrict } from "@/lib/health-districts";
 import { cn } from "@/lib/utils";
@@ -221,6 +227,30 @@ function atlasMapContainerRole(role: "img" | "none"): "img" | undefined {
   }
 }
 
+function fitMapGeography(
+  instance: MapLibreMap,
+  bounds: CountyBounds,
+  generation: { current: number },
+  applyingExternalMove: { current: boolean },
+  options?: { maxZoom?: number; padding?: FitBoundsPadding }
+): void {
+  applyingExternalMove.current = true;
+  const nextGeneration = generation.current + 1;
+  generation.current = nextGeneration;
+  instance.stop();
+  instance.once("moveend", () => {
+    if (generation.current === nextGeneration) {
+      applyingExternalMove.current = false;
+    }
+  });
+  fitCountyBounds(instance, bounds, {
+    duration: mapCameraDuration(),
+    maxZoom: options?.maxZoom,
+    padding: options?.padding,
+    stop: false,
+  });
+}
+
 function viewportBoundsFromMap(map: MapLibreMap): CountyBounds {
   const viewport = map.getBounds();
   return [
@@ -274,9 +304,9 @@ export function AtlasMap({
    */
   resetNationalView?: boolean;
   /**
-   * National Explorer county stage. When a state frame and a selected county
-   * arrive together, fit that county. State-scoped maps omit this and keep
-   * fitting the whole state.
+   * National Explorer county fit. An explicit fit uses this county even when
+   * the camera frame is still the national extent. State-scoped maps omit
+   * this and keep fitting the whole state.
    */
   fitSelectedCounty?: boolean;
   /**
@@ -721,21 +751,53 @@ export function AtlasMap({
     if (!mapReady || !instance?.getLayer("selected-outline")) {
       return;
     }
-    const fitRequested = previousFitSignal.current !== fitSignal;
-    if (fitRequested) {
+    const fitRequested = fitSignal > previousFitSignal.current;
+    if (fitSignal !== previousFitSignal.current) {
       previousFitSignal.current = fitSignal;
     }
     const frameState =
       cameraFrameState && cameraFrameState !== "ALL" ? cameraFrameState : null;
-    if (fitRequested && resetNationalView && !frameState) {
-      userAdjustedNationalRef.current = false;
-      fitNationalViewRef.current(instance);
-      previousFramedState.current = null;
-      previousSelectedFips.current = selectedFips;
-      return;
-    }
     if (fitRequested) {
-      previousFramedState.current = null;
+      const target = explorerFitGeographyTarget({
+        fitSelectedCounty,
+        focusedState: frameState,
+        selectedCountyFips: selectedFips,
+      });
+      const selectedFeature = geometry.features.find(
+        (item) => item.properties.fips === selectedFips
+      );
+      const countyBounds =
+        target.kind === "county"
+          ? countyFeatureBounds(selectedFeature ?? null)
+          : null;
+      const stateCode = target.kind === "state" ? target.state : frameState;
+      const stateBounds =
+        countyBounds !== null || stateCode === null
+          ? null
+          : explorerStateGeometryBounds(geometry, stateCode);
+      const geographyBounds = countyBounds ?? stateBounds;
+      if (geographyBounds) {
+        fitMapGeography(
+          instance,
+          geographyBounds,
+          cameraFitGeneration,
+          applyingExternalMove,
+          {
+            maxZoom: countyBounds ? EXPLICIT_COUNTY_FIT_MAX_ZOOM : undefined,
+            padding: EXPLICIT_GEOGRAPHY_FIT_PADDING,
+          }
+        );
+        previousFramedState.current = frameState;
+        previousSelectedFips.current = selectedFips;
+        return;
+      }
+      if (resetNationalView && !frameState) {
+        userAdjustedNationalRef.current = false;
+        fitNationalViewRef.current(instance);
+        previousFramedState.current = null;
+        previousSelectedFips.current = selectedFips;
+        return;
+      }
     }
     if (!frameState) {
       const shouldResetNational =

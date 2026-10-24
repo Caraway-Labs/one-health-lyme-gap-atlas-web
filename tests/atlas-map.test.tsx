@@ -5,7 +5,11 @@ import { AtlasDashboard } from "@/components/atlas-dashboard";
 import { AtlasMap, type AtlasMapFillColor } from "@/components/atlas-map";
 import { reviewNationalNavigationCamera } from "@/features/ux-reset/review/review-national-camera";
 import type { CountyScoreSummary } from "@/generated/models";
-import { estimatedFitZoom } from "@/lib/atlas-map-camera";
+import {
+  estimatedFitZoom,
+  EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+  EXPLICIT_GEOGRAPHY_FIT_PADDING,
+} from "@/lib/atlas-map-camera";
 import { parseCountyDisplayGeometry } from "@/lib/county-geography";
 
 const engine = vi.hoisted(() => {
@@ -661,6 +665,165 @@ describe("AtlasMap county camera", () => {
       zoom: camera?.zoom,
     });
     expect(map?.zoom).toBe(camera?.zoom);
+  });
+
+  it("refits the active state or county after a pan and leaves the selection alone", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const adaBounds: [number, number, number, number] = [
+      -117, 42.6, -114.4, 44,
+    ];
+    const stateBounds: [number, number, number, number] = [
+      -117.2, 42.6, -111, 48.9,
+    ];
+    const idahoGeometry: GeoJSON.FeatureCollection<
+      GeoJSON.Geometry,
+      { fips: string }
+    > = {
+      features: [
+        {
+          geometry: {
+            coordinates: [
+              [
+                [adaBounds[0], adaBounds[1]],
+                [adaBounds[2], adaBounds[1]],
+                [adaBounds[2], adaBounds[3]],
+                [adaBounds[0], adaBounds[3]],
+                [adaBounds[0], adaBounds[1]],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16001" },
+          type: "Feature",
+        },
+        {
+          geometry: {
+            coordinates: [
+              [
+                [-117.2, 44.2],
+                [-111, 44.2],
+                [-111, 48.9],
+                [-117.2, 48.9],
+                [-117.2, 44.2],
+              ],
+            ],
+            type: "Polygon",
+          },
+          properties: { fips: "16085" },
+          type: "Feature",
+        },
+      ],
+      type: "FeatureCollection",
+    };
+    const explicitFit = {
+      duration: 450,
+      maxZoom: 8,
+      padding: EXPLICIT_GEOGRAPHY_FIT_PADDING,
+    };
+    const view = render(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    act(() => {
+      map?.emit("move", { originalEvent: new Event("wheel") });
+      map?.jumpTo({ center: [-105, 39], zoom: 4 });
+    });
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        fitSignal={1}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty={false}
+        fitSignal={2}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips=""
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(stateBounds, explicitFit);
+
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        fitSignal={2}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    act(() => {
+      map?.jumpTo({ center: [-96, 38], zoom: 4 });
+    });
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        fitSignal={3}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    view.rerender(
+      <AtlasMap
+        cameraFrameState="ID"
+        fitSelectedCounty
+        fitSignal={4}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(adaBounds, {
+      ...explicitFit,
+      maxZoom: EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+    });
+
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        fitSelectedCounty
+        fitSignal={5}
+        geometry={idahoGeometry}
+        resetNationalView
+        scores={[]}
+        selectedFips="16001"
+        onSelect={onSelect}
+      />
+    );
+    expect(map?.fitBounds).toHaveBeenLastCalledWith(adaBounds, {
+      ...explicitFit,
+      maxZoom: EXPLICIT_COUNTY_FIT_MAX_ZOOM,
+    });
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it("fits the national camera to the pane and keeps a deliberate pan on resize", () => {

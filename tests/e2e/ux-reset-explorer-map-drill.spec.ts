@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { reviewNationalCameraPoint } from "../../src/features/ux-reset/review/review-national-camera";
+import {
+  reviewNationalCameraPoint,
+  reviewNationalNavigationCamera,
+} from "../../src/features/ux-reset/review/review-national-camera";
+import { EXPLICIT_GEOGRAPHY_FIT_PADDING } from "../../src/lib/atlas-map-camera";
 import { stateReviewResponseForUrl } from "../fixtures/review-operating-picture-fixtures";
 import {
   reviewScopeMetadataFixture,
@@ -36,9 +40,14 @@ function box(
 const ada = box("16001", -117, 42.6, -114.4, 44);
 const valley = box("16085", -117.2, 44.2, -111, 48.9);
 const teton = box("56039", -116.5, 45, -112, 47.5);
+const kansasEast = box("20091", -98.6, 37, -94.6, 40);
+const kansasWest = box("20181", -102.05, 37, -98.6, 40);
+const KANSAS_BOUNDS = { east: -94.6, north: 40, south: 37, west: -102.05 };
+const JOHNSON_BOUNDS = { east: -94.6, north: 40, south: 37, west: -98.6 };
+const WYOMING_BOUNDS = { east: -112, north: 47.5, south: 45, west: -116.5 };
 
 const drillGeometry = {
-  features: [ada, valley, teton],
+  features: [ada, valley, teton, kansasEast, kansasWest],
   type: "FeatureCollection" as const,
 };
 
@@ -103,6 +112,20 @@ const drillScores = {
       state: "WY",
       stateName: "Wyoming",
     }),
+    scoredCounty({
+      county: "Johnson",
+      fips: "20091",
+      score: 64,
+      state: "KS",
+      stateName: "Kansas",
+    }),
+    scoredCounty({
+      county: "Sherman",
+      fips: "20181",
+      score: 42,
+      state: "KS",
+      stateName: "Kansas",
+    }),
   ],
 };
 
@@ -111,6 +134,7 @@ const drillMetadata = {
   states: [
     ...reviewScopeMetadataFixture.states,
     { code: "ID", name: "Idaho" },
+    { code: "KS", name: "Kansas" },
     { code: "WY", name: "Wyoming" },
   ],
 };
@@ -281,6 +305,105 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
+async function waitForStableZoom(page: Page): Promise<CameraReading> {
+  let previous = Number.NaN;
+  let settled: CameraReading | null = null;
+  await expect
+    .poll(async () => {
+      const camera = await readCamera(page);
+      const stable =
+        Number.isFinite(camera.zoom) && Math.abs(camera.zoom - previous) < 0.01;
+      previous = camera.zoom;
+      settled = stable ? camera : null;
+      return stable;
+    })
+    .toBe(true);
+  return settled ?? (await readCamera(page));
+}
+
+async function panMapAway(page: Page) {
+  const before = await readCamera(page);
+  await page.locator(".maplibre-atlas").evaluate((element) => {
+    const map = Reflect.get(element, "atlasCountyMap") as
+      | {
+          panBy: (offset: [number, number]) => void;
+          zoomOut: (options?: { duration?: number }) => void;
+        }
+      | undefined;
+    map?.panBy([160, -110]);
+    map?.zoomOut({ duration: 0 });
+  });
+  await expect
+    .poll(async () => {
+      const camera = await readCamera(page);
+      return (
+        Math.abs(camera.lat - before.lat) > 0.15 ||
+        camera.zoom < before.zoom - 0.25
+      );
+    })
+    .toBe(true);
+}
+
+async function expectFittedBounds(
+  page: Page,
+  bounds: { east: number; north: number; south: number; west: number }
+) {
+  const padding = EXPLICIT_GEOGRAPHY_FIT_PADDING;
+  await expect
+    .poll(async () =>
+      page.locator(".maplibre-atlas").evaluate(
+        (element, args) => {
+          const map = Reflect.get(element, "atlasCountyMap") as
+            | {
+                project: (lngLat: [number, number]) => { x: number; y: number };
+              }
+            | undefined;
+          if (!map || element.clientWidth < 32 || element.clientHeight < 32) {
+            return false;
+          }
+          const width = element.clientWidth;
+          const height = element.clientHeight;
+          const corners: [number, number][] = [
+            [args.west, args.south],
+            [args.east, args.south],
+            [args.east, args.north],
+            [args.west, args.north],
+          ];
+          const points = corners.map((corner) => map.project(corner));
+          const inside = points.every(
+            (point) =>
+              point.x >= args.left - 2 &&
+              point.y >= args.top - 2 &&
+              point.x <= width - args.right + 2 &&
+              point.y <= height - args.bottom + 2
+          );
+          const center = map.project([
+            (args.west + args.east) / 2,
+            (args.south + args.north) / 2,
+          ]);
+          const targetX = (args.left + width - args.right) / 2;
+          const targetY = (args.top + height - args.bottom) / 2;
+          return (
+            inside &&
+            Math.abs(center.x - targetX) <= 18 &&
+            Math.abs(center.y - targetY) <= 18
+          );
+        },
+        {
+          bottom: padding.bottom,
+          east: bounds.east,
+          left: padding.left,
+          north: bounds.north,
+          right: padding.right,
+          south: bounds.south,
+          top: padding.top,
+          west: bounds.west,
+        }
+      )
+    )
+    .toBe(true);
+}
+
 test.describe("Explorer two-stage map drill", () => {
   test("goes from the United States to Idaho to Ada County and back", async ({
     page,
@@ -342,20 +465,8 @@ test.describe("Explorer two-stage map drill", () => {
       })
       .toBe(true);
 
+    await panMapAway(page);
     await page.getByTestId("explorer-fit-national").click();
-    await expect(page).not.toHaveURL(/focus=/);
-    await expect
-      .poll(async () => {
-        const camera = await readCamera(page);
-        return {
-          outline: camera.outline,
-          stage: camera.stage,
-          zoom: Math.abs(camera.zoom - national.zoom) < 0.05,
-        };
-      })
-      .toEqual({ outline: "accent", stage: "national", zoom: true });
-
-    await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/county=16001/);
     await expect(page).toHaveURL(/focus=ID/);
     await expect(
@@ -364,19 +475,16 @@ test.describe("Explorer two-stage map drill", () => {
     await expect
       .poll(async () => {
         const camera = await readCamera(page);
-        return {
-          closerThanState: camera.zoom > idaho.zoom + 0.4,
-          lat: Math.abs(camera.lat - ada.lat) < 0.35,
-          lng: Math.abs(camera.lng - ada.lng) < 0.35,
-          stage: camera.stage,
-        };
+        return camera.stage === "county" && camera.zoom > idaho.zoom + 0.4;
       })
-      .toEqual({
-        closerThanState: true,
-        lat: true,
-        lng: true,
-        stage: "county",
-      });
+      .toBe(true);
+    await expectFittedBounds(page, {
+      east: -114.4,
+      north: 44,
+      south: 42.6,
+      west: -117,
+    });
+
     await page.goBack({ waitUntil: "commit" });
     await expect(page).toHaveURL(/focus=ID/);
     await expect(page).not.toHaveURL(/county=/);
@@ -408,9 +516,10 @@ test.describe("Explorer two-stage map drill", () => {
     await expect.poll(async () => (await readCamera(page)).frame).toBe("WY");
     await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
 
-    await page.getByTestId("explorer-fit-national").click();
+    await page.getByRole("button", { name: "US view" }).click();
     await expect(page).not.toHaveURL(/focus=/);
-    const beforeList = await readCamera(page);
+    await expect(page).not.toHaveURL(/county=/);
+    const beforeList = await settledCamera(page, "national");
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
     await expect(page).toHaveURL(/scope=ALL/);
@@ -446,15 +555,32 @@ test.describe("Explorer two-stage map drill", () => {
     const reloadedCounty = await settledCamera(page, "county");
     expect(reloadedCounty.zoom).toBeGreaterThan(reloadedState.zoom + 0.4);
     expect(reloadedCounty.lat).toBeLessThan(reloadedState.lat - 0.4);
-
+    await panMapAway(page);
+    const pannedCounty = await readCamera(page);
     await page.getByTestId("explorer-fit-national").click();
-    await expect(page).not.toHaveURL(/focus=/);
+    await expect(page).toHaveURL(/focus=ID/);
     await expect(page).toHaveURL(/county=16001/);
-    const nationalAgain = await settledCamera(page, "national");
+    await expect
+      .poll(async () => {
+        const camera = await readCamera(page);
+        return (
+          camera.stage === "county" && camera.zoom > pannedCounty.zoom + 0.25
+        );
+      })
+      .toBe(true);
+    await expectFittedBounds(page, {
+      east: -114.4,
+      north: 44,
+      south: 42.6,
+      west: -117,
+    });
+
+    await page.goto("/explore?scope=ALL&county=16001");
+    await expect(page).not.toHaveURL(/focus=/);
     await clickCounty(page, -115.7, 43.3);
     await expect(page).toHaveURL(/focus=ID/);
     await expect(page).not.toHaveURL(/county=/);
-    const idahoAgain = await settledCamera(page, "state", nationalAgain.zoom);
+    const idahoAgain = await settledCamera(page, "state");
     await clickCounty(page, -115.7, 43.3);
     await expect(page).toHaveURL(/county=16001/);
     await expect
@@ -488,11 +614,156 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toContainText("Ada");
+    await panMapAway(page);
     await page.getByTestId("explorer-fit-national").click();
-    await expect(page).not.toHaveURL(/focus=/);
+    await expect(page).toHaveURL(/focus=ID/);
+    await expect(page).toHaveURL(/county=16001/);
     await expect
       .poll(async () => (await readCamera(page)).stage)
-      .toBe("national");
+      .toBe("county");
+    await expectFittedBounds(page, {
+      east: -114.4,
+      north: 44,
+      south: 42.6,
+      west: -117,
+    });
+    await page.getByTestId("explorer-fit-national").click();
+    await expectFittedBounds(page, {
+      east: -114.4,
+      north: 44,
+      south: 42.6,
+      west: -117,
+    });
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("fits Kansas or its county after panning, at desktop and phone widths", async ({
+    page,
+  }) => {
+    await installDrillApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL&focus=KS&layer=tick_status&eco=55");
+    await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
+    await expect(page.getByTestId("explorer-map-layer")).toContainText(
+      "Blacklegged tick status"
+    );
+    await settledCamera(page, "state");
+    await panMapAway(page);
+    await page.getByTestId("explorer-fit-national").click();
+    await expect(page).toHaveURL(/focus=KS/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expect(page).toHaveURL(/layer=tick_status/);
+    await expect(page).toHaveURL(/eco=55/);
+    await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
+    await expect.poll(async () => (await readCamera(page)).frame).toBe("KS");
+    await expectFittedBounds(page, KANSAS_BOUNDS);
+    const settledKansas = await waitForStableZoom(page);
+    await page.getByTestId("explorer-fit-national").click();
+    const repeatedKansas = await waitForStableZoom(page);
+    expect(Math.abs(repeatedKansas.zoom - settledKansas.zoom)).toBeLessThan(
+      0.05
+    );
+    await expectFittedBounds(page, KANSAS_BOUNDS);
+
+    await page.goto(
+      "/explore?scope=ALL&focus=KS&county=20091&layer=tick_status&eco=55"
+    );
+    await expect(
+      page.getByTestId("review-published-county-preview")
+    ).toContainText("Johnson");
+    await panMapAway(page);
+    await page.getByTestId("explorer-fit-national").click();
+    await expect(page).toHaveURL(/focus=KS/);
+    await expect(page).toHaveURL(/county=20091/);
+    await expect(page).toHaveURL(/layer=tick_status/);
+    await expect(page).toHaveURL(/eco=55/);
+    await expect(
+      page.getByTestId("review-published-county-preview")
+    ).toContainText("Johnson");
+    await expect
+      .poll(async () => {
+        const camera = await readCamera(page);
+        return (
+          camera.stage === "county" && camera.zoom > settledKansas.zoom + 0.3
+        );
+      })
+      .toBe(true);
+    await expectFittedBounds(page, JOHNSON_BOUNDS);
+    const settledJohnson = await waitForStableZoom(page);
+    await page.getByTestId("explorer-fit-national").click();
+    const repeatedJohnson = await waitForStableZoom(page);
+    expect(Math.abs(repeatedJohnson.zoom - settledJohnson.zoom)).toBeLessThan(
+      0.05
+    );
+
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.getByTestId("explorer-fit-national").click();
+    await expect(page).toHaveURL(/county=20091/);
+    await expect(page).toHaveURL(/focus=KS/);
+    await expectFittedBounds(page, JOHNSON_BOUNDS);
+    await expectNoHorizontalOverflow(page);
+
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.getByTestId("explorer-county-clear").click();
+    await expect(page).toHaveURL(/focus=KS/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expect(page.getByTestId("explorer-preview-empty")).toBeVisible();
+    await panMapAway(page);
+    await page.getByTestId("explorer-fit-national").click();
+    await expect(page).toHaveURL(/focus=KS/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expectFittedBounds(page, KANSAS_BOUNDS);
+
+    await page.locator(".maplibre-atlas").evaluate((element) => {
+      const map = Reflect.get(element, "atlasCountyMap") as
+        | {
+            jumpTo: (camera: {
+              center: [number, number];
+              zoom: number;
+            }) => void;
+          }
+        | undefined;
+      map?.jumpTo({ center: [-114.2, 46.2], zoom: 5 });
+    });
+    await clickCounty(page, -114.2, 46.2);
+    await expect(page).toHaveURL(/focus=WY/);
+    await expect(page).not.toHaveURL(/county=/);
+    await panMapAway(page);
+    await page.getByTestId("explorer-fit-national").click();
+    await expect(page).toHaveURL(/focus=WY/);
+    await expectFittedBounds(page, WYOMING_BOUNDS);
+
+    await page.getByRole("button", { name: "US view" }).click();
+    await expect(page).not.toHaveURL(/focus=/);
+    await expect(page).not.toHaveURL(/county=/);
+    await expect(page).toHaveURL(/layer=tick_status/);
+    await expect(page).toHaveURL(/eco=55/);
+    const national = await settledCamera(page, "national");
+    const expected = await page
+      .locator(".maplibre-atlas")
+      .evaluate((element) => {
+        return { height: element.clientHeight, width: element.clientWidth };
+      });
+    const nationalCamera = reviewNationalNavigationCamera(
+      expected.width,
+      expected.height
+    );
+    expect(nationalCamera).not.toBeNull();
+    expect(Math.abs(national.zoom - (nationalCamera?.zoom ?? 0))).toBeLessThan(
+      0.08
+    );
+    await page.getByLabel("Zoom in").click();
+    await expect
+      .poll(async () => (await readCamera(page)).zoom)
+      .toBeGreaterThan(national.zoom + 0.3);
+    await page.getByTestId("explorer-fit-national").click();
+    await expect
+      .poll(async () => Math.abs((await readCamera(page)).zoom - national.zoom))
+      .toBeLessThan(0.08);
+    await expect(page.getByRole("button", { name: "US view" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Fit geography (United States)" })
+    ).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

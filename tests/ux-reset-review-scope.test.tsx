@@ -117,15 +117,21 @@ vi.mock(import("@/features/ux-reset/investigate/load-county-evidence"), () => ({
 
 vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: ({
+    cameraFrameState = null,
+    fitSelectedCounty = false,
     fitSignal = 0,
     onCountyPointer,
     onSelect,
     scores,
+    selectedFips = "",
   }: {
+    cameraFrameState?: string | null;
+    fitSelectedCounty?: boolean;
     fitSignal?: number;
     onCountyPointer?: (click: { clickDetail: number; fips: string }) => void;
     onSelect: (fips: string, surface: "map") => void;
     scores: { fips: string }[];
+    selectedFips?: string;
   }) => {
     lastMapScoreFips = scores.map((entry) => entry.fips).join(",");
     const choose = (fips: string) => {
@@ -137,8 +143,11 @@ vi.mock(import("@/components/atlas-map"), () => ({
     };
     return (
       <div
+        data-camera-frame={cameraFrameState ?? ""}
+        data-fit-selected-county={fitSelectedCounty ? "true" : "false"}
         data-fit-signal={String(fitSignal)}
         data-map-score-fips={lastMapScoreFips}
+        data-selected-fips={selectedFips}
         data-testid="mock-atlas-map"
       >
         <button
@@ -4277,6 +4286,125 @@ describe("Reset Review scope UI", () => {
       }).toStrictEqual({
         layer: expect.stringContaining("Rurality"),
         scopeWrites: false,
+      });
+    } finally {
+      await clearNationalGeometry();
+    }
+  });
+
+  it("fits the focused state or county without changing selection, layer, or filters", async () => {
+    const updates: string[] = [];
+    await installNationalGeometry();
+    try {
+      renderReview("?scope=ALL&focus=CO&layer=rurality&eco=55", {
+        onUrlUpdate: (query) => {
+          updates.push(query);
+        },
+      });
+      const map = await screen.findByTestId("mock-atlas-map");
+      expect(map.dataset.cameraFrame).toBe("CO");
+      expect(map.dataset.fitSelectedCounty).toBe("false");
+      const settled = updates.length;
+      fireEvent.click(
+        screen.getByRole("button", { name: "Fit geography (United States)" })
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId("mock-atlas-map").dataset.fitSignal).toBe(
+          "1"
+        );
+      });
+      fireEvent.click(screen.getByTestId("mock-map-select-boulder"));
+      await waitFor(() => {
+        expect(
+          updates.some((query) => query.includes("county=08013"))
+        ).toBeTruthy();
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Fit geography (United States)" })
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId("mock-atlas-map").dataset.fitSignal).toBe(
+          "2"
+        );
+      });
+      const withCounty = updates.at(-1) ?? "";
+      expect({
+        camera: screen.getByTestId("mock-atlas-map").dataset.cameraFrame,
+        county: withCounty.includes("county=08013"),
+        eco: withCounty.includes("eco=55"),
+        fitCounty:
+          screen.getByTestId("mock-atlas-map").dataset.fitSelectedCounty,
+        focus: withCounty.includes("focus=CO"),
+        layer: screen.getByTestId("explorer-map-layer").textContent,
+        preview: screen.getByTestId("review-published-county-preview")
+          .textContent,
+        selected: screen.getByTestId("mock-atlas-map").dataset.selectedFips,
+      }).toStrictEqual({
+        camera: "CO",
+        county: true,
+        eco: true,
+        fitCounty: "true",
+        focus: true,
+        layer: expect.stringContaining("Rurality"),
+        preview: expect.stringContaining("Boulder"),
+        selected: "08013",
+      });
+      fireEvent.click(screen.getByTestId("explorer-county-clear"));
+      await waitFor(() => {
+        const latest = updates.at(-1) ?? "";
+        if (latest.includes("county=")) {
+          throw new Error("county selection was not cleared");
+        }
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Fit geography (United States)" })
+      );
+      await waitFor(() => {
+        expect(screen.getByTestId("mock-atlas-map").dataset.fitSignal).toBe(
+          "3"
+        );
+      });
+      const stateOnly = updates.at(-1) ?? "";
+      expect({
+        camera: screen.getByTestId("mock-atlas-map").dataset.cameraFrame,
+        county: stateOnly.includes("county="),
+        fitCounty:
+          screen.getByTestId("mock-atlas-map").dataset.fitSelectedCounty,
+        focus: stateOnly.includes("focus=CO"),
+        layer: stateOnly.includes("layer=rurality"),
+        preview: screen.queryByTestId("review-published-county-preview"),
+        writesSinceReady: updates.length > settled,
+      }).toStrictEqual({
+        camera: "CO",
+        county: false,
+        fitCounty: "false",
+        focus: true,
+        layer: true,
+        preview: null,
+        writesSinceReady: true,
+      });
+      fireEvent.click(screen.getByRole("button", { name: "US view" }));
+      await waitFor(() => {
+        const latest = updates.at(-1) ?? "";
+        if (latest.includes("focus=")) {
+          throw new Error("US view did not clear the focused state");
+        }
+      });
+      const national = updates.at(-1) ?? "";
+      expect({
+        county: national.includes("county="),
+        eco: national.includes("eco=55"),
+        focus: national.includes("focus="),
+        label: screen.getByRole("button", {
+          name: "Fit geography (United States)",
+        }).textContent,
+        layer: national.includes("layer=rurality"),
+      }).toStrictEqual({
+        county: false,
+        eco: true,
+        focus: false,
+        label: expect.stringContaining("Fit geography"),
+        layer: true,
       });
     } finally {
       await clearNationalGeometry();

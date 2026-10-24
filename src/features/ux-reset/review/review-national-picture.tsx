@@ -466,13 +466,8 @@ export function ReviewNationalPicture({
       onCountyChange(null, "push");
     }
   };
-  const returnToNationalExtent = () => {
+  const fitSelectedGeography = () => {
     setFitSignal((value) => value + 1);
-    if (onMapFocusChange) {
-      onMapFocusChange(null);
-      return;
-    }
-    setPickedState(null);
   };
   const returnToUsView = () => {
     // A focused state already refits when the frame clears. Bumping the fit
@@ -586,7 +581,7 @@ export function ReviewNationalPicture({
           fitLabel="Fit geography"
           fitPlaceName="United States"
           fitTestId="explorer-fit-national"
-          onFit={returnToNationalExtent}
+          onFit={fitSelectedGeography}
           onUsView={returnToUsView}
         />
         <div className="ux-reset-explorer-map-layer">
@@ -639,7 +634,7 @@ export function ReviewNationalPicture({
                 ariaLabel="Map of the contiguous United States. The first selection focuses a state. The next selection in that state chooses a county. You can also use the State filter and the county list."
                 cameraFrameState={mapFocus}
                 doubleClickZoom={false}
-                fitSelectedCounty={mapFocus !== null && selectedFips.length > 0}
+                fitSelectedCounty={selectedFips.length > 0}
                 fitSignal={fitSignal}
                 geographicStateOutline={mapFocus !== null}
                 geometry={{
