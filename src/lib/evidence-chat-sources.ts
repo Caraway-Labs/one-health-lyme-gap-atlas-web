@@ -1,5 +1,6 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import type { KnowledgeCitation } from "@/generated/models/knowledgeCitation";
+import type { KnowledgeClaim } from "@/generated/models/knowledgeClaim";
 import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
 
 export function safePubMedUrl(url: string, pmid: string): string | null {
@@ -26,4 +27,22 @@ export function orderedAnswerCitations(
     return [];
   }
   return decision.citations;
+}
+
+/** Citations a returned claim lists, in that claim's order. Missing ids are omitted. */
+export function citationsForClaim(
+  claim: KnowledgeClaim,
+  citations: readonly KnowledgeCitation[]
+): KnowledgeCitation[] {
+  const byId = new Map(
+    citations.map((citation) => [citation.citation_id, citation])
+  );
+  const ordered: KnowledgeCitation[] = [];
+  for (const citationId of claim.citation_ids) {
+    const citation = byId.get(citationId);
+    if (citation) {
+      ordered.push(citation);
+    }
+  }
+  return ordered;
 }

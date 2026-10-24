@@ -19,6 +19,19 @@ const DEFERRED_COMPARISON_STATES = new Set([
 
 const UNSUPPORTED_SOURCE_MODES = new Set(["Structured", "Both"]);
 
+/** Short label for `evidence_state: limited`. It is not a corpus-wide finding. */
+export const LIMITED_EVIDENCE_LABEL = "Limited evidence";
+
+/** History chip. Names this answer, not the reviewed literature as a whole. */
+export const LIMITED_EVIDENCE_SUMMARY = "Limited for this answer";
+
+/**
+ * Detail under the label. A reduced answer and a naturally limited answer
+ * share this state; the payload does not say that a claim was dropped.
+ */
+export const LIMITED_EVIDENCE_DETAIL =
+  "This label applies to the claims in this answer. It is not a statement that the reviewed literature as a whole is limited.";
+
 const EVIDENCE_COPY = {
   conflicting: {
     detail: "Conflicting evidence",
@@ -33,8 +46,8 @@ const EVIDENCE_COPY = {
     summary: "Insufficient to compare",
   },
   limited: {
-    detail: "Limited evidence",
-    summary: "Limited",
+    detail: LIMITED_EVIDENCE_DETAIL,
+    summary: LIMITED_EVIDENCE_SUMMARY,
   },
   mixed: {
     detail: "Mixed evidence",
@@ -59,6 +72,7 @@ export type AskAtlasCloseReason =
 export type AskAtlasAnswerDecision =
   | {
       citations: KnowledgeCitation[];
+      evidenceDetail: string | null;
       evidenceLabel: string;
       evidenceState: AnsweredEvidenceState;
       evidenceSummary: string;
@@ -304,6 +318,38 @@ function answeredEvidenceState(
   }
 }
 
+function evidencePresentation(state: AnsweredEvidenceState): {
+  evidenceDetail: string | null;
+  evidenceLabel: string;
+  evidenceSummary: string;
+} {
+  const copy = EVIDENCE_COPY[state];
+  switch (state) {
+    case "limited": {
+      return {
+        evidenceDetail: copy.detail,
+        evidenceLabel: LIMITED_EVIDENCE_LABEL,
+        evidenceSummary: copy.summary,
+      };
+    }
+    case "conflicting":
+    case "consistent":
+    case "insufficient_to_compare":
+    case "mixed":
+    case "single_study": {
+      return {
+        evidenceDetail: null,
+        evidenceLabel: copy.detail,
+        evidenceSummary: copy.summary,
+      };
+    }
+    default: {
+      const unhandled: never = state;
+      return unhandled;
+    }
+  }
+}
+
 function classifyAnswered(
   response: KnowledgeChatResponse
 ): AskAtlasAnswerDecision {
@@ -324,12 +370,13 @@ function classifyAnswered(
   if (!grounded.ok) {
     return { kind: "closed", reason: grounded.reason };
   }
-  const copy = EVIDENCE_COPY[evidenceState];
+  const presentation = evidencePresentation(evidenceState);
   return {
     citations: grounded.citations,
-    evidenceLabel: copy.detail,
+    evidenceDetail: presentation.evidenceDetail,
+    evidenceLabel: presentation.evidenceLabel,
     evidenceState,
-    evidenceSummary: copy.summary,
+    evidenceSummary: presentation.evidenceSummary,
     kind: "grounded",
     sourceLabel: LITERATURE_SOURCE_LABEL,
     sourceUsed: response.source_used,

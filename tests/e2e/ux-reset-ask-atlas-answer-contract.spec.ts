@@ -218,7 +218,14 @@ async function expectAnswerContract(page: Page) {
   ).toBeVisible();
   await expect(root.getByText("Source: Literature evidence")).toBeVisible();
   await expect(root.getByText("Evidence: Limited evidence")).toBeVisible();
-  await expect(root.getByRole("link", { name: /Source paper/ })).toBeVisible();
+  await expect(
+    root.getByText(
+      "This label applies to the claims in this answer. It is not a statement that the reviewed literature as a whole is limited."
+    )
+  ).toBeVisible();
+  await expect(
+    root.getByRole("link", { name: /Source paper/ })
+  ).toHaveAttribute("href", "https://pubmed.ncbi.nlm.nih.gov/12345/");
   await expect(root.getByText("Reported corpus")).toBeVisible();
   await expect(root.getByRole("button", { name: /structured/i })).toHaveCount(
     0
