@@ -81,6 +81,7 @@ export function EvidenceChatConversationContent({
     mobileHistoryToggleRef,
     mode,
     pending,
+    pendingStatusVisible,
     retryQuestion,
     selectConversation,
     setMessage,
@@ -107,7 +108,7 @@ export function EvidenceChatConversationContent({
     if (turnCount === 0 && !pending && !failure) {
       return;
     }
-    const anchor = pending
+    const anchor = pendingStatusVisible
       ? (transcript.querySelector<HTMLElement>(".processing") ?? lastTurn)
       : lastTurn;
     if (askAtlasPage) {
@@ -127,7 +128,14 @@ export function EvidenceChatConversationContent({
     }
     // Reading the id keeps this effect tied to the visible conversation.
     transcript.dataset.scrolledConversation = activeConversationId;
-  }, [activeConversationId, askAtlasPage, failure, pending, turnCount]);
+  }, [
+    activeConversationId,
+    askAtlasPage,
+    failure,
+    pending,
+    pendingStatusVisible,
+    turnCount,
+  ]);
   const handoffHref = (conversationId?: string) =>
     workspaceHandoffHref
       ? workspaceHandoffHref(conversationId)
@@ -343,11 +351,16 @@ export function EvidenceChatConversationContent({
                   </article>
                 );
               })}
-              {pending && (
-                <p role="status" className="processing">
-                  Searching reviewed evidence…
+              {pending ? (
+                <p
+                  aria-atomic="true"
+                  aria-live="polite"
+                  className={pendingStatusVisible ? "processing" : "sr-only"}
+                  role="status"
+                >
+                  {pendingStatusVisible ? "Searching reviewed evidence…" : ""}
                 </p>
-              )}
+              ) : null}
               {failure && (
                 <div
                   ref={failureRegionRef}
