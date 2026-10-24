@@ -49,12 +49,13 @@ const VERIFY: FollowUpResponseCopy = {
 };
 
 const TARGETED: FollowUpResponseCopy = {
-  explanation: "Investigate a specific, evidence-supported uncertainty.",
+  explanation:
+    "Review the county’s data with local partners to identify what needs clarification and whether additional follow-up would help.",
   questions: [
-    "Which specific inconsistency in the published or locally verified evidence warrants targeted follow-up?",
-    "Could residence-versus-exposure differences, reporting practices, or data suppression account for the apparent discrepancy?",
-    "Would reviewing existing vector records or obtaining targeted new information materially change a public-health decision?",
-    "What finding would justify additional action, and what finding would support returning to routine review?",
+    "Could travel, reporting practices, or suppressed counts explain the pattern?",
+    "How recent and geographically representative are tick and pathogen records?",
+    "What do local partners know that is missing here?",
+    "What information would change your next step?",
   ],
   stance: "For a specific question,",
 };
@@ -101,8 +102,8 @@ export const GAP_SCORE_UNAVAILABLE_CONTENT: FollowUpResponseCopy = {
   explanation: GAP_SCORE_UNAVAILABLE_EXPLANATION,
   questions: [
     "Why is a published Atlas gap score or follow-up category unavailable for this county?",
-    "Which published evidence is missing, limited, or outside the supported scope?",
-    "Are relevant state or local records available to clarify the evidence without assuming a particular response level?",
+    "Which published data are missing, limited, or outside the supported scope?",
+    "Are relevant state or local records available to clarify the data without assuming a particular response level?",
     "Should these limitations be documented for routine review rather than treated as an assigned priority?",
   ],
   stance: "While a gap score is unavailable,",
