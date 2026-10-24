@@ -447,8 +447,8 @@ function ResetReviewExperienceInner() {
       if ((urlState.focus ?? null) === next) {
         return;
       }
-      // A state-focus click is state-only, including when Fit United States
-      // left the same county selected. The next click can select it again.
+      // Focusing a state replaces a county selection. The next click inside
+      // that state can select a county again.
       const clearCounty = Boolean(next && reviewCounty);
       if (clearCounty) {
         nationalChoiceGenerationRef.current += 1;

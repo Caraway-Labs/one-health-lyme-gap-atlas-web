@@ -7,11 +7,20 @@ export type CountyBounds = [
   north: number,
 ];
 
+export type FitBoundsPadding =
+  | number
+  | {
+      readonly bottom: number;
+      readonly left: number;
+      readonly right: number;
+      readonly top: number;
+    };
+
 export type FitCountyMap = {
   stop: () => void;
   fitBounds: (
     bounds: CountyBounds,
-    options: { duration: number; maxZoom: number; padding: number }
+    options: { duration: number; maxZoom: number; padding: FitBoundsPadding }
   ) => void;
 };
 
@@ -19,6 +28,23 @@ const DEFAULT_CAMERA_DURATION_MS = 450;
 const DEFAULT_FIT_MAX_ZOOM = 8;
 const DEFAULT_FIT_MIN_ZOOM = 2;
 const DEFAULT_FIT_PADDING_PX = 48;
+
+/**
+ * Insets for an explicit Fit geography camera. The top and right clear the
+ * zoom control; the other edges keep the boundary off the map panel.
+ */
+export const EXPLICIT_GEOGRAPHY_FIT_PADDING = {
+  bottom: 48,
+  left: 48,
+  right: 56,
+  top: 80,
+} as const;
+
+/**
+ * County fits stop short of the selection zoom so neighboring counties stay
+ * in the panel. State fits keep the default max zoom.
+ */
+export const EXPLICIT_COUNTY_FIT_MAX_ZOOM = 7.25;
 const NEAR_CONTAINMENT_RATIO = 0.9;
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const SUBSTANTIAL_ZOOM_TOLERANCE = 0.4;
@@ -229,7 +255,7 @@ export function fitCountyBounds(
   options?: {
     duration?: number;
     maxZoom?: number;
-    padding?: number;
+    padding?: FitBoundsPadding;
     stop?: boolean;
   }
 ): void {
