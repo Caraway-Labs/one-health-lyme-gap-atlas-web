@@ -683,13 +683,16 @@ function SourceCell({
 export function CompareSourcesTable({
   counties,
   entries,
+  notes,
 }: {
   counties: CountyPair;
   entries: readonly CompareSourceEntry[];
+  notes?: ReactNode;
 }) {
   return (
     <details className="ux-reset-compare-sources" data-testid="compare-sources">
-      <summary>Sources and methods</summary>
+      <summary>Sources and limitations</summary>
+      {notes}
       <div className="ux-reset-compare-sources-scroll">
         <table>
           <caption className="sr-only">

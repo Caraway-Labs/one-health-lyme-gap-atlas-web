@@ -1,0 +1,239 @@
+.compare-sheet {
+  display: grid;
+  width: 100%;
+  gap: 0.75rem;
+  min-width: 0;
+  color: var(--navy);
+}
+
+.compare-callout {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--teal) 35%, var(--border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--teal) 8%, var(--card));
+  font-size: 0.875rem;
+}
+
+.compare-sheet-scroll {
+  max-width: 100%;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.compare-sheet-scroll > table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.compare-sheet-scroll th,
+.compare-sheet-scroll td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.compare-sheet-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  width: 34%;
+  background: var(--card);
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+.ux-reset-compare[data-pinned="true"] .compare-sheet-scroll thead th {
+  top: 4.75rem;
+}
+
+.compare-sheet-scroll thead th:first-child,
+.compare-sheet-scroll tbody th[scope="row"] {
+  width: 32%;
+}
+
+.compare-sheet-scroll thead th[data-slot="a"] {
+  background: color-mix(in srgb, var(--teal) 12%, var(--card));
+}
+
+.compare-sheet-scroll thead th[data-slot="b"] {
+  background: color-mix(in srgb, var(--navy) 10%, var(--card));
+}
+
+.compare-col-kicker {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.compare-sheet-scroll thead th[data-slot="a"] .compare-col-kicker {
+  color: var(--teal-dark);
+}
+
+.compare-sheet-scroll thead th[data-slot="b"] .compare-col-kicker {
+  color: var(--navy);
+}
+
+.compare-sheet-scroll thead strong,
+.compare-sheet-scroll thead span {
+  display: block;
+}
+
+.compare-band th {
+  background: color-mix(in srgb, var(--navy) 6%, var(--card));
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+
+.compare-note td {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+.compare-measure-name {
+  display: block;
+  font-weight: 650;
+}
+
+.compare-scientific {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.compare-rucc-note,
+.compare-cell-meta {
+  display: block;
+  margin: 0.2rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.compare-cell-value {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.compare-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.compare-chart {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+}
+
+.compare-chart figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.compare-chart figcaption span,
+.compare-chart-meaning,
+.compare-chart-summary {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+.compare-chart-summary,
+.compare-chart-meaning {
+  margin: 0.35rem 0 0;
+}
+
+.compare-chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.compare-chart-axis,
+.compare-chart-tick {
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+
+.compare-chart-link {
+  stroke: color-mix(in srgb, var(--navy) 35%, var(--teal));
+  stroke-width: 2;
+}
+
+.compare-chart-dot-a {
+  fill: var(--teal);
+}
+
+.compare-chart-dot-b {
+  fill: var(--navy);
+}
+
+.compare-chart-tag,
+.compare-chart-tick-label {
+  fill: var(--navy);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.compare-model h3,
+.compare-disclosure summary {
+  color: var(--navy);
+  font-weight: 650;
+}
+
+.compare-disclosure {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  padding: 0.65rem 0.85rem;
+}
+
+.compare-disclosure summary {
+  cursor: pointer;
+}
+
+.compare-disclosure table {
+  width: 100%;
+  margin-top: 0.5rem;
+  border-collapse: collapse;
+}
+
+.compare-disclosure th,
+.compare-disclosure td {
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.compare-model {
+  display: grid;
+  gap: 0.65rem;
+}
+
+@media (max-width: 720px) {
+  .compare-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .compare-sheet-scroll thead th {
+    position: static;
+  }
+}

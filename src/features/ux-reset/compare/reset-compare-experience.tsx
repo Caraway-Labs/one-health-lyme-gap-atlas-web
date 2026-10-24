@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
-import type { CompareRelation } from "@/features/ux-reset/compare/compare-alignment";
+import { CompareAlignedSheet } from "@/features/ux-reset/compare/compare-aligned-sheet";
 import {
   CompareCountyPicker,
   type ReviewCategoryBadge,
@@ -42,22 +42,12 @@ import {
   tickStatusRowNote,
   type ReconciledAlignmentRow,
 } from "@/features/ux-reset/compare/compare-unified-rows";
-import {
-  buildCompareVisualRows,
-  compareSummaryCounts,
-  filterCompareRows,
-  type CompareRowFilters,
-  type CompareRowRelation,
-} from "@/features/ux-reset/compare/compare-visual-model";
+import { buildCompareVisualRows } from "@/features/ux-reset/compare/compare-visual-model";
 import type { CompareCountyIdentity } from "@/features/ux-reset/compare/compare-visual-parts";
 import {
   CompareAdditionalObservations,
-  CompareAtAGlance,
-  CompareEvidenceSections,
-  CompareEvidenceToolbar,
   CompareShareBar,
   CompareSourcesTable,
-  CompareUnknownPanel,
   type CompareSourceEntry,
 } from "@/features/ux-reset/compare/compare-visual-sections";
 import {
@@ -88,26 +78,6 @@ function profileSourceEntries(
     }
     return [{ id: row.id, label: row.label, left, right }];
   });
-}
-
-function alignmentCountRelation(
-  kind: CompareRelation["kind"]
-): CompareRowRelation {
-  switch (kind) {
-    case "similar": {
-      return "same";
-    }
-    case "different": {
-      return "different";
-    }
-    case "withheld": {
-      return "incomparable";
-    }
-    default: {
-      const exhaustive: never = kind;
-      return exhaustive;
-    }
-  }
 }
 
 function evidenceFromCell(
@@ -252,10 +222,6 @@ function CompareExperienceInner() {
     : workspace.metadataError
       ? releaseEvidenceLoadStateValues.error
       : releaseEvidenceLoadStateValues.loading;
-  const [filters, setFilters] = useState<CompareRowFilters>({
-    onlyDifferences: false,
-    onlyGaps: false,
-  });
   const sharedLimitation = workspace.profile
     ? sharedReleaseLimitation(workspace.profile.rows)
     : null;
@@ -282,18 +248,6 @@ function CompareExperienceInner() {
         : [],
     [tickDecision, workspace.profile]
   );
-  const shownVisualRows = useMemo(
-    () => filterCompareRows(visualRows, filters),
-    [filters, visualRows]
-  );
-  const countedRelations = [
-    ...visualRows.map((row) => row.relation),
-    ...reconciledRows.map((entry) =>
-      alignmentCountRelation(entry.row.relation.kind)
-    ),
-  ];
-  const overviewCounts =
-    countedRelations.length > 0 ? compareSummaryCounts(countedRelations) : null;
   const profileSources = workspace.profile
     ? profileSourceEntries(workspace.profile)
     : [];
@@ -466,6 +420,7 @@ function CompareExperienceInner() {
       data-ask-atlas="optional"
       data-fips={pair.join(",")}
       data-page="compare"
+      data-pinned={pinned ? "true" : "false"}
       data-pair-issue={workspace.pairIssue}
       data-query-pair={pair.join(",")}
       data-catalog-cooling={workspace.catalogCoolingDown ? "true" : "false"}
@@ -690,56 +645,17 @@ function CompareExperienceInner() {
               <div
                 data-testid={workspace.profile ? "compare-profile" : undefined}
               >
-                {workspace.profile ? (
-                  <CompareAtAGlance
-                    counties={counties}
-                    profile={workspace.profile}
-                    reviewBadges={[
-                      reviewCategoryBadge(workspace.profile, leftFips),
-                      reviewCategoryBadge(workspace.profile, rightFips),
-                    ]}
-                    rows={visualRows}
-                  />
-                ) : null}
-                {surveillanceIntelligence}
-                <section
-                  aria-labelledby="compare-evidence-title"
-                  className="ux-reset-compare-evidence"
-                  data-testid="compare-evidence"
-                >
-                  <h3
-                    className="ux-reset-compare-section-title"
-                    id="compare-evidence-title"
-                  >
-                    What the evidence shows
-                  </h3>
-                  <CompareEvidenceToolbar
-                    counts={overviewCounts}
-                    filters={filters}
-                    partial={false}
-                    shown={shownVisualRows.length}
-                    total={visualRows.length}
-                    onFiltersChange={setFilters}
-                  />
-                  <CompareEvidenceSections
-                    counties={counties}
-                    rows={shownVisualRows}
-                  />
-                  {(filters.onlyDifferences || filters.onlyGaps) &&
-                  shownVisualRows.length === 0 ? (
-                    <p
-                      className="ux-reset-compare-filter-empty"
-                      data-testid="compare-filter-empty"
-                    >
-                      No rows match these filters. Turn a filter off to see
-                      every measure.
-                    </p>
-                  ) : null}
-                  <CompareAdditionalObservations
-                    counties={counties}
-                    rows={reconciledRows}
-                  />
-                </section>
+                <CompareAlignedSheet
+                  counties={counties}
+                  countyLimitations={countyLimitations}
+                  model={surveillanceIntelligence}
+                  period={workspace.period}
+                  profile={workspace.profile}
+                  rows={visualRows}
+                  sharedLimitation={sharedLimitation}
+                  sourceEntries={sourceEntries}
+                  supplemental={reconciledRows}
+                />
               </div>
             </div>
           ) : (
@@ -753,20 +669,14 @@ function CompareExperienceInner() {
                   />
                 </div>
               ) : null}
+              {sourceEntries.length > 0 ? (
+                <CompareSourcesTable
+                  counties={counties}
+                  entries={sourceEntries}
+                />
+              ) : null}
             </>
           )}
-          {workspace.profile ? (
-            <CompareUnknownPanel
-              countyLimitations={countyLimitations}
-              counties={counties}
-              period={workspace.period}
-              rows={visualRows}
-              sharedLimitation={sharedLimitation}
-            />
-          ) : null}
-          {sourceEntries.length > 0 ? (
-            <CompareSourcesTable counties={counties} entries={sourceEntries} />
-          ) : null}
         </section>
       ) : null}
 

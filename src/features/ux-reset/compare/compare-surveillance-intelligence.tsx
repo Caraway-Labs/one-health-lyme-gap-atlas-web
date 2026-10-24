@@ -6,7 +6,13 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CompareSlotMarker } from "@/features/ux-reset/compare/compare-county-picker";
 import {
-  SURVEILLANCE_INTELLIGENCE_GUIDE,
+  COMPARE_MODEL_ROW_LABELS,
+  membershipPercentText,
+  situationDisplay,
+} from "@/features/ux-reset/compare/compare-situation-display";
+import {
+  PERCENTILE_QUALIFIER,
+  SUFFICIENCY_QUALIFIER,
   SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER,
   type SurveillanceIntelligencePerspectiveId,
 } from "@/features/ux-reset/surveillance-intelligence/surveillance-intelligence-copy";
@@ -29,13 +35,16 @@ type CountyColumn = {
   title: "County A" | "County B";
 };
 
-const PERSPECTIVE_QUESTIONS = {
-  "ecological-situation": "What do tick and pathogen findings suggest alone?",
-  "gap-score": "Do human reports match the ecological evidence?",
-  "ml-review-priority": "Does this evidence profile look unusual?",
-  "surveillance-situation":
-    "What pattern do human, tick and pathogen reports form?",
-} as const satisfies Record<SurveillanceIntelligencePerspectiveId, string>;
+const MODEL_INTRO =
+  "These summaries describe reporting patterns and review priority, not personal disease risk.";
+
+const INTERPRETATION = [
+  "Gap review score: the published score used by the map and county ranking. It describes a defined discrepancy in the published method. It is not personal disease risk.",
+  "ML review priority: a review tier for unusual reporting patterns. The percentile compares this county with others in the same model batch. It is not a disease probability. A tier can still be shown when the data are insufficient. The tier does not make that data sufficient.",
+  "Combined surveillance pattern: this model groups counties using human Lyme disease reporting, tick records, and pathogen records.",
+  "Tick and pathogen pattern: this model groups counties using tick and pathogen records, without using human Lyme disease reporting.",
+  "No record does not mean the tick or pathogen is absent. These results answer different questions and may differ. Disagreement is not an error.",
+] as const;
 
 /**
  * Compare layout only. Four perspective cards share one details region.
@@ -109,13 +118,13 @@ export function CompareSurveillanceIntelligence({
       data-testid="compare-surveillance-intelligence"
     >
       <h3 className="ux-reset-compare-section-title" id={titleId}>
-        County Surveillance Intelligence
+        Model results
       </h3>
       <p className="sr-only" aria-live="polite">
         {`${left.announcement} ${right.announcement}`}
       </p>
       <p className="type-small" data-testid="compare-intelligence-guide">
-        {SURVEILLANCE_INTELLIGENCE_GUIDE}
+        {MODEL_INTRO}
       </p>
       <ul
         className="ux-reset-compare-tiles"
@@ -123,8 +132,7 @@ export function CompareSurveillanceIntelligence({
       >
         {SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER.map((id) => {
           const expanded = openId === id;
-          const label =
-            perspectives.a.find((entry) => entry.id === id)?.label ?? id;
+          const label = COMPARE_MODEL_ROW_LABELS[id];
           return (
             <li
               className="ux-reset-compare-tile"
@@ -143,9 +151,7 @@ export function CompareSurveillanceIntelligence({
                   }}
                 />
               </h4>
-              <p className="type-small ux-reset-compare-tile-question">
-                {PERSPECTIVE_QUESTIONS[id]}
-              </p>
+              <p className="sr-only">{COMPARE_MODEL_ROW_LABELS[id]}</p>
               <div className="ux-reset-compare-tile-sides">
                 {columns.map((column) => {
                   const perspective = perspectives[column.side].find(
@@ -197,7 +203,7 @@ export function CompareSurveillanceIntelligence({
             return (
               <SurveillanceIntelligenceDetails
                 fips={column.fips}
-                heading={`${column.title} · ${perspective.label} details`}
+                heading={`${column.title} · ${COMPARE_MODEL_ROW_LABELS[perspective.id]} details`}
                 headingId={headingId}
                 id={`${detailsId}-${column.side}-panel`}
                 key={column.side}
@@ -206,12 +212,25 @@ export function CompareSurveillanceIntelligence({
                   retry[column.side](perspective.id);
                 }}
                 perspective={perspective}
-                retryLabel={`Retry ${perspective.label} for ${column.title}, ${column.label}`}
+                retryLabel={`Retry ${COMPARE_MODEL_ROW_LABELS[perspective.id]} for ${column.title}, ${column.label}`}
               />
             );
           })}
         </div>
       ) : null}
+      <details
+        className="compare-disclosure"
+        data-testid="compare-model-interpretation"
+      >
+        <summary>How to interpret these model results</summary>
+        <ul>
+          {INTERPRETATION.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p>{PERCENTILE_QUALIFIER}</p>
+        <p>{SUFFICIENCY_QUALIFIER}</p>
+      </details>
     </section>
   );
 }
@@ -251,37 +270,6 @@ function TileControl({
   );
 }
 
-const CLASS_MEMBERSHIP_PREFIX = "Class membership ";
-const FIT_DECIMALS = 2;
-const FIT_PERCENT_SCALE = 100;
-const FIT_NOTE = "A model score, not disease risk.";
-const FIT_NUMBER = /^(?<value>\d+(?:\.\d+)?)(?:\s+on a 0–1 scale)?$/;
-
-/**
- * "Class membership" is model jargon. Say what it means: how strongly this
- * county's evidence fits the pattern named above it.
- */
-function plainSupportingText(supporting: string): string {
-  if (!supporting.startsWith(CLASS_MEMBERSHIP_PREFIX)) {
-    return supporting;
-  }
-  const rest = supporting.slice(CLASS_MEMBERSHIP_PREFIX.length).trim();
-  const percentText = rest.endsWith("%") ? rest : null;
-  if (percentText) {
-    return `Strength of fit to this pattern: ${percentText}. ${FIT_NOTE}`;
-  }
-  const value = Number(FIT_NUMBER.exec(rest)?.groups?.value);
-  if (!Number.isFinite(value)) {
-    return supporting;
-  }
-  const percent = (value * FIT_PERCENT_SCALE).toFixed(FIT_DECIMALS);
-  const display =
-    value < 1 && Number(percent) >= FIT_PERCENT_SCALE
-      ? `over ${(FIT_PERCENT_SCALE - 10 ** -FIT_DECIMALS).toFixed(FIT_DECIMALS)}%`
-      : `${percent}%`;
-  return `Strength of fit to this pattern: ${display}. ${FIT_NOTE}`;
-}
-
 function SurveillanceValue({
   county,
   onRetry,
@@ -291,30 +279,49 @@ function SurveillanceValue({
   onRetry: () => void;
   perspective: IntelligencePerspectiveView;
 }) {
-  const track = perspective.track;
+  const grouped =
+    perspective.id === "surveillance-situation" ||
+    perspective.id === "ecological-situation"
+      ? situationDisplay(perspective)
+      : null;
+  const headline = grouped?.label ?? perspective.primary;
+  const showSupporting = !(
+    perspective.kind === "ready" &&
+    (perspective.id === "surveillance-situation" ||
+      perspective.id === "ecological-situation")
+  );
   return (
     <div className="ux-reset-compare-tile-value">
-      <p className="m-0 font-semibold break-words">{perspective.primary}</p>
-      {track && track.value !== null ? (
-        <>
-          <span
-            aria-hidden="true"
-            className="ux-reset-compare-track"
-            data-letter={county.letter}
-          >
-            <span
-              className="ux-reset-compare-fill"
-              style={{ width: `${Math.min(Math.max(track.value, 0), 100)}%` }}
-            />
-          </span>
-          <span className="sr-only">{`${track.label}: ${track.valueText}`}</span>
-        </>
+      <p className="m-0 font-semibold break-words">{headline}</p>
+      {perspective.reviewCategory ? (
+        <p className="type-small m-0">{perspective.reviewCategory}</p>
       ) : null}
-      <p className="type-small m-0 break-words">
-        {plainSupportingText(perspective.supporting)}
-      </p>
+      {showSupporting ? (
+        <p className="type-small m-0 break-words">{perspective.supporting}</p>
+      ) : null}
+      {grouped?.explanation ? (
+        <p className="sr-only">{grouped.explanation}</p>
+      ) : null}
       {perspective.fullValue ? (
         <span className="sr-only">{`Full value ${perspective.fullValue}`}</span>
+      ) : null}
+      {perspective.memberships.length > 0 ? (
+        <details>
+          <summary>Model grouping details</summary>
+          <p>
+            These percentages describe how the model assigns this county among
+            its groups. They do not measure disease risk, pathogen presence,
+            data completeness, or the probability that the model is correct.
+          </p>
+          <ul>
+            {perspective.memberships.map((entry) => (
+              <li key={entry.classId}>
+                {`${entry.classId}: ${membershipPercentText(entry.percent)}`}
+                {entry.selected ? " — Assigned group" : ""}
+              </li>
+            ))}
+          </ul>
+        </details>
       ) : null}
       {perspective.retryable ? (
         <Button
@@ -324,7 +331,7 @@ function SurveillanceValue({
           variant="secondary"
           onClick={onRetry}
         >
-          {`Retry ${perspective.label} for ${county.title}, ${county.label}`}
+          {`Retry ${COMPARE_MODEL_ROW_LABELS[perspective.id]} for ${county.title}, ${county.label}`}
         </Button>
       ) : null}
     </div>

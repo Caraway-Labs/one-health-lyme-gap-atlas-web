@@ -17,7 +17,7 @@ const CANONICAL_DESTINATIONS = [
     title: "Atlas Explorer",
   },
   {
-    heading: "Two counties. A clearer picture.",
+    heading: "Compare counties",
     path: "/compare",
     title: "Compare Counties",
   },
