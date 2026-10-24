@@ -6,6 +6,8 @@ import type {
   Map as MapLibreMap,
 } from "maplibre-gl";
 import { Map as MapLibre, setWorkerUrl } from "maplibre-gl";
+
+import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
 
 import { CONTIGUOUS_US_INITIAL_VIEW } from "@/lib/atlas-geometry";

@@ -11,6 +11,8 @@ type TrustFooterFrameProps = {
 /**
  * Shared trust-footer chrome. Callers supply the trust controls so the public
  * page can keep anonymous consent without using the signed-in Settings route.
+ * The brand link opens in a new tab, so prefetch would only preload that
+ * route's CSS on the current page.
  */
 export function TrustFooterFrame({
   children,
@@ -22,6 +24,7 @@ export function TrustFooterFrame({
         <Link
           className="ux-reset-trust-brand"
           href={ABOUT_CARAWAY_LABS_PATH}
+          prefetch={false}
           rel="noopener noreferrer"
           target="_blank"
         >
