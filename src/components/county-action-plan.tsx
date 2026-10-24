@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { CountyDetail } from "@/generated/models";
 import {
   FOLLOW_UP_QUESTIONS_INTRO,
@@ -10,6 +12,7 @@ import {
   type FollowUpReviewContext,
   type FollowUpWorkflowRow,
 } from "@/lib/follow-up-workflows";
+import { resourcesPageHref } from "@/lib/resources/catalog";
 
 export const PROGRAM_RESOURCES = [
   {
@@ -201,6 +204,11 @@ export function CountyActionPlan({
             </li>
           ))}
         </ul>
+        <p>
+          <Link href={resourcesPageHref(detail.state)}>
+            View all resources →
+          </Link>
+        </p>
       </details>
     </section>
   );

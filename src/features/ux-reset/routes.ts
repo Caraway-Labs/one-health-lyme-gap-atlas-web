@@ -45,6 +45,9 @@ export const RESET_SETTINGS_PATH = `${UX_RESET_APP_PREFIX}/settings` as const;
  */
 export const RESET_DATA_PROVENANCE_PATH = "/data-provenance" as const;
 
+/** Public Resources hub. Reachable without a session, inside the professional shell. */
+export const RESET_RESOURCES_PATH = "/resources" as const;
+
 export const UX_RESET_DESTINATION_IDS = [
   "review",
   "explore",

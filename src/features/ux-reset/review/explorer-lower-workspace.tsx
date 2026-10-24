@@ -7,12 +7,14 @@ export function ExplorerLowerWorkspace({
   governedNextCheck = null,
   releaseId,
   reviewResultState = null,
+  stateCode = null,
   whatIfActive = false,
 }: {
   fips: string | null;
   governedNextCheck?: string | null;
   releaseId: string | null;
   reviewResultState?: GovernedReviewResultState | null;
+  stateCode?: string | null;
   whatIfActive?: boolean;
 }) {
   return (
@@ -28,7 +30,7 @@ export function ExplorerLowerWorkspace({
         reviewResultState={reviewResultState}
         whatIfActive={whatIfActive}
       />
-      <ExplorerOfficialResources />
+      <ExplorerOfficialResources stateCode={stateCode} />
     </section>
   );
 }

@@ -83,6 +83,13 @@ describe("Explorer official resources card", () => {
         target: "_blank",
         text: "Clinical testing guidance",
       },
+      {
+        hiddenIcon: undefined,
+        href: "/resources",
+        rel: null,
+        target: null,
+        text: "View all resources →",
+      },
     ]);
 
     const lyme = screen
@@ -92,5 +99,18 @@ describe("Explorer official resources card", () => {
     expect(within(lyme as HTMLElement).getAllByRole("listitem")).toHaveLength(
       2
     );
+    expect(
+      screen.getAllByRole("link", { name: "View all resources →" })
+    ).toHaveLength(1);
+  });
+
+  it("carries a selected county state into the resources page once", () => {
+    render(<ExplorerOfficialResources stateCode="ID" />);
+
+    expect(
+      screen
+        .getByRole("link", { name: "View all resources →" })
+        .getAttribute("href")
+    ).toBe("/resources?state=ID#state-resources");
   });
 });

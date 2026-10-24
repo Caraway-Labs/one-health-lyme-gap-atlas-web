@@ -161,7 +161,7 @@ test.describe("five-category suggested follow-up", () => {
         resources.getByRole("heading", { name: topic })
       ).toBeVisible();
     }
-    await expect(resources.getByRole("link")).toHaveCount(5);
+    await expect(resources.getByRole("link")).toHaveCount(6);
     await expect(
       resources.getByRole("link", { name: /Lyme surveillance case definition/ })
     ).toHaveAttribute(
@@ -267,7 +267,7 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
     });
-    await expect(resources.getByRole("link")).toHaveCount(5);
+    await expect(resources.getByRole("link")).toHaveCount(6);
 
     await page.setViewportSize({ height: 900, width: 800 });
     const stacked = await page.evaluate(() => {

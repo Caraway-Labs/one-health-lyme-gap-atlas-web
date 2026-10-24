@@ -20,6 +20,8 @@
   --atlas-muted-text: #506772;
   --teal: #0f7782;
   --teal-dark: #075760;
+  /* Brighter teal from the Resources reference. Scoped to that page. */
+  --teal-bright: #007d8c;
   --mint: #dff1eb;
   --pale: #f3f7f5;
   --line: #d8e2df;

@@ -729,6 +729,7 @@ export function ReviewNationalPicture({
       <ExplorerLowerWorkspace
         fips={selectedFips || null}
         releaseId={releaseId}
+        stateCode={countyPostal}
         whatIfActive={scenarioByFips !== null && mapLayer === "gap_score"}
       />
       <div className="ux-reset-explorer-list">
