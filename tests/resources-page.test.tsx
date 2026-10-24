@@ -18,6 +18,7 @@ import {
   STATE_RESOURCES,
   resourcesPageHref,
   selectedStateFromQuery,
+  statesInAlphabeticalOrder,
 } from "@/lib/resources/catalog";
 import { REGIONAL_CENTER_LOGOS } from "@/lib/resources/regional-center-logos";
 import { RESOURCE_STATE_PATHS } from "@/lib/resources/state-map-paths";
@@ -214,12 +215,61 @@ describe("Resources page", () => {
     const directory = screen
       .getByText("Browse all 50 states A–Z")
       .closest("details") as HTMLElement;
-    expect(within(directory).getAllByRole("button")).toHaveLength(50);
-    fireEvent.click(within(directory).getByRole("button", { name: "Alabama" }));
-    expect(replace).toHaveBeenCalledWith(
-      "/resources?state=AL#state-resources",
-      { scroll: false }
+    expect(within(directory).queryByRole("button")).toBeNull();
+    expect(within(directory).getAllByRole("link")).toHaveLength(50);
+  });
+
+  it("opens each A–Z state on the same resource URL as Visit state resources", () => {
+    render(<ResourcesPage />);
+    fireEvent.click(screen.getByText("Browse all 50 states A–Z"));
+    const directory = screen
+      .getByText("Browse all 50 states A–Z")
+      .closest("details") as HTMLElement;
+    const links = within(directory).getAllByRole("link");
+
+    expect(
+      links.map((link) => ({
+        href: link.getAttribute("href"),
+        name: link.textContent,
+        rel: link.getAttribute("rel"),
+        tabindex: link.getAttribute("tabindex"),
+        target: link.getAttribute("target"),
+      }))
+    ).toStrictEqual(
+      statesInAlphabeticalOrder().map((state) => ({
+        href: selectedStateFromQuery(state.code)?.url,
+        name: `${state.name} (opens in a new tab)`,
+        rel: "noopener noreferrer",
+        tabindex: null,
+        target: "_blank",
+      }))
     );
+  });
+
+  it("opens Idaho resources while Colorado stays selected above", () => {
+    searchParams = new URLSearchParams("state=CO");
+    render(<ResourcesPage />);
+    fireEvent.click(screen.getByText("Browse all 50 states A–Z"));
+    const directory = screen
+      .getByText("Browse all 50 states A–Z")
+      .closest("details") as HTMLElement;
+    const coloradoVisit = screen.getByRole("link", {
+      name: /Visit state resources/,
+    });
+    const idaho = within(directory).getByRole("link", {
+      name: /^Idaho\b/,
+    });
+
+    expect(coloradoVisit).toHaveAttribute(
+      "href",
+      selectedStateFromQuery("CO")?.url
+    );
+    expect(idaho).toHaveAttribute("href", selectedStateFromQuery("ID")?.url);
+    expect(idaho).toHaveAttribute("target", "_blank");
+    expect(idaho).toHaveAttribute("rel", "noopener noreferrer");
+    expect(
+      within(directory).getByRole("link", { name: /^Colorado\b/ })
+    ).toHaveAttribute("aria-current", "true");
   });
 
   it("filters regional centers without dropping their links", () => {
