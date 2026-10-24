@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 import {
   ANALYTICS_PREFERENCE_CHANGED_EVENT,
   notifyAnalyticsPreferenceChanged,
+  readEnforcedAnalyticsPreference,
 } from "@/components/analytics-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,6 @@ import {
 import {
   ANALYTICS_PREFERENCE_KEY,
   honorsDoNotTrack,
-  readBrowserAnalyticsPreference,
   writeBrowserAnalyticsPreference,
   type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
@@ -39,6 +39,7 @@ type PrivacyPreferencesProps = {
 const preferenceListeners = new Set<() => void>();
 // A failed write returns storage-unavailable while storage still has no record.
 // Cross-tab `storage` events and dialog open clear this before the snapshot is read.
+// A failed opt-out still stays off through readEnforcedAnalyticsPreference.
 let consentOverride: AnalyticsConsentState | null = null;
 
 function isAnalyticsPreferenceStorageEvent(event: StorageEvent): boolean {
@@ -81,7 +82,7 @@ function refreshStoredConsent(): void {
 }
 
 function storedConsentSnapshot(): AnalyticsConsentState {
-  return consentOverride ?? readBrowserAnalyticsPreference();
+  return consentOverride ?? readEnforcedAnalyticsPreference();
 }
 
 function doNotTrackSnapshot(): boolean {
@@ -174,9 +175,10 @@ export function PrivacyPreferences({
     if (decision === "granted" && honorsDoNotTrack(navigator)) {
       return;
     }
-    consentOverride = writeBrowserAnalyticsPreference(decision);
+    const written = writeBrowserAnalyticsPreference(decision);
+    consentOverride = written;
     publishPreferenceChange();
-    notifyAnalyticsPreferenceChanged();
+    notifyAnalyticsPreferenceChanged({ attempted: decision, written });
   };
 
   if (presentation === "section") {

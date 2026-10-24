@@ -10,6 +10,7 @@ import {
   honorsDoNotTrack,
   readBrowserAnalyticsPreference,
   type AnalyticsConsentState,
+  type AnalyticsPreference,
 } from "@/lib/analytics-consent";
 import {
   atlasAnalytics,
@@ -21,9 +22,28 @@ import {
 export const ANALYTICS_PREFERENCE_CHANGED_EVENT =
   "atlas:analytics-preference-changed";
 
+type AnalyticsPreferenceWrite = {
+  attempted: AnalyticsPreference;
+  written: AnalyticsConsentState;
+};
+
+/**
+ * Opt-out whose write did not persist. Storage can still read as not-decided
+ * or as a stale grant, both of which would otherwise keep the SDK on.
+ * Cleared when this document persists a choice or another tab writes one.
+ */
+let unpersistedOptOut = false;
+
+export function readEnforcedAnalyticsPreference(): AnalyticsConsentState {
+  if (unpersistedOptOut) {
+    return "storage-unavailable";
+  }
+  return readBrowserAnalyticsPreference();
+}
+
 function enforceStoredAnalyticsPreference(): void {
   const mayStart = analyticsMayStart({
-    consent: readBrowserAnalyticsPreference(),
+    consent: readEnforcedAnalyticsPreference(),
     doNotTrack: honorsDoNotTrack(window.navigator),
   });
   if (!mayStart) {
@@ -39,8 +59,16 @@ function onCrossTabAnalyticsPreference(event: StorageEvent): void {
   if (!isAnalyticsPreferenceStorageEvent(event)) {
     return;
   }
-  // Another tab wrote or cleared the preference. Opt-out and Do Not Track
-  // stop before any later track. A missing preference is the default-on path.
+  // A persisted grant or denial from another tab replaces an opt-out this
+  // document could not save. Clearing the key does not: that opt-out stays
+  // off until a choice is actually stored. A missing preference with no
+  // held opt-out remains the default-on path.
+  if (event.key === ANALYTICS_PREFERENCE_KEY) {
+    const stored = readBrowserAnalyticsPreference();
+    if (stored === "granted" || stored === "denied") {
+      unpersistedOptOut = false;
+    }
+  }
   notifyAnalyticsPreferenceChanged();
 }
 
@@ -56,7 +84,7 @@ export function AnalyticsClient() {
   useEffect(() => {
     const refreshPreference = () => {
       enforceStoredAnalyticsPreference();
-      setConsent(readBrowserAnalyticsPreference());
+      setConsent(readEnforcedAnalyticsPreference());
       setPreferenceReady(true);
     };
     const onStorage = (event: StorageEvent) => {
@@ -127,11 +155,22 @@ export function AnalyticsClient() {
   return null;
 }
 
-export function notifyAnalyticsPreferenceChanged(): void {
+export function notifyAnalyticsPreferenceChanged(
+  update?: AnalyticsPreferenceWrite
+): void {
   // Stop here, not only in AnalyticsClient. The professional /app shell does
   // not mount that listener, and a grant made on legacy Atlas keeps the
   // module-global SDK alive after the listener unmounts. Cross-tab storage
-  // events call this same path.
+  // events call this same path. A failed opt-out is remembered before the
+  // storage re-read so default-on cannot start the SDK again this document.
+  if (
+    update?.attempted === "denied" &&
+    update.written === "storage-unavailable"
+  ) {
+    unpersistedOptOut = true;
+  } else if (update?.written === "granted" || update?.written === "denied") {
+    unpersistedOptOut = false;
+  }
   enforceStoredAnalyticsPreference();
   window.dispatchEvent(new Event(ANALYTICS_PREFERENCE_CHANGED_EVENT));
 }
