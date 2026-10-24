@@ -27,7 +27,8 @@ async function replaceCountyFromKeyboard(
   await page.keyboard.press("ControlOrMeta+A");
   await page.keyboard.press("Backspace");
   await page.keyboard.type(query, { delay: 20 });
-  await expect(page.getByRole("option").first()).toBeVisible();
+  const option = page.getByRole("option").first();
+  await expect(option).toContainText(query);
   await page.keyboard.press("Enter");
 }
 
