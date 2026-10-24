@@ -140,6 +140,25 @@ describe("Resources page", () => {
     ).toBeVisible();
   });
 
+  it("frames the state directory as exploring other states", () => {
+    render(<ResourcesPage />);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Explore resources from other states",
+      })
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "See how states approach Lyme disease surveillance, prevention, and education. Find materials and ideas that may help your program."
+      )
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Find your state's resources" })
+    ).toBeNull();
+  });
+
   it("places the official CDC logo beside the guidance heading", () => {
     render(<ResourcesPage />);
 
