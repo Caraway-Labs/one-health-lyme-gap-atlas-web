@@ -126,14 +126,14 @@ export const WORKSPACE_DESTINATIONS = [
     path: RESET_RESOURCES_PATH,
   },
   {
-    id: "data-provenance",
-    label: "Data Provenance",
-    path: RESET_DATA_PROVENANCE_PATH,
-  },
-  {
     id: "settings",
     label: "Settings",
     path: RESET_SETTINGS_PATH,
+  },
+  {
+    id: "data-provenance",
+    label: "Data Provenance",
+    path: RESET_DATA_PROVENANCE_PATH,
   },
   {
     id: "docs",

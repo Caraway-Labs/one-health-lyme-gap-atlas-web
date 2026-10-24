@@ -636,7 +636,7 @@ test.describe("professional shell scroll containment", () => {
     });
     await page
       .locator("#ux-reset-pro-navigation")
-      .getByRole("link", { exact: true, name: "Settings" })
+      .getByRole("link", { exact: true, name: "Data Provenance" })
       .focus();
     await page.keyboard.press("Tab");
     const docsLink = page.getByRole("link", {
