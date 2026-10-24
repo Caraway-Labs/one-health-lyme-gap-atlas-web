@@ -332,7 +332,7 @@ test.describe("State-scoped Explorer boundaries", () => {
       });
     const idaho = await readOutline(page);
     expect(idaho.selected).not.toContain("08001");
-    expect(idaho.selectedCountyColor).toBe("#061f3d");
+    expect(idaho.selectedCountyColor).toBe("#000000");
     expect(idaho.selectedCountyWidth).toBe(3);
 
     await page.getByRole("button", { name: /Ada, ID/ }).click();
@@ -340,12 +340,15 @@ test.describe("State-scoped Explorer boundaries", () => {
     await expect
       .poll(async () => (await readOutline(page)).lineColor)
       .toBe("#000000");
-    expect((await readOutline(page)).selectedCountyColor).toBe("#061f3d");
+    expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
+    expect((await readOutline(page)).selectedCountyWidth).toBe(3);
 
     await nudgeStateCamera(page);
     await expect
-      .poll(async () => (await readOutline(page)).lineColor)
-      .toBe("#000000");
+      .poll(async () => (await readOutline(page)).selectedCountyWidth)
+      .toBe(3);
+    expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
+    expect((await readOutline(page)).lineColor).toBe("#000000");
 
     await chooseLayer(page, "Uninsured population");
     await expect(page.getByTestId("explorer-map-legend")).toContainText(
@@ -471,7 +474,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
         stage: "national",
       });
     const idaho = await readOutline(page);
-    expect(idaho.selectedCountyColor).toBe("#061f3d");
+    expect(idaho.selectedCountyColor).toBe("#000000");
     expect(idaho.selectedCountyWidth).toBe(3);
     expect(idaho.selected).not.toContain("08001");
     expect(idaho.selected).not.toContain("56039");
