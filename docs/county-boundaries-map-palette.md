@@ -25,7 +25,7 @@ This layer has no numeric measure, bin, or value state. It does not recolor gap 
 | County fill | `#e4e9ea` (`--explorer-boundary`) because `colorsByFips` is empty |
 | County stroke | `fill-outline-color` `rgba(255,255,255,.9)` on every layer |
 | Selected state | `selected-state-outline` strokes every county ring in the selected state. Black `#000000` at width `2.5`, or the zoom width when the camera is state-focused. Accent `#0b7285` only when no state is selected. |
-| Selected county | Solid `#000000` at a constant width `3`. No casing or blur. |
+| Selected county | Solid `#000000` at full opacity. Constant width `5` CSS pixels. No casing or blur. |
 | Legend | One full-width swatch, `var(--explorer-boundary)`, label `County boundary`, no numeric captions |
 
 ## Final mapping
@@ -39,7 +39,7 @@ Shared constants live in `src/features/ux-reset/review/county-boundaries-palette
 | County stroke | `#4B5563` |
 | State perimeter, including coastline | `#1F2937` |
 | Selected state perimeter | `#000000` |
-| Selected county | The shared solid `#000000` stroke at constant width `3`, drawn above county, state, and hover lines. Hover does not replace it. |
+| Selected county | The shared solid `#000000` stroke at constant width `5` CSS pixels, drawn above county, state, and hover lines. Hover does not replace it. |
 | Hover county | `#111827`, heavier than the county stroke, with a `#F8FAFC` casing. No fill change |
 
 The neutral fill is geography. The legend stays a single swatch with a charcoal inset stroke, label `County boundary`, and no numeric captions. The swatch text says the fill is not a score, not disease data, and not a missing value.

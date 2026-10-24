@@ -333,7 +333,7 @@ test.describe("State-scoped Explorer boundaries", () => {
     const idaho = await readOutline(page);
     expect(idaho.selected).not.toContain("08001");
     expect(idaho.selectedCountyColor).toBe("#000000");
-    expect(idaho.selectedCountyWidth).toBe(3);
+    expect(idaho.selectedCountyWidth).toBe(5);
 
     await page.getByRole("button", { name: /Ada, ID/ }).click();
     await expect(page).toHaveURL(/county=16001/);
@@ -341,12 +341,12 @@ test.describe("State-scoped Explorer boundaries", () => {
       .poll(async () => (await readOutline(page)).lineColor)
       .toBe("#000000");
     expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
-    expect((await readOutline(page)).selectedCountyWidth).toBe(3);
+    expect((await readOutline(page)).selectedCountyWidth).toBe(5);
 
     await nudgeStateCamera(page);
     await expect
       .poll(async () => (await readOutline(page)).selectedCountyWidth)
-      .toBe(3);
+      .toBe(5);
     expect((await readOutline(page)).selectedCountyColor).toBe("#000000");
     expect((await readOutline(page)).lineColor).toBe("#000000");
 
@@ -475,7 +475,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
       });
     const idaho = await readOutline(page);
     expect(idaho.selectedCountyColor).toBe("#000000");
-    expect(idaho.selectedCountyWidth).toBe(3);
+    expect(idaho.selectedCountyWidth).toBe(5);
     expect(idaho.selected).not.toContain("08001");
     expect(idaho.selected).not.toContain("56039");
 
