@@ -323,25 +323,39 @@ async function waitForStableZoom(page: Page): Promise<CameraReading> {
 
 async function panMapAway(page: Page) {
   const before = await readCamera(page);
-  await page.locator(".maplibre-atlas").evaluate((element) => {
-    const map = Reflect.get(element, "atlasCountyMap") as
-      | {
-          panBy: (offset: [number, number]) => void;
-          zoomOut: (options?: { duration?: number }) => void;
-        }
-      | undefined;
-    map?.panBy([160, -110]);
-    map?.zoomOut({ duration: 0 });
-  });
-  await expect
-    .poll(async () => {
-      const camera = await readCamera(page);
-      return (
-        Math.abs(camera.lat - before.lat) > 0.15 ||
-        camera.zoom < before.zoom - 0.25
+  const nudge = async () => {
+    await page.locator(".maplibre-atlas").evaluate((element) => {
+      const map = Reflect.get(element, "atlasCountyMap") as
+        | {
+            panBy: (offset: [number, number]) => void;
+            zoomOut: (options?: { duration?: number }) => void;
+          }
+        | undefined;
+      map?.panBy([160, -110]);
+      map?.zoomOut({ duration: 0 });
+    });
+  };
+  let moved = false;
+  for (let attempt = 0; attempt < 3 && !moved; attempt += 1) {
+    await nudge();
+    moved = await expect
+      .poll(
+        async () => {
+          const camera = await readCamera(page);
+          return (
+            Math.abs(camera.lat - before.lat) > 0.15 ||
+            camera.zoom < before.zoom - 0.25
+          );
+        },
+        { timeout: 2000 }
+      )
+      .toBe(true)
+      .then(
+        () => true,
+        () => false
       );
-    })
-    .toBe(true);
+  }
+  expect(moved).toBeTruthy();
 }
 
 async function expectFittedBounds(
@@ -671,6 +685,7 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(
       page.getByTestId("review-published-county-preview")
     ).toContainText("Johnson");
+    await settledCamera(page, "county");
     await panMapAway(page);
     await page.getByTestId("explorer-fit-national").click();
     await expect(page).toHaveURL(/focus=KS/);
