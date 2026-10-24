@@ -240,9 +240,7 @@ async function expectAnswerContract(page: Page) {
   await expect(root.getByText("Evidence service unavailable.")).toHaveCount(0);
 
   await ask(page, "Corpus question");
-  await expect(
-    root.getByText(/governed corpus for this question/)
-  ).toBeVisible();
+  await expect(root.getByText(/governed Atlas corpus/)).toBeVisible();
   await expect(root.getByRole("alert")).toHaveCount(0);
 
   await ask(page, "Refusal question");
@@ -303,9 +301,7 @@ async function expectAnswerContract(page: Page) {
   await expect(
     root.locator("[data-assistant-state='capacity_limited']")
   ).toBeVisible();
-  await expect(root.getByText(/governed corpus for this question/)).toHaveCount(
-    1
-  );
+  await expect(root.getByText(/governed Atlas corpus/)).toHaveCount(1);
 }
 
 test("workspace enforces the answer contract without changing filters", async ({

@@ -158,7 +158,7 @@ describe("Storybook chat fixtures", () => {
     sources.unmount();
     const outcome = render(<OutcomeStory preset="corpus" />);
     expect(
-      screen.getByText("No relevant literature in the Atlas corpus.")
+      screen.getByText("The Atlas corpus does not support an answer.")
     ).toBeTruthy();
     outcome.rerender(<OutcomeStory preset="answered" />);
     expect(document.querySelector("[data-assistant-state]")).toBeNull();
