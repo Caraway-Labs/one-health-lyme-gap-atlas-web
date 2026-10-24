@@ -254,6 +254,7 @@ describe("professional workspace navigation", () => {
       "Compare",
       "Ask Atlas",
       "Research & News",
+      "Resources",
       "Data Provenance",
       "Settings",
       "Docs",
@@ -298,6 +299,12 @@ describe("professional workspace navigation", () => {
           "Track new findings and updates that may inform Lyme surveillance and research.",
         label: "Research & News",
         title: "Research & News",
+      },
+      {
+        description:
+          "Guidance, state programs, and regional expertise for tick-borne disease review.",
+        label: "Resources",
+        title: "Resources",
       },
       {
         description:

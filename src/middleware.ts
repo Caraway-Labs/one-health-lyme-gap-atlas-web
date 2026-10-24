@@ -162,5 +162,7 @@ export const config = {
     "/askatlas/:path*",
     "/data-provenance",
     "/data-provenance/:path*",
+    "/resources",
+    "/resources/:path*",
   ],
 };

@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  Book,
   Compass,
   FileText,
   FingerprintPattern,
@@ -12,6 +13,8 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+
+import { RESOURCES_PAGE_SUBTITLE } from "@/lib/resources/catalog";
 
 export {
   ATLAS_EXPLORER_PATH,
@@ -41,6 +44,7 @@ import {
   RESET_FEED_PATH,
   RESET_INVESTIGATE_PATH,
   RESET_REVIEW_PATH,
+  RESET_RESOURCES_PATH,
   RESET_SETTINGS_PATH,
   UX_RESET_APP_PREFIX,
 } from "@/features/ux-reset/routes";
@@ -205,6 +209,18 @@ export const RESET_ROUTES: readonly ResetRoute[] = [
     tooltipDetail:
       "Track new findings and updates that may inform Lyme surveillance and research.",
     tooltipTitle: "Research & News",
+  },
+  {
+    description: RESOURCES_PAGE_SUBTITLE,
+    href: RESET_RESOURCES_PATH,
+    icon: Book,
+    id: "resources",
+    label: "Resources",
+    match: "prefix",
+    navGroup: "access",
+    pageDescription: RESOURCES_PAGE_SUBTITLE,
+    pageTitle: "Resources | One Health Lyme Gap Atlas",
+    tooltipDetail: RESOURCES_PAGE_SUBTITLE,
   },
   {
     description: DATA_PROVENANCE_NAV_DESCRIPTION,

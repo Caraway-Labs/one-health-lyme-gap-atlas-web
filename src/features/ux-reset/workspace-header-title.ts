@@ -24,6 +24,7 @@ export const WORKSPACE_HEADER_TITLES = {
   docs: "Documentation",
   explorer: "Atlas Explorer",
   feed: "Intelligence Feed",
+  resources: "Resources",
   settings: "Settings",
 } as const satisfies Record<WorkspaceDestinationId, string>;
 

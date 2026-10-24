@@ -2648,6 +2648,14 @@
   line-height: 1.5;
 }
 
+.ux-reset-explorer-resources-all {
+  margin: 0;
+}
+
+.ux-reset-pro-main .ux-reset-explorer-resources-all a {
+  font-weight: 650;
+}
+
 @media (max-width: 799px) {
   .ux-reset-explorer-resources.ux-reset-explorer-resources {
     padding: 1.125rem;

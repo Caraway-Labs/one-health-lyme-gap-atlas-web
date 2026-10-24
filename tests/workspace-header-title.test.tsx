@@ -73,6 +73,7 @@ describe("workspace header title resolution", () => {
       docs: "Documentation",
       explorer: "Atlas Explorer",
       feed: "Intelligence Feed",
+      resources: "Resources",
       settings: "Settings",
     });
     expect(Object.values(WORKSPACE_HEADER_TITLES)).not.toContain(
@@ -91,7 +92,13 @@ describe("workspace header title resolution", () => {
       overviewTitle: pageMetadataForResetRoute("overview").title,
       workspace: RESET_WORKSPACE_NAV.map((route) => route.label),
     }).toStrictEqual({
-      access: ["Research & News", "Data Provenance", "Settings", "Docs"],
+      access: [
+        "Research & News",
+        "Resources",
+        "Data Provenance",
+        "Settings",
+        "Docs",
+      ],
       compareTitle: "Compare | One Health Lyme Gap Atlas",
       feedPageLabel: "Feed",
       feedTitle: "Feed | One Health Lyme Gap Atlas",
@@ -114,6 +121,8 @@ describe("workspace header title resolution", () => {
         "/askatlas/thread",
         "/app/feed",
         "/app/feed/item",
+        "/resources",
+        "/resources?state=ID",
         "/data-provenance",
         "/data-provenance/source",
         `${RESET_SETTINGS_PATH}#account`,
@@ -136,6 +145,8 @@ describe("workspace header title resolution", () => {
       "/explore": "Atlas Explorer",
       "/explore/": "Atlas Explorer",
       "/explore/counties?scope=CO": "Atlas Explorer",
+      "/resources": "Resources",
+      "/resources?state=ID": "Resources",
     });
   });
 

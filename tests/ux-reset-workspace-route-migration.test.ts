@@ -115,6 +115,7 @@ describe("six-page workspace route migration", () => {
       { id: "compare", label: "Compare", path: "/compare" },
       { id: "ask-atlas", label: "Ask Atlas", path: "/askatlas" },
       { id: "feed", label: "Feed", path: "/app/feed" },
+      { id: "resources", label: "Resources", path: "/resources" },
       {
         id: "data-provenance",
         label: "Data Provenance",

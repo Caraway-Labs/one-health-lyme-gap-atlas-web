@@ -262,6 +262,8 @@ describe("front porch session middleware", () => {
       "/askatlas/:path*",
       "/data-provenance",
       "/data-provenance/:path*",
+      "/resources",
+      "/resources/:path*",
     ]);
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable-key");
