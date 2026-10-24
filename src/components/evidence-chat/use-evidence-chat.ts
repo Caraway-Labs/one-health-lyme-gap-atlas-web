@@ -355,6 +355,15 @@ export function useEvidenceChat({
     return ownerAlive.current && serial === requestSerial.current;
   }
 
+  function settleAcceptedResponse(
+    question: string,
+    acceptedResponse: KnowledgeChatResponse,
+    replaceOperationalTurn: boolean
+  ) {
+    saveResponse(question, acceptedResponse, replaceOperationalTurn);
+    rememberOutcome(question, acceptedResponse);
+  }
+
   async function ask(question: string) {
     if (!question || pending || !requestsEnabled) {
       return;
@@ -393,8 +402,14 @@ export function useEvidenceChat({
             : accepted.reason
         );
       }
-      saveResponse(question, accepted.response, replaceOperationalTurn);
-      rememberOutcome(question, accepted.response);
+      // HTTP 200 is the primary transport for every typed outcome, including
+      // operational failures. Retry-After may be absent and does not change
+      // the outcome or its copy.
+      settleAcceptedResponse(
+        question,
+        accepted.response,
+        replaceOperationalTurn
+      );
     } catch (error) {
       if (
         !requestStillCurrent(serial) ||
@@ -406,8 +421,12 @@ export function useEvidenceChat({
       if (error instanceof AtlasApiError) {
         const accepted = acceptAskAtlasPayload(error.responseBody);
         if (accepted.ok) {
-          saveResponse(question, accepted.response, replaceOperationalTurn);
-          rememberOutcome(question, accepted.response);
+          // Legacy 502/503 responses can still carry the same typed body.
+          settleAcceptedResponse(
+            question,
+            accepted.response,
+            replaceOperationalTurn
+          );
           return;
         }
         if (accepted.reason !== "not_chat_response") {

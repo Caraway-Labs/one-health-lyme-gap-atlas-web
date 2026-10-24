@@ -7,6 +7,7 @@ import {
   Shield,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -37,6 +38,7 @@ import {
   type RegionalCenterFilter,
   type StateResource,
 } from "@/lib/resources/catalog";
+import { regionalCenterLogo } from "@/lib/resources/regional-center-logos";
 
 import { StateResourceMap } from "./state-resource-map";
 
@@ -122,10 +124,23 @@ export function ResourcesPage() {
         className="resources-section"
         id={RESOURCE_SECTION_IDS.cdc}
       >
-        <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
-        <p className="resources-section-intro">
-          National references for surveillance, interpretation, and prevention.
-        </p>
+        <div className="resources-cdc-heading">
+          <Image
+            alt="Centers for Disease Control and Prevention"
+            className="resources-cdc-logo"
+            height={147}
+            src="/resources/cdc-logo.svg"
+            unoptimized
+            width={228}
+          />
+          <div className="resources-cdc-heading-copy">
+            <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
+            <p className="resources-section-intro">
+              National references for surveillance, interpretation, and
+              prevention.
+            </p>
+          </div>
+        </div>
         <div className="resources-topic-grid">
           {CDC_RESOURCE_TOPICS.map((topic) => {
             const Icon = TOPIC_ICONS[topic.id] ?? FileText;
@@ -316,24 +331,59 @@ export function ResourcesPage() {
   );
 }
 
+function CenterHeading({ name }: { name: string }) {
+  if (name === "Tropical Islands Training & Evaluation Center") {
+    return (
+      <h3>
+        Tropical Islands Training
+        <br />& Evaluation Center
+      </h3>
+    );
+  }
+
+  return <h3>{name}</h3>;
+}
+
 function CenterCard({ center }: { center: RegionalCenter }) {
+  const logo = regionalCenterLogo(center.id);
+
   return (
     <article className="resources-card resources-center-card">
-      {center.focus ? (
-        <p className="resources-center-kicker">{center.focus}</p>
-      ) : null}
-      <h3>{center.name}</h3>
-      <p className="resources-center-type">{center.type}</p>
-      <p>{center.purpose}</p>
-      <a
-        aria-label={`Visit ${center.name} (opens in a new tab)`}
-        href={center.url}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        Visit center
-        <span aria-hidden="true"> ↗</span>
-      </a>
+      <div className="resources-center-layout">
+        <div className="resources-center-copy">
+          {center.focus ? (
+            <p className="resources-center-kicker">{center.focus}</p>
+          ) : null}
+          <CenterHeading name={center.name} />
+          <p className="resources-center-type">{center.type}</p>
+          <p>{center.purpose}</p>
+          <a
+            aria-label={`Visit ${center.name} (opens in a new tab)`}
+            href={center.url}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Visit center
+            <span aria-hidden="true"> ↗</span>
+          </a>
+        </div>
+        {logo ? (
+          <div
+            className="resources-center-logo"
+            data-center={center.id}
+            data-optical={logo.optical}
+          >
+            <Image
+              alt=""
+              aria-hidden="true"
+              height={logo.height}
+              src={logo.src}
+              unoptimized
+              width={logo.width}
+            />
+          </div>
+        ) : null}
+      </div>
     </article>
   );
 }

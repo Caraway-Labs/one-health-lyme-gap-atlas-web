@@ -198,7 +198,7 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     });
     render(<EvidenceChat mode={mode} />);
     await ask();
-    await screen.findByText(/governed corpus for this question/);
+    await screen.findByText(/governed Atlas corpus/);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText("Source: Literature evidence")).toBeNull();
     expect(screen.queryByText("Source paper")).toBeNull();
@@ -424,7 +424,7 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     await ask();
     const timeout = await screen.findByRole("alert");
     expect({
-      corpus: screen.queryByText(/governed corpus/),
+      corpus: screen.queryByText(/governed Atlas corpus/),
       insufficient: timeout.textContent?.includes("Insufficient") ?? false,
       state: timeout.dataset.assistantState,
       timedOut: timeout.textContent?.includes("timed out") ?? false,
@@ -449,6 +449,44 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     }).toStrictEqual({
       insufficient: null,
       state: "rate_limited",
+    });
+  });
+
+  it("renders HTTP 200 evidence_unavailable as a service outcome, not an answer", async () => {
+    chatRequest.mockResolvedValue({
+      data: {
+        ...literaturePayload(
+          "The evidence service did not complete this request."
+        ),
+        citations: [],
+        claims: [],
+        evidence_state: "evidence_unavailable",
+        status: "evidence_unavailable",
+      },
+      headers: new Headers({ "Retry-After": "30" }),
+      status: 200,
+    });
+    render(<EvidenceChat mode={mode} />);
+    await ask();
+    await screen.findByText("Evidence service unavailable.");
+    expect({
+      answer: screen.getByText(
+        "The evidence service did not complete this request."
+      ).textContent,
+      corpus: screen.queryByText("No relevant literature in the Atlas corpus."),
+      evidence: screen.queryByText("Evidence: Limited evidence"),
+      retry: screen.getByRole("button", { name: "Retry" }).textContent,
+      state: document.querySelector<HTMLElement>(
+        "[data-assistant-state='evidence_unavailable']"
+      )?.dataset.assistantState,
+      timedOut: screen.queryByText(/Request timed out/),
+    }).toStrictEqual({
+      answer: "The evidence service did not complete this request.",
+      corpus: null,
+      evidence: null,
+      retry: "Retry",
+      state: "evidence_unavailable",
+      timedOut: null,
     });
   });
 
