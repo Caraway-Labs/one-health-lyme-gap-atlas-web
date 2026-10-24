@@ -90,7 +90,7 @@ test("analytical shell routes use the anonymous trust footer", async ({
   await footer.getByRole("button", { name: "Privacy settings" }).click();
   await page
     .getByRole("dialog", { name: "Privacy settings" })
-    .getByRole("button", { name: "Keep optional analytics off" })
+    .getByRole("button", { name: "Turn off optional analytics" })
     .click();
   await expect
     .poll(() =>

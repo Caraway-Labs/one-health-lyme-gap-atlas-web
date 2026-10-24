@@ -660,7 +660,7 @@ describe("Settings profile form", () => {
       screen.getByRole("button", { name: "Allow optional analytics" })
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Keep optional analytics off" })
+      screen.getByRole("button", { name: "Turn off optional analytics" })
     );
     expect(saveProfile).not.toHaveBeenCalled();
     expect(privacy.textContent).toContain(

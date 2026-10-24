@@ -329,6 +329,21 @@ describe("Atlas Amplitude boundary", () => {
     expect(amplitude.track).toHaveBeenCalledOnce();
   });
 
+  it("clears vendor storage on opt-out when no preference record exists", async () => {
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start("synthetic-development-key");
+    sessionStorage.setItem("AMP_session", "vendor-value");
+    localStorage.setItem("amplitude_unsent", "vendor-value");
+
+    analytics.stop();
+
+    expect(amplitude.setOptOut).toHaveBeenLastCalledWith(true);
+    expect(amplitude.reset).toHaveBeenCalledOnce();
+    expect(sessionStorage.getItem("AMP_session")).toBeNull();
+    expect(localStorage.getItem("amplitude_unsent")).toBeNull();
+    expect(localStorage.getItem("atlas.analytics-preference.v1")).toBeNull();
+  });
+
   it("opts out and clears only vendor storage when consent is withdrawn", async () => {
     const analytics = createAtlasAnalytics(async () => amplitude);
     await analytics.start("synthetic-development-key");
