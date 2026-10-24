@@ -322,6 +322,38 @@ describe("Ask Atlas answer contract", () => {
     expect(accepted.response).not.toHaveProperty("confidence");
   });
 
+  it("classifies operational HTTP 200 bodies separately from an answer", () => {
+    const unavailable = acceptAskAtlasPayload(
+      literatureResponse({
+        answer: "The evidence service did not complete this request.",
+        citations: [],
+        claims: [],
+        evidence_state: "evidence_unavailable",
+        status: "evidence_unavailable",
+      })
+    );
+    const capacity = acceptAskAtlasPayload(
+      literatureResponse({
+        answer: "The assistant is at capacity.",
+        citations: [],
+        claims: [],
+        evidence_state: "not_applicable",
+        status: "capacity_limited",
+      })
+    );
+    expect(unavailable.ok && capacity.ok).toBeTruthy();
+    if (!(unavailable.ok && capacity.ok)) {
+      return;
+    }
+    expect({
+      capacity: classifyKnowledgeChatResponse(capacity.response).kind,
+      unavailable: classifyKnowledgeChatResponse(unavailable.response).kind,
+    }).toStrictEqual({
+      capacity: "capacity_limited",
+      unavailable: "service_unavailable",
+    });
+  });
+
   it("does not treat an uncontracted freshness field as literature staleness", () => {
     const accepted = acceptAskAtlasPayload({
       ...literatureResponse(),
