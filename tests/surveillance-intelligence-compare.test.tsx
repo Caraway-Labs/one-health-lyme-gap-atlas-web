@@ -466,7 +466,9 @@ describe("Compare County Surveillance Intelligence", () => {
     expect(panels[0]).toHaveTextContent("class-3");
     expect(panels[0]).toHaveTextContent("87.3%");
     expect(panels[0]).toHaveTextContent("0.873");
-    expect(panels[1]).toHaveTextContent(/incompatible/i);
+    expect(panels[1]).toHaveTextContent(
+      "This model result cannot be shown with the data release used by this page."
+    );
   });
 
   it("replaces the open perspective from the keyboard and closes it with Space", async () => {
@@ -523,7 +525,7 @@ describe("Compare County Surveillance Intelligence", () => {
     const leftText = ecological[0]?.textContent ?? "";
     const rightText = ecological[1]?.textContent ?? "";
     expect({
-      leftUnpublished: leftText.includes("Not published"),
+      leftUnpublished: leftText.includes("not published"),
       rightRelease: rightText.includes("other-release"),
     }).toStrictEqual({
       leftUnpublished: true,

@@ -353,8 +353,12 @@ test.describe("two-county Compare", () => {
       missing.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
     ).toHaveCount(0);
     await expect(page.getByTestId("compare-action")).toHaveCount(0);
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveCount(0);
-    await expect(page.getByTestId("compare-investigate-08013")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: /county evidence/i })
+    ).toHaveCount(0);
+    await expect(
+      page.locator("[data-testid^='compare-investigate-']")
+    ).toHaveCount(0);
     const incidence = page.getByTestId(
       "compare-profile-cell-incidence_floor-08013"
     );

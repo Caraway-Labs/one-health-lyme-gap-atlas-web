@@ -358,6 +358,13 @@ function pairFips(): string {
   return screen.getByTestId("compare-pair").dataset.fips ?? "";
 }
 
+function expectCountyEvidenceLinksAbsent() {
+  expect(screen.queryByRole("link", { name: /county evidence/i })).toBeNull();
+  expect(
+    document.querySelector("[data-testid^='compare-investigate-']")
+  ).toBeNull();
+}
+
 async function waitForPair(fips: string) {
   await waitFor(() => {
     if (pairFips() !== fips) {
@@ -613,30 +620,38 @@ describe("two-county aligned comparison", () => {
     ).not.toContain("differ by");
   });
 
-  it("queries both counties and hands the same pair downstream", async () => {
+  it("queries both counties without county-evidence links on the panels", async () => {
     renderCompare("?compare=08001,08013&scope=CO&dataset=alpha-2026");
     await screen.findByTestId("compare-alignment");
     const caseRequest = observationRequests.find((request) =>
       request.includes(COMPARE_CASES_MEASURE_ID)
     );
-    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
+    expectCountyEvidenceLinksAbsent();
     expect({
       action: screen.queryByTestId("compare-action"),
       left: caseRequest?.includes("08001"),
+      pair: pairFips(),
       right: caseRequest?.includes("08013"),
     }).toStrictEqual({
       action: null,
       left: true,
+      pair: "08001,08013",
       right: true,
     });
   });
 
-  it("keeps the compare pair when handing one county to Investigate", async () => {
+  it("keeps both county panels free of county-evidence links", async () => {
     renderCompare(
       "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2023-01-01&metric=score"
     );
-    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
-    expect(pairFips()).toBe("08001,08013");
+    await waitForPair("08001,08013");
+    expectCountyEvidenceLinksAbsent();
+    expect(screen.getByTestId("compare-chip-08001").textContent).toContain(
+      "08001"
+    );
+    expect(screen.getByTestId("compare-chip-08013").textContent).toContain(
+      "08013"
+    );
   });
 
   it("explains invalid and duplicate FIPS without inventing a second county", async () => {
@@ -679,7 +694,7 @@ describe("two-county aligned comparison", () => {
         )
       ).toBeTruthy();
     });
-    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
+    expectCountyEvidenceLinksAbsent();
     expect({
       action: screen.queryByTestId("compare-action"),
       fips: screen.getByTestId("compare-workspace").dataset.fips,
@@ -736,6 +751,7 @@ describe("two-county aligned comparison", () => {
       }
     });
     const sharedUrl = urlUpdates.at(-1) ?? "";
+    expectCountyEvidenceLinksAbsent();
     const explorer = shellHref("Atlas Explorer");
     const compare = shellHref("Compare");
     expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
@@ -752,6 +768,7 @@ describe("two-county aligned comparison", () => {
     selected.unmount();
     renderCompare(sharedUrl);
     await waitForPair("08001,08013");
+    expectCountyEvidenceLinksAbsent();
     expect({
       fips: pairFips(),
       stale: screen.getByTestId("compare-workspace").dataset.staleUrl,
@@ -865,7 +882,9 @@ describe("two-county aligned comparison", () => {
         </NuqsTestingAdapter>
       </QueryClientProvider>
     );
-    await screen.findByTestId("compare-alignment");
+    await screen.findByTestId("compare-alignment", undefined, {
+      timeout: 5000,
+    });
     const navigation = screen.getByRole("navigation", {
       name: "Professional workspace",
     });
@@ -874,7 +893,7 @@ describe("two-county aligned comparison", () => {
         .querySelector('a[aria-label="Atlas Explorer"]')
         ?.getAttribute("href") ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
-    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
+    expectCountyEvidenceLinksAbsent();
     expect({
       sidebarDataset: sidebarHref.includes("dataset=alpha-2026"),
       sidebarPair: sidebarHref.includes("compare=08001%2C08013"),
@@ -893,7 +912,7 @@ describe("two-county aligned comparison", () => {
     await waitForPair("08001,08013");
     const alert = await screen.findByRole("alert");
     expect(screen.queryByTestId("compare-action")).toBeNull();
-    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
+    expectCountyEvidenceLinksAbsent();
     expect({
       alignment: screen.queryByTestId("compare-alignment"),
       catalogCalls: catalogRequests.length,
@@ -910,6 +929,7 @@ describe("two-county aligned comparison", () => {
     catalogFailuresRemaining = 0;
     fireEvent.click(screen.getByTestId("compare-retry"));
     await screen.findByTestId("compare-alignment");
+    expectCountyEvidenceLinksAbsent();
     expect({
       pair: pairFips(),
       recovery: screen.getByTestId("compare-workspace").dataset.recovery,
@@ -1075,7 +1095,16 @@ describe("two-county aligned comparison", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
     await flushCompare(() => comparisonReady());
-    expect(pairFips()).toBe("08001,08013");
+    expectCountyEvidenceLinksAbsent();
+    const href =
+      screen.getByTestId("compare-ask-atlas").getAttribute("href") ?? "";
+    expect({
+      pair: pairFips(),
+      release: href.includes("dataset=alpha-2026"),
+    }).toStrictEqual({
+      pair: "08001,08013",
+      release: true,
+    });
   });
 
   it("keeps a catalog Retry-After when remount cancels the wait", async () => {
@@ -1120,7 +1149,16 @@ describe("two-county aligned comparison", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
     await flushCompare(() => comparisonReady());
-    expect(pairFips()).toBe("08001,08013");
+    expectCountyEvidenceLinksAbsent();
+    const href =
+      screen.getByTestId("compare-ask-atlas").getAttribute("href") ?? "";
+    expect({
+      pair: pairFips(),
+      release: href.includes("dataset=alpha-2026"),
+    }).toStrictEqual({
+      pair: "08001,08013",
+      release: true,
+    });
   });
 
   it("waits out Retry-After before an automatic catalog retry", async () => {
@@ -1147,12 +1185,17 @@ describe("two-county aligned comparison", () => {
       await vi.advanceTimersByTimeAsync(59_000);
     });
     await flushCompare(() => comparisonReady());
+    expectCountyEvidenceLinksAbsent();
+    const href =
+      screen.getByTestId("compare-ask-atlas").getAttribute("href") ?? "";
     expect({
       afterOneSecond,
       pair: pairFips(),
+      release: href.includes("dataset=alpha-2026"),
     }).toStrictEqual({
       afterOneSecond: 1,
       pair: "08001,08013",
+      release: true,
     });
   });
 
@@ -1441,6 +1484,7 @@ describe("two-county aligned comparison", () => {
     const edited =
       screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
+    expectCountyEvidenceLinksAbsent();
     expect({
       county: edited.includes("county=08001"),
       editedPair: edited.includes("08013"),
@@ -1559,7 +1603,9 @@ describe("two-county aligned comparison", () => {
         ask.getAttribute("href")?.includes("/askatlas") &&
         !ask.getAttribute("href")?.includes("page_ref=")
       ),
-      evidence: screen.queryByRole("link", { name: /county evidence/i }),
+      evidenceLinks: document.querySelector(
+        "[data-testid^='compare-investigate-']"
+      ),
       floor: floor.textContent?.includes("12"),
       missing: missing.dataset.observation,
       missingDigits: /\d/.test(
@@ -1570,7 +1616,7 @@ describe("two-county aligned comparison", () => {
         .textContent?.includes("1999-01-01"),
     }).toStrictEqual({
       ask: true,
-      evidence: null,
+      evidenceLinks: null,
       floor: true,
       missing: "missing",
       missingDigits: false,
