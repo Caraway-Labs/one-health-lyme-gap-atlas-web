@@ -121,6 +121,12 @@ const GEOGRAPHIC_STATE_OUTLINE = "#000000";
  * and still lighter than the selected-county line.
  */
 const NATIONAL_SELECTED_STATE_LINE_WIDTH = 2.5;
+/**
+ * Selected county perimeter. A constant screen-pixel width keeps the same CSS
+ * thickness through pan and zoom. Solid black, with no casing, blur, or halo.
+ */
+const SELECTED_COUNTY_OUTLINE_COLOR = "#000000";
+const SELECTED_COUNTY_OUTLINE_WIDTH = 3;
 const ATLAS_COUNTY_MAP_KEY = "atlasCountyMap";
 
 export type AtlasMapCountyPointer = {
@@ -328,6 +334,7 @@ export function AtlasMap({
   const neutralCountyBoundariesRef = useRef(neutralCountyBoundaries);
   const hoveredCountyIdRef = useRef<number | string | null>(null);
   const selectedStateRef = useRef(selectedState);
+  const selectedFipsRef = useRef(selectedFips);
   const userAdjustedNationalRef = useRef(false);
   const initialNationalFitRef = useRef(false);
   const fitNationalViewRef = useRef<(instance: MapLibreMap) => boolean>(
@@ -353,6 +360,7 @@ export function AtlasMap({
     geographicStateOutlineRef.current = geographicStateOutline;
     neutralCountyBoundariesRef.current = neutralCountyBoundaries;
     selectedStateRef.current = selectedState;
+    selectedFipsRef.current = selectedFips;
   });
   fitNationalViewRef.current = (instance) => {
     const element = container.current;
@@ -544,7 +552,12 @@ export function AtlasMap({
       instance.addLayer({
         filter: ["==", ["get", "selected"], true],
         id: "selected-outline",
-        paint: { "line-color": "#061f3d", "line-width": 3 },
+        paint: {
+          "line-blur": 0,
+          "line-color": SELECTED_COUNTY_OUTLINE_COLOR,
+          "line-opacity": 1,
+          "line-width": SELECTED_COUNTY_OUTLINE_WIDTH,
+        },
         source: "counties",
         type: "line",
       });
@@ -570,8 +583,18 @@ export function AtlasMap({
         if (!neutralCountyBoundariesRef.current) {
           return;
         }
-        const nextId = event.features?.[0]?.id;
+        const feature = event.features?.[0];
+        const nextId = feature?.id;
         if (typeof nextId !== "string" && typeof nextId !== "number") {
+          return;
+        }
+        const fips = feature?.properties?.fips;
+        const persistentSelection =
+          nextId === selectedFipsRef.current ||
+          (typeof fips === "string" && fips === selectedFipsRef.current);
+        if (persistentSelection) {
+          clearCountyBoundaryHover(instance, hoveredCountyIdRef.current);
+          hoveredCountyIdRef.current = null;
           return;
         }
         const previousId = hoveredCountyIdRef.current;
@@ -681,8 +704,30 @@ export function AtlasMap({
       selectedStateFips:
         selectedState === "ALL" ? null : stateFipsPrefix(selectedState),
     });
-    if (neutralCountyBoundaries && hoveredCountyIdRef.current !== null) {
+    map.current.setPaintProperty("selected-outline", "line-blur", 0);
+    map.current.setPaintProperty(
+      "selected-outline",
+      "line-color",
+      SELECTED_COUNTY_OUTLINE_COLOR
+    );
+    map.current.setPaintProperty("selected-outline", "line-opacity", 1);
+    map.current.setPaintProperty(
+      "selected-outline",
+      "line-width",
+      SELECTED_COUNTY_OUTLINE_WIDTH
+    );
+    if (typeof map.current.moveLayer === "function") {
+      map.current.moveLayer("selected-outline");
+    }
+    if (
+      neutralCountyBoundaries &&
+      hoveredCountyIdRef.current !== null &&
+      hoveredCountyIdRef.current !== selectedFips
+    ) {
       setCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
+    } else if (hoveredCountyIdRef.current !== null) {
+      clearCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
+      hoveredCountyIdRef.current = null;
     }
   });
 

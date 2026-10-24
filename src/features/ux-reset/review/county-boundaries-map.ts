@@ -6,8 +6,6 @@ import {
   COUNTY_BOUNDARIES_COUNTY_STROKE,
   COUNTY_BOUNDARIES_HOVER_CASING,
   COUNTY_BOUNDARIES_HOVER_STROKE,
-  COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING,
-  COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING_WIDTH,
   COUNTY_BOUNDARIES_SELECTED_STATE_LINE_WIDTH,
   COUNTY_BOUNDARIES_SELECTED_STATE_STROKE,
   COUNTY_BOUNDARIES_STATE_STROKE,
@@ -26,7 +24,6 @@ const SELECTED_STATE_SOURCE = "selected-state-perimeter";
 const SELECTED_STATE_LAYER = "selected-state-perimeter";
 const HOVER_CASING_LAYER = "county-hover-casing";
 const HOVER_LINE_LAYER = "county-hover-line";
-const SELECTED_COUNTY_CASING_LAYER = "selected-county-casing";
 
 const DEFAULT_FILL_OUTLINE = "rgba(255,255,255,.9)";
 
@@ -200,7 +197,6 @@ export function applyCountyBoundaryChrome(
     removeLayer(map, SELECTED_STATE_LAYER);
     removeLayer(map, HOVER_CASING_LAYER);
     removeLayer(map, HOVER_LINE_LAYER);
-    removeLayer(map, SELECTED_COUNTY_CASING_LAYER);
     removeSource(map, STATE_SOURCE);
     removeSource(map, SELECTED_STATE_SOURCE);
     map.setPaintProperty(
@@ -312,22 +308,6 @@ export function applyCountyBoundaryChrome(
           "line-opacity": hoverOpacity,
           "line-width":
             COUNTY_BOUNDARY_HOVER_LINE_WIDTH as unknown as ExpressionSpecification,
-        },
-        source: "counties",
-        type: "line",
-      },
-      "selected-outline"
-    );
-  }
-  if (!map.getLayer(SELECTED_COUNTY_CASING_LAYER)) {
-    addLayer(
-      map,
-      {
-        filter: ["==", ["get", "selected"], true],
-        id: SELECTED_COUNTY_CASING_LAYER,
-        paint: {
-          "line-color": COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING,
-          "line-width": COUNTY_BOUNDARIES_SELECTED_COUNTY_CASING_WIDTH,
         },
         source: "counties",
         type: "line",
