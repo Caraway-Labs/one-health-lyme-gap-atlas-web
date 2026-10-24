@@ -198,7 +198,7 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     });
     render(<EvidenceChat mode={mode} />);
     await ask();
-    await screen.findByText(/governed corpus for this question/);
+    await screen.findByText(/governed Atlas corpus/);
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText("Source: Literature evidence")).toBeNull();
     expect(screen.queryByText("Source paper")).toBeNull();
@@ -424,7 +424,7 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     await ask();
     const timeout = await screen.findByRole("alert");
     expect({
-      corpus: screen.queryByText(/governed corpus/),
+      corpus: screen.queryByText(/governed Atlas corpus/),
       insufficient: timeout.textContent?.includes("Insufficient") ?? false,
       state: timeout.dataset.assistantState,
       timedOut: timeout.textContent?.includes("timed out") ?? false,
