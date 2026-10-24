@@ -395,6 +395,44 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     });
   });
 
+  it("renders HTTP 200 evidence_unavailable as a service outcome, not an answer", async () => {
+    chatRequest.mockResolvedValue({
+      data: {
+        ...literaturePayload(
+          "The evidence service did not complete this request."
+        ),
+        citations: [],
+        claims: [],
+        evidence_state: "evidence_unavailable",
+        status: "evidence_unavailable",
+      },
+      headers: new Headers({ "Retry-After": "30" }),
+      status: 200,
+    });
+    render(<EvidenceChat mode={mode} />);
+    await ask();
+    await screen.findByText("Evidence service unavailable.");
+    expect({
+      answer: screen.getByText(
+        "The evidence service did not complete this request."
+      ).textContent,
+      corpus: screen.queryByText("No relevant literature in the Atlas corpus."),
+      evidence: screen.queryByText("Evidence: Limited evidence"),
+      retry: screen.getByRole("button", { name: "Retry" }).textContent,
+      state: document.querySelector<HTMLElement>(
+        "[data-assistant-state='evidence_unavailable']"
+      )?.dataset.assistantState,
+      timedOut: screen.queryByText(/Request timed out/),
+    }).toStrictEqual({
+      answer: "The evidence service did not complete this request.",
+      corpus: null,
+      evidence: null,
+      retry: "Retry",
+      state: "evidence_unavailable",
+      timedOut: null,
+    });
+  });
+
   it("shows capacity separately from insufficient evidence and transport alerts", async () => {
     chatRequest.mockRejectedValueOnce(
       new AtlasApiError("busy", "/v1/knowledge-graph/chat", 503, null, null, {
