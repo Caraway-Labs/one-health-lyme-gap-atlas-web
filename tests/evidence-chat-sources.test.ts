@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { KnowledgeChatResponse } from "@/generated/models";
 import {
+  citationsForClaim,
   orderedAnswerCitations,
   safePubMedUrl,
 } from "@/lib/evidence-chat-sources";
+
+import { reducedClaimResponse } from "./fixtures/reduced-claim-response";
 
 function answeredResponse(
   overrides: Partial<KnowledgeChatResponse> = {}
@@ -68,6 +71,20 @@ describe(orderedAnswerCitations, () => {
       "c1",
       "c2",
     ]);
+  });
+
+  it("keeps the citation on a reduced limited claim", () => {
+    const response = reducedClaimResponse();
+    const claim = response.claims?.[0];
+    expect(claim).toBeTruthy();
+    if (!claim) {
+      return;
+    }
+    expect(
+      citationsForClaim(claim, orderedAnswerCitations(response)).map(
+        (citation) => citation.pubmed_url
+      )
+    ).toStrictEqual(["https://pubmed.ncbi.nlm.nih.gov/38000001/"]);
   });
 
   it("returns no citations when a response includes an unreferenced source", () => {

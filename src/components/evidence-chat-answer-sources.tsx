@@ -1,7 +1,8 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import type { KnowledgeCitation } from "@/generated/models/knowledgeCitation";
+import type { KnowledgeClaim } from "@/generated/models/knowledgeClaim";
 import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
-import { safePubMedUrl } from "@/lib/evidence-chat-sources";
+import { citationsForClaim, safePubMedUrl } from "@/lib/evidence-chat-sources";
 
 function CitationRow({
   citation,
@@ -48,6 +49,32 @@ function CitationRow({
   );
 }
 
+function ClaimBlock({
+  citations,
+  claim,
+}: {
+  citations: readonly KnowledgeCitation[];
+  claim: KnowledgeClaim;
+}) {
+  const claimCitations = citationsForClaim(claim, citations);
+  return (
+    <li className="chat-claim" data-claim-id={claim.claim_id}>
+      <p>{claim.text}</p>
+      {claimCitations.length > 0 ? (
+        <ol className="citation-list" aria-label="Sources for this claim">
+          {claimCitations.map((citation, citationIndex) => (
+            <CitationRow
+              citation={citation}
+              index={citationIndex + 1}
+              key={citation.citation_id}
+            />
+          ))}
+        </ol>
+      ) : null}
+    </li>
+  );
+}
+
 export function EvidenceChatAnswerSources({
   response,
 }: {
@@ -59,6 +86,7 @@ export function EvidenceChatAnswerSources({
   }
 
   const { citations } = decision;
+  const claims = response.claims ?? [];
   const sourceCountLabel =
     citations.length === 1
       ? "1 source for this answer"
@@ -67,7 +95,7 @@ export function EvidenceChatAnswerSources({
   return (
     <section
       className="chat-answer-sources"
-      aria-label="Sources for this answer"
+      aria-label="Answer and sources"
       data-assistant-state="answered"
       data-evidence-state={decision.evidenceState}
       data-source-used={decision.sourceUsed}
@@ -84,16 +112,16 @@ export function EvidenceChatAnswerSources({
         <span>Source: {decision.sourceLabel}</span>
         <span>Evidence: {decision.evidenceLabel}</span>
       </div>
-      {citations.length > 0 ? (
-        <ol
-          className="citation-list"
-          aria-labelledby={`sources-${response.request_id}`}
-        >
-          {citations.map((citation, citationIndex) => (
-            <CitationRow
-              citation={citation}
-              index={citationIndex + 1}
-              key={citation.citation_id}
+      {decision.evidenceDetail ? (
+        <p className="chat-evidence-scope">{decision.evidenceDetail}</p>
+      ) : null}
+      {claims.length > 0 ? (
+        <ol className="chat-claim-list">
+          {claims.map((claim) => (
+            <ClaimBlock
+              citations={citations}
+              claim={claim}
+              key={claim.claim_id}
             />
           ))}
         </ol>

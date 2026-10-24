@@ -2,6 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 
+import { LIMITED_EVIDENCE_SUMMARY } from "@/lib/ask-atlas-answer-contract";
+
 import {
   conversationEvidenceStrengthLabel,
   conversationTurnPreview,
@@ -81,7 +83,9 @@ describe("knowledge chat history display", () => {
     expect(conversationTurnPreview(withAnswer)).toBe(
       "Short assistant summary for re-find."
     );
-    expect(conversationEvidenceStrengthLabel(withAnswer)).toBe("Limited");
+    expect(conversationEvidenceStrengthLabel(withAnswer)).toBe(
+      LIMITED_EVIDENCE_SUMMARY
+    );
 
     const withoutAnswer = conversationWithTurns([
       {
