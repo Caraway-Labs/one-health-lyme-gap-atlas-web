@@ -672,6 +672,11 @@
   color: var(--navy);
 }
 
+.county-summary-tick-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
 .county-summary-popup-title,
 .county-summary-popup-label {
   margin: 0;
