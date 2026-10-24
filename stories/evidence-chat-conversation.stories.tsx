@@ -75,27 +75,35 @@ export const StructuredOutcome: Story = {
 };
 export const ClientFailure: Story = { args: { preset: "client-failure" } };
 export const NearLimit: Story = { args: { preset: "near-limit" } };
-export const MatrixAnsweredSingleStudy: Story = {
-  args: { preset: "matrix-answered-single-study" },
-};
-export const MatrixAnsweredLimited: Story = {
-  args: { preset: "matrix-answered-limited" },
-};
-export const MatrixCorpusGap: Story = { args: { preset: "matrix-corpus-gap" } };
-export const MatrixSafetyRefusal: Story = {
-  args: { preset: "matrix-safety-refusal" },
-};
-export const MatrixEvidenceUnavailable: Story = {
-  args: { preset: "matrix-evidence-unavailable" },
-};
-export const MatrixCapacityLimited: Story = {
-  args: { preset: "matrix-capacity-limited" },
-};
-export const MatrixTimeout: Story = { args: { preset: "matrix-timeout" } };
-export const MatrixRateLimited: Story = {
-  args: { preset: "matrix-rate-limited" },
-};
-export const MatrixUnprocessable: Story = {
-  args: { preset: "matrix-unprocessable" },
-};
-export const MatrixNetwork: Story = { args: { preset: "matrix-network" } };
+
+// Autodocs renders every story in its own preview iframe, and the composer id
+// check reads the first of those frames. Mounting one iframe per outcome keeps
+// that primary preview on Storybook's preparing spinner until the assertion
+// times out. These outcomes stay individual sidebar stories for the catalog.
+function matrixStory(
+  preset: (typeof OUTCOME_MATRIX_STORY_PRESETS)[number]
+): Story {
+  return {
+    args: { preset },
+    tags: ["!autodocs"],
+  };
+}
+
+export const MatrixAnsweredSingleStudy: Story = matrixStory(
+  "matrix-answered-single-study"
+);
+export const MatrixAnsweredLimited: Story = matrixStory(
+  "matrix-answered-limited"
+);
+export const MatrixCorpusGap: Story = matrixStory("matrix-corpus-gap");
+export const MatrixSafetyRefusal: Story = matrixStory("matrix-safety-refusal");
+export const MatrixEvidenceUnavailable: Story = matrixStory(
+  "matrix-evidence-unavailable"
+);
+export const MatrixCapacityLimited: Story = matrixStory(
+  "matrix-capacity-limited"
+);
+export const MatrixTimeout: Story = matrixStory("matrix-timeout");
+export const MatrixRateLimited: Story = matrixStory("matrix-rate-limited");
+export const MatrixUnprocessable: Story = matrixStory("matrix-unprocessable");
+export const MatrixNetwork: Story = matrixStory("matrix-network");
