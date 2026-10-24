@@ -110,7 +110,7 @@ const WORKSPACE_DESTINATIONS = [
     title: "Atlas Explorer | One Health Lyme Gap Atlas",
   },
   {
-    heading: "Two counties. A clearer picture.",
+    heading: "Compare counties",
     path: "/compare",
     title: "Compare | One Health Lyme Gap Atlas",
   },
