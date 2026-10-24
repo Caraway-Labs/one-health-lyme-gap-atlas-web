@@ -26,7 +26,16 @@ vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
 
 import { EvidenceChat } from "../src/components/evidence-chat";
 import { AtlasApiError } from "../src/lib/api-mutator";
+import {
+  LIMITED_EVIDENCE_DETAIL,
+  LIMITED_EVIDENCE_LABEL,
+} from "../src/lib/ask-atlas-answer-contract";
 import { CHAT_STORAGE_KEY } from "../src/lib/knowledge-chat-storage";
+import {
+  orphanCitationResponse,
+  REDUCED_CLAIM_ANSWER,
+  reducedClaimResponse,
+} from "./fixtures/reduced-claim-response";
 
 const MODES = ["workspace", "drawer"] as const;
 
@@ -83,6 +92,54 @@ describe.each(MODES)("Ask Atlas answer semantics (%s)", (mode) => {
     );
   });
   afterEach(() => cleanup());
+
+  it("renders a reduced limited claim with its citation and label", async () => {
+    chatRequest.mockResolvedValue({ data: reducedClaimResponse() });
+    render(<EvidenceChat mode={mode} />);
+    await ask();
+    const claim = await screen.findByText(REDUCED_CLAIM_ANSWER);
+    const claimItem = claim.closest("[data-claim-id]");
+    expect(claimItem).toBeTruthy();
+    const citation = claimItem?.querySelector("a");
+    expect({
+      detail: screen.getByText(LIMITED_EVIDENCE_DETAIL).textContent,
+      evidence: screen.getByText(`Evidence: ${LIMITED_EVIDENCE_LABEL}`)
+        .textContent,
+      href: citation?.getAttribute("href"),
+      label: citation?.querySelector(".citation-source-identifier")
+        ?.textContent,
+    }).toStrictEqual({
+      detail: LIMITED_EVIDENCE_DETAIL,
+      evidence: `Evidence: ${LIMITED_EVIDENCE_LABEL}`,
+      href: "https://pubmed.ncbi.nlm.nih.gov/38000001/",
+      label: "PMID 38000001 · Reviewed literature",
+    });
+    const claims = document.querySelectorAll("[data-claim-id]");
+    expect(claims.length).toBeGreaterThan(0);
+    for (const item of claims) {
+      expect(
+        item.querySelector("a[href*='pubmed.ncbi.nlm.nih.gov']")
+      ).toBeTruthy();
+    }
+    expect(screen.queryByText(/claims were withheld/i)).toBeNull();
+    expect(
+      screen.queryByText(/the reviewed literature is limited/i)
+    ).toBeNull();
+  });
+
+  it("rejects a citation that has no matching claim", async () => {
+    chatRequest.mockResolvedValue({ data: orphanCitationResponse() });
+    render(<EvidenceChat mode={mode} />);
+    await ask();
+    const alert = await screen.findByRole("alert");
+    expect(alert.dataset.assistantState).toBe("response_unverified");
+    expect(alert.dataset.closeReason).toBe("mismatched_source");
+    expect(alert.textContent).toContain("Response could not be verified");
+    expect(screen.queryByText(REDUCED_CLAIM_ANSWER)).toBeNull();
+    expect(
+      screen.queryByText("Synthetic paper with no matching claim")
+    ).toBeNull();
+  });
 
   it("renders literature citations and source from the response", async () => {
     chatRequest.mockResolvedValue({ data: literaturePayload() });
