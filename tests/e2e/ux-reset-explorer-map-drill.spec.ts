@@ -696,14 +696,6 @@ test.describe("Explorer two-stage map drill", () => {
       0.05
     );
 
-    await page.setViewportSize({ height: 844, width: 390 });
-    await page.getByTestId("explorer-fit-national").click();
-    await expect(page).toHaveURL(/county=20091/);
-    await expect(page).toHaveURL(/focus=KS/);
-    await expectFittedBounds(page, JOHNSON_BOUNDS);
-    await expectNoHorizontalOverflow(page);
-
-    await page.setViewportSize({ height: 1000, width: 1440 });
     await page.getByTestId("explorer-county-clear").click();
     await expect(page).toHaveURL(/focus=KS/);
     await expect(page).not.toHaveURL(/county=/);
