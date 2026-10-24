@@ -28,6 +28,7 @@ vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
 
 import { EvidenceChat } from "../src/components/evidence-chat";
 import { AtlasApiError } from "../src/lib/api-mutator";
+import { atlasAnalytics } from "../src/lib/atlas-analytics";
 import {
   CHAT_STORAGE_KEY,
   loadConversations,
@@ -968,6 +969,323 @@ describe(EvidenceChat, () => {
         screen.getByRole("region", { name: "Conversation transcript" })
       ).getByText("Second answer stays.")
     ).toBeTruthy();
+  });
+
+  it("renders an HTTP 200 evidence_unavailable outcome with retry and the saved question", async () => {
+    const track = vi.spyOn(atlasAnalytics, "track");
+    const answer = "The evidence service did not complete this request.";
+    try {
+      chatRequest.mockResolvedValue({
+        data: response(
+          "evidence_unavailable",
+          "evidence_unavailable",
+          answer,
+          "request-down"
+        ),
+        status: 200,
+      });
+      render(<EvidenceChat />);
+      await submit();
+      await screen.findByText("Evidence service unavailable.");
+      const question = screen.getByLabelText(
+        "Your question"
+      ) as HTMLTextAreaElement;
+      await waitFor(() => expect(document.activeElement).toBe(question));
+      const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}");
+      const retry = screen.getByRole("button", { name: "Retry" });
+      expect({
+        alert: screen.queryByRole("alert"),
+        answer: screen.getByText(answer).textContent,
+        composer: question.value,
+        corpus: screen.queryByText(
+          "No relevant literature in the Atlas corpus."
+        ),
+        denial: screen.getByText(/not a finding that the Atlas corpus/)
+          .textContent,
+        live: document
+          .querySelector(".chat-transcript")
+          ?.getAttribute("aria-live"),
+        retryControl: retry.dataset.atlasAnalyticsControl,
+        starters: screen.queryByText("Starter questions"),
+        state: document.querySelector<HTMLElement>(
+          "[data-assistant-state='evidence_unavailable']"
+        )?.dataset.assistantState,
+        timedOut: screen.queryByText(/Request timed out/),
+        turns: stored.conversations[0].turns.map(
+          (turn: {
+            id: string;
+            response?: { status?: string };
+            role: string;
+            text: string;
+          }) => ({
+            id: turn.id,
+            responseStatus: turn.response?.status ?? null,
+            role: turn.role,
+            text: turn.text,
+          })
+        ),
+      }).toStrictEqual({
+        alert: null,
+        answer,
+        composer: "What does the evidence say?",
+        corpus: null,
+        denial: expect.stringContaining(
+          "not a finding that the Atlas corpus has no relevant literature"
+        ),
+        live: "polite",
+        retryControl: "evidence_chat_retry",
+        starters: null,
+        state: "evidence_unavailable",
+        timedOut: null,
+        turns: [
+          {
+            id: "request-down:user",
+            responseStatus: null,
+            role: "user",
+            text: "What does the evidence say?",
+          },
+          {
+            id: "request-down",
+            responseStatus: "evidence_unavailable",
+            role: "assistant",
+            text: answer,
+          },
+        ],
+      });
+      expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+        "browser-secret"
+      );
+      expect(track.mock.calls).toStrictEqual([]);
+    } finally {
+      track.mockRestore();
+    }
+  });
+
+  it("renders the same evidence_unavailable outcome when HTTP 200 includes Retry-After", async () => {
+    chatRequest.mockResolvedValue({
+      data: response(
+        "evidence_unavailable",
+        "evidence_unavailable",
+        "The evidence service did not complete this request.",
+        "request-down"
+      ),
+      headers: new Headers({ "Retry-After": "30" }),
+      status: 200,
+    });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence service unavailable.");
+    const panel = document.querySelector<HTMLElement>(
+      "[data-assistant-state='evidence_unavailable']"
+    );
+    expect({
+      composer: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
+        .value,
+      copy: panel?.textContent,
+      retry: screen.getByRole("button", { name: "Retry" }).textContent,
+      state: panel?.dataset.assistantState,
+      timedOut: screen.queryByText(/Request timed out/),
+    }).toStrictEqual({
+      composer: "What does the evidence say?",
+      copy: "Evidence service unavailable. The evidence service could not complete this request. This is not a finding that the Atlas corpus has no relevant literature.Retry",
+      retry: "Retry",
+      state: "evidence_unavailable",
+      timedOut: null,
+    });
+  });
+
+  it("renders an HTTP 200 capacity_limited outcome with retry later", async () => {
+    const answer = "The assistant is at capacity. Please retry.";
+    chatRequest.mockResolvedValue({
+      data: response(
+        "capacity_limited",
+        "not_applicable",
+        answer,
+        "request-busy"
+      ),
+      status: 200,
+    });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText(answer);
+    expect({
+      alert: screen.queryByRole("alert"),
+      composer: (screen.getByLabelText("Your question") as HTMLTextAreaElement)
+        .value,
+      corpus: screen.queryByText("No relevant literature in the Atlas corpus."),
+      evidence: screen.queryByText(/Evidence:/),
+      retryLater: screen.getByRole("button", { name: "Retry later" })
+        .textContent,
+      state: document.querySelector<HTMLElement>(
+        "[data-assistant-state='capacity_limited']"
+      )?.dataset.assistantState,
+      timedOut: screen.queryByText(/Request timed out/),
+    }).toStrictEqual({
+      alert: null,
+      composer: "What does the evidence say?",
+      corpus: null,
+      evidence: null,
+      retryLater: "Retry later",
+      state: "capacity_limited",
+      timedOut: null,
+    });
+  });
+
+  it("replaces an HTTP 200 operational turn when retry succeeds", async () => {
+    chatRequest
+      .mockResolvedValueOnce({
+        data: response(
+          "evidence_unavailable",
+          "evidence_unavailable",
+          "The evidence service did not complete this request.",
+          "request-down"
+        ),
+        status: 200,
+      })
+      .mockResolvedValueOnce({
+        data: response(
+          "answered",
+          "limited",
+          "Evidence is available again.",
+          "request-up"
+        ),
+        status: 200,
+      });
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence service unavailable.");
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await screen.findByText("Evidence: Limited evidence");
+    const stored = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) ?? "{}");
+    expect({
+      removedFailure: screen.queryByText("Evidence service unavailable."),
+      removedAnswer: screen.queryByText(
+        "The evidence service did not complete this request."
+      ),
+      turns: stored.conversations[0].turns.map(
+        (turn: {
+          response?: { status?: string };
+          role: string;
+          text: string;
+        }) => ({
+          responseStatus: turn.response?.status ?? null,
+          role: turn.role,
+          text: turn.text,
+        })
+      ),
+    }).toStrictEqual({
+      removedFailure: null,
+      removedAnswer: null,
+      turns: [
+        {
+          responseStatus: null,
+          role: "user",
+          text: "What does the evidence say?",
+        },
+        {
+          responseStatus: "answered",
+          role: "assistant",
+          text: "Evidence is available again.",
+        },
+      ],
+    });
+    expect(chatRequest).toHaveBeenLastCalledWith(
+      {
+        history: [],
+        message: "What does the evidence say?",
+      },
+      { signal: expect.any(AbortSignal) }
+    );
+  });
+
+  it("keeps a typed 502 body on the evidence-unavailable outcome", async () => {
+    chatRequest.mockRejectedValue(
+      new AtlasApiError(
+        "bad gateway",
+        "/v1/knowledge-graph/chat",
+        502,
+        null,
+        null,
+        response(
+          "evidence_unavailable",
+          "evidence_unavailable",
+          "The evidence service did not complete this request."
+        )
+      )
+    );
+    render(<EvidenceChat />);
+    await submit();
+    await screen.findByText("Evidence service unavailable.");
+    expect({
+      alert: screen.queryByRole("alert"),
+      state: document.querySelector<HTMLElement>(
+        "[data-assistant-state='evidence_unavailable']"
+      )?.dataset.assistantState,
+      timedOut: screen.queryByText(/Request timed out/),
+    }).toStrictEqual({
+      alert: null,
+      state: "evidence_unavailable",
+      timedOut: null,
+    });
+  });
+
+  it("keeps a bare 504 on the timeout state", async () => {
+    chatRequest.mockRejectedValue(
+      new AtlasApiError("timeout", "/v1/knowledge-graph/chat", 504, null)
+    );
+    render(<EvidenceChat />);
+    await submit();
+    const timeout = await screen.findByRole("alert");
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("button", { name: "Retry" })
+      )
+    );
+    expect({
+      message: timeout.textContent,
+      state: timeout.dataset.assistantState,
+      title: timeout.querySelector("strong")?.textContent,
+    }).toStrictEqual({
+      message: expect.stringContaining(
+        "The assistant did not answer before the request timed out. This is not a finding that the Atlas corpus lacks relevant literature."
+      ),
+      state: "timeout",
+      title: "Request timed out.",
+    });
+  });
+
+  it("keeps 429 and 422 on their current states and copy", async () => {
+    chatRequest.mockRejectedValueOnce(
+      new AtlasApiError("busy", "/v1/knowledge-graph/chat", 429, null)
+    );
+    const { unmount } = render(<EvidenceChat />);
+    await submit();
+    const rate = await screen.findByRole("alert");
+    expect({
+      retry: screen.getByRole("button", { name: "Retry" }).textContent,
+      state: rate.dataset.assistantState,
+      text: rate.textContent,
+    }).toStrictEqual({
+      retry: "Retry",
+      state: "rate_limited",
+      text: "Assistant is busy. The assistant is busy and did not finish this request. Please try again shortly.Retry",
+    });
+    unmount();
+    chatRequest.mockRejectedValueOnce(
+      new AtlasApiError("invalid", "/v1/knowledge-graph/chat", 422, null)
+    );
+    render(<EvidenceChat />);
+    await submit();
+    const invalid = await screen.findByRole("alert");
+    expect({
+      retry: screen.queryByRole("button", { name: "Retry" }),
+      state: invalid.dataset.assistantState,
+      text: invalid.textContent,
+    }).toStrictEqual({
+      retry: null,
+      state: "request_not_processed",
+      text: "Question not processed. That question could not be processed. Please revise it and try again.",
+    });
   });
 
   it("describes near-limit character counts without a second live region", async () => {
