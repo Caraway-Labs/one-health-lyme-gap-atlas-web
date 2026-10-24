@@ -13,6 +13,7 @@ type ChartPoint = {
  * County A is teal and County B is navy. The letters are also in the text.
  */
 export function CompareCommunityChart({
+  caption,
   left,
   max,
   meaning,
@@ -23,6 +24,7 @@ export function CompareCommunityChart({
   title,
   unit,
 }: {
+  caption: string;
   left: ChartPoint;
   max: number;
   meaning: string;
@@ -46,44 +48,50 @@ export function CompareCommunityChart({
   });
   const samePosition =
     placed.length === 2 && placed[0]?.position === placed[1]?.position;
+  const crowded =
+    placed.length === 2 &&
+    Math.abs((placed[0]?.position ?? 0) - (placed[1]?.position ?? 0)) < 16;
+  const plotX = (position: number) => 36 + (position / 100) * 568;
   return (
     <figure className="compare-chart" data-testid={`compare-chart-${title}`}>
       <figcaption>
         <strong>{title}</strong>
-        <span>{unit}</span>
+        <span>{caption}</span>
       </figcaption>
       <div className="compare-chart-plot">
         <svg
           aria-hidden="true"
           className="compare-chart-svg"
-          viewBox="0 0 320 92"
+          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 640 76"
         >
           <line
             className="compare-chart-axis"
-            x1="16"
-            x2="304"
-            y1="58"
-            y2="58"
+            x1="36"
+            x2="604"
+            y1="46"
+            y2="46"
           />
           {placed.length === 2 && placed[0] && placed[1] ? (
             <line
               className="compare-chart-link"
-              x1={16 + (placed[0].position / 100) * 288}
-              x2={16 + (placed[1].position / 100) * 288}
-              y1="58"
-              y2="58"
+              x1={plotX(placed[0].position)}
+              x2={plotX(placed[1].position)}
+              y1="46"
+              y2="46"
             />
           ) : null}
           {placed.map((entry) => {
-            const x = 16 + (entry.position / 100) * 288;
-            const labelY = entry.letter === "A" || !samePosition ? 28 : 18;
+            const x = plotX(entry.position);
+            const labelY =
+              entry.letter === "B" && (samePosition || crowded) ? 16 : 32;
             return (
               <g key={entry.letter}>
                 <circle
                   className={`compare-chart-dot compare-chart-dot-${entry.tone}`}
                   cx={x}
-                  cy="58"
-                  r="6"
+                  cy="46"
+                  r="4.5"
                 />
                 <text
                   className="compare-chart-tag"
@@ -101,21 +109,21 @@ export function CompareCommunityChart({
             if (position === null) {
               return null;
             }
-            const x = 16 + (position / 100) * 288;
+            const x = plotX(position);
             return (
               <g key={tick}>
                 <line
                   className="compare-chart-tick"
                   x1={x}
                   x2={x}
-                  y1="58"
-                  y2="64"
+                  y1="46"
+                  y2="50"
                 />
                 <text
                   className="compare-chart-tick-label"
                   textAnchor="middle"
                   x={x}
-                  y="80"
+                  y="66"
                 >
                   {tick}
                 </text>
@@ -125,7 +133,6 @@ export function CompareCommunityChart({
         </svg>
       </div>
       <p className="compare-chart-summary">{summary}</p>
-      <p className="compare-chart-meaning">{meaning}</p>
       <p className="sr-only">
         {placed.length === 0
           ? `${title} chart is omitted because neither county has a plotted value.`
@@ -134,7 +141,7 @@ export function CompareCommunityChart({
                 (entry) =>
                   `County ${entry.letter}, ${entry.point.name}: ${entry.point.shown ?? "value not plotted"} at ${entry.point.value} on a ${min} to ${max} ${unit} axis.`
               )
-              .join(" ")} ${summary}`}
+              .join(" ")} ${summary} ${meaning}`}
       </p>
     </figure>
   );

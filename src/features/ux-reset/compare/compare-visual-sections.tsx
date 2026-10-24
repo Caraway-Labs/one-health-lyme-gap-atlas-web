@@ -14,6 +14,7 @@ import { useId, useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { CompareAbColGroup } from "@/features/ux-reset/compare/compare-ab-columns";
 import type {
   CompareCell,
   CompareRelation,
@@ -690,30 +691,44 @@ export function CompareSourcesTable({
   notes?: ReactNode;
 }) {
   return (
-    <details className="ux-reset-compare-sources" data-testid="compare-sources">
+    <details
+      className="ux-reset-compare-sources compare-ab-panel"
+      data-testid="compare-sources"
+    >
       <summary>Sources and limitations</summary>
       {notes}
       <div className="ux-reset-compare-sources-scroll">
-        <table>
+        <table className="compare-ab-table">
           <caption className="sr-only">
             Source, observation period, dataset vintage, and caveat for every
             measure shown
           </caption>
+          <CompareAbColGroup />
           <thead>
             <tr>
               <th scope="col">Measure</th>
-              <th scope="col">{counties[0].label} (A)</th>
-              <th scope="col">{counties[1].label} (B)</th>
+              <th data-slot="a" scope="col">
+                {counties[0].label} (A)
+              </th>
+              <th data-slot="b" scope="col">
+                {counties[1].label} (B)
+              </th>
             </tr>
           </thead>
           <tbody>
             {entries.map((entry) => (
               <tr data-testid={`compare-source-row-${entry.id}`} key={entry.id}>
                 <th scope="row">{entry.label}</th>
-                <td>
+                <td
+                  data-county={`County A, ${counties[0].label}`}
+                  data-slot="a"
+                >
                   <SourceCell evidence={entry.left} />
                 </td>
-                <td>
+                <td
+                  data-county={`County B, ${counties[1].label}`}
+                  data-slot="b"
+                >
                   <SourceCell evidence={entry.right} />
                 </td>
               </tr>

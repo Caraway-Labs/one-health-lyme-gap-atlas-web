@@ -126,98 +126,113 @@ export function CompareSurveillanceIntelligence({
       <p className="type-small" data-testid="compare-intelligence-guide">
         {MODEL_INTRO}
       </p>
-      <ul
-        className="ux-reset-compare-tiles"
-        data-testid="compare-surveillance-intelligence-table"
-      >
-        {SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER.map((id) => {
-          const expanded = openId === id;
-          const label = COMPARE_MODEL_ROW_LABELS[id];
-          return (
-            <li
-              className="ux-reset-compare-tile"
-              data-expanded={expanded ? "true" : "false"}
-              data-perspective={id}
-              data-testid={`compare-surveillance-row-${id}`}
-              key={id}
-            >
-              <h4 className="ux-reset-compare-tile-title">
-                <TileControl
-                  controlsId={detailsId}
-                  expanded={expanded}
-                  label={label}
-                  onToggle={() => {
-                    toggle(id);
-                  }}
-                />
-              </h4>
-              <p className="sr-only">{COMPARE_MODEL_ROW_LABELS[id]}</p>
-              <div className="ux-reset-compare-tile-sides">
-                {columns.map((column) => {
-                  const perspective = perspectives[column.side].find(
-                    (entry) => entry.id === id
-                  );
-                  return (
-                    <div
-                      className="ux-reset-compare-tile-side"
-                      data-county={`${column.title}, ${column.label}`}
-                      data-fips={column.fips}
-                      data-kind={perspective?.kind}
-                      data-side={column.side}
-                      data-testid={`compare-surveillance-cell-${id}-${column.fips}`}
-                      key={column.side}
-                    >
-                      <CompareSlotMarker letter={column.letter} />
-                      <span className="sr-only">{`${column.title}, ${column.label}: `}</span>
-                      {perspective ? (
-                        <SurveillanceValue
-                          county={column}
-                          onRetry={() => {
-                            retry[column.side](id);
-                          }}
-                          perspective={perspective}
-                        />
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-      {openId ? (
-        <div
-          className="ux-reset-compare-values"
-          data-testid="compare-surveillance-intelligence-details"
-          id={detailsId}
+      <div className="compare-model-sheet">
+        <div className="compare-ab-grid compare-ab-head">
+          <div className="compare-ab-label">Measure</div>
+          {columns.map((column) => (
+            <div data-slot={column.side} key={column.side}>
+              <span className="compare-col-kicker">{column.title}</span>
+              <strong>{column.label}</strong>
+            </div>
+          ))}
+        </div>
+        <ul
+          className="ux-reset-compare-tiles"
+          data-testid="compare-surveillance-intelligence-table"
         >
-          {columns.map((column) => {
-            const perspective = perspectives[column.side].find(
-              (entry) => entry.id === openId
-            );
-            if (!perspective) {
-              return null;
-            }
-            const headingId = `${detailsId}-${column.side}`;
+          {SURVEILLANCE_INTELLIGENCE_PERSPECTIVE_ORDER.map((id) => {
+            const expanded = openId === id;
+            const label = COMPARE_MODEL_ROW_LABELS[id];
             return (
-              <SurveillanceIntelligenceDetails
-                fips={column.fips}
-                heading={`${column.title} · ${COMPARE_MODEL_ROW_LABELS[perspective.id]} details`}
-                headingId={headingId}
-                id={`${detailsId}-${column.side}-panel`}
-                key={column.side}
-                labelledBy={headingId}
-                onRetry={() => {
-                  retry[column.side](perspective.id);
-                }}
-                perspective={perspective}
-                retryLabel={`Retry ${COMPARE_MODEL_ROW_LABELS[perspective.id]} for ${column.title}, ${column.label}`}
-              />
+              <li
+                className="compare-model-row"
+                data-expanded={expanded ? "true" : "false"}
+                data-perspective={id}
+                data-testid={`compare-surveillance-row-${id}`}
+                key={id}
+              >
+                <div className="compare-ab-grid">
+                  <h4 className="compare-ab-label">
+                    <TileControl
+                      controlsId={detailsId}
+                      expanded={expanded}
+                      label={label}
+                      onToggle={() => {
+                        toggle(id);
+                      }}
+                    />
+                    <p className="sr-only">{label}</p>
+                  </h4>
+                  {columns.map((column) => {
+                    const perspective = perspectives[column.side].find(
+                      (entry) => entry.id === id
+                    );
+                    return (
+                      <div
+                        className="compare-ab-county"
+                        data-county={`${column.title}, ${column.label}`}
+                        data-county-label={column.title}
+                        data-fips={column.fips}
+                        data-kind={perspective?.kind}
+                        data-side={column.side}
+                        data-slot={column.side}
+                        data-testid={`compare-surveillance-cell-${id}-${column.fips}`}
+                        key={column.side}
+                      >
+                        <CompareSlotMarker letter={column.letter} />
+                        <span className="sr-only">{`${column.title}, ${column.label}: `}</span>
+                        {perspective ? (
+                          <SurveillanceValue
+                            county={column}
+                            onRetry={() => {
+                              retry[column.side](id);
+                            }}
+                            perspective={perspective}
+                          />
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </li>
             );
           })}
-        </div>
-      ) : null}
+        </ul>
+        {openId ? (
+          <div
+            className="compare-ab-grid"
+            data-testid="compare-surveillance-intelligence-details"
+            id={detailsId}
+          >
+            <div className="compare-ab-label" />
+            {columns.map((column) => {
+              const perspective = perspectives[column.side].find(
+                (entry) => entry.id === openId
+              );
+              if (!perspective) {
+                return <div data-slot={column.side} key={column.side} />;
+              }
+              const headingId = `${detailsId}-${column.side}`;
+              return (
+                <div data-slot={column.side} key={column.side}>
+                  <SurveillanceIntelligenceDetails
+                    fips={column.fips}
+                    heading={`${column.title} · ${COMPARE_MODEL_ROW_LABELS[perspective.id]} details`}
+                    headingId={headingId}
+                    id={`${detailsId}-${column.side}-panel`}
+                    labelledBy={headingId}
+                    onRetry={() => {
+                      retry[column.side](perspective.id);
+                    }}
+                    perspective={perspective}
+                    retryLabel={`Retry ${COMPARE_MODEL_ROW_LABELS[perspective.id]} for ${column.title}, ${column.label}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
       <details
         className="compare-disclosure"
         data-testid="compare-model-interpretation"

@@ -10,6 +10,8 @@ import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atla
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { CompareAlignedSheet } from "@/features/ux-reset/compare/compare-aligned-sheet";
+
+import "@/features/ux-reset/compare/compare-aligned.css";
 import {
   CompareCountyPicker,
   type ReviewCategoryBadge,
@@ -460,80 +462,36 @@ function CompareExperienceInner() {
               : (leftOption?.label ?? (leftFips || "No counties selected."))}
           </p>
         </div>
-        <div className="ux-reset-compare-slots">
-          <CompareCountyPicker
-            clearLabel="Clear first county"
-            evidenceHref={leftFips ? workspace.investigateHref(leftFips) : null}
-            evidenceLabel={leftFips ? countyEvidenceLinkLabel(0) : null}
-            label="First county"
-            letter="A"
-            options={leftOptions}
-            reviewCategory={reviewCategoryBadge(workspace.profile, leftFips)}
-            selectedFips={leftFips}
-            testId="compare-slot-0"
-            onClear={
-              leftFips
-                ? () => {
-                    workspace.removeMember(leftFips);
-                  }
-                : null
-            }
-            onSelect={(fips) => {
-              if (pendingFips) {
-                workspace.setPair([fips, pendingFips]);
-                setPendingSecond("");
-                return;
-              }
-              workspace.setSlot(0, fips);
-            }}
-          />
-          <Button
-            aria-label="Swap first and second county"
-            className="ux-reset-compare-swap"
-            data-testid="compare-swap"
-            disabled={pair.length !== 2}
-            size="icon"
-            type="button"
-            variant="outline"
-            onClick={handleSwapPair}
-          >
-            <ArrowLeftRight aria-hidden="true" />
-          </Button>
-          <CompareCountyPicker
-            autoFocus={Boolean(originLabel)}
-            clearLabel="Clear second county"
-            evidenceHref={
-              rightFips ? workspace.investigateHref(rightFips) : null
-            }
-            evidenceLabel={rightFips ? countyEvidenceLinkLabel(1) : null}
-            label="Second county"
-            letter="B"
-            options={rightOptions}
-            reviewCategory={reviewCategoryBadge(workspace.profile, rightFips)}
-            selectedFips={rightFips}
-            testId="compare-slot-1"
-            onClear={
-              rightFips
-                ? () => {
-                    if (pendingFips) {
-                      setPendingSecond("");
-                      return;
-                    }
-                    workspace.removeMember(rightFips);
-                  }
-                : null
-            }
-            onSelect={(fips) => {
-              if (pair.length === 0) {
-                setPendingSecond(fips);
-                return;
-              }
-              workspace.setSlot(1, fips);
-            }}
-          />
-        </div>
-        {originLabel || hasSelection ? (
-          <div className="ux-reset-compare-pair-actions">
+        <div className="compare-ab-grid compare-selectors">
+          <div className="compare-ab-label">
+            <p className="compare-select-title">Select counties</p>
+            <div className="compare-select-tools">
+              <Button
+                aria-label="Swap first and second county"
+                data-testid="compare-swap"
+                disabled={pair.length !== 2}
+                size="icon"
+                type="button"
+                variant="outline"
+                onClick={handleSwapPair}
+              >
+                <ArrowLeftRight aria-hidden="true" />
+              </Button>
+              {hasSelection ? (
+                <Button
+                  aria-label="Clear both counties"
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setPendingSecond("");
+                    workspace.clearPair();
+                  }}
+                >
+                  Clear both
+                </Button>
+              ) : null}
+            </div>
             {originLabel ? (
               <p
                 className="ux-reset-compare-origin"
@@ -542,22 +500,68 @@ function CompareExperienceInner() {
                 {originLabel}: {leftLabel}
               </p>
             ) : null}
-            {hasSelection ? (
-              <Button
-                aria-label="Clear both counties"
-                size="sm"
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setPendingSecond("");
-                  workspace.clearPair();
-                }}
-              >
-                Clear both
-              </Button>
-            ) : null}
           </div>
-        ) : null}
+          <div data-county-label="County A" data-slot="a">
+            <CompareCountyPicker
+              clearLabel="Clear first county"
+              evidenceHref={null}
+              evidenceLabel={null}
+              label="First county"
+              letter="A"
+              options={leftOptions}
+              reviewCategory={reviewCategoryBadge(workspace.profile, leftFips)}
+              selectedFips={leftFips}
+              testId="compare-slot-0"
+              onClear={
+                leftFips
+                  ? () => {
+                      workspace.removeMember(leftFips);
+                    }
+                  : null
+              }
+              onSelect={(fips) => {
+                if (pendingFips) {
+                  workspace.setPair([fips, pendingFips]);
+                  setPendingSecond("");
+                  return;
+                }
+                workspace.setSlot(0, fips);
+              }}
+            />
+          </div>
+          <div data-county-label="County B" data-slot="b">
+            <CompareCountyPicker
+              autoFocus={Boolean(originLabel)}
+              clearLabel="Clear second county"
+              evidenceHref={null}
+              evidenceLabel={null}
+              label="Second county"
+              letter="B"
+              options={rightOptions}
+              reviewCategory={reviewCategoryBadge(workspace.profile, rightFips)}
+              selectedFips={rightFips}
+              testId="compare-slot-1"
+              onClear={
+                rightFips
+                  ? () => {
+                      if (pendingFips) {
+                        setPendingSecond("");
+                        return;
+                      }
+                      workspace.removeMember(rightFips);
+                    }
+                  : null
+              }
+              onSelect={(fips) => {
+                if (pair.length === 0) {
+                  setPendingSecond(fips);
+                  return;
+                }
+                workspace.setSlot(1, fips);
+              }}
+            />
+          </div>
+        </div>
       </fieldset>
 
       <div data-testid="compare-recovery" role="status">
@@ -696,21 +700,6 @@ function CompareExperienceInner() {
       </details>
     </div>
   );
-}
-
-function countyEvidenceLinkLabel(index: 0 | 1): string {
-  switch (index) {
-    case 0: {
-      return "View county evidence for the first county";
-    }
-    case 1: {
-      return "View county evidence for the second county";
-    }
-    default: {
-      const exhaustive: never = index;
-      return exhaustive;
-    }
-  }
 }
 
 export function ResetCompareExperience() {

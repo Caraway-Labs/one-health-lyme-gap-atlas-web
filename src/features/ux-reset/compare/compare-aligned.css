@@ -1,3 +1,56 @@
+/*
+  One column track for the whole Compare page.
+  Selectors, the sticky header, data rows, and model results all use it.
+*/
+.ux-reset-compare,
+.compare-ab-grid,
+.compare-ab-table {
+  --compare-col-label: 24%;
+  --compare-col-county: 38%;
+  --compare-columns: minmax(0, var(--compare-col-label))
+    minmax(0, var(--compare-col-county)) minmax(0, var(--compare-col-county));
+  --compare-cell-pad: 0.7rem 0.85rem;
+}
+
+.compare-ab-grid {
+  display: grid;
+  grid-template-columns: var(--compare-columns);
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.compare-ab-grid > * {
+  min-width: 0;
+}
+
+.compare-ab-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.compare-ab-col-label {
+  width: var(--compare-col-label);
+}
+
+.compare-ab-col-county {
+  width: var(--compare-col-county);
+}
+
+.compare-ab-table th,
+.compare-ab-table td {
+  padding: var(--compare-cell-pad);
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.compare-sheet-scroll :is(th, td)[data-slot="b"],
+.compare-ab-table :is(th, td)[data-slot="b"],
+.compare-ab-grid > [data-slot="b"] {
+  box-shadow: inset 1px 0 0 var(--border);
+}
+
 .compare-sheet {
   display: grid;
   width: 100%;
@@ -18,9 +71,10 @@
 .compare-sheet-scroll {
   max-width: 100%;
   overflow: visible;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
   background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .compare-sheet-scroll > table {
@@ -38,29 +92,30 @@
   overflow-wrap: anywhere;
 }
 
-.compare-sheet-scroll thead th {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  width: 34%;
+.compare-sheet-scroll thead th,
+.compare-ab-head {
   background: var(--card);
+}
+
+.compare-sheet-scroll thead th {
   box-shadow: inset 0 -1px 0 var(--border);
 }
 
-.ux-reset-compare[data-pinned="true"] .compare-sheet-scroll thead th {
-  top: 4.75rem;
+.compare-sheet-scroll thead th[data-slot="b"] {
+  box-shadow:
+    inset 1px 0 0 var(--border),
+    inset 0 -1px 0 var(--border);
 }
 
-.compare-sheet-scroll thead th:first-child,
-.compare-sheet-scroll tbody th[scope="row"] {
-  width: 32%;
-}
-
-.compare-sheet-scroll thead th[data-slot="a"] {
+.compare-sheet-scroll thead th[data-slot="a"],
+.compare-ab-head > [data-slot="a"],
+.compare-selectors > [data-slot="a"] {
   background: color-mix(in srgb, var(--teal) 12%, var(--card));
 }
 
-.compare-sheet-scroll thead th[data-slot="b"] {
+.compare-sheet-scroll thead th[data-slot="b"],
+.compare-ab-head > [data-slot="b"],
+.compare-selectors > [data-slot="b"] {
   background: color-mix(in srgb, var(--navy) 10%, var(--card));
 }
 
@@ -126,22 +181,29 @@
 
 .compare-chart-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
 }
 
 .compare-chart {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 14rem) minmax(0, 40rem) minmax(
+      8rem,
+      1fr
+    );
+  align-items: center;
+  gap: 0.35rem 1rem;
   margin: 0;
-  padding: 0.75rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--background);
 }
 
 .compare-chart figcaption {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
   font-size: 0.875rem;
 }
 
@@ -154,25 +216,32 @@
 
 .compare-chart-summary,
 .compare-chart-meaning {
-  margin: 0.35rem 0 0;
+  margin: 0;
+}
+
+.compare-chart-plot {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
 }
 
 .compare-chart-svg {
   display: block;
   width: 100%;
-  height: auto;
-  overflow: visible;
+  max-width: 40rem;
+  height: 4.75rem;
+  overflow: hidden;
 }
 
 .compare-chart-axis,
 .compare-chart-tick {
   stroke: var(--border);
-  stroke-width: 1.5;
+  stroke-width: 1;
 }
 
 .compare-chart-link {
   stroke: color-mix(in srgb, var(--navy) 35%, var(--teal));
-  stroke-width: 2;
+  stroke-width: 1.25;
 }
 
 .compare-chart-dot-a {
@@ -186,8 +255,13 @@
 .compare-chart-tag,
 .compare-chart-tick-label {
   fill: var(--navy);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 650;
+}
+
+.compare-chart-tick-label {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .compare-model h3,
@@ -226,9 +300,267 @@
   gap: 0.65rem;
 }
 
-@media (max-width: 720px) {
-  .compare-chart-grid {
-    grid-template-columns: 1fr;
+.compare-model-sheet {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.compare-model-sheet .compare-ab-grid > * {
+  padding: var(--compare-cell-pad);
+}
+
+.compare-model-sheet .ux-reset-compare-tiles,
+.compare-model-sheet h4 {
+  gap: 0;
+  margin: 0;
+}
+
+.compare-ab-head strong,
+.compare-ab-head .compare-col-kicker {
+  display: block;
+}
+
+.compare-ab-head > [data-slot="a"] .compare-col-kicker {
+  color: var(--teal-dark);
+}
+
+.compare-ab-head > [data-slot="b"] .compare-col-kicker {
+  color: var(--navy);
+}
+
+.compare-ab-county {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem 0.5rem;
+}
+
+.compare-ab-county .ux-reset-compare-tile-value {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.compare-model-row {
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-model-row:last-child {
+  border-bottom: 0;
+}
+
+.compare-ab-label {
+  min-width: 0;
+}
+
+.compare-selectors {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.compare-selectors > * {
+  padding: var(--compare-cell-pad);
+}
+
+.compare-select-title {
+  margin: 0;
+  color: var(--navy);
+  font-weight: 650;
+}
+
+.compare-select-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.compare-selectors .ux-reset-compare-slot {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ux-reset-compare > .ux-reset-compare-pair {
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.ux-reset-compare .ux-reset-compare-pinned {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 0;
+}
+
+.ux-reset-compare .ux-reset-compare-pinned-bar {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--space-5));
+  right: calc(-1 * var(--space-5));
+  height: 3rem;
+  box-sizing: border-box;
+  display: block;
+  padding: 0 var(--space-5);
+  border: 0;
+  border-radius: 0;
+  background: var(--background);
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+
+.ux-reset-compare-pinned-track {
+  height: 100%;
+  align-items: center;
+  background: var(--background);
+}
+
+.ux-reset-compare-pinned-track > * {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0.85rem;
+}
+
+.ux-reset-compare-pinned-bar > * {
+  min-width: 0;
+  padding: 0;
+}
+
+.ux-reset-compare-pinned-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.ux-reset-compare-pinned-track > [data-slot="a"] {
+  background: color-mix(in srgb, var(--teal) 12%, var(--background));
+}
+
+.ux-reset-compare-pinned-track > [data-slot="b"] {
+  background: color-mix(in srgb, var(--navy) 10%, var(--background));
+}
+
+.compare-ab-breakout {
+  padding: 0;
+}
+
+.compare-ab-panel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.compare-ab-panel > summary,
+.compare-ab-span-copy,
+.ux-reset-compare-sources.compare-ab-panel
+  > :not(.ux-reset-compare-sources-scroll) {
+  padding: var(--compare-cell-pad);
+}
+
+.compare-ab-panel > .compare-ab-grid > *,
+.compare-ab-panel > .compare-ab-table {
+  margin: 0;
+}
+
+.compare-model-sheet [data-testid="surveillance-intelligence-details"] {
+  margin-top: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ux-reset-compare .ux-reset-compare-vrow {
+  padding-inline: 0;
+}
+
+.ux-reset-compare .ux-reset-compare-vrow > header,
+.ux-reset-compare .ux-reset-compare-vrow > p {
+  padding-inline: 0.85rem;
+}
+
+.ux-reset-compare .ux-reset-compare-vbars {
+  grid-template-columns: var(--compare-columns);
+  gap: 0;
+}
+
+.ux-reset-compare
+  .ux-reset-compare-vbars
+  > .ux-reset-compare-vside:first-child {
+  grid-column: 2;
+  padding: var(--compare-cell-pad);
+}
+
+.ux-reset-compare
+  .ux-reset-compare-vbars
+  > .ux-reset-compare-vside:nth-child(2) {
+  grid-column: 3;
+  padding: var(--compare-cell-pad);
+  border-left: 0;
+  box-shadow: inset 1px 0 0 var(--border);
+}
+
+@media (max-width: 700px) {
+  .compare-ab-grid:not(.ux-reset-compare-pinned-track),
+  .ux-reset-compare .ux-reset-compare-vbars {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compare-chart {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compare-chart-svg {
+    max-width: 100%;
+  }
+
+  .compare-sheet-scroll :is(th, td)[data-slot="b"],
+  .compare-ab-table :is(th, td)[data-slot="b"],
+  .compare-ab-grid > [data-slot="b"],
+  .ux-reset-compare
+    .ux-reset-compare-vbars
+    > .ux-reset-compare-vside:nth-child(2) {
+    box-shadow: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .compare-ab-grid > [data-county-label]::before,
+  .compare-sheet-scroll td[data-county]::before,
+  .compare-ab-table td[data-county]::before {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .compare-ab-grid > [data-county-label]::before {
+    content: attr(data-county-label);
+  }
+
+  .compare-sheet-scroll td[data-county]::before,
+  .compare-ab-table td[data-county]::before {
+    content: attr(data-county);
+  }
+
+  .ux-reset-compare .ux-reset-compare-vbars > .ux-reset-compare-vside {
+    grid-column: auto;
+  }
+
+  .ux-reset-compare-pinned-track > [data-slot="b"] {
+    border-top: 0;
+    box-shadow: inset 1px 0 0 var(--border);
   }
 }
 

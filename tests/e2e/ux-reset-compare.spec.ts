@@ -23,12 +23,15 @@ async function replaceCountyFromKeyboard(
   query: string
 ) {
   const input = page.getByRole("combobox", { name: slotName });
-  await input.focus();
-  await page.keyboard.press("ControlOrMeta+A");
-  await page.keyboard.press("Backspace");
-  await page.keyboard.type(query, { delay: 20 });
-  const option = page.getByRole("option").first();
-  await expect(option).toContainText(query);
+  await input.scrollIntoViewIfNeeded();
+  await input.click();
+  await input.press("ControlOrMeta+A");
+  await input.press("Backspace");
+  await expect(input).toHaveValue("");
+  await input.pressSequentially(query, { delay: 20 });
+  await expect(input).toHaveValue(query);
+  const option = page.getByRole("option").filter({ hasText: query }).first();
+  await expect(option).toBeVisible({ timeout: 15_000 });
   await page.keyboard.press("Enter");
 }
 
@@ -232,9 +235,11 @@ test.describe("two-county Compare", () => {
     const header = page.locator(".compare-sheet-scroll thead th").first();
     await header.scrollIntoViewIfNeeded();
     await scroller.evaluate((node) => {
-      node.scrollTop += 420;
+      node.scrollTop += 900;
     });
-    const headerTop = await header.evaluate(
+    const pinned = page.locator(".ux-reset-compare-pinned-bar");
+    await expect(pinned).toBeVisible();
+    const headerTop = await pinned.evaluate(
       (node) => node.getBoundingClientRect().top
     );
     const scrollerTop = await scroller.evaluate(
@@ -348,24 +353,8 @@ test.describe("two-county Compare", () => {
       missing.locator(".ux-reset-compare-vlabel", { hasText: /^0/ })
     ).toHaveCount(0);
     await expect(page.getByTestId("compare-action")).toHaveCount(0);
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
-      "href",
-      /compare=08001(?:%2C|,)08013/
-    );
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveText(
-      "County evidence"
-    );
-    await expect(page.getByTestId("compare-investigate-08013")).toHaveText(
-      "County evidence"
-    );
-    await expect(page.getByTestId("compare-investigate-08001")).toHaveAttribute(
-      "aria-label",
-      "View county evidence for the first county"
-    );
-    await expect(page.getByTestId("compare-investigate-08013")).toHaveAttribute(
-      "aria-label",
-      "View county evidence for the second county"
-    );
+    await expect(page.getByTestId("compare-investigate-08001")).toHaveCount(0);
+    await expect(page.getByTestId("compare-investigate-08013")).toHaveCount(0);
     const incidence = page.getByTestId(
       "compare-profile-cell-incidence_floor-08013"
     );

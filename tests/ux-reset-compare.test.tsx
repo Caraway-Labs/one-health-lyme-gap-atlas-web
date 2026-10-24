@@ -619,24 +619,14 @@ describe("two-county aligned comparison", () => {
     const caseRequest = observationRequests.find((request) =>
       request.includes(COMPARE_CASES_MEASURE_ID)
     );
-    const investigate =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
+    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
     expect({
       action: screen.queryByTestId("compare-action"),
-      county: investigate.includes("county=08001"),
       left: caseRequest?.includes("08001"),
-      pair: investigate.includes("compare=08001%2C08013"),
-      path:
-        investigate.includes("/explore") &&
-        investigate.includes("mode=evidence"),
       right: caseRequest?.includes("08013"),
     }).toStrictEqual({
       action: null,
-      county: true,
       left: true,
-      pair: true,
-      path: true,
       right: true,
     });
   });
@@ -645,25 +635,8 @@ describe("two-county aligned comparison", () => {
     renderCompare(
       "?compare=08001,08013&scope=CO&dataset=alpha-2026&period=2023-01-01&metric=score"
     );
-    await screen.findByTestId("compare-investigate-08001");
-    const investigate =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
-    expect({
-      compare: investigate.includes("compare=08001%2C08013"),
-      county: investigate.includes("county=08001"),
-      dataset: investigate.includes("dataset=alpha-2026"),
-      metric: investigate.includes("metric="),
-      period: investigate.includes("period=2023-01-01"),
-      scope: investigate.includes("scope=CO"),
-    }).toStrictEqual({
-      compare: true,
-      county: true,
-      dataset: true,
-      metric: false,
-      period: true,
-      scope: true,
-    });
+    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
+    expect(pairFips()).toBe("08001,08013");
   });
 
   it("explains invalid and duplicate FIPS without inventing a second county", async () => {
@@ -706,17 +679,13 @@ describe("two-county aligned comparison", () => {
         )
       ).toBeTruthy();
     });
+    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
     expect({
       action: screen.queryByTestId("compare-action"),
       fips: screen.getByTestId("compare-workspace").dataset.fips,
-      pair: screen
-        .getByTestId("compare-investigate-08001")
-        .getAttribute("href")
-        ?.includes("compare=08001%2C36001"),
     }).toStrictEqual({
       action: null,
       fips: "08001,36001",
-      pair: true,
     });
   });
 
@@ -767,36 +736,27 @@ describe("two-county aligned comparison", () => {
       }
     });
     const sharedUrl = urlUpdates.at(-1) ?? "";
-    const investigate =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
     const explorer = shellHref("Atlas Explorer");
     const compare = shellHref("Compare");
+    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
     expect({
       compare: compare.includes("compare=08001%2C08013"),
       explorer: explorer.includes("compare=08001%2C08013"),
-      investigate: investigate.includes("compare=08001%2C08013"),
       shared: compareParam(sharedUrl),
     }).toStrictEqual({
       compare: true,
       explorer: true,
-      investigate: true,
       shared: "08001,08013",
     });
 
     selected.unmount();
     renderCompare(sharedUrl);
     await waitForPair("08001,08013");
-    const reloaded =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
     expect({
       fips: pairFips(),
-      investigate: reloaded.includes("compare=08001%2C08013"),
       stale: screen.getByTestId("compare-workspace").dataset.staleUrl,
     }).toStrictEqual({
       fips: "08001,08013",
-      investigate: true,
       stale: "false",
     });
   });
@@ -914,17 +874,11 @@ describe("two-county aligned comparison", () => {
         .querySelector('a[aria-label="Atlas Explorer"]')
         ?.getAttribute("href") ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
-    const pageHref =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
+    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
     expect({
-      pageDataset: pageHref.includes("dataset=alpha-2026"),
-      pagePair: pageHref.includes("compare=08001%2C08013"),
       sidebarDataset: sidebarHref.includes("dataset=alpha-2026"),
       sidebarPair: sidebarHref.includes("compare=08001%2C08013"),
     }).toStrictEqual({
-      pageDataset: true,
-      pagePair: true,
       sidebarDataset: true,
       sidebarPair: true,
     });
@@ -939,40 +893,29 @@ describe("two-county aligned comparison", () => {
     await waitForPair("08001,08013");
     const alert = await screen.findByRole("alert");
     expect(screen.queryByTestId("compare-action")).toBeNull();
-    const investigateHref =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
+    expect(screen.queryByTestId("compare-investigate-08001")).toBeNull();
     expect({
       alignment: screen.queryByTestId("compare-alignment"),
       catalogCalls: catalogRequests.length,
-      keepsContext: investigateHref.includes("compare=08001%2C08013"),
-      keepsPeriod: investigateHref.includes("period=2024-06-01"),
+      keepsContext: pairFips(),
       message: (alert.textContent ?? "").includes(
         "Governed measures could not be loaded."
       ),
     }).toStrictEqual({
       alignment: null,
       catalogCalls: 2,
-      keepsContext: true,
-      keepsPeriod: true,
+      keepsContext: "08001,08013",
       message: true,
     });
     catalogFailuresRemaining = 0;
     fireEvent.click(screen.getByTestId("compare-retry"));
     await screen.findByTestId("compare-alignment");
-    const recoveredHref =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
     expect({
       pair: pairFips(),
-      period: recoveredHref.includes("period=2024-06-01"),
       recovery: screen.getByTestId("compare-workspace").dataset.recovery,
-      samePair: recoveredHref.includes("compare=08001%2C08013"),
     }).toStrictEqual({
       pair: "08001,08013",
-      period: true,
       recovery: "ready",
-      samePair: true,
     });
   });
 
@@ -1132,18 +1075,7 @@ describe("two-county aligned comparison", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
     await flushCompare(() => comparisonReady());
-    const href =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
-    expect({
-      pair: pairFips(),
-      period: href.includes("period=2024-06-01"),
-      release: href.includes("dataset=alpha-2026"),
-    }).toStrictEqual({
-      pair: "08001,08013",
-      period: true,
-      release: true,
-    });
+    expect(pairFips()).toBe("08001,08013");
   });
 
   it("keeps a catalog Retry-After when remount cancels the wait", async () => {
@@ -1188,18 +1120,7 @@ describe("two-county aligned comparison", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
     await flushCompare(() => comparisonReady());
-    const href =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
-    expect({
-      pair: pairFips(),
-      period: href.includes("period=2024-06-01"),
-      release: href.includes("dataset=alpha-2026"),
-    }).toStrictEqual({
-      pair: "08001,08013",
-      period: true,
-      release: true,
-    });
+    expect(pairFips()).toBe("08001,08013");
   });
 
   it("waits out Retry-After before an automatic catalog retry", async () => {
@@ -1226,19 +1147,12 @@ describe("two-county aligned comparison", () => {
       await vi.advanceTimersByTimeAsync(59_000);
     });
     await flushCompare(() => comparisonReady());
-    const href =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
     expect({
       afterOneSecond,
       pair: pairFips(),
-      period: href.includes("period=2024-06-01"),
-      release: href.includes("dataset=alpha-2026"),
     }).toStrictEqual({
       afterOneSecond: 1,
       pair: "08001,08013",
-      period: true,
-      release: true,
     });
   });
 
@@ -1527,18 +1441,15 @@ describe("two-county aligned comparison", () => {
     const edited =
       screen.getByTestId("compare-workspace").dataset.explorerReturn ?? "";
     expect(screen.queryByTestId("compare-action")).toBeNull();
-    const investigateHref =
-      screen.getByTestId("compare-investigate-08001").getAttribute("href") ??
-      "";
     expect({
-      actionPair: investigateHref.includes("08013"),
       county: edited.includes("county=08001"),
       editedPair: edited.includes("08013"),
+      fips: screen.getByTestId("compare-workspace").dataset.fips,
       returnTarget: screen.getByTestId("compare-workspace").dataset.return,
     }).toStrictEqual({
-      actionPair: true,
       county: true,
       editedPair: true,
+      fips: "08001,08013",
       returnTarget: "review",
     });
 
@@ -1648,7 +1559,7 @@ describe("two-county aligned comparison", () => {
         ask.getAttribute("href")?.includes("/askatlas") &&
         !ask.getAttribute("href")?.includes("page_ref=")
       ),
-      first: screen.getByTestId("compare-investigate-08001").textContent,
+      evidence: screen.queryByRole("link", { name: /county evidence/i }),
       floor: floor.textContent?.includes("12"),
       missing: missing.dataset.observation,
       missingDigits: /\d/.test(
@@ -1657,15 +1568,13 @@ describe("two-county aligned comparison", () => {
       period: screen
         .getByTestId("compare-profile-comparability")
         .textContent?.includes("1999-01-01"),
-      second: screen.getByTestId("compare-investigate-08013").textContent,
     }).toStrictEqual({
       ask: true,
-      first: "County evidence",
+      evidence: null,
       floor: true,
       missing: "missing",
       missingDigits: false,
       period: true,
-      second: "County evidence",
     });
   });
 

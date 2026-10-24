@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { CompareAbColGroup } from "@/features/ux-reset/compare/compare-ab-columns";
 import type { CompareWithholdReason } from "@/features/ux-reset/compare/compare-alignment";
 import { CompareCommunityChart } from "@/features/ux-reset/compare/compare-community-chart";
 import { compareReaderState } from "@/features/ux-reset/compare/compare-compact-evidence";
@@ -297,7 +298,7 @@ function DataRow({
           <span className="compare-rucc-note">{copy.note}</span>
         ) : null}
       </th>
-      <td data-slot="a">
+      <td data-county={countyColumnLabel(counties[0])} data-slot="a">
         <CellValue
           categorical={categorical}
           county={counties[0]}
@@ -305,7 +306,7 @@ function DataRow({
           side={row.left}
         />
       </td>
-      <td data-slot="b">
+      <td data-county={countyColumnLabel(counties[1])} data-slot="b">
         <CellValue
           categorical={categorical}
           county={counties[1]}
@@ -423,12 +424,17 @@ function CommunityChartBlock({
     kind === "percentile" ? 100 : uninsuredAxisMax([left.number, right.number]);
   const ticks =
     kind === "percentile"
-      ? [0, 20, 40, 60, 80, 100]
+      ? [0, 50, 100]
       : [0, max / 2, max].filter(
           (tick, index, all) => all.indexOf(tick) === index
         );
   return (
     <CompareCommunityChart
+      caption={
+        kind === "percentile"
+          ? "National county percentile"
+          : "Percent of the civilian noninstitutionalized population"
+      }
       left={{ name: left.name, shown: left.shown, value: left.number }}
       max={max}
       meaning={meaning}
@@ -505,6 +511,7 @@ function ExtraRows({
             }
             return (
               <td
+                data-county={countyColumnLabel(county)}
                 data-slot={county.letter === "A" ? "a" : "b"}
                 key={county.letter}
               >
@@ -543,6 +550,10 @@ function ExtraRows({
   );
 }
 
+function countyColumnLabel(county: CompareCountyIdentity): string {
+  return `County ${county.letter}, ${county.label}`;
+}
+
 function rowsById(rows: readonly CompareVisualRow[]) {
   return new Map(rows.map((row) => [row.id, row]));
 }
@@ -565,36 +576,47 @@ function StateContext({
     row.right.kind === "value" &&
     row.left.text === row.right.text;
   return (
-    <details className="compare-disclosure" data-testid="compare-state-context">
+    <details
+      className="compare-disclosure compare-ab-panel"
+      data-testid="compare-state-context"
+    >
       <summary>State reporting context</summary>
-      <p>{STATE_SEPARATION}</p>
-      <p>
-        <strong>State records without a county assignment</strong>
-      </p>
-      <p className="compare-cell-meta">
-        These records cannot be assigned to either selected county. Do not add
-        them to a county total or read them as a county difference.
-      </p>
-      {sameState && sameValue ? (
+      <div className="compare-ab-span-copy">
+        <p>{STATE_SEPARATION}</p>
         <p>
+          <strong>State records without a county assignment</strong>
+        </p>
+        <p className="compare-cell-meta">
+          These records cannot be assigned to either selected county. Do not add
+          them to a county total or read them as a county difference.
+        </p>
+      </div>
+      {sameState && sameValue ? (
+        <p className="compare-ab-span-copy">
           <strong>{counties[0].stateLabel}</strong>
           {": "}
           {comparePublicStatus(row.left, false).label}
         </p>
       ) : (
-        <ul>
+        <div className="compare-ab-grid">
+          <div className="compare-ab-label" />
           {counties.map((county, index) => {
             const side = index === 0 ? row.left : row.right;
             const place = county.stateLabel ?? county.label;
             return (
-              <li key={county.letter}>
+              <div
+                data-county={countyColumnLabel(county)}
+                data-county-label={`County ${county.letter}`}
+                data-slot={county.letter === "A" ? "a" : "b"}
+                key={county.letter}
+              >
                 <strong>{place}</strong>
                 {": "}
                 {comparePublicStatus(side, false).label}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </details>
   );
@@ -615,18 +637,25 @@ function ScoreCalculation({
   ] as const;
   return (
     <details
-      className="compare-disclosure"
+      className="compare-disclosure compare-ab-panel"
       data-testid="compare-score-calculation"
     >
       <summary>How the score is calculated</summary>
-      <p>{SCORE_METHOD}</p>
-      <table>
+      <div className="compare-ab-span-copy">
+        <p>{SCORE_METHOD}</p>
+      </div>
+      <table className="compare-ab-table">
         <caption className="sr-only">Published score components</caption>
+        <CompareAbColGroup />
         <thead>
           <tr>
             <th scope="col">Component</th>
-            <th scope="col">{`County A, ${countyName(counties[0])}`}</th>
-            <th scope="col">{`County B, ${countyName(counties[1])}`}</th>
+            <th data-slot="a" scope="col">
+              {`County A, ${countyName(counties[0])}`}
+            </th>
+            <th data-slot="b" scope="col">
+              {`County B, ${countyName(counties[1])}`}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -634,36 +663,58 @@ function ScoreCalculation({
             <tr key={component.id}>
               <th scope="row">{component.label}</th>
               {[component.value, sides[1].components[index]?.value].map(
-                (value, sideIndex) => (
-                  <td key={counties[sideIndex]?.letter ?? sideIndex}>
-                    {value === null
-                      ? "Not returned"
-                      : value.toLocaleString("en-US", {
-                          maximumFractionDigits: 1,
-                        })}
-                  </td>
-                )
+                (value, sideIndex) => {
+                  const county = counties[sideIndex];
+                  return (
+                    <td
+                      data-county={
+                        county ? countyColumnLabel(county) : undefined
+                      }
+                      data-slot={sideIndex === 0 ? "a" : "b"}
+                      key={county?.letter ?? sideIndex}
+                    >
+                      {value === null
+                        ? "Not returned"
+                        : value.toLocaleString("en-US", {
+                            maximumFractionDigits: 1,
+                          })}
+                    </td>
+                  );
+                }
               )}
             </tr>
           ))}
         </tbody>
       </table>
-      {sides.map((side, index) =>
-        side.reasons.length > 0 ? (
-          <div key={counties[index]?.letter ?? index}>
-            <p>
-              <strong>{`Why this label, ${countyName(counties[index] ?? counties[0])}`}</strong>
-            </p>
-            <ul>
-              {side.reasons.map((reason) => (
-                <li key={reason.label}>
-                  <strong>{reason.label}</strong> {reason.text}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null
-      )}
+      <div className="compare-ab-grid">
+        <div className="compare-ab-label" />
+        {sides.map((side, index) => {
+          const county = counties[index];
+          return (
+            <div
+              data-county={county ? countyColumnLabel(county) : undefined}
+              data-county-label={county ? `County ${county.letter}` : undefined}
+              data-slot={index === 0 ? "a" : "b"}
+              key={county?.letter ?? index}
+            >
+              {side.reasons.length > 0 ? (
+                <>
+                  <p>
+                    <strong>{`Why this label, ${countyName(county ?? counties[0])}`}</strong>
+                  </p>
+                  <ul>
+                    {side.reasons.map((reason) => (
+                      <li key={reason.label}>
+                        <strong>{reason.label}</strong> {reason.text}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </details>
   );
 }
@@ -677,23 +728,26 @@ function TechnicalDetails({
 }) {
   return (
     <details
-      className="compare-disclosure"
+      className="compare-disclosure compare-ab-panel"
       data-testid="compare-technical-details"
     >
       <summary>Technical details</summary>
-      <ul>
-        {counties.map((county) => (
-          <li key={county.letter}>
-            {`County ${county.letter} FIPS ${county.fips}`}
-            {county.stateLabel ? `, ${county.stateLabel}` : ""}
-          </li>
-        ))}
-      </ul>
+      <div className="compare-ab-span-copy">
+        <ul>
+          {counties.map((county) => (
+            <li key={county.letter}>
+              {`County ${county.letter} FIPS ${county.fips}`}
+              {county.stateLabel ? `, ${county.stateLabel}` : ""}
+            </li>
+          ))}
+        </ul>
+      </div>
       {rows.length > 0 ? (
-        <table>
+        <table className="compare-ab-table">
           <caption className="sr-only">
             Technical fields excluded from the comparison rows
           </caption>
+          <CompareAbColGroup />
           <tbody>
             <ExtraRows counties={counties} rows={rows} />
           </tbody>
@@ -789,10 +843,11 @@ export function CompareAlignedSheet({
         </p>
       ) : null}
       <div className="compare-sheet-scroll">
-        <table>
+        <table className="compare-ab-table">
           <caption className="sr-only">
             {`County data for ${countyName(counties[0])} and ${countyName(counties[1])}`}
           </caption>
+          <CompareAbColGroup />
           <thead>
             <tr>
               <th scope="col">Measure</th>
@@ -827,13 +882,14 @@ export function CompareAlignedSheet({
             {human.length > 0 ? <NoteBand>{HUMAN_NOTE}</NoteBand> : null}
             {grouped.human.length > 0 ? (
               <tr>
-                <td colSpan={3}>
+                <td className="compare-ab-breakout" colSpan={3}>
                   <details
                     aria-label="Additional human-source details"
-                    className="compare-disclosure"
+                    className="compare-disclosure compare-ab-panel"
                   >
                     <summary>Additional human-source details</summary>
-                    <table>
+                    <table className="compare-ab-table">
+                      <CompareAbColGroup />
                       <tbody>
                         <ExtraRows counties={counties} rows={grouped.human} />
                       </tbody>
@@ -851,18 +907,19 @@ export function CompareAlignedSheet({
             {ticks.length > 0 ? <NoteBand>{TICK_NOTE}</NoteBand> : null}
             {tickAggregate || grouped.tick.length > 0 ? (
               <tr>
-                <td colSpan={3}>
+                <td className="compare-ab-breakout" colSpan={3}>
                   <details
                     aria-label="Additional tick-source details"
-                    className="compare-disclosure"
+                    className="compare-disclosure compare-ab-panel"
                     data-testid="compare-tick-details"
                   >
                     <summary>Additional tick-source details</summary>
-                    <p className="compare-cell-meta">
+                    <p className="compare-ab-span-copy compare-cell-meta">
                       These rows stay separate when the source, period, or
                       definition is not the same as the status above.
                     </p>
-                    <table>
+                    <table className="compare-ab-table">
+                      <CompareAbColGroup />
                       <tbody>
                         {tickAggregate ? (
                           <DataRow
@@ -892,13 +949,14 @@ export function CompareAlignedSheet({
             <CommunityCharts counties={counties} rows={community} />
             {grouped.community.length > 0 ? (
               <tr>
-                <td colSpan={3}>
+                <td className="compare-ab-breakout" colSpan={3}>
                   <details
                     aria-label="Additional community-source details"
-                    className="compare-disclosure"
+                    className="compare-disclosure compare-ab-panel"
                   >
                     <summary>Additional community-source details</summary>
-                    <table>
+                    <table className="compare-ab-table">
+                      <CompareAbColGroup />
                       <tbody>
                         <ExtraRows
                           counties={counties}
@@ -945,7 +1003,8 @@ export function CompareAlignedSheet({
             {grouped.other.length > 0 ? (
               <div data-testid="compare-group-additional">
                 <p>Additional published observations</p>
-                <table>
+                <table className="compare-ab-table">
+                  <CompareAbColGroup />
                   <tbody>
                     <ExtraRows counties={counties} rows={grouped.other} />
                   </tbody>
