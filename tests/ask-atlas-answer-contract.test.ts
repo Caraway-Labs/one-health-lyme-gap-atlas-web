@@ -4,8 +4,16 @@ import type { KnowledgeChatResponse } from "@/generated/models";
 import {
   acceptAskAtlasPayload,
   classifyKnowledgeChatResponse,
+  LIMITED_EVIDENCE_DETAIL,
+  LIMITED_EVIDENCE_LABEL,
+  LIMITED_EVIDENCE_SUMMARY,
   LITERATURE_SOURCE_LABEL,
 } from "@/lib/ask-atlas-answer-contract";
+
+import {
+  orphanCitationResponse,
+  reducedClaimResponse,
+} from "./fixtures/reduced-claim-response";
 
 function literatureResponse(
   overrides: Partial<KnowledgeChatResponse> = {}
@@ -133,6 +141,41 @@ describe("Ask Atlas answer contract", () => {
     expect(classifyKnowledgeChatResponse(accepted.response).kind).toBe(
       "safety_refusal"
     );
+  });
+
+  it("accepts a reduced-claim limited answer and scopes the evidence copy", () => {
+    const accepted = acceptAskAtlasPayload(reducedClaimResponse());
+    expect(accepted.ok).toBeTruthy();
+    if (!accepted.ok) {
+      return;
+    }
+    const decision = classifyKnowledgeChatResponse(accepted.response);
+    expect(decision.kind).toBe("grounded");
+    if (decision.kind !== "grounded") {
+      return;
+    }
+    expect({
+      citations: decision.citations.map((citation) => citation.citation_id),
+      detail: decision.evidenceDetail,
+      label: decision.evidenceLabel,
+      state: decision.evidenceState,
+      summary: decision.evidenceSummary,
+    }).toStrictEqual({
+      citations: ["cit-kept"],
+      detail: LIMITED_EVIDENCE_DETAIL,
+      label: LIMITED_EVIDENCE_LABEL,
+      state: "limited",
+      summary: LIMITED_EVIDENCE_SUMMARY,
+    });
+    expect(decision.evidenceDetail).not.toMatch(/claims were withheld/i);
+    expect(decision.evidenceSummary).not.toBe("Limited");
+  });
+
+  it("rejects a citation that has no matching claim", () => {
+    expect(acceptAskAtlasPayload(orphanCitationResponse())).toStrictEqual({
+      ok: false,
+      reason: "mismatched_source",
+    });
   });
 
   it("fails closed when an answered response has no citation", () => {
