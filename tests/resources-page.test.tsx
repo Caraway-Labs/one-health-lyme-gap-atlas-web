@@ -18,6 +18,7 @@ import {
   STATE_RESOURCES,
   resourcesPageHref,
   selectedStateFromQuery,
+  statesInAlphabeticalOrder,
 } from "@/lib/resources/catalog";
 import { REGIONAL_CENTER_LOGOS } from "@/lib/resources/regional-center-logos";
 import { RESOURCE_STATE_PATHS } from "@/lib/resources/state-map-paths";
@@ -140,14 +141,43 @@ describe("Resources page", () => {
     ).toBeVisible();
   });
 
-  it("places the official CDC logo beside the guidance heading", () => {
+  it("frames the state directory as exploring other states", () => {
     render(<ResourcesPage />);
 
     expect(
-      screen.getByRole("img", {
-        name: "Centers for Disease Control and Prevention",
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Explore resources from other states",
       })
-    ).toHaveAttribute("src", "/resources/cdc-logo.svg");
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "See how states approach Lyme disease surveillance, prevention, and education. Find materials and ideas that may help your program."
+      )
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Find your state's resources" })
+    ).toBeNull();
+  });
+
+  it("places the official CDC logo to the right of the guidance heading", () => {
+    render(<ResourcesPage />);
+    const heading = screen.getByRole("heading", {
+      name: "CDC guidance & tools",
+    });
+    const logo = screen.getByRole("img", {
+      name: "Centers for Disease Control and Prevention",
+    });
+
+    expect(logo).toHaveAttribute("src", "/resources/cdc-logo.svg");
+    expect(heading.compareDocumentPosition(logo)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(
+      screen.getByText(
+        "Surveillance, interpretation, and prevention references."
+      )
+    ).toBeVisible();
   });
 
   it("initializes the selector from a state query", () => {
@@ -195,35 +225,82 @@ describe("Resources page", () => {
     const directory = screen
       .getByText("Browse all 50 states A–Z")
       .closest("details") as HTMLElement;
-    expect(within(directory).getAllByRole("button")).toHaveLength(50);
-    fireEvent.click(within(directory).getByRole("button", { name: "Alabama" }));
-    expect(replace).toHaveBeenCalledWith(
-      "/resources?state=AL#state-resources",
-      { scroll: false }
+    expect(within(directory).queryByRole("button")).toBeNull();
+    expect(within(directory).getAllByRole("link")).toHaveLength(50);
+  });
+
+  it("opens each A–Z state on the same resource URL as Visit state resources", () => {
+    render(<ResourcesPage />);
+    fireEvent.click(screen.getByText("Browse all 50 states A–Z"));
+    const directory = screen
+      .getByText("Browse all 50 states A–Z")
+      .closest("details") as HTMLElement;
+    const links = within(directory).getAllByRole("link");
+
+    expect(
+      links.map((link) => ({
+        href: link.getAttribute("href"),
+        name: link.textContent,
+        rel: link.getAttribute("rel"),
+        tabindex: link.getAttribute("tabindex"),
+        target: link.getAttribute("target"),
+      }))
+    ).toStrictEqual(
+      statesInAlphabeticalOrder().map((state) => ({
+        href: selectedStateFromQuery(state.code)?.url,
+        name: `${state.name} (opens in a new tab)`,
+        rel: "noopener noreferrer",
+        tabindex: null,
+        target: "_blank",
+      }))
     );
   });
 
-  it("filters regional centers without dropping their links", () => {
+  it("opens Idaho resources while Colorado stays selected above", () => {
+    searchParams = new URLSearchParams("state=CO");
     render(<ResourcesPage />);
+    fireEvent.click(screen.getByText("Browse all 50 states A–Z"));
+    const directory = screen
+      .getByText("Browse all 50 states A–Z")
+      .closest("details") as HTMLElement;
+    const coloradoVisit = screen.getByRole("link", {
+      name: /Visit state resources/,
+    });
+    const idaho = within(directory).getByRole("link", {
+      name: /^Idaho\b/,
+    });
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Centers of Excellence" })
+    expect(coloradoVisit).toHaveAttribute(
+      "href",
+      selectedStateFromQuery("CO")?.url
     );
+    expect(idaho).toHaveAttribute("href", selectedStateFromQuery("ID")?.url);
+    expect(idaho).toHaveAttribute("target", "_blank");
+    expect(idaho).toHaveAttribute("rel", "noopener noreferrer");
+    expect(
+      within(directory).getByRole("link", { name: /^Colorado\b/ })
+    ).toHaveAttribute("aria-current", "true");
+  });
+
+  it("shows every regional center without filter buttons", () => {
+    render(<ResourcesPage />);
     const regional = screen.getByRole("region", {
       name: "Regional expertise & training",
     });
-    expect(within(regional).getAllByRole("link")).toHaveLength(4);
+
     expect(
-      within(regional).getByRole("heading", { name: "NewVec" })
-    ).toBeVisible();
-    expect(within(regional).queryByRole("link", { name: /NEVBD/ })).toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Training & Evaluation" })
+      within(regional).queryByRole("button", { name: "All centers" })
+    ).toBeNull();
+    expect(
+      within(regional).queryByRole("button", { name: "Centers of Excellence" })
+    ).toBeNull();
+    expect(within(regional).getAllByRole("link")).toHaveLength(9);
+    expect(within(regional).getAllByText("Center of Excellence")).toHaveLength(
+      4
     );
-    expect(within(regional).getAllByRole("link")).toHaveLength(5);
-    expect(
-      within(regional).getByRole("link", { name: /NEVBD/ })
-    ).toHaveAttribute("href", "https://www.neregionalvectorcenter.com/");
+    expect(within(regional).getAllByText("Training & Evaluation")).toHaveLength(
+      5
+    );
   });
 
   it("places a verified logo beside each center name without hiding the name", () => {
@@ -268,18 +345,5 @@ describe("Resources page", () => {
         name: "Tropical Islands Training & Evaluation Center",
       })
     ).toBeVisible();
-  });
-
-  it("returns every center from the all-centers filter", () => {
-    render(<ResourcesPage />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Training & Evaluation" })
-    );
-    fireEvent.click(screen.getByRole("button", { name: "All centers" }));
-    expect(
-      within(
-        screen.getByRole("region", { name: "Regional expertise & training" })
-      ).getAllByRole("link")
-    ).toHaveLength(9);
   });
 });

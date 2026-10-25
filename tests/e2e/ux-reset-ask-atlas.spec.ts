@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+import { matrixChatResponse } from "../fixtures/ask-atlas-outcome-matrix";
 import { compareObservation } from "../fixtures/compare-api-fixtures";
 import {
   EXPLORE_CASES_MEASURE_ID,
@@ -27,29 +28,30 @@ const QUESTION = "How do reviewed studies describe tick exposure?";
 
 function chatResponse(answer: string, requestId: string) {
   return {
-    answer,
-    assistant_policy_version: "test-v1",
-    citations: [
-      {
-        citation_id: "p1",
-        claim_ids: ["c1"],
-        corpus_rules_version: "secret-version",
-        passage_ids: ["passage-1"],
-        pmcid: "PMC123",
-        pmid: "12345",
-        pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
-        section_labels: ["Discussion"],
-        title: "Source paper",
-      },
-    ],
-    claims: [{ citation_ids: ["p1"], claim_id: "c1", text: answer }],
-    configuration_version: "test-v1",
-    conversation_id: requestId,
+    ...matrixChatResponse({
+      answer,
+      assistant_policy_version: "test-v1",
+      citations: [
+        {
+          citation_id: "p1",
+          claim_ids: ["c1"],
+          corpus_rules_version: "secret-version",
+          passage_ids: ["passage-1"],
+          pmcid: "PMC123",
+          pmid: "12345",
+          pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+          section_labels: ["Discussion"],
+          title: "Source paper",
+        },
+      ],
+      claims: [{ citation_ids: ["p1"], claim_id: "c1", text: answer }],
+      configuration_version: "test-v1",
+      conversation_id: requestId,
+      evidence_state: "limited",
+      request_id: requestId,
+      status: "answered",
+    }),
     conversation_token: "must-not-persist",
-    evidence_state: "limited",
-    request_id: requestId,
-    source_used: "literature_evidence",
-    status: "answered",
   };
 }
 

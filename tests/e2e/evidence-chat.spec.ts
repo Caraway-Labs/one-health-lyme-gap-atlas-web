@@ -1,44 +1,47 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import type { KnowledgeChatResponse } from "@/generated/models";
+
+import { matrixChatResponse } from "../fixtures/ask-atlas-outcome-matrix";
 import { releaseViewportRuns } from "./release-phone-viewport";
 
 function response(
-  status: string,
-  evidence_state: string,
+  status: KnowledgeChatResponse["status"],
+  evidenceState: KnowledgeChatResponse["evidence_state"],
   answer: string,
   id: number
 ) {
+  const answered = status === "answered";
   return {
-    request_id: `request-${id}`,
-    conversation_id: `conversation-${id}`,
-    conversation_token: "must-not-persist",
-    configuration_version: "test-v1",
-    assistant_policy_version: "test-v1",
-    status,
-    answer,
-    evidence_state,
-    source_used: "literature_evidence",
-    claims:
-      status === "answered"
-        ? [{ claim_id: "c1", text: answer, citation_ids: ["p1"] }]
-        : [],
-    citations:
-      status === "answered"
+    ...matrixChatResponse({
+      answer,
+      assistant_policy_version: "test-v1",
+      citations: answered
         ? [
             {
               citation_id: "p1",
-              pmid: "12345",
-              title: "Source paper",
-              pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
               claim_ids: ["c1"],
+              corpus_rules_version: "secret-version",
               passage_ids: ["passage-1"],
               pmcid: "PMC123",
+              pmid: "12345",
+              pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
               section_labels: ["Discussion"],
-              corpus_rules_version: "secret-version",
+              title: "Source paper",
             },
           ]
         : [],
+      claims: answered
+        ? [{ citation_ids: ["p1"], claim_id: "c1", text: answer }]
+        : [],
+      configuration_version: "test-v1",
+      conversation_id: `conversation-${id}`,
+      evidence_state: evidenceState,
+      request_id: `request-${id}`,
+      status,
+    }),
+    conversation_token: "must-not-persist",
   };
 }
 

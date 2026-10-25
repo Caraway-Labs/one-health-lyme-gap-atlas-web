@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
+import { matrixChatResponse } from "../fixtures/ask-atlas-outcome-matrix";
 import {
   EXPLORE_CASES_MEASURE_ID,
   exploreGeometryFixture,
@@ -15,27 +16,28 @@ const WORKSPACE_URL =
 
 function literatureAnswer(answer: string, requestId: string) {
   return {
-    answer,
-    assistant_policy_version: "test-v1",
-    citations: [
-      {
-        citation_id: "c1",
-        claim_ids: ["claim-1"],
-        passage_ids: ["passage-1"],
-        pmid: "12345",
-        pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
-        source_label: "Reported corpus",
-        title: "Source paper",
-      },
-    ],
-    claims: [{ citation_ids: ["c1"], claim_id: "claim-1", text: answer }],
-    configuration_version: "test-v1",
-    conversation_id: "conversation-1",
+    ...matrixChatResponse({
+      answer,
+      assistant_policy_version: "test-v1",
+      citations: [
+        {
+          citation_id: "c1",
+          claim_ids: ["claim-1"],
+          passage_ids: ["passage-1"],
+          pmid: "12345",
+          pubmed_url: "https://pubmed.ncbi.nlm.nih.gov/12345/",
+          source_label: "Reported corpus",
+          title: "Source paper",
+        },
+      ],
+      claims: [{ citation_ids: ["c1"], claim_id: "claim-1", text: answer }],
+      configuration_version: "test-v1",
+      conversation_id: "conversation-1",
+      evidence_state: "limited",
+      request_id: requestId,
+      status: "answered",
+    }),
     conversation_token: "must-not-persist",
-    evidence_state: "limited",
-    request_id: requestId,
-    source_used: "literature_evidence",
-    status: "answered",
   };
 }
 
@@ -80,7 +82,11 @@ function chatBody(message: string, requestId: string): unknown {
     }
     case "Mismatched source question": {
       const payload = literatureAnswer("Mismatched source answer.", requestId);
-      payload.citations[0].claim_ids = ["other-claim"];
+      const citation = payload.citations?.[0];
+      if (!citation) {
+        throw new Error("Literature fixture is missing its citation");
+      }
+      citation.claim_ids = ["other-claim"];
       return payload;
     }
     case "Partial question": {

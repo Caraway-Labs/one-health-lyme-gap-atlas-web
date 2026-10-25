@@ -407,7 +407,7 @@ describe("front porch view", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
     fireEvent.click(
-      screen.getByRole("button", { name: "Keep optional analytics off" })
+      screen.getByRole("button", { name: "Turn off optional analytics" })
     );
     fireEvent.click(
       screen.getByRole("button", { name: "Allow optional analytics" })

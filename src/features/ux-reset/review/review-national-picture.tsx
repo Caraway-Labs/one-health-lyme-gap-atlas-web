@@ -791,27 +791,29 @@ export function ReviewNationalPicture({
         </Card>
       </div>
       <div className="ux-reset-explorer-preview">
-        {selectedIdentity && handoff ? (
-          <ReviewPublishedCountyPreview
-            compareHref={handoff.compareHref}
-            county={selectedIdentity}
-            release={tierRelease}
-            releaseId={releaseId}
-            onOpen={markReviewReturnFocus}
-          />
-        ) : (
-          <>
-            <p className="type-body" data-testid="explorer-preview-empty">
-              No county is selected. Choose one from the list or the map.
-            </p>
-            <DownloadCountyPdfButton
-              countyName=""
-              fips=""
-              releaseId=""
-              stateCode=""
+        <div className="ux-reset-explorer-column-scroll">
+          {selectedIdentity && handoff ? (
+            <ReviewPublishedCountyPreview
+              compareHref={handoff.compareHref}
+              county={selectedIdentity}
+              release={tierRelease}
+              releaseId={releaseId}
+              onOpen={markReviewReturnFocus}
             />
-          </>
-        )}
+          ) : (
+            <>
+              <p className="type-body" data-testid="explorer-preview-empty">
+                No county is selected. Choose one from the list or the map.
+              </p>
+              <DownloadCountyPdfButton
+                countyName=""
+                fips=""
+                releaseId=""
+                stateCode=""
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

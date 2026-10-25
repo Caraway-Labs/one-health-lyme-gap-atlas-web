@@ -13,10 +13,19 @@ import {
 describe("analytics consent", () => {
   beforeEach(() => localStorage.clear());
 
-  it("keeps optional analytics off until an explicit stored choice", () => {
+  it("treats a missing preference as default-on when storage works", () => {
     expect(readAnalyticsPreference(localStorage)).toBe("not-decided");
     expect(
       analyticsMayStart({ consent: "not-decided", doNotTrack: false })
+    ).toBeTruthy();
+    expect(
+      analyticsMayStart({ consent: "denied", doNotTrack: false })
+    ).toBeFalsy();
+    expect(
+      analyticsMayStart({
+        consent: "storage-unavailable",
+        doNotTrack: false,
+      })
     ).toBeFalsy();
     expect(localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).toBeNull();
   });
@@ -38,7 +47,7 @@ describe("analytics consent", () => {
     });
   });
 
-  it("removes expired or malformed choices and continues to deny by default", () => {
+  it("removes expired or malformed choices and returns to the default-on path", () => {
     localStorage.setItem(
       ANALYTICS_PREFERENCE_KEY,
       JSON.stringify({
@@ -58,6 +67,9 @@ describe("analytics consent", () => {
 
     localStorage.setItem(ANALYTICS_PREFERENCE_KEY, "not json");
     expect(readAnalyticsPreference(localStorage)).toBe("not-decided");
+    expect(
+      analyticsMayStart({ consent: "not-decided", doNotTrack: false })
+    ).toBeTruthy();
     expect(localStorage.getItem(ANALYTICS_PREFERENCE_KEY)).toBeNull();
   });
 
@@ -85,6 +97,9 @@ describe("analytics consent", () => {
     expect(honorsDoNotTrack({ doNotTrack: "1" } as Navigator)).toBeTruthy();
     expect(
       analyticsMayStart({ consent: "granted", doNotTrack: true })
+    ).toBeFalsy();
+    expect(
+      analyticsMayStart({ consent: "not-decided", doNotTrack: true })
     ).toBeFalsy();
   });
 });
