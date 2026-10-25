@@ -8,9 +8,59 @@ type ChartPoint = {
   value: number | null;
 };
 
+const VIEW_WIDTH = 640;
+const VIEW_HEIGHT = 104;
+const PLOT_LEFT = 52;
+const PLOT_WIDTH = 536;
+const AXIS_Y = 58;
+const MARKER_RADIUS = 12;
+const LABEL_GAP = 8;
+const MARKER_STACK_OFFSET = MARKER_RADIUS + 2;
+
+type PlacedPoint = {
+  letter: "A" | "B";
+  point: ChartPoint;
+  tone: "a" | "b";
+  position: number;
+};
+
+export function compareChartPlotX(position: number): number {
+  return PLOT_LEFT + (position / 100) * PLOT_WIDTH;
+}
+
+export function compareChartMarkerLayout(placed: readonly PlacedPoint[]) {
+  const samePosition =
+    placed.length === 2 && placed[0]?.position === placed[1]?.position;
+  const crowded =
+    placed.length === 2 &&
+    Math.abs((placed[0]?.position ?? 0) - (placed[1]?.position ?? 0)) < 16;
+
+  return placed.map((entry) => {
+    const x = compareChartPlotX(entry.position);
+    const stackVertically = samePosition;
+    const markerY =
+      stackVertically && entry.letter === "A"
+        ? AXIS_Y - MARKER_STACK_OFFSET
+        : stackVertically && entry.letter === "B"
+          ? AXIS_Y + MARKER_STACK_OFFSET
+          : AXIS_Y;
+    const defaultLabelY = markerY - MARKER_RADIUS - LABEL_GAP;
+    const valueLabelY =
+      entry.letter === "B" && crowded && !samePosition
+        ? defaultLabelY - 16
+        : defaultLabelY;
+    return {
+      ...entry,
+      markerY,
+      valueLabelY,
+      x,
+    };
+  });
+}
+
 /**
- * Two labeled dots on one fixed axis.
- * County A is teal and County B is navy. The letters are also in the text.
+ * Two labeled markers on one fixed axis.
+ * County A is teal and County B is navy, with A/B inside each marker.
  */
 export function CompareCommunityChart({
   caption,
@@ -36,9 +86,9 @@ export function CompareCommunityChart({
   unit: string;
 }) {
   const points = [
-    { letter: "A", point: left, tone: "a" },
-    { letter: "B", point: right, tone: "b" },
-  ] as const;
+    { letter: "A" as const, point: left, tone: "a" as const },
+    { letter: "B" as const, point: right, tone: "b" as const },
+  ];
   const placed = points.flatMap((entry) => {
     if (entry.point.value === null) {
       return [];
@@ -48,10 +98,7 @@ export function CompareCommunityChart({
   });
   const samePosition =
     placed.length === 2 && placed[0]?.position === placed[1]?.position;
-  const crowded =
-    placed.length === 2 &&
-    Math.abs((placed[0]?.position ?? 0) - (placed[1]?.position ?? 0)) < 16;
-  const plotX = (position: number) => 36 + (position / 100) * 568;
+  const layout = compareChartMarkerLayout(placed);
   return (
     <figure className="compare-chart" data-testid={`compare-chart-${title}`}>
       <figcaption>
@@ -63,67 +110,71 @@ export function CompareCommunityChart({
           aria-hidden="true"
           className="compare-chart-svg"
           preserveAspectRatio="xMidYMid meet"
-          viewBox="0 0 640 76"
+          viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         >
           <line
             className="compare-chart-axis"
-            x1="36"
-            x2="604"
-            y1="46"
-            y2="46"
+            x1={PLOT_LEFT}
+            x2={PLOT_LEFT + PLOT_WIDTH}
+            y1={AXIS_Y}
+            y2={AXIS_Y}
           />
           {placed.length === 2 && placed[0] && placed[1] ? (
             <line
               className="compare-chart-link"
-              x1={plotX(placed[0].position)}
-              x2={plotX(placed[1].position)}
-              y1="46"
-              y2="46"
+              x1={compareChartPlotX(placed[0].position)}
+              x2={compareChartPlotX(placed[1].position)}
+              y1={samePosition ? AXIS_Y - MARKER_STACK_OFFSET : AXIS_Y}
+              y2={samePosition ? AXIS_Y + MARKER_STACK_OFFSET : AXIS_Y}
             />
           ) : null}
-          {placed.map((entry) => {
-            const x = plotX(entry.position);
-            const labelY =
-              entry.letter === "B" && (samePosition || crowded) ? 16 : 32;
-            return (
-              <g key={entry.letter}>
-                <circle
-                  className={`compare-chart-dot compare-chart-dot-${entry.tone}`}
-                  cx={x}
-                  cy="46"
-                  r="4.5"
-                />
-                <text
-                  className="compare-chart-tag"
-                  textAnchor="middle"
-                  x={x}
-                  y={labelY}
-                >
-                  {`${entry.letter} ${entry.point.shown ?? ""}`}
-                </text>
-              </g>
-            );
-          })}
+          {layout.map((entry) => (
+            <g key={entry.letter}>
+              <circle
+                className={`compare-chart-marker compare-chart-marker-${entry.tone}`}
+                cx={entry.x}
+                cy={entry.markerY}
+                r={MARKER_RADIUS}
+              />
+              <text
+                className="compare-chart-marker-letter"
+                dominantBaseline="central"
+                textAnchor="middle"
+                x={entry.x}
+                y={entry.markerY}
+              >
+                {entry.letter}
+              </text>
+              <text
+                className="compare-chart-tag"
+                textAnchor="middle"
+                x={entry.x}
+                y={entry.valueLabelY}
+              >
+                {entry.point.shown ?? ""}
+              </text>
+            </g>
+          ))}
           {ticks.map((tick) => {
             const position = communityPointPercent(tick, min, max);
             if (position === null) {
               return null;
             }
-            const x = plotX(position);
+            const x = compareChartPlotX(position);
             return (
               <g key={tick}>
                 <line
                   className="compare-chart-tick"
                   x1={x}
                   x2={x}
-                  y1="46"
-                  y2="50"
+                  y1={AXIS_Y}
+                  y2={AXIS_Y + 4}
                 />
                 <text
                   className="compare-chart-tick-label"
                   textAnchor="middle"
                   x={x}
-                  y="66"
+                  y={AXIS_Y + 20}
                 >
                   {tick}
                 </text>
