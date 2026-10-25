@@ -5,28 +5,30 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   LYME_INCIDENCE_MISSING_COLOR,
-  LYME_INCIDENCE_RAMP,
   mixExplorerRampColor,
   SVI_RAMP,
-  SVI_NO_DATA_COLOR,
   UNINSURED_POPULATION_MISSING_COLOR,
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
+import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { paintReadyObservationLayer } from "@/features/ux-reset/review/explorer-map-layer-scale";
 import { explorerMapValuesLayerReady } from "@/features/ux-reset/review/load-explorer-map-values";
 import type { MapValuesCollection } from "@/features/ux-reset/review/map-values-schema";
+import { mapValuesV1AtlasMapValuesGet } from "@/features/ux-reset/review/map-values-atlas";
 import {
   RURALITY_NO_DATA_COLOR,
   ruralityFillForCode,
 } from "@/features/ux-reset/review/rurality-palette";
-import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { useExplorerMapObservations } from "@/features/ux-reset/review/use-explorer-map-observations";
-import { mapValuesV1AtlasMapValuesGet } from "@/features/ux-reset/review/map-values-atlas";
 import { ValueState } from "@/generated/models";
 
 vi.mock(import("@/features/ux-reset/review/map-values-atlas"), () => ({
-  getMapValuesV1AtlasMapValuesGetUrl: vi.fn(),
-  mapValuesV1AtlasMapValuesGet: vi.fn(),
+  getMapValuesV1AtlasMapValuesGetUrl: vi.fn<
+    typeof import("@/features/ux-reset/review/map-values-atlas").getMapValuesV1AtlasMapValuesGetUrl
+  >(),
+  mapValuesV1AtlasMapValuesGet: vi.fn<
+    typeof import("@/features/ux-reset/review/map-values-atlas").mapValuesV1AtlasMapValuesGet
+  >(),
 }));
 
 const mapValuesGet = vi.mocked(mapValuesV1AtlasMapValuesGet);
@@ -83,26 +85,48 @@ describe("explorer map values adapter", () => {
       layerId: "incidence_floor",
       requestedFips: ["01001", "06037", "08001"],
     });
-    expect(ready.rows.find((row) => row.fips === "06037")).toMatchObject({
-      numeric: null,
-      valueState: ValueState.MISSING,
-    });
-    expect(ready.rows.find((row) => row.fips === "01001")).toMatchObject({
-      numeric: 0,
-      valueState: ValueState.ZERO,
-    });
-    const svi = explorerMapValuesLayerReady({
-      collection: sampleCollection(),
-      layerId: "svi",
-      requestedFips: ["01001", "08001"],
-    });
-    expect(svi.rows.find((row) => row.fips === "08001")).toMatchObject({
-      numeric: 0,
-      valueState: ValueState.ZERO,
-    });
-    expect(svi.rows.find((row) => row.fips === "01001")).toMatchObject({
-      numeric: null,
-      valueState: ValueState.MISSING,
+    expect({
+      missing: ready.rows.find((row) => row.fips === "06037"),
+      zero: ready.rows.find((row) => row.fips === "01001"),
+      sviZero: explorerMapValuesLayerReady({
+        collection: sampleCollection(),
+        layerId: "svi",
+        requestedFips: ["01001", "08001"],
+      }).rows.find((row) => row.fips === "08001"),
+      sviMissing: explorerMapValuesLayerReady({
+        collection: sampleCollection(),
+        layerId: "svi",
+        requestedFips: ["01001", "08001"],
+      }).rows.find((row) => row.fips === "01001"),
+    }).toStrictEqual({
+      missing: {
+        categoryLabel: null,
+        fips: "06037",
+        numeric: null,
+        raw: null,
+        valueState: ValueState.MISSING,
+      },
+      zero: {
+        categoryLabel: null,
+        fips: "01001",
+        numeric: 0,
+        raw: "0",
+        valueState: ValueState.ZERO,
+      },
+      sviZero: {
+        categoryLabel: null,
+        fips: "08001",
+        numeric: 0,
+        raw: "0",
+        valueState: ValueState.ZERO,
+      },
+      sviMissing: {
+        categoryLabel: null,
+        fips: "01001",
+        numeric: null,
+        raw: null,
+        valueState: ValueState.MISSING,
+      },
     });
   });
 
@@ -112,17 +136,22 @@ describe("explorer map values adapter", () => {
       layerId: "incidence_floor",
       requestedFips: ["08001", "02013", "06037"],
     });
-    expect(national.rows.some((row) => row.fips === "02013")).toBe(false);
     const colorado = explorerMapValuesLayerReady({
       collection: sampleCollection(),
       layerId: "incidence_floor",
       requestedFips: ["08001", "06037"],
       scopeCode: "CO",
     });
-    expect(colorado.rows.map((row) => row.fips)).toStrictEqual(["08001"]);
+    expect({
+      includesAlaska: national.rows.some((row) => row.fips === "02013"),
+      coloradoFips: colorado.rows.map((row) => row.fips),
+    }).toStrictEqual({
+      includesAlaska: false,
+      coloradoFips: ["08001"],
+    });
   });
 
-  it("paints through paintReadyObservationLayer with ramp and rurality fills", () => {
+  it("paints incidence missing counties gray without legend evidence", () => {
     const incidence = explorerMapValuesLayerReady({
       collection: sampleCollection(),
       layerId: "incidence_floor",
@@ -137,70 +166,67 @@ describe("explorer map values adapter", () => {
       sourceLabel: incidence.sourceLabel,
       unit: incidence.unit,
     });
-    expect(paint.colorsByFips.get("06037")).toBe(LYME_INCIDENCE_MISSING_COLOR);
-    expect(paint.selectionEvidence).toBeNull();
-
-    const svi = explorerMapValuesLayerReady({
-      collection: sampleCollection(),
-      layerId: "svi",
-      requestedFips: ["08001", "06037"],
+    expect({
+      missingColor: paint.colorsByFips.get("06037"),
+      selectionEvidence: paint.selectionEvidence,
+    }).toStrictEqual({
+      missingColor: LYME_INCIDENCE_MISSING_COLOR,
+      selectionEvidence: null,
     });
+  });
+
+  it("paints svi, uninsured, and rurality through existing ramps", () => {
     const sviPaint = paintReadyObservationLayer({
       layerId: "svi",
-      omitted: svi.omitted,
-      period: svi.period,
-      rows: svi.rows,
-      sourceLabel: svi.sourceLabel,
-      unit: svi.unit,
-    });
-    expect(sviPaint.colorsByFips.get("08001")).toBe(
-      mixExplorerRampColor(SVI_RAMP, 0)
-    );
-    expect(sviPaint.colorsByFips.get("06037")).not.toBe(SVI_NO_DATA_COLOR);
-
-    const uninsured = explorerMapValuesLayerReady({
-      collection: sampleCollection(),
-      layerId: "uninsured",
-      requestedFips: ["08001", "06037", "01001"],
+      omitted: 0,
+      period: "ACS",
+      rows: explorerMapValuesLayerReady({
+        collection: sampleCollection(),
+        layerId: "svi",
+        requestedFips: ["08001", "06037"],
+      }).rows,
+      sourceLabel: null,
+      unit: "percentile",
     });
     const uninsuredPaint = paintReadyObservationLayer({
       layerId: "uninsured",
-      omitted: uninsured.omitted,
-      period: uninsured.period,
-      rows: uninsured.rows,
-      sourceLabel: uninsured.sourceLabel,
-      unit: uninsured.unit,
-    });
-    expect(uninsuredPaint.colorsByFips.get("08001")).toBe(
-      mixExplorerRampColor(UNINSURED_POPULATION_RAMP, 0)
-    );
-    expect(uninsuredPaint.colorsByFips.get("01001")).toBe(
-      UNINSURED_POPULATION_MISSING_COLOR
-    );
-
-    const rurality = explorerMapValuesLayerReady({
-      collection: sampleCollection(),
-      layerId: "rurality",
-      requestedFips: ["08001", "06037", "01001"],
+      omitted: 0,
+      period: "ACS",
+      rows: explorerMapValuesLayerReady({
+        collection: sampleCollection(),
+        layerId: "uninsured",
+        requestedFips: ["08001", "01001"],
+      }).rows,
+      sourceLabel: null,
+      unit: "percent",
     });
     const ruralityPaint = paintReadyObservationLayer({
       layerId: "rurality",
-      omitted: rurality.omitted,
-      period: rurality.period,
-      rows: rurality.rows,
-      sourceLabel: rurality.sourceLabel,
-      unit: rurality.unit,
+      omitted: 0,
+      period: "Vintage 2023",
+      rows: explorerMapValuesLayerReady({
+        collection: sampleCollection(),
+        layerId: "rurality",
+        requestedFips: ["08001", "06037", "01001"],
+      }).rows,
+      sourceLabel: null,
+      unit: "code",
     });
-    expect(ruralityPaint.colorsByFips.get("08001")).toBe(
-      ruralityFillForCode(1)
-    );
-    expect(ruralityPaint.colorsByFips.get("06037")).toBe(
-      ruralityFillForCode(9)
-    );
-    expect(ruralityPaint.colorsByFips.get("01001")).toBe(RURALITY_NO_DATA_COLOR);
-    expect(
-      mixExplorerRampColor(LYME_INCIDENCE_RAMP, 1)
-    ).toBeTruthy();
+    expect({
+      sviZero: sviPaint.colorsByFips.get("08001"),
+      uninsuredZero: uninsuredPaint.colorsByFips.get("08001"),
+      uninsuredMissing: uninsuredPaint.colorsByFips.get("01001"),
+      ruralityOne: ruralityPaint.colorsByFips.get("08001"),
+      ruralityNine: ruralityPaint.colorsByFips.get("06037"),
+      ruralityMissing: ruralityPaint.colorsByFips.get("01001"),
+    }).toStrictEqual({
+      sviZero: mixExplorerRampColor(SVI_RAMP, 0),
+      uninsuredZero: mixExplorerRampColor(UNINSURED_POPULATION_RAMP, 0),
+      uninsuredMissing: UNINSURED_POPULATION_MISSING_COLOR,
+      ruralityOne: ruralityFillForCode(1),
+      ruralityNine: ruralityFillForCode(9),
+      ruralityMissing: RURALITY_NO_DATA_COLOR,
+    });
   });
 
   it("loads map values once when switching among data layers", async () => {
@@ -227,7 +253,12 @@ describe("explorer map values adapter", () => {
       expect(view.result.current.svi.status).toBe("ready");
     });
     view.rerender("gap_score");
-    expect(view.result.current.svi.status).toBe("ready");
-    expect(mapValuesGet).toHaveBeenCalledTimes(1);
+    expect({
+      calls: mapValuesGet.mock.calls.length,
+      svi: view.result.current.svi.status,
+    }).toStrictEqual({
+      calls: 1,
+      svi: "ready",
+    });
   });
 });

@@ -19,7 +19,9 @@ vi.mock(import("@/features/ux-reset/review/load-explorer-map-values"), async (im
     >();
   return {
     ...actual,
-    loadExplorerMapValues: vi.fn(),
+    loadExplorerMapValues: vi.fn<
+      typeof import("@/features/ux-reset/review/load-explorer-map-values").loadExplorerMapValues
+    >(),
   };
 });
 

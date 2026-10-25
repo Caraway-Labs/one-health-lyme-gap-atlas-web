@@ -43,10 +43,6 @@ export async function loadExplorerMapValues(input: {
   return parsed;
 }
 
-function rawDecimal(value: number): string {
-  return String(value);
-}
-
 function valueStateForQuantity(
   value: number | null
 ): { numeric: number | null; raw: string | null; valueState: ValueState } {
@@ -63,7 +59,7 @@ function valueStateForQuantity(
   }
   return {
     numeric: value,
-    raw: rawDecimal(value),
+    raw: String(value),
     valueState: ValueState.OBSERVED,
   };
 }
