@@ -786,6 +786,8 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
     const map = page.locator(".maplibre-atlas");
     await expect(map).toHaveAttribute("data-double-click-zoom", "false");
+    // Zoom can settle while the loading overlay still covers the canvas.
+    await expect(page.getByTestId("explorer-map-loading")).toHaveCount(0);
     const point = await projectedCountyPoint(page, -115.7, 43.3);
     await page.mouse.dblclick(point.x, point.y);
     await expect(page).toHaveURL(/focus=ID/);
