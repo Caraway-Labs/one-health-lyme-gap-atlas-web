@@ -769,12 +769,12 @@ describe("intelligence feed page", () => {
     listIntelligenceFeed.mockImplementation(async (params) => {
       if (params?.page_token) {
         throw new AtlasApiError(
-          "Projection changed; restart pagination.",
+          "Invalid page_token.",
           "/v1/intelligence/feed",
           400,
           "req-stale",
           null,
-          { detail: "Projection changed; restart pagination." }
+          { code: "INVALID_REQUEST", detail: "Invalid page_token." }
         );
       }
       bareCalls += 1;
@@ -817,12 +817,12 @@ describe("intelligence feed page", () => {
     listIntelligenceFeed.mockImplementation(async (params) => {
       if (params?.page_token) {
         throw new AtlasApiError(
-          "Projection changed; restart pagination.",
+          "Invalid page_token.",
           "/v1/intelligence/feed",
           400,
           "req-stale",
           null,
-          { detail: "Projection changed; restart pagination." }
+          { code: "INVALID_REQUEST", detail: "Invalid page_token." }
         );
       }
       bareCalls += 1;

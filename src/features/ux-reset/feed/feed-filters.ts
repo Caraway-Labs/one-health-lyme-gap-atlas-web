@@ -243,7 +243,7 @@ export function isStaleFeedPageToken(error: unknown): boolean {
   if (isFeedQueryTooBroad(error)) {
     return false;
   }
-  return problemFields(error).detail.includes("Projection changed");
+  return problemFields(error).detail.includes("Invalid page_token");
 }
 
 export const feedSourceParser = createParser({
