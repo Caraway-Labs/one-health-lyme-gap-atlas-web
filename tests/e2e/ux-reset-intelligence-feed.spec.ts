@@ -1,8 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
+
 import {
+  intelligenceFeedDetail,
   intelligenceFeedEnvelope,
+  intelligenceFeedEntry,
   intelligenceSourcesEnvelope,
   mixedIntelligenceFeedItems,
 } from "../fixtures/intelligence-feed-fixtures";
@@ -135,7 +139,7 @@ test("shows trusted-source items from workspace navigation", async ({
   await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
   ).toBeVisible();
-  await expect(page.getByText("CDC")).toBeVisible();
+  await expect(page.getByText("CDC", { exact: true })).toBeVisible();
   await expect(page.getByText("March 2, 2026")).toBeVisible();
   await expect(page.getByText("Publication date not provided")).toBeVisible();
   await expect(page.getByText("Publication date withheld")).toBeVisible();
@@ -733,6 +737,7 @@ test("resets cached feed pages to page one when a filter changes or clears", asy
   };
 
   await page.goto("/app/feed");
+  await expect(page).not.toHaveURL(/page_token/);
   const firstToken = await settledPageOneToken();
   await page.getByRole("button", { name: "Show more items" }).click();
   await expect(
@@ -830,4 +835,204 @@ test("stacks feed filters at 375px without horizontal scroll", async ({
       "fixture-backed-intelligence-feed-filters-375.png"
     ),
   });
+});
+
+const RICH_FEED_CAVEATS = ["Fixture caveat A", "Fixture caveat B"] as const;
+
+function richDescribedEntry() {
+  return intelligenceFeedEntry("described", {
+    attribution: "Source: Centers for Disease Control and Prevention",
+    description: {
+      state: "present",
+      text: "Wastewater surveillance detected influenza A(H5) in Oregon.",
+    },
+    limitations: [...RICH_FEED_CAVEATS],
+    organization: "Centers for Disease Control and Prevention",
+    publisher: "Centers for Disease Control and Prevention",
+    sourceFamily: "cdc_mmwr",
+    sourceFamilyLabel: "CDC MMWR",
+    sourceId: "cdc-mmwr",
+    tags: ["Influenza", "Wastewater", "Oregon", "H5"],
+    title: "Described MMWR item",
+    trust: BriefingSourceReviewedTrustClassification.official_public_health,
+  });
+}
+
+function richPubMedEntry() {
+  return intelligenceFeedEntry("pubmed-card", {
+    abstractHasMore: true,
+    abstractPreview: "N".repeat(1000),
+    abstractState: "present",
+    copyrightLine: "© 2026 Elsevier GmbH.",
+    attribution: "Courtesy of the U.S. National Library of Medicine",
+    authors: ["Smith J", "Lee K"],
+    description: { state: "not_provided", text: null },
+    limitations: [...RICH_FEED_CAVEATS],
+    organization: "National Library of Medicine",
+    pmid: "41234567",
+    publisher: "Ticks and Tick-borne Diseases",
+    sourceFamily: "pubmed",
+    sourceId: "pubmed-tick-borne",
+    tags: ["Lyme disease"],
+    title: "PubMed abstract item",
+    trust: BriefingSourceReviewedTrustClassification.research_index,
+  });
+}
+
+async function installRichFeed(
+  page: Page,
+  remoteItemId: string,
+  remoteBody: unknown
+): Promise<void> {
+  await installFeed(
+    page,
+    200,
+    intelligenceFeedEnvelope([richDescribedEntry(), richPubMedEntry()], null)
+  );
+  await page.route("**/v1/intelligence/feed/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname.endsWith(remoteItemId)) {
+      await route.fulfill({
+        json: {
+          data: remoteBody,
+          meta: { projection_version: "intelligence-feed-read-v2" },
+        },
+        status: 200,
+      });
+      return;
+    }
+    await route.fulfill({
+      json: {
+        code: "INTELLIGENCE_ITEM_NOT_FOUND",
+        detail: "No intelligence feed entry exists for this id.",
+        status: 404,
+        title: "Not found",
+        type: "about:blank",
+      },
+      status: pathname.includes("%") ? 422 : 404,
+    });
+  });
+}
+
+test("shows richer cards and a detail drawer", async ({ page }) => {
+  const described = richDescribedEntry();
+  const remote = intelligenceFeedDetail("remote-item", {
+    description: { state: "present", text: "Remote description text." },
+    organization: "Centers for Disease Control and Prevention",
+    publisher: "Centers for Disease Control and Prevention",
+    sourceFamily: "cdc_eid",
+    sourceId: "cdc-eid-expedited",
+    title: "Remote EID item",
+    trust: BriefingSourceReviewedTrustClassification.official_public_health,
+  });
+  await installRichFeed(page, remote.item_id, remote);
+  await page.setViewportSize({ height: 900, width: 1280 });
+  await page.goto("/app/feed");
+  await expect(
+    page.getByRole("heading", { name: "Described MMWR item" })
+  ).toBeVisible();
+  await expect(page.getByText("CDC MMWR")).toBeVisible();
+  await expect(page.getByTestId("feed-shared-caveats")).toContainText(
+    "Fixture caveat A"
+  );
+  const copyright = page.getByTestId("feed-abstract-copyright");
+  await expect(copyright).toBeVisible();
+  await expect(copyright).toHaveText("© 2026 Elsevier GmbH.");
+  await page.screenshot({
+    fullPage: true,
+    path: "/opt/cursor/artifacts/feed-after-desktop.png",
+  });
+  await page.getByRole("button", { name: "Details" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`item=${described.item_id}`));
+  const pageHeading = page.locator("#intelligence-feed-heading");
+  await expect(pageHeading).toHaveText("Feed");
+  const headingBox = await pageHeading.boundingBox();
+  expect(headingBox?.width ?? 0).toBeGreaterThan(0);
+  const drawer = await dialog.boundingBox();
+  expect(drawer?.width ?? 0).toBeGreaterThan(440);
+  expect(drawer?.width ?? 0).toBeLessThan(520);
+  expect((drawer?.x ?? 0) + (drawer?.width ?? 0)).toBeGreaterThan(1200);
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/feed-after-desktop-detail.png",
+  });
+  await page.goBack();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).not.toHaveURL(/item=/);
+
+  await page.goto(`/app/feed?item=${remote.item_id}`);
+  await expect(page.getByRole("dialog")).toContainText(
+    "Remote description text."
+  );
+  await page.goto(`/app/feed?item=${encodeURIComponent("%%%bad")}`);
+  await expect(page.getByRole("dialog")).toContainText(
+    "This item is no longer in the feed."
+  );
+});
+
+test("keeps the feed detail sheet inside the phone widths", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 320),
+    "Phone-width feed sheets run on the mobile project."
+  );
+  const remote = intelligenceFeedDetail("remote-item", {
+    description: { state: "present", text: "Remote description text." },
+    organization: "Centers for Disease Control and Prevention",
+    publisher: "Centers for Disease Control and Prevention",
+    sourceFamily: "cdc_eid",
+    sourceId: "cdc-eid-expedited",
+    title: "Remote EID item",
+    trust: BriefingSourceReviewedTrustClassification.official_public_health,
+  });
+  await installRichFeed(page, remote.item_id, remote);
+  await page.goto("/app/feed");
+  await expect(
+    page.getByRole("heading", { name: "Described MMWR item" })
+  ).toBeVisible();
+
+  for (const width of [320, 375, 390]) {
+    await page.setViewportSize({ height: 800, width });
+    const cardCopyright = page.getByTestId("feed-abstract-copyright");
+    await cardCopyright.scrollIntoViewIfNeeded();
+    const cardCopyrightBox = await cardCopyright.boundingBox();
+    expect(cardCopyrightBox?.width ?? 0).toBeGreaterThan(0);
+    expect(
+      (cardCopyrightBox?.x ?? 0) + (cardCopyrightBox?.width ?? 0)
+    ).toBeLessThanOrEqual(width + 1);
+    await expect(page.getByRole("button", { name: "Read more" })).toBeVisible();
+    if (width === 320) {
+      const clamped = await page
+        .getByTestId("feed-abstract")
+        .evaluate((element) => element.scrollHeight > element.clientHeight + 1);
+      expect(clamped).toBeTruthy();
+    }
+    await page.getByRole("button", { name: "Read more" }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+    expect(box?.x ?? 1).toBeLessThanOrEqual(1);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(width - 1);
+    const copy = sheet.getByText("© 2026 Elsevier GmbH.");
+    await expect(copy).toBeVisible();
+    const copyBox = await copy.boundingBox();
+    expect((copyBox?.x ?? 0) + (copyBox?.width ?? 0)).toBeLessThanOrEqual(
+      width + 1
+    );
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+    if (width === 390) {
+      await page.screenshot({
+        path: "/opt/cursor/artifacts/feed-after-390-detail.png",
+      });
+    }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+  }
 });

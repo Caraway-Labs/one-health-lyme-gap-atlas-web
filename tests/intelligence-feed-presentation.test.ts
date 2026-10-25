@@ -7,7 +7,9 @@ import {
   feedPublicationDate,
   feedPublisherHref,
   feedPublisherLabel,
+  feedCardSummary,
   feedRequestFailure,
+  feedSourceFamilyLabel,
 } from "@/features/ux-reset/feed/feed-presentation";
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
 import { AtlasApiError } from "@/lib/api-mutator";
@@ -98,6 +100,70 @@ describe("intelligence feed presentation", () => {
     expect(feedPublisherHref("data:text/html,hi")).toBeNull();
     expect(feedPublisherHref("https://user:secret@example.org/a")).toBeNull();
     expect(FEED_EXTERNAL_LINK_TARGET).toBe("_blank");
+  });
+
+  it("returns source_family_label unchanged", () => {
+    const trust =
+      BriefingSourceReviewedTrustClassification.official_public_health;
+    const labeled = intelligenceFeedEntry("label", {
+      organization: "CDC",
+      sourceFamily: "cdc_eid",
+      sourceFamilyLabel: "Weekly report",
+      sourceId: "cdc-mmwr",
+      trust,
+    });
+    const blank = intelligenceFeedEntry("plain", {
+      organization: "CDC",
+      sourceFamily: "cdc_mmwr",
+      sourceFamilyLabel: "",
+      sourceId: "cdc-mmwr",
+      trust,
+    });
+    expect({
+      blank: feedSourceFamilyLabel(blank),
+      labeled: feedSourceFamilyLabel(labeled),
+    }).toStrictEqual({
+      blank: "",
+      labeled: "Weekly report",
+    });
+  });
+
+  it("shows a present preview as returned and skips a null abstract", () => {
+    const trust =
+      BriefingSourceReviewedTrustClassification.official_public_health;
+    const preview = "N".repeat(1000);
+    const present = intelligenceFeedEntry("present", {
+      abstractHasMore: true,
+      abstractPreview: preview,
+      abstractState: "present",
+      copyrightLine: "© 2026 Elsevier GmbH.",
+      description: { state: "not_provided", text: null },
+      organization: "NLM",
+      sourceFamily: "pubmed",
+      sourceId: "pubmed-lyme",
+      trust,
+    });
+    const absent = intelligenceFeedEntry("absent", {
+      abstractHasMore: false,
+      abstractPreview: null,
+      abstractState: null,
+      copyrightLine: null,
+      organization: "CDC",
+      sourceFamily: "cdc_mmwr",
+      sourceId: "cdc-mmwr",
+      trust,
+    });
+    expect({
+      absent: feedCardSummary(absent),
+      present: feedCardSummary(present),
+    }).toStrictEqual({
+      absent: { kind: "none" },
+      present: {
+        copyrightLine: "© 2026 Elsevier GmbH.",
+        kind: "abstract",
+        text: preview,
+      },
+    });
   });
 
   it("treats HTTP 503 as unavailable and other failures as request errors", () => {
