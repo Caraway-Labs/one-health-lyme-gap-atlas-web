@@ -872,6 +872,7 @@ function richPubMedEntry() {
     pmid: "41234567",
     publisher: "Ticks and Tick-borne Diseases",
     sourceFamily: "pubmed",
+    sourceFamilyLabel: "PubMed",
     sourceId: "pubmed-tick-borne",
     tags: ["Lyme disease"],
     title: "PubMed abstract item",
