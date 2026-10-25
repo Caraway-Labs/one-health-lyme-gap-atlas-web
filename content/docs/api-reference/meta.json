@@ -12,5 +12,6 @@
     "states",
     "schemas"
   ],
+  "root": true,
   "title": "API reference"
 }

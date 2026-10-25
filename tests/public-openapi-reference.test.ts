@@ -42,6 +42,21 @@ describe("public OpenAPI reference", () => {
     }
   });
 
+  it("marks the generated API reference folder as a sidebar tab root", async () => {
+    const pages = await renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const navigation = JSON.parse(requiredFile(pages, "meta.json")) as {
+      root?: boolean;
+      title?: string;
+    };
+
+    expect(navigation).toMatchObject({
+      root: true,
+      title: "API reference",
+    });
+  });
+
   it("labels the pinned spec version, source, and raw schema", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const index = requiredFile(

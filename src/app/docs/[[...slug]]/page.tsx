@@ -7,14 +7,12 @@ import {
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  OpenAPIPage,
-  OpenAPIPageProvider,
-} from "@/components/docs-openapi-page";
+import { OpenAPIPageProvider } from "@/components/docs-openapi-page";
 import { DocsPageActions } from "@/components/docs-page-actions";
 import { DOCS_SITE_TITLE, docsCanonicalUrl } from "@/lib/docs-config";
 import { docsSource } from "@/lib/docs-source";
 import { openapi } from "@/lib/public-openapi-server";
+import { getMDXComponents } from "@/mdx-components";
 
 type DocsPageProps = {
   params: Promise<{ slug?: string[] }>;
@@ -37,7 +35,7 @@ export default async function Page({ params }: DocsPageProps) {
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <OpenAPIPageProvider value={preloaded}>
-          <Mdx components={{ OpenAPIPage }} />
+          <Mdx components={getMDXComponents()} />
         </OpenAPIPageProvider>
       </DocsBody>
     </DocsPage>
