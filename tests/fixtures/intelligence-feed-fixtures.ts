@@ -71,6 +71,7 @@ export function intelligenceFeedEntry(
     title:
       item.title === undefined ? `${item.organization} update` : item.title,
     source_family: sourceFamilyFor(item.sourceId),
+    source_family_label: item.publisher ?? item.organization,
     description: { text: null, state: "not_provided" },
     abstract: null,
     tags: [],

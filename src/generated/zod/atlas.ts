@@ -1060,7 +1060,7 @@ export const ListIntelligenceSourcesResponse = zod.object({
 
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeedQuerySourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
@@ -1109,6 +1109,10 @@ export const listIntelligenceFeedResponseDataItemSourceOrganizationMax = 1000;
 
 
 export const listIntelligenceFeedResponseDataItemSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const listIntelligenceFeedResponseDataItemSourceFamilyLabelMax = 200;
+
+
+export const listIntelligenceFeedResponseDataItemSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseDataItemDescriptionTextMax = 4096;
 
 
@@ -1169,6 +1173,7 @@ export const ListIntelligenceFeedResponse = zod.object({
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
 }),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(listIntelligenceFeedResponseDataItemSourceFamilyLabelMax).regex(listIntelligenceFeedResponseDataItemSourceFamilyLabelRegExp).describe('Display label for source_family.'),
   "description": zod.object({
   "text": zod.string().max(listIntelligenceFeedResponseDataItemDescriptionTextMax).regex(listIntelligenceFeedResponseDataItemDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
@@ -1233,6 +1238,10 @@ export const getIntelligenceFeedEntryResponseDataSourceOrganizationMax = 1000;
 
 
 export const getIntelligenceFeedEntryResponseDataSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const getIntelligenceFeedEntryResponseDataSourceFamilyLabelMax = 200;
+
+
+export const getIntelligenceFeedEntryResponseDataSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseDataDescriptionTextMax = 4096;
 
 
@@ -1291,6 +1300,7 @@ export const GetIntelligenceFeedEntryResponse = zod.object({
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
 }),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(getIntelligenceFeedEntryResponseDataSourceFamilyLabelMax).regex(getIntelligenceFeedEntryResponseDataSourceFamilyLabelRegExp).describe('Display label for source_family.'),
   "description": zod.object({
   "text": zod.string().max(getIntelligenceFeedEntryResponseDataDescriptionTextMax).regex(getIntelligenceFeedEntryResponseDataDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')

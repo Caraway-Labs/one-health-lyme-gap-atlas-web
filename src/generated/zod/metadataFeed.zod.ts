@@ -37,6 +37,10 @@ export const metadataFeedDataItemSourceOrganizationMax = 1000;
 
 
 export const metadataFeedDataItemSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const metadataFeedDataItemSourceFamilyLabelMax = 200;
+
+
+export const metadataFeedDataItemSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const metadataFeedDataItemDescriptionTextMax = 4096;
 
 
@@ -96,6 +100,7 @@ export const MetadataFeed = zod.object({
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
 }),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(metadataFeedDataItemSourceFamilyLabelMax).regex(metadataFeedDataItemSourceFamilyLabelRegExp).describe('Display label for source_family.'),
   "description": zod.object({
   "text": zod.string().max(metadataFeedDataItemDescriptionTextMax).regex(metadataFeedDataItemDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')

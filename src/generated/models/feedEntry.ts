@@ -59,6 +59,12 @@ export interface FeedEntry {
   source: BriefingSource;
   /** Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other. */
   source_family: FeedEntrySourceFamily;
+  /**
+     * Display label for source_family.
+     * @maxLength 200
+     * @pattern ^[^<>\x00-\x1f\x7f]*$
+     */
+  source_family_label: string;
   /** Publisher summary for this entry. */
   description: FeedDescription;
   /** PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. */

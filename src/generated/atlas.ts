@@ -2065,7 +2065,7 @@ export const getListIntelligenceFeedUrl = (params?: ListIntelligenceFeedParams,)
 }
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeed = async (params?: ListIntelligenceFeedParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIntelligenceFeedResponse> => {

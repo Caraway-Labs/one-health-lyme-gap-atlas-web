@@ -102,11 +102,11 @@ describe("public OpenAPI reference", () => {
         "application/problem+json",
         "measure_id",
         "#/components/schemas/ProblemDetails",
-        "Response Listobservations",
+        "Observation collection response",
       ])
     ).toStrictEqual([]);
     expect(operationPage(pages, "getGeography")).toContain(
-      "Response Getgeography"
+      "Geography response"
     );
     const schemaPage = requiredFile(pages, "schemas.mdx");
     const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
@@ -2159,8 +2159,8 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "6e70d37c17d9b9d9394bbe6eb13edc36722bdb4e3211cdaf39e4995dee5b04f1",
-      sourceCommit: "c410a889b2234dac377139e99b6d581fc31a6452",
+        "c8e0b42feb019eabc4ee0033e7501d5134c946c74750432f7bd5a1ee32a44618",
+      sourceCommit: "9d137a895576310dfa84e0d17fc297bffe326ebe",
     });
   });
 });

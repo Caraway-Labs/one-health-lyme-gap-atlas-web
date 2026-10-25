@@ -17,8 +17,8 @@ Do not put credentials, Snowflake access, or query logic in the browser. Runtime
 
 - Repository: `Caraway-Labs/one-health-lyme-gap-atlas-api`
 - Branch: `main`
-- Last sync: `c410a889b2234dac377139e99b6d581fc31a6452` (2026-10-25). That commit is the API `main` SHA deployed to production by Quality and deploy run 40218184161. Both pins are the files at that commit.
-- Previous pins: `f485d5ef756ac7ae3cebf864535a8e1c0e417f9e` (2026-10-24).
+- Last sync: `9d137a895576310dfa84e0d17fc297bffe326ebe` (2026-10-25). That commit is the API SHA production serves. The public pin matches live `https://api.onehealthatlas.org/openapi.json`. Both pins are the files at that commit.
+- Previous pins: `c410a889b2234dac377139e99b6d581fc31a6452` (2026-10-25).
 
 Record the exact API commit in the pull request that updates the pins. Update the "Last sync" line in this file in the same change.
 
@@ -48,16 +48,19 @@ Paths added since `f485d5ef`:
 
 The public document carries `x-codeSamples` on every public operation. The first-party pin does not.
 
-Inline 200 schema titles added on the public document:
+Inline 200 schema titles on this pin:
 
-- `GET /v1/observations`: `Response Listobservations`
-- `GET /v1/geographies/{geography_type}/{geography_id}`: `Response Getgeography`
+- `GET /v1/observations`: `Observation collection response`
+- `GET /v1/geographies/{geography_type}/{geography_id}`: `Geography response`
+- `GET /health/live` (`checkLiveness`), first-party pin only: `Liveness response`
 
-Component schemas added since the previous pin include `CountyMapValues`, `MapValuesCollection`, `FeedAbstract`, `FeedDescription`, `FeedEntryMeta`, `FeedEntryRead`, and `SourceCatalogMeta`. Descriptions and response examples were also refreshed with the API documentation work that landed before this commit.
+`FeedEntry` on the first-party pin requires `source_family_label`, the display label for `source_family`. The public pin has no intelligence feed.
+
+`GET /v1/intelligence/feed` (`listIntelligenceFeed`), first-party pin only, orders entries with a publisher date newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version.
 
 `GET /v1/geographies/{geography_type}/{geography_id}` (`getGeography`), on both pins:
 
-- `200` is `anyOf` [`ResourceEnvelope_Geography_`, `GeographyUnavailable`], titled `Response Getgeography`.
+- `200` is `anyOf` [`ResourceEnvelope_Geography_`, `GeographyUnavailable`], titled `Geography response`.
 - Documented status codes are 200, 400, 404, 413, 414, and 429.
 
 `GET /health/ready` (`checkReadiness`) and `POST /v1/knowledge-graph/chat` (`askKnowledgeGraph`) stay on the first-party pin only. The chat operation documents 200, 422, and 429.
