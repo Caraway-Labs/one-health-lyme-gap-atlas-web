@@ -1,24 +1,26 @@
 ---
 title: Workflow guides
-description: Query one county, compare counties, read environmental context, choose a county PDF template, and cite the observation you actually received.
+description: Query, compare, read context, download a PDF, and cite the row.
 ---
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 import { HttpClientTabs } from "@/features/docs/http-client-tabs";
 
-Each workflow is an anonymous GET. Use county FIPS in the lower 48 or the District of Columbia. Replace example ids if discovery returns different ones. The client tabs share the quickstart choice: curl, Python httpx, R httr2, or TypeScript fetch.
+Each workflow is an anonymous GET for a county in the lower 48 states or the District of Columbia. Replace ids when discovery returns different ones.
+
+Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. See [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
 
 ## Query a county
 
-Goal: retrieve the current-release case-count floor for one county and year.
+Retrieve one county's current-release case-count floor.
 
 <HttpClientTabs
   path="/v1/observations"
   query="measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023"
 />
 
-Then open `source_id` and `methodology_id` from that body. The checked release used:
+Open `source_id` and `methodology_id` from that body:
 
 <HttpClientTabs
   requests={[
@@ -27,119 +29,66 @@ Then open `source_id` and `methodology_id` from that body. The checked release u
   ]}
 />
 
-County analytics and display scores are a different route, `GET /v1/counties/{fips}`. That route returns the legacy county document, including release metadata. `GET /v1/counties/00000` returned HTTP 404 with detail `County or dataset release not found` and no `code`. Use the observations route when you need `value_state`.
-
-| State | What the county observation query does |
-| --- | --- |
-| Success | HTTP 200 and one or more rows. Checked for FIPS `36061`, `year=2023`: `value_state` `OBSERVED` |
-| Empty | HTTP 200 and `data: []`. Checked for FIPS `99999` |
-| Not found | Declared HTTP 404 `RESOURCE_NOT_FOUND`. The legacy county route's 404 can omit `code` |
-| Invalid parameters | HTTP 400 `INVALID_REQUEST` when the period is missing, when `year` is combined with a date range, or when `geography_type` is not `county` or `state` |
-| Unsupported filter | HTTP 400 `UNSUPPORTED_FILTER` for `sort`, `aggregation`, or an unknown parameter |
-| Unsupported stratification | HTTP 400 `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
-| Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` |
-| Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | HTTP 200 with `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`. Checked for FIPS `08001`: `MISSING` and `value` null |
+`GET /v1/counties/{fips}` is the legacy county document, including release metadata. A sample `GET /v1/counties/00000` returned HTTP 404, detail `County or dataset release not found`, and no `code`. Use observations for `value_state`. FIPS `36061`, `year=2023`, was `OBSERVED`. FIPS `99999` was HTTP 200 and `data: []`. FIPS `08001` was `MISSING` with `value` null.
 
 ## Compare geographies
 
-Goal: retrieve the same measure and period for two counties in one request. Repeat `geography_id`.
+Repeat `geography_id` for one measure and period, up to 500 counties. There is no rank field. Do not send `sort` or `aggregation`.
 
 <HttpClientTabs
   path="/v1/observations"
   query="measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=36061&year=2023"
 />
 
-The service orders by measure id, county FIPS, period start, and observation id. On 12 October 2026 this comparison returned two rows in one HTTP 200 page: FIPS `08001` with `value_state` `MISSING` and `value` null, then FIPS `36061` with `value_state` `OBSERVED` and a numeric `value`. Both rows shared `measure_id`, `unit` `cases`, period year 2023, and `release_id`. A missing row and an observed row are not two numbers on one scale. Compare `value_state` before comparing `value`.
-
-You can repeat up to 500 county ids. There is no rank and no winner field. Do not send `sort` or `aggregation`.
-
-| State | What a comparison does |
-| --- | --- |
-| Success | HTTP 200 and a row per matched county. Counties can differ in `value_state` |
-| Empty | HTTP 200 and `data: []` when none of the ids match |
-| Partial | HTTP 200 and a row for some ids only. A county with no row is absent from `data`. It is not a zero |
-| Not found | HTTP 404 `RESOURCE_NOT_FOUND` is declared for the operation. An unknown measure path is the checked 404 |
-| Invalid parameters | HTTP 400 `INVALID_REQUEST` for a bad period or `geography_type` |
-| Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
-| Rate limited | HTTP 429 and `Retry-After` |
-| Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | Mixed `value_state` values, null `denominator`, or null context on either row |
-
-`next_page_token` can be non-null when the combined rows exceed `page_size`. Follow it with the same measure, counties, and period.
+Order is measure id, county FIPS, period start, then observation id. A sample HTTP 200 page had FIPS `08001` `MISSING` with `value` null, then FIPS `36061` `OBSERVED` with a numeric `value`. Both shared `measure_id`, `unit` `cases`, year 2023, and `release_id`. Compare `value_state` before `value`. A county missing from `data` is not a zero. Follow `next_page_token` with the same filters. The checked 404 is an unknown measure path.
 
 ## Retrieve environmental context
 
-There is no separate environmental-context endpoint. `environmental_context` is an optional object on an observation. It is present only for reviewed environmental context. The observations operation describes it as descriptive weather, with no causal, disease-risk, or ML claim. `surveillance_context` is a different optional object. It is supplied only through an admitted Data release and supported slice. Omitted or null carries no evidence-state, comparability, or lag claim.
+`environmental_context` is optional, only for reviewed environmental context, and descriptive weather only: no causal, disease-risk, or ML claim. `surveillance_context` appears only with published surveillance context on a supported slice. Omitted or null context carries no evidence-state, comparability, or lag claim, and it does not establish absence.
 
-When the object is present, read `coverage_status` before the measure value. The status is `COMPLETE`, `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`. Coverage is independent of `value_state`. `day_convention` is the publisher's labeled 24-hour period. `source_coverage_fraction` is monthly source-supported area over legal county area. `valid_fraction_of_supported_area` is daily valid area over source-supported area, with a completeness threshold of 0.95. Area quantities may be numbers or exact numeric strings. `geometry_version` names analysis geometry and does not include polygons. Null context does not establish absence or temporal comparability.
+Read `coverage_status` first: `COMPLETE`, `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`, independent of `value_state`. `day_convention` is the labeled 24-hour period. `source_coverage_fraction` is monthly source-supported area over legal area. `valid_fraction_of_supported_area` is daily valid area over source-supported area, threshold 0.95. Areas may be numbers or strings. `geometry_version` names analysis geometry and has no polygons.
 
-On 12 October 2026, `GET /v1/measures` returned 21 measures and a null `next_page_token`, and none of those ids was a daily weather measure. On 18 October 2026 the catalog includes the January 2025 daily measures. The checked request, and the parameters that request rejects, are in [Observation queries](/docs/develop/observation-queries). Do not invent a measure id that discovery did not return.
+The catalog includes the January 2025 daily measures. Rejected parameters are in [Observation queries](/docs/develop/observation-queries). Do not invent an id.
 
-The catalog does publish annual land-cover context under indicator `land_cover_context`. Those measures name selected geographies `09110` and `51013` only. Their missingness text says a true zero stays zero, and unselected counties have no observation. Their limitations describe land-cover context only, with no Lyme causal or risk estimate.
+Land cover (`land_cover_context`) is published for `09110` and `51013` only. A true zero stays zero. An unselected county has no observation. Limitations are land-cover context only, with no Lyme causal or risk estimate.
 
 <HttpClientTabs
   path="/v1/observations"
   query="measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=09110&year=2025"
 />
 
-That request returned HTTP 200, `value_state` `OBSERVED`, `unit` `fraction`, temporal grain `YEAR`, and `environmental_context` null. The land-cover row is not a weather `environmental_context` object.
+That request returned HTTP 200, `value_state` `OBSERVED`, `unit` `fraction`, temporal grain `YEAR`, and `environmental_context` null. The land-cover row is not a weather object.
 
 <HttpClientTabs
   path="/v1/observations"
   query="measure_id=nlcd_forest_area_share_county_year&geography_type=county&geography_id=08001&year=2025"
 />
 
-FIPS `08001` is outside the selected land-cover geographies. That request returned HTTP 200 and `data: []`. The empty page is not a zero share.
+FIPS `08001` is outside the selected geographies. The request returned HTTP 200 and `data: []`. The empty page is not a zero share.
 
-| State | Environmental and land-cover reads |
-| --- | --- |
-| Success with context | HTTP 200 and an observation whose `environmental_context` object is present. Read `coverage_status` with the value |
-| Success without context | HTTP 200 and `environmental_context` null. Checked for the land-cover request above |
-| Empty | HTTP 200 and `data: []` for an unselected land-cover county. Checked for FIPS `08001` |
-| Not found | HTTP 404 `RESOURCE_NOT_FOUND` for an unknown measure id |
-| Invalid parameters | HTTP 400 `INVALID_REQUEST` for a missing or contradictory period |
-| Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION`. These measures declare no supported strata |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
-| Rate limited | HTTP 429 and `Retry-After` |
-| Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | `coverage_status` of `PARTIAL_COVERAGE`, `SOURCE_MISSING`, or `OUT_OF_SOURCE_COVERAGE`, a null area field, a null `environmental_context`, or a null or omitted `surveillance_context` |
+## Read common response states
+
+HTTP 200 can be a row, `data: []`, or a partial set. An absent county is not a zero. Read `value_state` first. HTTP 404 `RESOURCE_NOT_FOUND` is declared, and a legacy 404 can omit `code`. HTTP 400 is `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, or `QUERY_TOO_BROAD` above 10,000 results. The API never truncates results. HTTP 429 and 503 include `Retry-After`. Keep `request_id`. Limited rows stay `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`, with a null area or null context left null. `PARTIAL_COVERAGE`, `SOURCE_MISSING`, and `OUT_OF_SOURCE_COVERAGE` are coverage gaps.
 
 ## Reproduce and cite an observation
 
-Goal: store enough of one response to explain the number later, after the current release has moved on. Annotated null rules, limitations, and the discover, observe, and resolve order are in [Provenance and evidence](/docs/develop/provenance#cite-from-discovery).
+Save one response so you can explain it after the release moves. See [Provenance and evidence](/docs/develop/provenance#cite-from-discovery).
 
-1. Save the request URL.
-2. Save the observation fields in [Provenance and evidence](/docs/develop/provenance), including `value_state`, `release_id`, `semantic_version`, methodology ids and versions, source id, lineage source id, dataset id, source vintage, and `limitations`.
-3. Save the source resource for that `source_id` and the methodology resource when `methodology_id` is not null.
-4. Save `meta.response_at` as the retrieval time. Keep it distinct from `period_start`, `source_vintage`, and `source_published_at`.
-5. Save the response body, or a checksum of that body.
+1. Save the request URL and the body, or a checksum.
+2. Save `value_state`, `release_id`, `semantic_version`, methodology ids and versions, source id, lineage source id, dataset id, source vintage, and `limitations`.
+3. Save the source, and the methodology when `methodology_id` is not null.
+4. Save `meta.response_at` apart from `period_start`, `source_vintage`, and `source_published_at`. The response time shows when Atlas built the response. It does not show when the publisher last updated the data.
 
-A practical attribution names Atlas, the public API `/v1`, the measure id, county FIPS, period, `release_id`, `semantic_version`, retrieval time, and the publisher and dataset from the source resource you received. `provenance_ref` is the observation's provenance identity. It is not a literature citation. A `page_token` is not a citation.
-
-The same URL reads the current release. It is not a permanent snapshot. The saved response is the record of what you retrieved.
-
-| State | How citation changes |
-| --- | --- |
-| Success | Cite `value`, `value_state`, `unit`, period, release, semantic version, source, and methodology from that body |
-| Empty | Cite the request and the empty `data` array. Do not cite a value |
-| Not found | Cite HTTP 404, `request_id`, and the id that was missing. There is no observation to cite |
-| Invalid parameters | Fix the query and retrieve again. A 400 body is not an observation |
-| Rate limited or unavailable | Wait for `Retry-After` when present, then retrieve again. Keep `request_id` if you need support |
-| Gap, suppression, or no linked record | Cite `value_state` and the null or literal value. Do not cite a reconstructed number |
+Name Atlas, `/v1`, measure, FIPS, period, `release_id`, `semantic_version`, retrieval time, publisher, and dataset. `provenance_ref` is not a literature citation. A `page_token` is not a citation. The URL is the current release, so the saved body is the record. A 400 body is not an observation. Cite a gap by `value_state` and the null or literal value.
 
 ## Download a county report
 
-Goal: download one county PDF with the selector that matches the report you need. The route is `GET /v1/counties/{fips}/report.pdf`. `template` defaults to `county-v1`. Use a county FIPS in the lower 48 states or the District of Columbia. Checked for FIPS `11001`: HTTP `200`.
-
-A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim. Parameter tables stay in the [county report reference](/docs/api-reference/counties#downloadCountyReport).
+Use `GET /v1/counties/{fips}/report.pdf` for one county in the lower 48 states or the District of Columbia. `template` defaults to `county-v1`. A sample for FIPS `11001` returned HTTP 200. A scoring PDF is a review-priority report. An evidence PDF repeats observations, lineage, value states, and limitations. Parameters are in the [county report reference](/docs/api-reference/counties#downloadCountyReport).
 
 <Tabs items={["county-v1 scoring", "county-v2 evidence"]}>
   <Tab value="county-v1 scoring">
 
-`county-v1` is the scoring selector. `dataset_version` is optional. These score settings are optional and bind the scoring inputs:
+`county-v1` scores the report. `dataset_version` is optional. These settings are optional:
 
 | Parameter                | Default | Bounds               |
 | ------------------------ | ------- | -------------------- |
@@ -147,7 +96,7 @@ A scoring PDF is a review-priority report. An evidence PDF repeats canonical obs
 | `smooth_k`               | 50      | 5–200                |
 | `missing_human_weakness` | 75      | 40–90, multiple of 5 |
 
-`period_start`, `period_end`, and `measure_id` are forbidden on `county-v1`. Sending one of them returns HTTP `422` and `application/problem+json`. Checked on 18 October 2026 for FIPS `36061` with an observation period:
+`period_start`, `period_end`, and `measure_id` are forbidden on `county-v1`. One of them returns HTTP `422` `application/problem+json`. Sample for FIPS `36061`:
 
 ```json
 {
@@ -161,9 +110,9 @@ A scoring PDF is a review-priority report. An evidence PDF repeats canonical obs
 }
 ```
 
-An unknown template that still matches the operation's template pattern returns HTTP `422` with detail `The requested county report template is not available.` A template outside that pattern returns HTTP `422` with detail `One or more request values are invalid.`
+A pattern-matching unknown template returns HTTP `422` and detail `The requested county report template is not available.` Any other template returns HTTP `422` and detail `One or more request values are invalid.`
 
-A successful county-v1 response is `application/pdf` and uses `Cache-Control: public, max-age=300, must-revalidate`. `ETag` with `If-None-Match` can return `304`.
+Success is `application/pdf` and `Cache-Control: public, max-age=300, must-revalidate`. `If-None-Match` can return `304`.
 
 <HttpClientTabs
   body="bytes"
@@ -174,9 +123,7 @@ A successful county-v1 response is `application/pdf` and uses `Cache-Control: pu
   </Tab>
   <Tab value="county-v2 evidence">
 
-`county-v2` is the evidence selector. It requires `dataset_version`, `period_start`, `period_end`, and `measure_id`. Pass the observation `release_id` as `dataset_version`. `period_start` and `period_end` are the exact inclusive dates. `measure_id` accepts 1–20 distinct ids, repeated or comma-separated.
-
-A missing release, period, or measure list, a duplicate measure id, more than 20 ids, or a reversed period returns HTTP `422`. Checked on 18 October 2026:
+`county-v2` requires `dataset_version` (the observation `release_id`), exact `period_start` and `period_end`, and 1–20 distinct `measure_id` values, repeated or comma-separated. A missing release, period, or measure list, a duplicate id, more than 20 ids, or a reversed period returns HTTP `422`. Sample:
 
 ```json
 {
@@ -190,13 +137,9 @@ A missing release, period, or measure list, a duplicate measure id, more than 20
 }
 ```
 
-A `dataset_version` the service cannot resolve returns HTTP `404` with detail `County or dataset release not found`. An unknown measure returns HTTP `404` `RESOURCE_NOT_FOUND` with detail `Measure has no published county observations.` The contract also returns HTTP `503` when provenance is missing or mismatched, and HTTP `413` when the report exceeds resource limits.
+An unresolved `dataset_version` returns HTTP `404`, detail `County or dataset release not found`. An unknown measure returns HTTP `404` `RESOURCE_NOT_FOUND`, detail `Measure has no published county observations.` Missing or mismatched provenance returns HTTP `503`. A report over the resource limit returns HTTP `413`.
 
-Score settings are the county-v1 inputs above. A checked county-v2 request that also sent `ecological_share=65` still returned HTTP `200` and `Cache-Control: no-store`.
-
-A successful county-v2 response uses `Cache-Control: no-store`. The service revalidates authoritative context before a cache response or `304`. `ETag` is still present.
-
-Replace the release id in this checked URL with the observation `release_id` you are citing:
+County-v1 score settings still apply. A sample that also sent `ecological_share=65` returned HTTP `200` and `Cache-Control: no-store`. Success uses `Cache-Control: no-store`. The service revalidates context before a cached response or `304`. `ETag` remains. Replace the release id below with the `release_id` you cite.
 
 <HttpClientTabs
   body="bytes"
@@ -206,5 +149,3 @@ Replace the release id in this checked URL with the observation `release_id` you
 
   </Tab>
 </Tabs>
-
-The published documentation home for these guides is [https://onehealthatlas.org/docs](https://onehealthatlas.org/docs).
