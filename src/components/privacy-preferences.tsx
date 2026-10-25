@@ -117,15 +117,18 @@ function analyticsChoiceSummary(
 }
 
 function PrivacyChoiceActions({
+  className,
   doNotTrack,
   saveChoice,
 }: {
+  className?: string;
   doNotTrack: boolean;
   saveChoice: (decision: "granted" | "denied") => void;
 }) {
   return (
     <>
       <Button
+        className={className}
         onClick={() => saveChoice("denied")}
         type="button"
         variant="secondary"
@@ -133,6 +136,7 @@ function PrivacyChoiceActions({
         Turn off optional analytics
       </Button>
       <Button
+        className={className}
         disabled={doNotTrack}
         onClick={() => saveChoice("granted")}
         type="button"
@@ -224,7 +228,10 @@ export function PrivacyPreferences({
       <DialogTrigger render={<Button variant="link" className="footer-link" />}>
         Privacy settings
       </DialogTrigger>
-      <DialogContent aria-labelledby="privacy-settings-title">
+      <DialogContent
+        aria-labelledby="privacy-settings-title"
+        className="overflow-hidden sm:max-w-lg [&>*]:min-w-0"
+      >
         <DialogHeader>
           <span className="eyebrow">This browser</span>
           <DialogTitle id="privacy-settings-title">
@@ -233,8 +240,9 @@ export function PrivacyPreferences({
           <DialogDescription>{ANALYTICS_PURPOSE}</DialogDescription>
         </DialogHeader>
         <PrivacyChoiceCopy consent={storedConsent} doNotTrack={doNotTrack} />
-        <DialogFooter>
+        <DialogFooter className="sm:flex-col sm:justify-start">
           <PrivacyChoiceActions
+            className="w-full"
             doNotTrack={doNotTrack}
             saveChoice={saveChoice}
           />
