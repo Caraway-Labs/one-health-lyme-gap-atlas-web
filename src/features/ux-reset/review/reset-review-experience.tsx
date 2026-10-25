@@ -58,6 +58,7 @@ import {
   hasExplicitReviewLocation,
   hasExplicitReviewScopeParam,
   isReviewStartingScopeUnresolved,
+  parsedReviewScopeFromUrl,
   reviewScopeQueryCanonicalRewrite,
 } from "@/features/ux-reset/review/resolve-review-scope";
 import {
@@ -331,14 +332,26 @@ function ResetReviewExperienceInner() {
     (nextScope: "ALL" | string) => {
       // Bare Review already parses as ALL. Choosing United States during
       // startup is still an explicit national choice and must be written.
-      const historyHasScope = hasExplicitReviewScopeParam(
-        new URLSearchParams(window.location.search)
-      );
+      // A later shallow reconcile can also leave React on that default while
+      // the address bar still has a state, so "already selected" is the bar.
+      const historyParams = new URLSearchParams(window.location.search);
+      const historyHasScope = hasExplicitReviewScopeParam(historyParams);
+      const historyScope = historyHasScope
+        ? parsedReviewScopeFromUrl(historyParams)
+        : null;
       const confirmNationalChoice =
         nextScope === "ALL" &&
         scope === "ALL" &&
-        !(userChoseScopeRef.current || arrivalExplicitScope || historyHasScope);
-      if (nextScope === scope && !confirmNationalChoice) {
+        !(
+          userChoseScopeRef.current ||
+          arrivalExplicitScope ||
+          (historyHasScope && historyScope === "ALL")
+        );
+      if (
+        nextScope === scope &&
+        (historyScope === null || historyScope === nextScope) &&
+        !confirmNationalChoice
+      ) {
         return;
       }
       userChoseScopeRef.current = true;
@@ -347,6 +360,23 @@ function ResetReviewExperienceInner() {
     },
     [arrivalExplicitScope, scope, setUrlState]
   );
+  useLayoutEffect(() => {
+    // Only the pre-choice startup drift is restored here. A user choice owns
+    // the next write, including Return to US view, and must not be replaced
+    // by the scope still sitting in the address bar.
+    if (userChoseScopeRef.current) {
+      return;
+    }
+    const historyParams = new URLSearchParams(window.location.search);
+    if (!hasExplicitReviewScopeParam(historyParams)) {
+      return;
+    }
+    const historyScope = parsedReviewScopeFromUrl(historyParams);
+    if (historyScope === scope) {
+      return;
+    }
+    void setUrlState({ scope: historyScope }, { history: "replace" });
+  }, [scope, setUrlState]);
   const replaceStartingScope = useCallback(
     (nextScope: "ALL" | string) => {
       if (userChoseScopeRef.current) {

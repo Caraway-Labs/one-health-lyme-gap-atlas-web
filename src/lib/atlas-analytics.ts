@@ -25,6 +25,13 @@ export const routeIds = [
   "geographic_explorer",
   "ai_ethics",
   "intelligence_feed",
+  "atlas_explorer",
+  "compare",
+  "ask_atlas",
+  "settings",
+  "resources",
+  "data_provenance",
+  "documentation",
 ] as const;
 
 export type RouteId = (typeof routeIds)[number];
@@ -91,6 +98,42 @@ export const uiControlIds = [
   "feedback_discard",
   "feedback_report_data_issue",
   "feedback_footer_open",
+  "nav_brand",
+  "nav_atlas_explorer",
+  "nav_compare",
+  "nav_ask_atlas",
+  "nav_feed",
+  "nav_resources",
+  "nav_settings",
+  "nav_data_provenance",
+  "nav_docs",
+  "workspace_sign_in",
+  "workspace_sign_out",
+  "explorer_county_select",
+  "explorer_county_clear",
+  "explorer_map_layer",
+  "explorer_us_view",
+  "explorer_fit_map",
+  "explorer_view_county_evidence",
+  "explorer_view_follow_up",
+  "explorer_compare",
+  "explorer_ask_atlas",
+  "explorer_back_to_map",
+  "explorer_retry_evidence",
+  "explorer_retry_directory",
+  "compare_state_filter",
+  "compare_county_select",
+  "compare_county_clear",
+  "compare_swap",
+  "compare_clear_pair",
+  "compare_edit_counties",
+  "compare_pdf_export",
+  "settings_save_starting_view",
+  "settings_profile_retry",
+  "feed_item_open",
+  "feed_retry",
+  "feed_clear_filters",
+  "feed_remove_filter",
 ] as const;
 
 export const feedbackTopics = [
@@ -124,6 +167,29 @@ export function analyticsControlAttributes(controlId: UiControlId): {
   "data-atlas-analytics-control": UiControlId;
 } {
   return { "data-atlas-analytics-control": controlId };
+}
+
+/** Sidebar destination id to the stable control that opens that destination. */
+export const workspaceNavControlIds = {
+  assistant: "nav_ask_atlas",
+  compare: "nav_compare",
+  "data-provenance": "nav_data_provenance",
+  docs: "nav_docs",
+  explorer: "nav_atlas_explorer",
+  feed: "nav_feed",
+  resources: "nav_resources",
+  settings: "nav_settings",
+} as const satisfies Record<string, UiControlId>;
+
+export function workspaceNavControlAttributes(
+  routeId: string
+): ReturnType<typeof analyticsControlAttributes> | undefined {
+  if (!Object.hasOwn(workspaceNavControlIds, routeId)) {
+    return undefined;
+  }
+  return analyticsControlAttributes(
+    workspaceNavControlIds[routeId as keyof typeof workspaceNavControlIds]
+  );
 }
 
 export const geographySelectionSurfaces = [
@@ -239,23 +305,95 @@ type AnalyticsEvent =
       properties: { outcome: FeedbackOutcome };
     };
 
+function canonicalAnalyticsPathname(pathname: string): string {
+  const withoutQuery = pathname.split(/[?#]/, 1)[0] || "/";
+  if (withoutQuery.length > 1 && withoutQuery.endsWith("/")) {
+    return withoutQuery.slice(0, -1);
+  }
+  return withoutQuery;
+}
+
+function isPathOrDescendant(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
 export function routeIdForPathname(pathname: string): RouteId {
-  if (pathname === "/") return "front_porch";
-  if (pathname === "/overview") return "atlas_home";
-  if (pathname === "/privacy") return "privacy";
-  if (pathname === "/knowledge-graph") return "knowledge_graph";
+  const path = canonicalAnalyticsPathname(pathname);
+  if (path === "/") return "front_porch";
+  if (path === "/overview") return "atlas_home";
+  if (path === "/privacy") return "privacy";
+  if (path === "/knowledge-graph") return "knowledge_graph";
   // Retired /variant_* URLs 404. Unmatched paths still use the analytical shell,
   // so a consented visit still records a route view. Keep atlas_variant so that
   // miss stays distinct from Overview (atlas_home). Do not reuse this ID.
-  if (pathname.startsWith("/variant_")) return "atlas_variant";
-  if (pathname === "/account") return "account";
-  if (pathname === "/assistant" || pathname.startsWith("/assistant/")) {
+  if (path.startsWith("/variant_")) return "atlas_variant";
+  if (path === "/account") return "account";
+  if (path === "/assistant" || path.startsWith("/assistant/")) {
     return "assistant";
   }
-  if (pathname === "/geographic_explorer") return "geographic_explorer";
-  if (pathname === "/ai-ethics") return "ai_ethics";
-  if (pathname === "/app/feed") return "intelligence_feed";
+  if (path === "/geographic_explorer") return "geographic_explorer";
+  if (path === "/ai-ethics") return "ai_ethics";
+  if (isPathOrDescendant(path, "/explore")) return "atlas_explorer";
+  if (isPathOrDescendant(path, "/compare")) return "compare";
+  if (isPathOrDescendant(path, "/askatlas")) return "ask_atlas";
+  if (isPathOrDescendant(path, "/app/feed")) return "intelligence_feed";
+  if (isPathOrDescendant(path, "/app/settings")) return "settings";
+  if (isPathOrDescendant(path, "/resources")) return "resources";
+  if (isPathOrDescendant(path, "/data-provenance")) return "data_provenance";
+  // ADR 0020 keeps the docs site free of the analytics client. The id exists
+  // so a path under /docs is not recorded as atlas_home.
+  if (isPathOrDescendant(path, "/docs")) return "documentation";
   return "atlas_home";
+}
+
+function isAllowlistedValue(
+  allowed: readonly string[],
+  value: unknown
+): boolean {
+  return typeof value === "string" && allowed.includes(value);
+}
+
+const analyticsEnumAllowlists = {
+  action: ["activated"],
+  change_source: ["range_control"],
+  clear_scope: ["single", "all"],
+  content_surface: ["methods_navigation", "source_card", "data_dictionary"],
+  control_id: uiControlIds,
+  export_scope: ["ranking"],
+  feedback_topic: feedbackTopics,
+  filter_dimension: ["state", "evidence", "feed_source", "feed_published"],
+  filter_value: [
+    "all",
+    "ecological",
+    "human",
+    "complete",
+    "state_selected",
+    "source_selected",
+    "7d",
+    "30d",
+    "90d",
+  ],
+  geography_level: ["national", "state", "county"],
+  outcome: feedbackOutcomes,
+  route_id: routeIds,
+  score_control: scoreControlIds,
+  selection_surface: geographySelectionSurfaces,
+  summary_kind: ["county_briefing"],
+} as const;
+
+/**
+ * Drops an event locally when a closed enum property is missing from the
+ * allowlist. Callers that already narrowed the value still pass.
+ */
+export function analyticsEnumsAllowed(
+  properties: Record<string, unknown>
+): boolean {
+  for (const [key, allowed] of Object.entries(analyticsEnumAllowlists)) {
+    if (key in properties && !isAllowlistedValue(allowed, properties[key])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function clearAmplitudeBrowserStorage(storage: Storage): void {
@@ -329,6 +467,9 @@ export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
     },
     track(event: AnalyticsEvent): void {
       if (!amplitude) return;
+      if (!analyticsEnumsAllowed(event.properties as Record<string, unknown>)) {
+        return;
+      }
       amplitude.track(event.eventType, {
         schema_version: ANALYTICS_SCHEMA_VERSION,
         release_version: ANALYTICS_RELEASE_VERSION,

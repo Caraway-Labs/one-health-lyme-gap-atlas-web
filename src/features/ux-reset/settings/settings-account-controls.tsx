@@ -11,6 +11,7 @@ import {
   subscribeWorkspaceSignOut,
   workspaceSignOutPending,
 } from "@/features/ux-reset/workspace-sign-out";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 const SIGN_OUT_LABEL = "Sign out";
 const SIGNING_OUT_LABEL = "Signing out";
@@ -45,6 +46,7 @@ export function SettingsAccountControls() {
         data-rights actions.
       </p>
       <Button
+        {...analyticsControlAttributes("workspace_sign_out")}
         aria-busy={pending || undefined}
         className="mt-4"
         disabled={pending}

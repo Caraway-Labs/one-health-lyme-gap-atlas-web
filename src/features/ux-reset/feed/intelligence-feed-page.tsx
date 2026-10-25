@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { resetRouteById } from "@/features/ux-reset/paths";
 import type { FeedEntry } from "@/generated/models/feedEntry";
 import {
+  analyticsControlAttributes,
   trackFeedFilterApplied,
   trackFeedFilterCleared,
 } from "@/lib/atlas-analytics";
@@ -88,6 +89,7 @@ function FeedItem({ entry }: { entry: FeedEntry }) {
           <h2 className="type-card">
             {href ? (
               <a
+                {...analyticsControlAttributes("feed_item_open")}
                 className="ux-reset-feed-title-link"
                 href={href}
                 rel={FEED_EXTERNAL_LINK_REL}
@@ -127,6 +129,7 @@ function FeedItem({ entry }: { entry: FeedEntry }) {
 function FeedRetry({ onRetry }: { onRetry: () => Promise<unknown> }) {
   return (
     <Button
+      {...analyticsControlAttributes("feed_retry")}
       onClick={() => {
         void onRetry();
       }}
@@ -327,6 +330,7 @@ export function IntelligenceFeedExperience() {
           action={
             defaultWindowOnly ? (
               <Button
+                {...analyticsControlAttributes("feed_clear_filters")}
                 className="ux-reset-feed-clear"
                 onClick={() => {
                   applyPublished("all");
@@ -338,6 +342,7 @@ export function IntelligenceFeedExperience() {
               </Button>
             ) : (
               <Button
+                {...analyticsControlAttributes("feed_clear_filters")}
                 className="ux-reset-feed-clear"
                 onClick={clearFilters}
                 type="button"

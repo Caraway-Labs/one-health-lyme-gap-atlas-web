@@ -9,6 +9,7 @@ import {
   investigateCountyReportExportOffer,
   type InvestigatePdfContext,
 } from "@/features/ux-reset/investigate/investigate-next-step";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 export function InvestigatePdfExport({
   context,
@@ -117,6 +118,7 @@ function InvestigatePdfExportForContext({
             </>
           ) : null}
           <Button
+            {...analyticsControlAttributes("pdf_export")}
             className="w-fit"
             variant="secondary"
             disabled={pending}
