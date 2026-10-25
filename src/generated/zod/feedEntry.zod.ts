@@ -45,14 +45,6 @@ export const feedEntryDescriptionTextMax = 4096;
 
 
 export const feedEntryDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const feedEntryAbstractOneTextMax = 6000;
-
-
-export const feedEntryAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const feedEntryAbstractOneCopyrightLineMax = 1000;
-
-
-export const feedEntryAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const feedEntryTagsItemMax = 200;
 
 
@@ -66,10 +58,22 @@ export const feedEntryAuthorsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$')
 export const feedEntryAuthorsMax = 20;
 
 export const feedEntryPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const feedEntryPubmedUrlMax = 80;
+
+
+export const feedEntryPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const feedEntryAttributionMax = 200;
 
 
 export const feedEntryAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const feedEntryAbstractOneTextMax = 6000;
+
+
+export const feedEntryAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const feedEntryAbstractOneCopyrightLineMax = 1000;
+
+
+export const feedEntryAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 
 export const FeedEntry = zod.object({
   "item_id": zod.string().regex(feedEntryItemIdRegExp),
@@ -102,16 +106,17 @@ export const FeedEntry = zod.object({
   "text": zod.string().max(feedEntryDescriptionTextMax).regex(feedEntryDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
 }).describe('Publisher summary for this entry.'),
-  "abstract": zod.union([zod.object({
-  "text": zod.string().max(feedEntryAbstractOneTextMax).regex(feedEntryAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.'),
-  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
-  "copyright_line": zod.string().max(feedEntryAbstractOneCopyrightLineMax).regex(feedEntryAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
-}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed.'),
   "tags": zod.array(zod.string().max(feedEntryTagsItemMax).regex(feedEntryTagsItemRegExp)).max(feedEntryTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
   "authors": zod.array(zod.string().max(feedEntryAuthorsItemMax).regex(feedEntryAuthorsItemRegExp)).max(feedEntryAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
   "pmid": zod.string().regex(feedEntryPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
-  "attribution": zod.string().max(feedEntryAttributionMax).regex(feedEntryAttributionRegExp).describe('Credit line shown with the entry.')
-}).describe('One source-attributed publication in the intelligence feed.')
+  "pubmed_url": zod.string().max(feedEntryPubmedUrlMax).regex(feedEntryPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(feedEntryAttributionMax).regex(feedEntryAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract": zod.union([zod.object({
+  "text": zod.string().max(feedEntryAbstractOneTextMax).regex(feedEntryAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete. An abstract longer than 6000 characters is withheld.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
+  "copyright_line": zod.string().max(feedEntryAbstractOneCopyrightLineMax).regex(feedEntryAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
+}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. The text is the complete abstract.')
+}).describe('One source-attributed publication, including the full PubMed abstract.')
 
 export type FeedEntry = zod.input<typeof FeedEntry>;
 export type FeedEntryOutput = zod.output<typeof FeedEntry>;

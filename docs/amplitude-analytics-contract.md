@@ -73,6 +73,7 @@ Event names use lower-case `snake_case`. One call represents one completed user-
 | `atlas_feedback_outcome_viewed` | Future feedback flow shows a controlled confirmation/outcome | Does the feedback closure path work? | `outcome` |
 | `atlas_account_flow_started` | Future authenticated account flow starts | Are accounts adopted? | `account_flow` |
 | `atlas_account_flow_completed` | Future authenticated account flow completes | Where do account funnels succeed? | `account_flow`, `outcome` |
+| `atlas_feed_item_detail_opened` | A person opens an intelligence feed item detail panel from a card. A panel opened from `?item=` on load, or restored by Back or Forward, is a render and emits nothing | Do people open feed item details, and from which card control? | `entry_surface`, `source_family` |
 
 Rows labelled future cannot be emitted until their owning account or feedback story is live and the event is reviewed in the tracking plan. Consent choice, privacy-dialog interactions, support requests, and data-rights requests are expressly **not** Amplitude events.
 
@@ -89,13 +90,16 @@ Every event includes the following common context. A property omitted from this 
 | `geography_level` | public Atlas context | `national`, `state`, or `county` |
 | `state_fips` | public Atlas context | Valid two-digit state FIPS only; absent when not selected |
 | `county_fips` | public Atlas context | Valid five-digit county FIPS only; absent when not selected |
-| `entry_surface` | product context | Closed enum such as `map`, `results_table`, `summary`, or `footer` |
+| `entry_surface` | product context | Closed enum `map`, `results_table`, `summary`, `footer`, `feed_card_details`, or `feed_card_read_more` |
+| `source_family` | public product context | Closed enum `cdc_mmwr`, `cdc_eid`, `cdc_other`, `nih_niaid`, `pubmed`, `state_local`, or `other` |
 | `selection_surface` | product context | Closed enum `map`, `results_table`, `ranked_list`, or `experiment` |
 | `outcome` | operational | Closed enum `success`, `cancelled`, `validation_rejected`, or `service_unavailable` |
 
 `control_id`, `action`, `filter_dimension`, `filter_value`, `score_control`, `score_value`, `feedback_topic`, `account_flow`, `content_surface`, `selection_surface`, `summary_kind`, `export_scope`, `clear_scope`, `change_source`, and `page_bucket` are each closed, versioned enums in the typed analytics boundary. A value that is not in that allowlist causes the event to be dropped. Every JSX control attribute is created through its typed helper, so an unapproved literal cannot compile. `atlas_ui_interaction` is the complete control catalogue: every meaningful button, link, menu, selector, map/list action, and committed scenario adjustment must have a stable `control_id` before it ships. It never records labels, raw DOM selectors, hover, scroll, pointer movement, keystrokes, or text input. `active_filter_count` is an integer from 0 through 10; `page_bucket` is `1`, `2-5`, `6-10`, or `11+`.
 
 Intelligence Feed filters use the existing `atlas_filter_applied` and `atlas_filter_cleared` events with `route_id` `intelligence_feed` (`/app/feed`). They do not add event names. `filter_dimension` adds `feed_source` and `feed_published`. `filter_value` for `feed_source` is `all` or `source_selected` (never a source id or organization name). `filter_value` for `feed_published` is `7d`, `30d`, `90d`, or `all`. `clear_scope` is `single` (one chip removed) or `all` (Clear filters). Both events include `active_filter_count` after the change. Home state and evidence filters keep their existing `filter_dimension` and `filter_value` values. The source-catalog retry button emits `atlas_ui_interaction` with `control_id` `feed_sources_retry` and `action` `activated`. It does not send a source id or organization name.
+
+Opening a feed item's detail panel emits `atlas_feed_item_detail_opened` with `route_id` `intelligence_feed`. `entry_surface` is `feed_card_details` (Details) or `feed_card_read_more` (Read more). `source_family` is the entry's family enum. The event does not include an item id, PMID, title, URL, or any other item text. A panel opened from the `item` query on load, or restored by Back or Forward, emits nothing. Close emits `atlas_ui_interaction` with `control_id` `feed_item_details_close`. Retry on the panel's unavailable state uses `feed_item_details_retry`. "View on PubMed" uses `feed_item_pubmed_open`. "NCBI copyright and disclaimers" in the panel or the feed footer uses `feed_ncbi_copyright_open`. Escape, the backdrop, and Back emit nothing. `feed_item_details_open` and `feed_item_read_more` stay in the control catalogue for the `atlas_ui_interaction` fallback and are not emitted while the dedicated event is in use. `feed_item_open` remains the publisher link and is a different control.
 
 ### Route identifiers
 
@@ -165,6 +169,12 @@ These `control_id` values extend the existing catalogue for Explorer, Compare, A
 | `feed_retry` | Retry the feed request |
 | `feed_clear_filters` | Clear feed filters or show all dates |
 | `feed_remove_filter` | Remove one feed filter chip |
+| `feed_item_details_open` | Fallback only: Details on a feed card. The dedicated `atlas_feed_item_detail_opened` event is used instead |
+| `feed_item_read_more` | Fallback only: Read more under a PubMed abstract. The dedicated event is used instead |
+| `feed_item_details_close` | Close button in the feed item panel. Escape and Back emit nothing |
+| `feed_item_details_retry` | Retry in the feed item panel's unavailable state |
+| `feed_item_pubmed_open` | Open the PubMed record from the item panel |
+| `feed_ncbi_copyright_open` | Open the NCBI copyright and disclaimers page from the item panel or the feed footer |
 
 The following are prohibited in event names, properties, user properties, groups, IDs, URLs, logs, and Amplitude Data: free text; raw search terms; feedback or chat content; email, name, phone, address, account ID, authentication/session token, IP address, cookie value, device ID, user agent, referrer, marketing parameter, exact timestamp supplied by the app, health information, diagnosis, treatment, accessibility preference, or arbitrary error message.
 

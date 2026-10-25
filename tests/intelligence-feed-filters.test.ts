@@ -217,12 +217,12 @@ describe("intelligence feed filters", () => {
       }
     );
     const stale = new AtlasApiError(
-      "Projection changed; restart pagination.",
+      "Invalid page_token.",
       "/v1/intelligence/feed",
       400,
       "req-stale",
       null,
-      { detail: "Projection changed; restart pagination." }
+      { code: "INVALID_REQUEST", detail: "Invalid page_token." }
     );
     expect(isFeedQueryTooBroad(tooBroad)).toBeTruthy();
     expect(isStaleFeedPageToken(tooBroad)).toBeFalsy();

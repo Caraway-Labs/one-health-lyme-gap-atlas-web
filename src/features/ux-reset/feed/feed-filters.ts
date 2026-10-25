@@ -243,7 +243,7 @@ export function isStaleFeedPageToken(error: unknown): boolean {
   if (isFeedQueryTooBroad(error)) {
     return false;
   }
-  return problemFields(error).detail.includes("Projection changed");
+  return problemFields(error).detail.includes("Invalid page_token");
 }
 
 export const feedSourceParser = createParser({
@@ -259,7 +259,18 @@ export const feedPublishedParser = parseAsStringEnum([
   ...FEED_PUBLISHED_PRESETS,
 ]).withDefault(DEFAULT_FEED_PUBLISHED);
 
+/** Any non-empty `item` value is kept so a malformed id can be looked up. */
+export const feedItemParser = createParser({
+  parse(value: string) {
+    return value.length > 0 ? value : null;
+  },
+  serialize(value: string) {
+    return value;
+  },
+});
+
 export const feedSearchParams = {
+  item: feedItemParser,
   published: feedPublishedParser,
   source: feedSourceParser,
 };

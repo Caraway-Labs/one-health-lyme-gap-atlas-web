@@ -13,7 +13,7 @@ import type { FeedEntrySourceFamily } from './feedEntrySourceFamily';
 import type { ProjectionProvenance } from './projectionProvenance';
 
 /**
- * One source-attributed publication in the intelligence feed.
+ * One source-attributed publication, including the full PubMed abstract.
  */
 export interface FeedEntry {
   /** @pattern ^[a-f0-9]{64}$ */
@@ -67,8 +67,6 @@ export interface FeedEntry {
   source_family_label: string;
   /** Publisher summary for this entry. */
   description: FeedDescription;
-  /** PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. */
-  abstract: FeedAbstract | null;
   /**
      * Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.
      * @maxItems 100
@@ -90,9 +88,18 @@ export interface FeedEntry {
      */
   pmid: string | null;
   /**
+     * PubMed article URL derived from pmid: https://pubmed.ncbi.nlm.nih.gov/<pmid>/. Null when pmid is null.
+     * @maxLength 80
+     * @nullable
+     * @pattern ^[^<>\x00-\x1f\x7f]*$
+     */
+  pubmed_url: string | null;
+  /**
      * Credit line shown with the entry.
      * @maxLength 200
      * @pattern ^[^<>\x00-\x1f\x7f]*$
      */
   attribution: string;
+  /** PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. The text is the complete abstract. */
+  abstract: FeedAbstract | null;
 }
