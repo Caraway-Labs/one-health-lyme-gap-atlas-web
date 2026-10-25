@@ -68,16 +68,21 @@
 }
 
 .resources-cdc-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  gap: 0.35rem;
   min-width: 0;
 }
 
-.resources-cdc-heading-copy {
-  display: grid;
-  gap: 0.35rem;
+.resources-cdc-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.resources-cdc-title h2 {
+  margin: 0;
   min-width: 0;
 }
 

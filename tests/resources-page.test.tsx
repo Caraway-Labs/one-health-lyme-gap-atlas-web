@@ -160,7 +160,7 @@ describe("Resources page", () => {
     ).toBeNull();
   });
 
-  it("places the official CDC logo to the right of the guidance heading", () => {
+  it("places the official CDC logo beside the guidance heading", () => {
     render(<ResourcesPage />);
     const heading = screen.getByRole("heading", {
       name: "CDC guidance & tools",
