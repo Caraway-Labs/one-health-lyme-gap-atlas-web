@@ -19,6 +19,7 @@ import {
   RURALITY_NO_DATA_COLOR,
   ruralityFillForCode,
 } from "@/features/ux-reset/review/rurality-palette";
+import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { useExplorerMapObservations } from "@/features/ux-reset/review/use-explorer-map-observations";
 import { mapValuesV1AtlasMapValuesGet } from "@/features/ux-reset/review/map-values-atlas";
 import { ValueState } from "@/generated/models";
@@ -209,7 +210,7 @@ describe("explorer map values adapter", () => {
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(QueryClientProvider, { client }, children);
     const view = renderHook(
-      (activeLayerId: "incidence_floor" | "svi" | "gap_score") =>
+      (activeLayerId: ExplorerMapLayerId) =>
         useExplorerMapObservations({
           activeLayerId,
           fips: ["08001", "06037"],

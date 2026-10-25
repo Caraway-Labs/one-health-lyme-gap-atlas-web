@@ -247,12 +247,13 @@ describe("Explorer map observations", () => {
       sourceLabel: ready.sourceLabel,
       unit: ready.unit,
     });
+    const row = ready.rows[0];
     expect({
-      acquired: ready.rows[0]?.provenance.atlasAcquiredAt,
-      limitations: ready.rows[0]?.provenance.limitations,
-      method: ready.rows[0]?.provenance.methodologyVersion,
-      provenance: ready.rows[0]?.provenance.provenanceRef,
-      published: ready.rows[0]?.provenance.sourcePublishedAt,
+      acquired: row?.provenance?.atlasAcquiredAt,
+      limitations: row?.provenance?.limitations,
+      method: row?.provenance?.methodologyVersion,
+      provenance: row?.provenance?.provenanceRef,
+      published: row?.provenance?.sourcePublishedAt,
       state: paint.selectionEvidence?.availability,
       reason: paint.selectionEvidence?.reasonCode,
     }).toStrictEqual({

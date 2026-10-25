@@ -145,6 +145,25 @@ async function installOutlineApi(page: Page) {
       });
       return;
     }
+    if (url.includes("/v1/atlas/map-values")) {
+      const releaseId =
+        new URL(url).searchParams.get("dataset_version") ??
+        outlineScores.release_id;
+      await route.fulfill({
+        json: {
+          release_id: releaseId,
+          counties: outlineScores.counties.map((county) => ({
+            fips: county.fips,
+            incidence_floor_2023: 1,
+            rucc_2023: 3,
+            svi_percentile: 0.5,
+            uninsured_percent: 12.5,
+          })),
+        },
+        status: 200,
+      });
+      return;
+    }
     if (url.includes("/v1/atlas/geometry")) {
       await route.fulfill({ json: outlineGeometry, status: 200 });
       return;
