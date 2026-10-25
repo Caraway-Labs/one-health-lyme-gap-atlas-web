@@ -9,9 +9,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ComponentProps } from "react";
+import { useEffect, type ComponentProps } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -24,18 +23,16 @@ import {
 } from "@/components/ui/combobox";
 import {
   CDC_RESOURCE_TOPICS,
-  REGIONAL_CENTER_FILTERS,
+  REGIONAL_CENTERS,
   RESOURCE_SECTION_HREFS,
   RESOURCE_SECTION_IDS,
   RESOURCES_PAGE_SUBTITLE,
   RESOURCES_PAGE_TITLE,
   SVI_INTERPRETATION_RESOURCE,
-  regionalCentersForFilter,
   selectedStateFromQuery,
   statesInAlphabeticalOrder,
   type CdcResourceLink,
   type RegionalCenter,
-  type RegionalCenterFilter,
   type StateResource,
 } from "@/lib/resources/catalog";
 import { regionalCenterLogo } from "@/lib/resources/regional-center-logos";
@@ -84,8 +81,6 @@ export function ResourcesPage() {
   const searchParams = useSearchParams();
   const requestedState = searchParams.get("state");
   const selected = selectedStateFromQuery(requestedState);
-  const [centerFilter, setCenterFilter] = useState<RegionalCenterFilter>("all");
-  const centers = regionalCentersForFilter(centerFilter);
 
   useEffect(() => {
     if (requestedState === null) {
@@ -129,6 +124,12 @@ export function ResourcesPage() {
         id={RESOURCE_SECTION_IDS.cdc}
       >
         <div className="resources-cdc-heading">
+          <div className="resources-cdc-heading-copy">
+            <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
+            <p className="resources-section-intro">
+              Surveillance, interpretation, and prevention references.
+            </p>
+          </div>
           <Image
             alt="Centers for Disease Control and Prevention"
             className="resources-cdc-logo"
@@ -137,13 +138,6 @@ export function ResourcesPage() {
             unoptimized
             width={228}
           />
-          <div className="resources-cdc-heading-copy">
-            <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
-            <p className="resources-section-intro">
-              National references for surveillance, interpretation, and
-              prevention.
-            </p>
-          </div>
         </div>
         <div className="resources-topic-grid">
           {CDC_RESOURCE_TOPICS.map((topic) => {
@@ -185,7 +179,13 @@ export function ResourcesPage() {
         className="resources-section"
         id={RESOURCE_SECTION_IDS.state}
       >
-        <h2 id="state-resources-heading">Find your state&apos;s resources</h2>
+        <h2 id="state-resources-heading">
+          Explore resources from other states
+        </h2>
+        <p className="resources-section-intro">
+          See how states approach Lyme disease surveillance, prevention, and
+          education. Find materials and ideas that may help your program.
+        </p>
         <div className="resources-state-panel">
           <StateResourceMap
             selectedCode={selected?.code ?? null}
@@ -294,41 +294,11 @@ export function ResourcesPage() {
           Research, practical tools, and training from regional vector-borne
           disease centers.
         </p>
-        <div
-          aria-label="Filter regional centers"
-          className="resources-filters"
-          role="group"
-        >
-          {REGIONAL_CENTER_FILTERS.map((filter) => (
-            <Button
-              key={filter.id}
-              aria-pressed={centerFilter === filter.id}
-              className={
-                centerFilter === filter.id
-                  ? "rounded-full bg-[var(--navy)] text-[var(--white)] hover:bg-[var(--navy)]"
-                  : "rounded-full"
-              }
-              type="button"
-              variant={centerFilter === filter.id ? "default" : "outline"}
-              onClick={() => {
-                setCenterFilter(filter.id);
-              }}
-            >
-              {filter.label}
-            </Button>
+        <div className="resources-center-grid">
+          {REGIONAL_CENTERS.map((center) => (
+            <CenterCard center={center} key={center.id} />
           ))}
         </div>
-        {centers.length === 0 ? (
-          <p className="resources-empty" role="status">
-            No centers match this filter.
-          </p>
-        ) : (
-          <div className="resources-center-grid">
-            {centers.map((center) => (
-              <CenterCard center={center} key={center.id} />
-            ))}
-          </div>
-        )}
       </section>
     </div>
   );

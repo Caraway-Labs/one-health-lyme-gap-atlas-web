@@ -36,5 +36,28 @@ describe("Amplitude deployment routing", () => {
         projectTarget: "production",
       }).blocker
     ).toBe("missing_api_key");
+
+    expect(
+      describeAnalyticsRuntime({
+        consent: "not-decided",
+        doNotTrack: false,
+        apiKey: "synthetic-development-key",
+        projectTarget: "development",
+      }).blocker
+    ).toBeNull();
+    expect(
+      describeAnalyticsRuntime({
+        consent: "denied",
+        doNotTrack: false,
+        apiKey: "synthetic-development-key",
+      }).blocker
+    ).toBe("consent_not_granted");
+    expect(
+      describeAnalyticsRuntime({
+        consent: "not-decided",
+        doNotTrack: true,
+        apiKey: "synthetic-development-key",
+      }).blocker
+    ).toBe("do_not_track");
   });
 });

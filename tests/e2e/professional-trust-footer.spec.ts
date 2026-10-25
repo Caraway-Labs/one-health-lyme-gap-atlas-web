@@ -257,7 +257,7 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
     .getByRole("dialog", { name: "Privacy settings" })
-    .getByRole("button", { name: "Keep optional analytics off" })
+    .getByRole("button", { name: "Turn off optional analytics" })
     .click();
 
   await expect
