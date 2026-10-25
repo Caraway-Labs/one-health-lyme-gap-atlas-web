@@ -1,6 +1,6 @@
 ---
 title: Provenance and evidence
-description: Read source, methodology, release, freshness, and value-state fields together before citing an Atlas observation.
+description: Cite value state, source, methodology, release, and freshness together.
 ---
 
 import {
@@ -9,48 +9,50 @@ import {
   ValueStateNullTable,
 } from "@/features/docs/provenance-evidence";
 
-An observation is reproducible only when the value, the value state, and the provenance fields from that same response stay together. Response time is not publisher freshness. A null timestamp is unknown. Do not fill it in.
+Cite a row with its value, `value_state`, and provenance together. Leave a null timestamp null.
 
-## Fields that travel with the value
+`meta.response_at` is the response time. The response time shows when Atlas built the response. It does not show when the publisher last updated the data.
 
-From the observation you received, keep:
+Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. Published human values are privacy-protected floors, not complete incidence counts. See [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+
+## Keep fields with the value
 
 | Field | Role |
 | --- | --- |
-| `observation_id` | Stable observation identity and compact provenance reference |
+| `observation_id` | Id and provenance reference |
 | `measure_id` | Exact measure |
-| `geography` | `geography_type` and `geography_id` |
-| `period_start`, `period_end`, `temporal_grain` | Inclusive governed period and grain |
-| `value`, `value_state`, `unit`, `denominator` | The result. Read them as a set |
-| `source_id` | Public source resource key |
-| `lineage_source_id`, `dataset_id` | Lineage and dataset ids. They are distinct from `source_id` |
-| `methodology_id` | Methodology resource id. Null when the row has no governed methodology id |
+| `geography` | Type and `geography_id` |
+| `period_start`, `period_end`, `temporal_grain` | Inclusive period and grain |
+| `value`, `value_state`, `unit`, `denominator` | One set. Null is not zero |
+| `source_id` | Public source key |
+| `lineage_source_id`, `dataset_id` | Not `source_id` |
+| `methodology_id` | Null when ungoverned |
 | `methodology_version` | Transformation version |
-| `release_methodology_version` | Release methodology version when present |
-| `semantic_version` | Semantic contract version for the row |
-| `release_id` | Release identity |
-| `provenance_ref` | Structured provenance identity. The schema says this is not a literature citation |
-| `source_vintage`, `source_label`, `source_url` | Publisher context copied onto the row when governed |
-| `source_published_at`, `atlas_acquired_at`, `atlas_processed_at` | Observation timestamps when governed. Null is not inferred freshness. These fields are not the deprecated Source timestamps |
-| `limitations` | Interpretation limits. Preserve the list |
-| `evidence` | `resource_type` and `resource_id`, plus optional source, provenance, version, release, and uri fields |
-| `surveillance_context` | Optional. Supplied only through an admitted Data release and supported slice. Omitted or null carries no evidence-state, comparability, or lag claim. `normalized_state` preserves Data semantics, and the publisher value remains `value` |
+| `release_methodology_version` | On some rows |
+| `semantic_version` | Contract version |
+| `release_id` | Not comparable across releases |
+| `provenance_ref` | Not a literature citation |
+| `source_vintage`, `source_label`, `source_url` | Publisher context |
+| `source_published_at`, `atlas_acquired_at`, `atlas_processed_at` | Observation clocks. Null is unknown |
+| `limitations` | Keep with the value |
+| `evidence` | Type, id, optional source, version, release, uri |
+| `surveillance_context` | Optional. Null has no comparability or lag claim |
 
-`evidence.resource_type` on the contract's synthetic observation example is `observation`, and `resource_id` repeats the observation id. `provenance_ref` on a checked case-floor row was the same string as `observation_id`. That equality is not a second citation format. It is the provenance identity returned for that row.
+In the synthetic example, `evidence.resource_type` is `observation` and `resource_id` repeats the observation id. On the sample case-floor row, `provenance_ref` equals `observation_id`. That match is not a second citation format.
 
 ## Cite from discovery
 
-Discover the source and the measure, observe one county row, then resolve the ids that row actually returned. A null on the measure is not a null on the observation.
+Discover, observe one county, then resolve that row's ids. A null on the measure is not a null on the observation.
 
 <ProvenanceCitationSteps />
 
-## Null value and limitations
+## Read a null value
 
-`value` null is not zero. `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null `value`. Preserve `limitations` with that value. Open a row for the schema sentence.
+`MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require null `value`. Keep `limitations`. `NO_COUNTY_LINKED_RECORD` is not evidence of absence. `NO_RECORDS` does not establish biological absence. States: [Indicators, measures, and observations](/docs/develop/resources).
 
 <ValueStateNullTable />
 
-Checked on 18 October 2026. FIPS `08001`, measure `case_count_floor_2023`, and `year=2023` returned `value` null and `value_state` `MISSING`. FIPS `36061` for the same measure and year returned `value_state` `OBSERVED` and a numeric `value`. `limitations` matched on those two rows. `source_published_at` and `atlas_processed_at` were null. Observation `atlas_acquired_at` was present. The blocks below are those checked fields, not a full response body.
+Sample release `governed-2026-10-15-january-climate-prod`, measure `case_count_floor_2023`, year 2023: FIPS `08001` is `MISSING` and `36061` is `OBSERVED`. Limitations matched. `atlas_acquired_at` was present. `source_published_at` and `atlas_processed_at` were null.
 
 ```json title="Checked gap observation fields"
 {
@@ -101,9 +103,9 @@ Checked on 18 October 2026. FIPS `08001`, measure `case_count_floor_2023`, and `
 }
 ```
 
-## Source and observation field names
+## Tell paired names apart
 
-Names that look paired are still different properties. Open a row for the schema sentence, then read the checked resources below.
+Paired names are different properties.
 
 <ProvenanceFieldNames />
 
@@ -138,84 +140,51 @@ Names that look paired are still different properties. Open a row for the schema
 }
 ```
 
-## Source and methodology resources
+## Resolve source and methodology
 
-Resolve `source_id` and `methodology_id` from the observation with the detail routes in [Cite from discovery](#cite-from-discovery). Replace those ids with the ids on your observation. A source resource adds `publisher`, `release_version`, `source_version`, `published_at`, `upstream_updated_at`, and `source_retrieved_at`. On the checked `human` source, `publisher` was present and `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` were null. Those nulls stay null. The observation field `atlas_acquired_at` is separate. On the checked case-floor rows it was present while the source field was null.
+Replace ids from [Cite from discovery](#cite-from-discovery) with ids on your row. A source adds `publisher`, `release_version`, `source_version`, `published_at`, `upstream_updated_at`, and `source_retrieved_at`. On sample `human`, `publisher` was set and those four timestamps were null. Observation `atlas_acquired_at` is separate and was present.
 
 <section aria-labelledby="deprecated-source-timestamps">
 
 ## Deprecated source timestamps
 
-The [Source](/docs/api-reference/schemas#schema-source) schema marks `published_at` and `atlas_acquired_at` deprecated. Those two fields belong to the source resource. An [Observation](/docs/api-reference/schemas#schema-observation) keeps a separate set of timestamps, and the contract does not mark that set deprecated.
+The [Source](/docs/api-reference/schemas#schema-source) schema marks `published_at` and `atlas_acquired_at` deprecated. Those fields belong to the source. An [Observation](/docs/api-reference/schemas#schema-observation) keeps its own timestamps, and the contract does not mark that set deprecated.
 
-| Object | Field | Contract mark | What it measures |
+| Object | Field | Mark | What it measures |
 | --- | --- | --- | --- |
-| Source | `published_at` | Deprecated | Former publisher timestamp on the source resource |
-| Source | `atlas_acquired_at` | Deprecated | Former Atlas acquisition time on the source resource |
-| Source | `upstream_updated_at` | Current | Governed publisher update time. Null when unavailable |
-| Source | `source_retrieved_at` | Current | Governed retrieval time. Null when unavailable |
-| Observation | `source_published_at` | Current | Publisher timestamp when governed. Null is not inferred freshness |
-| Observation | `atlas_acquired_at` | Current | When Atlas acquired the observation, when governed |
-| Observation | `atlas_processed_at` | Current | When Atlas processed the observation, when governed |
+| Source | `published_at` | Deprecated | Former publisher time |
+| Source | `atlas_acquired_at` | Deprecated | Former acquisition time |
+| Source | `upstream_updated_at` | Current | Publisher update. Null if unknown |
+| Source | `source_retrieved_at` | Current | Retrieval. Null if unknown |
+| Observation | `source_published_at` | Current | Publisher time. Null is unknown |
+| Observation | `atlas_acquired_at` | Current | Acquisition, when governed |
+| Observation | `atlas_processed_at` | Current | Processing, when governed |
 
-The name `atlas_acquired_at` appears on both objects. Deprecation applies to the Source field. It does not apply to the observation field.
+Only the Source `atlas_acquired_at` is deprecated.
 
-On 18 October 2026, all six sources from `GET /v1/sources` had `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` null. The `human` source still named its publisher. The same day, `GET /v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023` returned one row. On that row, `source_published_at` was null, `atlas_acquired_at` was 2026-09-07T17:21:14.768948-07:00, and `atlas_processed_at` was null. Read the timestamp from the object you cite. A null deprecated source field does not clear the observation timestamp.
+A sample `GET /v1/sources` returned six sources, each with `published_at`, `atlas_acquired_at`, `upstream_updated_at`, and `source_retrieved_at` null. The `human` source still named its publisher. A sample county `36061` row had `source_published_at` null, `atlas_acquired_at` 2026-09-07T17:21:14.768948-07:00, and `atlas_processed_at` null. A null source field does not clear the observation timestamp.
 
-A methodology resource has `methodology_id`, `measure_id`, `version`, `description`, `limitations`, `semantic_version`, and `release_version`. Its `version` is the methodology resource version. The observation's `methodology_version` is the transformation version. Keep both when both are present.
-
-Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. Supported detail responses include `ETag`. A matching `If-None-Match` returns HTTP 304 and an empty body.
+Methodology `version` is the resource version. Observation `methodology_version` is the transformation version. Keep both, with `methodology_id`, `measure_id`, `description`, `limitations`, `semantic_version`, and `release_version`. Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. Matching `If-None-Match` returns HTTP 304 and an empty body.
 
 </section>
 
-## Freshness
+## Read the other clocks
 
 | Clock | What it measures |
 | --- | --- |
-| `period_start` and `period_end` | The governed observation period |
-| `source_vintage` | Publisher vintage label when present |
-| `source_published_at` | Publisher timestamp when governed |
-| `atlas_acquired_at` | When Atlas acquired the observation, when governed. On a Source resource the same field name is deprecated |
-| `atlas_processed_at` | When Atlas processed the row, when governed |
-| Source `upstream_updated_at` | Governed publisher update time. Null when unavailable |
-| Source `source_retrieved_at` | Governed retrieval time. Null when unavailable |
-| `meta.response_at` | When this HTTP response was built |
-| `environmental_context.upstream_date_modified` | Upstream modification metadata when environmental context is present. The schema says this is never original publication or first availability |
+| `period_start` and `period_end` | Governed period |
+| `source_vintage` | Vintage label. Not an annual value |
+| `meta.response_at` | When the response was built |
+| `environmental_context.upstream_date_modified` | Upstream modification metadata. Not original publication |
 
-The contract states that response time is not publisher freshness. A generated or response timestamp does not become the surveillance observation date.
+A generated timestamp does not become the surveillance date. `environmental_context` is descriptive weather coverage. A null object does not supply it. `normalized_state` keeps the publisher wording, and `value` stays the publisher value.
 
-## Evidence semantics
+## Keep source identity after normalization
 
-`value_state` answers a different question from a low number:
+An adapter and a terminology mapping can still emit this observation shape. The mapping may annotate meaning. It does not replace `source_id`, `lineage_source_id`, `dataset_id`, or `source_vintage`. `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` are not rewritten into `ZERO`.
 
-- `OBSERVED` is a nonzero value under the measure's unit and limitations.
-- `ZERO` is a published numeric zero. It remains bounded by the measure's coverage and method.
-- `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require a null `value`. `SUPPRESSED` means the value was withheld. `MISSING` and `UNAVAILABLE` are gaps.
-- `NO_COUNTY_LINKED_RECORD` retains the literal `no_county_linked_record`. The schema says this is not evidence of absence.
-- `NO_RECORDS` retains CDC's publisher literal `No records`. The schema says this does not establish biological absence.
+Fields: [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and [provenance reference](/docs/api-reference/provenance). atlas_get_evidence_provenance reads a current source or methodology. atlas_get_county_profile reads explicit selections. Both keep value state, source identity, and limitations. atlas_resolve_geographies does not establish that an observation exists. Contract: [public-evidence-tools.md](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md). The September 2026 smoke-only receipt is historical. See [API, MCP, and access](/docs/api-mcp-and-access) and [Sources and canonical evidence](/docs/sources-and-canonical-evidence).
 
-Surveillance floors and gap scores are not diagnoses, individual risk estimates, or causal claims. `environmental_context`, when an observation includes it, is descriptive weather coverage. A null `environmental_context` does not supply that coverage. A null or omitted `surveillance_context` does not establish absence or temporal comparability.
+## Read source and methodology results
 
-The same interpretation for people using the Atlas screens is in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and [Releases and methodology labels](/docs/releases-and-methodology).
-
-## Source identity survives normalization
-
-The fields above are the public provenance contract for an observation in the current release. Atlas is designed so a later governed source can pass through a source-specific adapter and a terminology mapping and still arrive as this same observation shape. The mapping can annotate source meaning. It does not replace `source_id`, `lineage_source_id`, `dataset_id`, or `source_vintage` with a generic label.
-
-Read `value_state` with `limitations`. `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` stay gaps or withheld values. Uncertainty recorded in `limitations` stays a limitation. Those states are not rewritten into `ZERO`.
-
-HTTP fields stay in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the generated [provenance reference](/docs/api-reference/provenance). The released MCP tool atlas_get_evidence_provenance reads a published source or methodology for the expected current release, and atlas_get_county_profile reads county observations for explicit measure-period selections. Both keep this canonical value state, source identity, and limitations. atlas_resolve_geographies resolves county identity only and does not establish that an observation exists. Arguments and bounds stay in the [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md). The September 2026 smoke-only development receipt is historical. [API, MCP, and access](/docs/api-mcp-and-access) records the six-tool production surface. [Sources and canonical evidence](/docs/sources-and-canonical-evidence) separates later source adapters from the open-data release available now.
-
-## States for source and methodology reads
-
-| State | Result |
-| --- | --- |
-| Success | HTTP 200 and `data` for the id you asked for |
-| Empty collection | `GET /v1/sources` can return HTTP 200 and `data: []` when a page is exhausted. Detail routes identify one id, so exhaustion is not their empty state |
-| Not found | HTTP 404 `RESOURCE_NOT_FOUND` |
-| Invalid parameters | HTTP 400 `INVALID_REQUEST` for a bad query value. HTTP 413 `INVALID_REQUEST` when a GET request has a body. HTTP 414 `INVALID_REQUEST` when the query string is too long |
-| Unsupported filter or strata | HTTP 400 `UNSUPPORTED_FILTER` or `UNSUPPORTED_STRATIFICATION` |
-| Query too broad | HTTP 400 `QUERY_TOO_BROAD`. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation |
-| Rate limited | HTTP 429 `RATE_LIMITED` and `Retry-After` |
-| Server unavailable | HTTP 503 and `Retry-After` |
-| Unknown or limited data | Null publisher timestamps and a null observation `methodology_id` stay null. HTTP 304 returns an empty body when the `ETag` matches |
+Status codes, including `QUERY_TOO_BROAD` above 10,000 results, are in [REST API](/docs/develop/rest). The API never truncates results. `GET /v1/sources` can return HTTP 200 and `data: []` on an exhausted page. Null timestamps and a null `methodology_id` stay null.
