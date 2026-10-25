@@ -1060,7 +1060,7 @@ export const ListIntelligenceSourcesResponse = zod.object({
 
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. Each list entry includes abstract_preview, abstract_has_more, abstract_state, copyright_line, pubmed_url, and attribution. abstract_preview is at most 1000 characters, cut at a word boundary, and is null when abstract_state is not present. The list does not include the full abstract text. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination. The response must not be cached. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeedQuerySourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
@@ -1117,14 +1117,6 @@ export const listIntelligenceFeedResponseDataItemDescriptionTextMax = 4096;
 
 
 export const listIntelligenceFeedResponseDataItemDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const listIntelligenceFeedResponseDataItemAbstractOneTextMax = 6000;
-
-
-export const listIntelligenceFeedResponseDataItemAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineMax = 1000;
-
-
-export const listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseDataItemTagsItemMax = 200;
 
 
@@ -1138,10 +1130,22 @@ export const listIntelligenceFeedResponseDataItemAuthorsItemRegExp = new RegExp(
 export const listIntelligenceFeedResponseDataItemAuthorsMax = 20;
 
 export const listIntelligenceFeedResponseDataItemPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const listIntelligenceFeedResponseDataItemPubmedUrlMax = 80;
+
+
+export const listIntelligenceFeedResponseDataItemPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseDataItemAttributionMax = 200;
 
 
 export const listIntelligenceFeedResponseDataItemAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemAbstractPreviewMax = 1000;
+
+
+export const listIntelligenceFeedResponseDataItemAbstractPreviewRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemCopyrightLineMax = 1000;
+
+
+export const listIntelligenceFeedResponseDataItemCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const listIntelligenceFeedResponseMetaSourceHealthAvailableDefault = false;
 export const listIntelligenceFeedResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
@@ -1178,16 +1182,16 @@ export const ListIntelligenceFeedResponse = zod.object({
   "text": zod.string().max(listIntelligenceFeedResponseDataItemDescriptionTextMax).regex(listIntelligenceFeedResponseDataItemDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
 }).describe('Publisher summary for this entry.'),
-  "abstract": zod.union([zod.object({
-  "text": zod.string().max(listIntelligenceFeedResponseDataItemAbstractOneTextMax).regex(listIntelligenceFeedResponseDataItemAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.'),
-  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
-  "copyright_line": zod.string().max(listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineMax).regex(listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
-}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed.'),
   "tags": zod.array(zod.string().max(listIntelligenceFeedResponseDataItemTagsItemMax).regex(listIntelligenceFeedResponseDataItemTagsItemRegExp)).max(listIntelligenceFeedResponseDataItemTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
   "authors": zod.array(zod.string().max(listIntelligenceFeedResponseDataItemAuthorsItemMax).regex(listIntelligenceFeedResponseDataItemAuthorsItemRegExp)).max(listIntelligenceFeedResponseDataItemAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
   "pmid": zod.string().regex(listIntelligenceFeedResponseDataItemPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
-  "attribution": zod.string().max(listIntelligenceFeedResponseDataItemAttributionMax).regex(listIntelligenceFeedResponseDataItemAttributionRegExp).describe('Credit line shown with the entry.')
-}).describe('One source-attributed publication in the intelligence feed.')),
+  "pubmed_url": zod.string().max(listIntelligenceFeedResponseDataItemPubmedUrlMax).regex(listIntelligenceFeedResponseDataItemPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(listIntelligenceFeedResponseDataItemAttributionMax).regex(listIntelligenceFeedResponseDataItemAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract_preview": zod.string().max(listIntelligenceFeedResponseDataItemAbstractPreviewMax).regex(listIntelligenceFeedResponseDataItemAbstractPreviewRegExp).nullable().describe('Plain-text preview of a present PubMed abstract, cut at a word boundary. At most 1000 characters. The whole abstract when it is shorter. An empty string when the abstract is present and no complete word fits. Null when abstract_state is not present. No ellipsis is added.'),
+  "abstract_has_more": zod.boolean().describe('True when abstract_preview omits part of a present abstract. False when the preview is the whole abstract, or when abstract_state is not present.'),
+  "abstract_state": zod.union([zod.literal('present'),zod.literal('empty'),zod.literal('not_provided'),zod.literal('withheld'),zod.literal('suppressed'),zod.literal(null)]).nullable().describe('present: the abstract text is non-empty. empty: the abstract element is blank. not_provided: the PubMed record has no abstract. withheld: the abstract is not shown. suppressed: the abstract is not shown. Null when the entry is not PubMed, matching a null abstract on the by-id route.'),
+  "copyright_line": zod.string().max(listIntelligenceFeedResponseDataItemCopyrightLineMax).regex(listIntelligenceFeedResponseDataItemCopyrightLineRegExp).nullable().describe('Copyright line from the record, verbatim. Present only when abstract_state is present and the record has one; otherwise null.')
+}).describe('One feed list row. The full abstract text is omitted.')),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(listIntelligenceFeedResponseMetaProjectionVersionDefault),
@@ -1198,7 +1202,7 @@ export const ListIntelligenceFeedResponse = zod.object({
 
 
 /**
- * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. The entry uses the same fields as the feed list. Cache-Control is no-store. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
+ * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. The entry includes the full abstract as abstract.text, abstract.state, and abstract.copyright_line, plus pubmed_url and attribution. The response must not be cached. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
  * @summary Read one source-attributed publication
  */
 export const getIntelligenceFeedEntryPathItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
@@ -1246,14 +1250,6 @@ export const getIntelligenceFeedEntryResponseDataDescriptionTextMax = 4096;
 
 
 export const getIntelligenceFeedEntryResponseDataDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const getIntelligenceFeedEntryResponseDataAbstractOneTextMax = 6000;
-
-
-export const getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax = 1000;
-
-
-export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseDataTagsItemMax = 200;
 
 
@@ -1267,10 +1263,22 @@ export const getIntelligenceFeedEntryResponseDataAuthorsItemRegExp = new RegExp(
 export const getIntelligenceFeedEntryResponseDataAuthorsMax = 20;
 
 export const getIntelligenceFeedEntryResponseDataPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const getIntelligenceFeedEntryResponseDataPubmedUrlMax = 80;
+
+
+export const getIntelligenceFeedEntryResponseDataPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseDataAttributionMax = 200;
 
 
 export const getIntelligenceFeedEntryResponseDataAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAbstractOneTextMax = 6000;
+
+
+export const getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 
 export const GetIntelligenceFeedEntryResponse = zod.object({
@@ -1305,16 +1313,17 @@ export const GetIntelligenceFeedEntryResponse = zod.object({
   "text": zod.string().max(getIntelligenceFeedEntryResponseDataDescriptionTextMax).regex(getIntelligenceFeedEntryResponseDataDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
 }).describe('Publisher summary for this entry.'),
-  "abstract": zod.union([zod.object({
-  "text": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneTextMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.'),
-  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
-  "copyright_line": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
-}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed.'),
   "tags": zod.array(zod.string().max(getIntelligenceFeedEntryResponseDataTagsItemMax).regex(getIntelligenceFeedEntryResponseDataTagsItemRegExp)).max(getIntelligenceFeedEntryResponseDataTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
   "authors": zod.array(zod.string().max(getIntelligenceFeedEntryResponseDataAuthorsItemMax).regex(getIntelligenceFeedEntryResponseDataAuthorsItemRegExp)).max(getIntelligenceFeedEntryResponseDataAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
   "pmid": zod.string().regex(getIntelligenceFeedEntryResponseDataPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
-  "attribution": zod.string().max(getIntelligenceFeedEntryResponseDataAttributionMax).regex(getIntelligenceFeedEntryResponseDataAttributionRegExp).describe('Credit line shown with the entry.')
-}).describe('One source-attributed publication in the intelligence feed.'),
+  "pubmed_url": zod.string().max(getIntelligenceFeedEntryResponseDataPubmedUrlMax).regex(getIntelligenceFeedEntryResponseDataPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(getIntelligenceFeedEntryResponseDataAttributionMax).regex(getIntelligenceFeedEntryResponseDataAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract": zod.union([zod.object({
+  "text": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneTextMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete. An abstract longer than 6000 characters is withheld.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
+  "copyright_line": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
+}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. The text is the complete abstract.')
+}).describe('One source-attributed publication, including the full PubMed abstract.'),
   "meta": zod.object({
   "projection_version": zod.literal("intelligence-feed-read-v2").default(getIntelligenceFeedEntryResponseMetaProjectionVersionDefault)
 }).optional().describe('Projection identity for one feed entry.')

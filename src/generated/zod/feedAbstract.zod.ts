@@ -17,7 +17,7 @@ export const feedAbstractCopyrightLineMax = 1000;
 export const feedAbstractCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 
 export const FeedAbstract = zod.object({
-  "text": zod.string().max(feedAbstractTextMax).regex(feedAbstractTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.'),
+  "text": zod.string().max(feedAbstractTextMax).regex(feedAbstractTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete. An abstract longer than 6000 characters is withheld.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
   "copyright_line": zod.string().max(feedAbstractCopyrightLineMax).regex(feedAbstractCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
 }).describe('PubMed abstract for one feed entry.')
