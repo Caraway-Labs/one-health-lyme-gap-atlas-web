@@ -12,7 +12,7 @@ One Health Lyme Gap Atlas collects the minimum information needed to operate pub
 
 Public-health datasets displayed by Atlas are not user data. They retain their own provenance, licensing, and governance contracts.
 
-Product analytics must never contain private health information, medical history, diagnosis or treatment information, chat prompts/responses, feedback text, raw search terms, email addresses, credentials, tokens, or arbitrary URL parameters.
+Product analytics must never contain private health information, medical history, diagnosis or treatment information, chat prompts/responses, feedback text, raw search terms, email addresses, credentials, tokens, or arbitrary URL parameters. Feed item detail opens emit `atlas_feed_item_detail_opened` with the closed values `entry_surface` (`feed_card_details` or `feed_card_read_more`) and `source_family` (`cdc_mmwr`, `cdc_eid`, `cdc_other`, `nih_niaid`, `pubmed`, `state_local`, or `other`). That event does not include an item id, PMID, title, or URL. Panel close, retry, PubMed, and NCBI copyright controls use `atlas_ui_interaction` control ids and no item text.
 
 ## Current data flows
 

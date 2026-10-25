@@ -2187,7 +2187,7 @@ describe("public OpenAPI drift", () => {
       noRecords: true,
       sha256:
         "c8e0b42feb019eabc4ee0033e7501d5134c946c74750432f7bd5a1ee32a44618",
-      sourceCommit: "9d137a895576310dfa84e0d17fc297bffe326ebe",
+      sourceCommit: "decc4355c6eb6bfd04ca51f5a1f69eeb1b685ce2",
     });
   });
 });
