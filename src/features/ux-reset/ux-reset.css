@@ -4379,24 +4379,26 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-list,
   .ux-reset-explorer-preview {
-    /* Zero height keeps county content from stretching the map row.
-       The stretched minimum matches the map card. */
-    height: 0;
-    min-height: 100%;
+    /* Stretch with the map row. min-height 0 keeps a percentage from
+       resolving against the workspace scroll pane, which was leaving
+       empty scroll below the footer. */
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
     overflow: hidden;
   }
 
-  .ux-reset-explorer-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ux-reset-explorer-list > .gap-0 {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    height: 100%;
+  .ux-reset-explorer-list > .gap-0,
+  .ux-reset-explorer-column-scroll {
+    /* Fill the stretched map row from a zero basis and scroll the
+       county content. Block layout keeps that content from shrinking
+       away, and it does not use a percentage of the scroll pane. */
+    display: block;
+    flex: 1 1 0;
     min-height: 0;
+    overflow: auto;
   }
 
   .ux-reset-explorer-list .ux-reset-review-candidate-list {
@@ -4412,10 +4414,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-  }
-
-  .ux-reset-explorer-preview {
-    overflow: auto;
   }
 
   .ux-reset-explorer-map {
@@ -4455,10 +4453,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     padding: 0.35rem 0.9rem 0.75rem;
   }
 
-  .ux-reset-explorer-preview {
-    overflow: auto;
-  }
-
   .ux-reset-explorer-list {
     grid-column: 1;
     grid-row: 1;
@@ -4494,6 +4488,17 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     > .ux-reset-explorer-list,
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
     > .ux-reset-explorer-preview {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    > .ux-reset-explorer-list
+    > .gap-0,
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    .ux-reset-explorer-column-scroll {
+    flex: none;
     height: auto;
     overflow: visible;
   }
