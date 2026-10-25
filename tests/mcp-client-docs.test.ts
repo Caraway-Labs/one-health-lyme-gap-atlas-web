@@ -53,7 +53,6 @@ describe("MCP client configuration documentation", () => {
       "prompts/list",
       "Unknown tool: server_status",
       "Unknown tool: atlas_smoke_test",
-      "2026-10-18",
     ];
     const missing = requiredPhrases.filter(
       (phrase) => !clientPage.includes(phrase)

@@ -446,7 +446,7 @@ test("persists the observation slice tab and shows the temporal matrix", async (
     page.getByRole("columnheader", { name: "vintage_year", exact: true })
   ).toBeVisible();
   await page
-    .getByRole("heading", { name: "Temporal parameters", exact: true })
+    .getByRole("heading", { name: "Choose a time parameter", exact: true })
     .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath("observation-queries-matrix.png"),
@@ -674,7 +674,7 @@ test("keeps observation query tabs usable at 375px", async ({
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/docs/develop/observation-queries");
   await expect(
-    page.getByRole("heading", { name: "Temporal parameters", exact: true })
+    page.getByRole("heading", { name: "Choose a time parameter", exact: true })
   ).toBeVisible();
   await page.getByRole("tab", { name: "January 2025 environment" }).click();
   await expect(
@@ -765,7 +765,7 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
 
   await page.goto("/docs/develop/rest");
   await expect(
-    page.getByRole("heading", { name: "Pagination", exact: true })
+    page.getByRole("heading", { name: "Page through results", exact: true })
   ).toBeVisible();
   await expectClientLanguage(page, "R", "page_token = token");
   await expect(
