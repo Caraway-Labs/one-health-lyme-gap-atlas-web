@@ -9,7 +9,7 @@ export const FEED_PUBLISHED_PRESETS = ["7d", "30d", "90d", "all"] as const;
 
 export type FeedPublishedPreset = (typeof FEED_PUBLISHED_PRESETS)[number];
 
-export const DEFAULT_FEED_PUBLISHED: FeedPublishedPreset = "30d";
+export const DEFAULT_FEED_PUBLISHED: FeedPublishedPreset = "all";
 
 export const FEED_PUBLISHED_LABELS: Record<FeedPublishedPreset, string> = {
   "7d": "Past 7 days",
@@ -135,8 +135,8 @@ export function activeFeedFilterCount(filters: FeedFilterState): number {
 
 /**
  * True when the feed request sends source_id or published_from.
- * The default Past 30 days control still narrows; only All dates with no
- * source is an unfiltered request. Chip count stays separate.
+ * All dates with no source sends neither. A shorter date window or a
+ * selected source still narrows.
  */
 export function feedRequestNarrows(filters: FeedFilterState): boolean {
   return buildFeedListParams(filters, new Date()) !== undefined;

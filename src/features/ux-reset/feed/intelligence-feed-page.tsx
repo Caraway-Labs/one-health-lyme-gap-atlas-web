@@ -53,7 +53,10 @@ const EMPTY_BODY =
 const FILTERED_EMPTY_TITLE = "No items match these filters";
 const FILTERED_EMPTY_BODY = "Try another source or a wider date range.";
 const DATE_WINDOW_EMPTY_TITLE = "No items in this date window";
-const DATE_WINDOW_EMPTY_BODY = `${FEED_PUBLISHED_LABELS[DEFAULT_FEED_PUBLISHED]} has no matching items. All dates includes older items and items without a publication date.`;
+
+function dateWindowEmptyBody(published: FeedPublishedPreset): string {
+  return `${FEED_PUBLISHED_LABELS[published]} has no matching items. All dates includes older items and items without a publication date.`;
+}
 const TOO_BROAD_TITLE = "Too many items to show at once";
 const TOO_BROAD_BODY = "Choose a source or a shorter date range.";
 
@@ -321,14 +324,15 @@ export function IntelligenceFeedExperience() {
       </>
     );
   } else if (items.length === 0) {
-    const defaultWindowOnly = activeFeedFilterCount(filters) === 0;
+    const dateWindowOnly =
+      filters.sourceId === null && filters.published !== "all";
     state = "filtered-empty";
     body = (
       <>
         <FeedLimitations limitations={limitations} />
         <AtlasStatusMessage
           action={
-            defaultWindowOnly ? (
+            dateWindowOnly ? (
               <Button
                 {...analyticsControlAttributes("feed_clear_filters")}
                 className="ux-reset-feed-clear"
@@ -353,12 +357,14 @@ export function IntelligenceFeedExperience() {
             )
           }
           title={
-            defaultWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
+            dateWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
           }
           titleAs="h2"
           tone="empty"
         >
-          {defaultWindowOnly ? DATE_WINDOW_EMPTY_BODY : FILTERED_EMPTY_BODY}
+          {dateWindowOnly
+            ? dateWindowEmptyBody(filters.published)
+            : FILTERED_EMPTY_BODY}
         </AtlasStatusMessage>
       </>
     );

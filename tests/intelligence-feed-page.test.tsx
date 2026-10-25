@@ -172,7 +172,7 @@ function installStalePageFeed() {
     return {
       data: intelligenceFeedEnvelope(
         [withTitle(mixedIntelligenceFeedItems[0], "Default first")],
-        `30d-${defaultVisits}`
+        `all-${defaultVisits}`
       ),
       headers: new Headers(),
       status: 200,
@@ -251,10 +251,23 @@ describe("intelligence feed page", () => {
         name: /Lyme disease surveillance update/,
       })
     ).resolves.toBeTruthy();
-    expect(screen.getByText("CDC")).toBeTruthy();
-    expect(screen.getByText("March 2, 2026")).toBeTruthy();
-    expect(screen.getByText("Publication date not provided")).toBeTruthy();
-    expect(screen.getByText("Publication date withheld")).toBeTruthy();
+    expect({
+      cdc: screen.getByText("CDC").textContent,
+      date: screen.getByText("March 2, 2026").textContent,
+      notProvided: screen.getByText("Publication date not provided")
+        .textContent,
+      published: screen.getByRole("combobox", { name: "Published" })
+        .textContent,
+      request: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
+      withheld: screen.getByText("Publication date withheld").textContent,
+    }).toStrictEqual({
+      cdc: "CDC",
+      date: "March 2, 2026",
+      notProvided: "Publication date not provided",
+      published: expect.stringContaining("All dates"),
+      request: null,
+      withheld: "Publication date withheld",
+    });
   });
 
   it("opens publisher pages with the workspace external-link contract", async () => {
@@ -280,18 +293,27 @@ describe("intelligence feed page", () => {
     renderFeed();
 
     await expect(
-      screen.findByRole("heading", { name: "No items in this date window" })
+      screen.findByRole("heading", { name: "No new items" })
     ).resolves.toBeTruthy();
-    expect(
-      screen.queryByText(
-        "Approved trusted sources have no items in this feed right now."
-      )
-    ).toBeNull();
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.queryByText(/fail|error|unavailable/i)).toBeNull();
-    expect(screen.getByTestId("intelligence-feed").dataset.feedState).toBe(
-      "filtered-empty"
-    );
+    expect({
+      alert: screen.queryByRole("alert"),
+      body: Boolean(
+        screen.getByText(
+          "Approved trusted sources have no items in this feed right now."
+        )
+      ),
+      failure: screen.queryByText(/fail|error|unavailable/i),
+      request: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
+      showAllDates: screen.queryByRole("button", { name: "Show all dates" }),
+      state: screen.getByTestId("intelligence-feed").dataset.feedState,
+    }).toStrictEqual({
+      alert: null,
+      body: true,
+      failure: null,
+      request: null,
+      showAllDates: null,
+      state: "empty",
+    });
   });
 
   it("omits a publisher link when the canonical URL is not http(s)", async () => {
@@ -388,15 +410,21 @@ describe("intelligence feed page", () => {
     const titles = screen
       .getAllByRole("heading", { level: 2 })
       .map((heading) => heading.textContent);
-    expect(titles[0]).toContain("Lyme disease surveillance update");
-    expect(titles[1]).toContain("County-level Lyme reporting, a review");
-    expect(listIntelligenceFeed).toHaveBeenCalledWith(
-      {
-        page_token: "page-2",
-        published_from: publishedFromForPreset("30d", new Date()),
-      },
-      expect.anything()
-    );
+    expect({
+      first: titles[0],
+      firstRequest: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
+      nextPage: listIntelligenceFeed.mock.calls.some(
+        (call) =>
+          call[0]?.page_token === "page-2" &&
+          call[0]?.published_from === undefined
+      ),
+      second: titles[1],
+    }).toStrictEqual({
+      first: expect.stringContaining("Lyme disease surveillance update"),
+      firstRequest: null,
+      nextPage: true,
+      second: expect.stringContaining("County-level Lyme reporting, a review"),
+    });
   });
 
   it("keeps page one when the next page returns 500", async () => {
@@ -610,7 +638,7 @@ describe("intelligence feed page", () => {
     const { urlUpdates } = renderFeed("?published=7d");
 
     await screen.findByRole("heading", {
-      name: "No items match these filters",
+      name: "No items in this date window",
     });
     fireEvent.click(
       screen.getAllByRole("button", { name: "Clear filters" })[0]
@@ -884,7 +912,7 @@ describe("intelligence feed page", () => {
     ).toContain("cdc-lyme");
   });
 
-  it("treats the default date window as filtered when it returns no rows", async () => {
+  it("shows undated items on the default feed and offers all dates from a short window", async () => {
     const older = {
       ...mixedIntelligenceFeedItems[0],
       published_at: "2020-01-15T00:00:00Z",
@@ -892,7 +920,7 @@ describe("intelligence feed page", () => {
     };
     const undated = {
       ...mixedIntelligenceFeedItems[1],
-      publication_date_state: "not_provided" as const,
+      publication_date_state: "invalid" as const,
       published_at: null,
       title: "Undated surveillance note",
     };
@@ -905,42 +933,65 @@ describe("intelligence feed page", () => {
     }));
     renderFeed();
 
+    await screen.findByRole("heading", { name: /Older surveillance note/ });
+    expect({
+      dateWindow: screen.queryByRole("heading", {
+        name: "No items in this date window",
+      }),
+      missingDate: screen.getByText("Publication date not available")
+        .textContent,
+      request: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
+      undated: screen.getByRole("heading", {
+        name: /Undated surveillance note/,
+      }).textContent,
+    }).toStrictEqual({
+      dateWindow: null,
+      missingDate: "Publication date not available",
+      request: null,
+      undated: expect.stringContaining("Undated surveillance note"),
+    });
+
+    await choosePublished("Past 30 days");
     await screen.findByRole("heading", {
       name: "No items in this date window",
     });
     expect({
-      clear: screen.queryByRole("button", { name: "Clear filters" }),
-      chips: screen.queryByRole("button", { name: /Remove filter/ }),
+      chip: Boolean(
+        screen.getByRole("button", {
+          name: "Remove filter Published: Past 30 days",
+        })
+      ),
+      publishedFrom:
+        listIntelligenceFeed.mock.calls.at(-1)?.[0]?.published_from ?? null,
       state: screen.getByTestId("intelligence-feed").dataset.feedState,
       unfiltered: screen.queryByText(
         "Approved trusted sources have no items in this feed right now."
       ),
-      unfilteredTitle: screen.queryByRole("heading", { name: "No new items" }),
       window: Boolean(
         screen.getByText(
           "Past 30 days has no matching items. All dates includes older items and items without a publication date."
         )
       ),
     }).toStrictEqual({
-      clear: null,
-      chips: null,
+      chip: true,
+      publishedFrom: publishedFromForPreset("30d", new Date()),
       state: "filtered-empty",
       unfiltered: null,
-      unfilteredTitle: null,
       window: true,
     });
-    expect(listIntelligenceFeed.mock.calls[0]?.[0]?.published_from).toBe(
-      publishedFromForPreset("30d", new Date())
-    );
 
     fireEvent.click(screen.getByRole("button", { name: "Show all dates" }));
     await screen.findByRole("heading", { name: /Older surveillance note/ });
-    expect(
-      screen.getByRole("heading", { name: /Undated surveillance note/ })
-    ).toBeTruthy();
-    expect(
-      listIntelligenceFeed.mock.calls.some((call) => !call[0]?.published_from)
-    ).toBeTruthy();
+    expect({
+      request:
+        listIntelligenceFeed.mock.calls.at(-1)?.[0]?.published_from ?? null,
+      undated: Boolean(
+        screen.getByRole("heading", { name: /Undated surveillance note/ })
+      ),
+    }).toStrictEqual({
+      request: null,
+      undated: true,
+    });
   });
 
   it("uses the unfiltered empty message only when the request does not narrow", async () => {
@@ -968,27 +1019,27 @@ describe("intelligence feed page", () => {
 
     await screen.findByRole("heading", { name: /Default first/ });
     fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
-    await screen.findByRole("heading", { name: /Continuation 30d-1/ });
+    await screen.findByRole("heading", { name: /Continuation all-1/ });
     await choosePublished("Past 7 days");
     await screen.findByRole("heading", { name: /Seven first/ });
 
     const callsBeforeReturn = listIntelligenceFeed.mock.calls.length;
-    await choosePublished("Past 30 days");
+    await choosePublished("All dates");
     await screen.findByRole("heading", { name: /Default first/ });
     expect(
-      screen.queryByRole("heading", { name: /Continuation 30d-1/ })
+      screen.queryByRole("heading", { name: /Continuation all-1/ })
     ).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
-    await screen.findByRole("heading", { name: /Continuation 30d-2/ });
+    await screen.findByRole("heading", { name: /Continuation all-2/ });
     expect(
-      screen.queryByRole("heading", { name: /Continuation 30d-1/ })
+      screen.queryByRole("heading", { name: /Continuation all-1/ })
     ).toBeNull();
     expect(
       listIntelligenceFeed.mock.calls
         .slice(callsBeforeReturn)
         .map((call) => call[0]?.page_token ?? null)
-    ).toStrictEqual([null, "30d-2"]);
+    ).toStrictEqual([null, "all-2"]);
   });
 
   it("resets the default filter to page one when filters are cleared", async () => {
@@ -997,7 +1048,7 @@ describe("intelligence feed page", () => {
 
     await screen.findByRole("heading", { name: /Default first/ });
     fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
-    await screen.findByRole("heading", { name: /Continuation 30d-1/ });
+    await screen.findByRole("heading", { name: /Continuation all-1/ });
     await choosePublished("Past 7 days");
     await screen.findByRole("heading", { name: /Seven first/ });
 
@@ -1005,15 +1056,15 @@ describe("intelligence feed page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     await screen.findByRole("heading", { name: /Default first/ });
     expect(
-      screen.queryByRole("heading", { name: /Continuation 30d-1/ })
+      screen.queryByRole("heading", { name: /Continuation all-1/ })
     ).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
-    await screen.findByRole("heading", { name: /Continuation 30d-2/ });
+    await screen.findByRole("heading", { name: /Continuation all-2/ });
     expect(
       listIntelligenceFeed.mock.calls
         .slice(callsBeforeClear)
         .map((call) => call[0]?.page_token ?? null)
-    ).toStrictEqual([null, "30d-2"]);
+    ).toStrictEqual([null, "all-2"]);
   });
 });
