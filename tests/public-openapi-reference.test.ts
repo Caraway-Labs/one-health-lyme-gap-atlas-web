@@ -2086,6 +2086,41 @@ describe("public OpenAPI drift", () => {
     });
   });
 
+  it("documents geography identity as a typed 200 union", () => {
+    const contract = readAndLoadPublicOpenApiContract(process.cwd());
+    const operation = contract.document.paths as Record<string, unknown>;
+    const pathItem = operation[
+      "/v1/geographies/{geography_type}/{geography_id}"
+    ] as { get?: { responses?: Record<string, unknown> } };
+    const responses = pathItem.get?.responses ?? {};
+    const success = responses["200"] as {
+      content?: {
+        "application/json"?: { schema?: { anyOf?: { $ref?: string }[] } };
+      };
+    };
+    const branches = success.content?.["application/json"]?.schema?.anyOf?.map(
+      (branch) => branch.$ref
+    );
+
+    expect({
+      branches,
+      documented503: "503" in responses,
+      documented422: "422" in responses,
+      hasUnavailableSchema: Object.hasOwn(
+        contract.schemas,
+        "GeographyUnavailable"
+      ),
+    }).toStrictEqual({
+      branches: [
+        "#/components/schemas/ResourceEnvelope_Geography_",
+        "#/components/schemas/GeographyUnavailable",
+      ],
+      documented503: false,
+      documented422: false,
+      hasUnavailableSchema: true,
+    });
+  });
+
   it("keeps DAY admissible and records the accepted retrieval", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const temporalGrain = contract.schemas.Observation;
@@ -2111,8 +2146,8 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "dfa540f57f0c359f5adc0a0d8b851d964008fbea72c84f9d5f09bcdf1152fbf0",
-      sourceCommit: "e88887877440c00de0e23301f0a3eac2353134d9",
+        "b26a2e6d9195d6ae3afe17e5db49ebbf4b6fc31808d221430b886ca53e7c55be",
+      sourceCommit: "f485d5ef756ac7ae3cebf864535a8e1c0e417f9e",
     });
   });
 });
