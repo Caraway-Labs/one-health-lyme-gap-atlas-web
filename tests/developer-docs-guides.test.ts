@@ -500,7 +500,7 @@ function documentedValueStates(resources: string): string[] {
 }
 
 function errorTableProblems(rest: string, spec: JsonRecord): string[] {
-  const section = rest.split("## Errors")[1]?.split("\n## ")[0] ?? "";
+  const section = rest.split("## Handle errors")[1]?.split("\n## ")[0] ?? "";
   const rows: { code: string; status: string }[] = [];
   for (const match of section.matchAll(
     /^\| (?<status>\d{3}) \| (?<code>[^|\n]+) \|/gm
