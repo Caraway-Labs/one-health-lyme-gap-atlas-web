@@ -172,14 +172,19 @@ test("keeps an empty feed distinct from failure and unavailability", async ({
   await installFeed(page, 200, intelligenceFeedEnvelope([]));
   await page.goto("/app/feed");
   await expect(
-    page.getByRole("heading", { name: "No items in this date window" })
+    page.getByRole("heading", { name: "No new items" })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Approved trusted sources have no items in this feed right now."
+    )
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Show all dates" })
-  ).toBeVisible();
-  await expect(page.getByText(/no items in this feed right now/i)).toHaveCount(
-    0
-  );
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "No items in this date window" })
+  ).toHaveCount(0);
   const feed = page.getByTestId("intelligence-feed");
   await expect(feed.getByRole("alert")).toHaveCount(0);
   await expect(feed.getByText(/fail|error|unavailable/i)).toHaveCount(0);
@@ -320,10 +325,13 @@ test("filters the feed by source and publication date", async ({
   ).toBeVisible();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect.poll(() => feedUrls.length).toBeGreaterThan(0);
+  await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
+    "All dates"
+  );
   expectFeedParams(feedUrls[0], {
     page_size: null,
     page_token: null,
-    published_from: localPublishedFrom(30),
+    published_from: null,
     published_to: null,
     source_id: null,
   });
@@ -341,7 +349,7 @@ test("filters the feed by source and publication date", async ({
     .toContain("source_id=cdc-lyme");
   expectFeedParams(feedUrls.at(-1) ?? "", {
     page_token: null,
-    published_from: localPublishedFrom(30),
+    published_from: null,
     published_to: null,
     source_id: "cdc-lyme",
   });
@@ -374,6 +382,15 @@ test("filters the feed by source and publication date", async ({
     .click();
   await expect(page).not.toHaveURL(/published=/);
   await expect(page).toHaveURL(/source=cdc-lyme/);
+  await expect
+    .poll(() => feedUrls.at(-1) ?? "")
+    .toContain("source_id=cdc-lyme");
+  expectFeedParams(feedUrls.at(-1) ?? "", {
+    page_token: null,
+    published_from: null,
+    published_to: null,
+    source_id: "cdc-lyme",
+  });
   await expectNoAxeViolations(page);
 
   await page.getByRole("button", { name: "Clear filters" }).click();
@@ -389,7 +406,7 @@ test("filters the feed by source and publication date", async ({
   await expect(page.getByRole("option", { name: "Past 7 days" })).toBeVisible();
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/published=7d/);
+  await expect(page).toHaveURL(/published=90d/);
   await page.keyboard.press("Escape");
   await expectNoAxeViolations(page);
   await page.screenshot({
@@ -404,25 +421,27 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
     intelligenceFeedEnvelope(mixedIntelligenceFeedItems)
   );
   await page.goto("/app/feed");
-  await page.getByRole("combobox", { name: "Published" }).click();
-  await page.getByRole("option", { name: "All dates" }).click();
-  await expect(page).toHaveURL(/published=all/);
-  const allDatesUrl = feedUrls.at(-1) ?? "";
-  expectFeedParams(allDatesUrl, {
+  await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
+    "All dates"
+  );
+  expectFeedParams(feedUrls[0] ?? "", {
     page_token: null,
     published_from: null,
     published_to: null,
     source_id: null,
   });
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 7 days" }).click();
+  await expect(page).toHaveURL(/published=7d/);
   await page.goBack();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
-    "Past 30 days"
+    "All dates"
   );
   await page.goForward();
-  await expect(page).toHaveURL(/published=all/);
+  await expect(page).toHaveURL(/published=7d/);
   await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
-    "All dates"
+    "Past 7 days"
   );
   await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
@@ -447,9 +466,17 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expectNoAxeViolations(page);
 
+  await page.goto("/app/feed?published=all");
+  await expect(page).toHaveURL(/\/app\/feed$/);
+  await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
+    "All dates"
+  );
+  await expectNoAxeViolations(page);
+
   feedUrls.length = 0;
   await page.goto("/app/feed?source=missing-source&published=30d");
-  await expect(page).toHaveURL(/\/app\/feed\?source=missing-source$/);
+  await expect(page).toHaveURL(/source=missing-source/);
+  await expect(page).toHaveURL(/published=30d/);
   await expect(page.getByRole("combobox", { name: "Source" })).toContainText(
     "missing-source"
   );
@@ -464,6 +491,13 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
   expect(
     feedUrls.some((url) => new URL(url).searchParams.get("source_id") === null)
   ).toBe(false);
+  expect(
+    feedUrls.every(
+      (url) =>
+        new URL(url).searchParams.get("published_from") ===
+        localPublishedFrom(30)
+    )
+  ).toBe(true);
   await expectNoAxeViolations(page);
 });
 
@@ -508,7 +542,10 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
   await installFeed(page, 200, intelligenceFeedEnvelope([]));
   await page.goto("/app/feed?published=7d");
   await expect(
-    page.getByRole("heading", { name: "No items match these filters" })
+    page.getByRole("heading", { name: "No items in this date window" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Show all dates" })
   ).toBeVisible();
   await expect(page.getByText("Showing 0 items")).toBeVisible();
   await expect(page.getByRole("heading", { name: "No new items" })).toHaveCount(
@@ -569,7 +606,7 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
   });
 });
 
-test("keeps a default date window empty distinct from an unfiltered feed", async ({
+test("shows every returned item by default and restores them from a short window", async ({
   page,
 }) => {
   const older = {
@@ -579,7 +616,7 @@ test("keeps a default date window empty distinct from an unfiltered feed", async
   };
   const undated = {
     ...mixedIntelligenceFeedItems[1],
-    publication_date_state: "not_provided" as const,
+    publication_date_state: "invalid" as const,
     published_at: null,
     title: "Undated surveillance note",
   };
@@ -595,16 +632,39 @@ test("keeps a default date window empty distinct from an unfiltered feed", async
   });
   await page.goto("/app/feed");
   await expect(
+    page.getByRole("heading", { name: "Older surveillance note" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Undated surveillance note" })
+  ).toBeVisible();
+  await expect(page.getByText("Publication date not available")).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/feed$/);
+  expect(
+    feedUrls.some((url) => new URL(url).searchParams.has("published_from"))
+  ).toBe(false);
+
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 30 days" }).click();
+  await expect(page).toHaveURL(/published=30d/);
+  await expect(
     page.getByRole("heading", { name: "No items in this date window" })
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Approved trusted sources have no items in this feed right now."
+      "Past 30 days has no matching items. All dates includes older items and items without a publication date."
     )
-  ).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Clear filters" })).toHaveCount(
-    0
-  );
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Show all dates" })
+  ).toBeVisible();
+  expect(
+    feedUrls.some(
+      (url) =>
+        new URL(url).searchParams.get("published_from") ===
+        localPublishedFrom(30)
+    )
+  ).toBe(true);
+
   await page.getByRole("button", { name: "Show all dates" }).click();
   await expect(
     page.getByRole("heading", { name: "Older surveillance note" })
@@ -612,10 +672,7 @@ test("keeps a default date window empty distinct from an unfiltered feed", async
   await expect(
     page.getByRole("heading", { name: "Undated surveillance note" })
   ).toBeVisible();
-  await expect(page).toHaveURL(/published=all/);
-  expect(
-    feedUrls.some((url) => new URL(url).searchParams.get("published_from"))
-  ).toBe(true);
+  await expect(page).not.toHaveURL(/published=/);
   expect(
     feedUrls.some((url) => !new URL(url).searchParams.has("published_from"))
   ).toBe(true);
@@ -653,7 +710,7 @@ test("resets cached feed pages to page one when a filter changes or clears", asy
       return;
     }
     defaultPageOneVisits += 1;
-    const nextToken = `30d-${defaultPageOneVisits}`;
+    const nextToken = `all-${defaultPageOneVisits}`;
     pageOneTokens.push(nextToken);
     await route.fulfill({
       contentType: "application/json",
@@ -692,7 +749,7 @@ test("resets cached feed pages to page one when a filter changes or clears", asy
   ).toHaveCount(0);
 
   await page.getByRole("combobox", { name: "Published" }).click();
-  await page.getByRole("option", { name: "Past 30 days" }).click();
+  await page.getByRole("option", { name: "All dates" }).click();
   const returnedToken = await settledPageOneToken();
   expect(returnedToken).not.toBe(firstToken);
   await expect(
