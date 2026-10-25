@@ -41,6 +41,7 @@ import type {
   FeedbackSubmissionRequest,
   FeedbackSubmissionResponse,
   GeographyType,
+  GeographyUnavailable,
   GeometryV1AtlasGeometryGet200,
   GeometryV1AtlasGeometryGetParams,
   HTTPValidationError,
@@ -63,7 +64,7 @@ import type {
   PrivacyRequestStatus,
   ProblemDetails,
   RankingCsvV1AtlasRankingCsvGetParams,
-  ReadyHealthReadyGet200,
+  ReadinessResponse,
   ResourceEnvelopeGeography,
   ResourceEnvelopeIndicator,
   ResourceEnvelopeMeasure,
@@ -1169,7 +1170,7 @@ export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<Re
 
 
 export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse200 = {
-  data: ResourceEnvelopeGeography
+  data: ResourceEnvelopeGeography | GeographyUnavailable
   status: 200
 }
 
@@ -1198,15 +1199,10 @@ export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 = {
   status: 429
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse503 = {
-  data: ProblemDetails
-  status: 503
-}
-
 export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseSuccess = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse200) & {
   headers: Headers;
 };
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseError = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse503) & {
+export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseError = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse429) & {
   headers: Headers;
 };
 
@@ -1222,7 +1218,7 @@ export const getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl = (geograph
 }
 
 /**
- * Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.
+ * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.
  * @summary Get geography identity (delivery pending)
  */
 export const geographyV1GeographiesGeographyTypeGeographyIdGet = async (geographyType: GeographyType,
@@ -2225,7 +2221,7 @@ export function useLiveHealthLiveGet<TData = Awaited<ReturnType<typeof liveHealt
 
 
 export type readyHealthReadyGetResponse200 = {
-  data: ReadyHealthReadyGet200
+  data: ReadinessResponse
   status: 200
 }
 

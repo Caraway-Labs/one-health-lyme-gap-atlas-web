@@ -108,7 +108,8 @@ describe("developer documentation guides", () => {
       "UNSUPPORTED_FILTER",
       "UNSUPPORTED_STRATIFICATION",
       "QUERY_TOO_BROAD",
-      "CANONICAL_DATA_UNAVAILABLE",
+      "CANONICAL_GEOGRAPHY_UNPUBLISHED",
+      "SERVICE_UNAVAILABLE",
       "environmental_context",
       "no API key",
       "OBSERVED",
@@ -527,8 +528,8 @@ function errorTableProblems(rest: string, spec: JsonRecord): string[] {
     )
     .map(([status, code]) => `missing ${status} ${code}`);
   const serviceUnavailable = rows.find((row) => row.status === "503");
-  if (!serviceUnavailable?.code.includes("`CANONICAL_DATA_UNAVAILABLE`")) {
-    problems.push("503 row must name CANONICAL_DATA_UNAVAILABLE");
+  if (!serviceUnavailable?.code.includes("`SERVICE_UNAVAILABLE`")) {
+    problems.push("503 row must name SERVICE_UNAVAILABLE");
   }
   for (const line of section.split("\n")) {
     if (

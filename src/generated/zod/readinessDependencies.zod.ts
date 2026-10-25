@@ -7,7 +7,9 @@
  */
 import * as zod from 'zod';
 
-export const ReadyHealthReadyGet200 = zod.record(zod.string(), zod.string())
+export const ReadinessDependencies = zod.object({
+  "snowflake": zod.enum(['ok', 'degraded'])
+})
 
-export type ReadyHealthReadyGet200 = zod.input<typeof ReadyHealthReadyGet200>;
-export type ReadyHealthReadyGet200Output = zod.output<typeof ReadyHealthReadyGet200>;
+export type ReadinessDependencies = zod.input<typeof ReadinessDependencies>;
+export type ReadinessDependenciesOutput = zod.output<typeof ReadinessDependencies>;

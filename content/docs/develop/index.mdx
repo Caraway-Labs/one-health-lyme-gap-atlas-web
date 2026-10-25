@@ -53,6 +53,6 @@ Atlas product geography for these guides is the lower 48 states and the District
 
 Current-release observations have a default pre-execution logical-result ceiling of 10,000. That ceiling is not truncation. The public document does not publish a numeric request quota. Honor `Retry-After` on `429` and `503`. See [REST API](/docs/develop/rest).
 
-`GET /v1/geographies/{geography_type}/{geography_id}` is declared, and its description says delivery currently returns `503` with `CANONICAL_DATA_UNAVAILABLE` and no geometry. That route does not return polygons. `GET /v1/atlas/geometry` is the display-geometry route. See [Geography](/docs/develop/geography).
+`GET /v1/geographies/{geography_type}/{geography_id}` is declared, and its description says a validated identity returns HTTP `200` with `UNAVAILABLE` / `CANONICAL_GEOGRAPHY_UNPUBLISHED`, `data` null, and no geometry. That route does not return polygons. `GET /v1/atlas/geometry` is the display-geometry route. See [Geography](/docs/develop/geography).
 
 The observations operation describes separately enabled January 2025 environmental measures that carry `environmental_context`. On 18 October 2026 the measures catalog included those daily ids. The checked slice queries, including annual land cover, and the parameters they reject are in [Observation queries](/docs/develop/observation-queries). `surveillance_context` is optional and requires an admitted Data delivery. See [Workflow guides](/docs/develop/workflows).
