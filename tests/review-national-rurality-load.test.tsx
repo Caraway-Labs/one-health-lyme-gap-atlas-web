@@ -3,18 +3,27 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { ReadonlyURLSearchParams } from "next/navigation";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ExplorerMapObservationReady } from "@/features/ux-reset/review/explorer-map-observation";
 import { ExplorerMapContractError } from "@/features/ux-reset/review/explorer-map-observation";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import {
   RURALITY_NO_DATA_COLOR,
   RURALITY_RUCC_FILLS,
 } from "@/features/ux-reset/review/rurality-palette";
-import { ValueState } from "@/generated/models";
 import { countyDisplayGeometryQueryKey } from "@/lib/county-geography";
 
-const loadExplorerMapObservations = vi.hoisted(() =>
-  vi.fn<() => Promise<ExplorerMapObservationReady>>()
+const loadExplorerMapValues = vi.hoisted(() =>
+  vi.fn<
+    () => Promise<{
+      counties: {
+        fips: string;
+        incidence_floor_2023: number | null;
+        rucc_2023: number | null;
+        svi_percentile: number | null;
+        uninsured_percent: number | null;
+      }[];
+      release_id: string;
+    }>
+  >()
 );
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -27,61 +36,34 @@ vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: () => <div data-testid="mock-atlas-map" />,
 }));
 
-vi.mock(
-  import("@/features/ux-reset/review/load-explorer-map-observations"),
-  () => ({
-    loadExplorerMapObservations,
-  })
-);
+vi.mock(import("@/features/ux-reset/review/load-explorer-map-values"), async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/features/ux-reset/review/load-explorer-map-values")
+    >();
+  return {
+    ...actual,
+    loadExplorerMapValues,
+  };
+});
 
 const BOUNDARY_COLOR = "#112233";
 const OBSERVED_FIPS = "08001";
 const OMITTED_FIPS = "08013";
 const RELEASE_ID = "alpha-2026";
 
-function observedRurality(): ExplorerMapObservationReady {
+function observedRuralityCollection() {
   return {
-    knownEmptySelection: null,
-    omitted: 1,
-    period: "Vintage 2023.",
-    rows: [
+    release_id: RELEASE_ID,
+    counties: [
       {
-        categoryLabel: "Metro: area population at least 1 million",
         fips: OBSERVED_FIPS,
-        numeric: 1,
-        provenance: {
-          atlasAcquiredAt: null,
-          evidence: {
-            provenance_ref: "prov",
-            resource_id: "resource",
-            resource_type: "observation",
-          },
-          limitations: [],
-          measureId: "rucc_2023",
-          methodology: null,
-          methodologyId: null,
-          methodologyVersion: "semantic_county_assembly_v1",
-          observationId: `obs-${OBSERVED_FIPS}`,
-          periodEnd: null,
-          periodStart: null,
-          provenanceRef: "prov",
-          publishedValue: 1,
-          releaseId: RELEASE_ID,
-          semanticVersion: "2.0.0",
-          sourceId: "context_rucc",
-          sourceLabel: "USDA ERS",
-          sourcePublishedAt: null,
-          sourceUrl: null,
-          sourceVintage: "2023",
-          temporalGrain: "VINTAGE_YEAR",
-          unit: "code",
-        },
-        raw: "1",
-        valueState: ValueState.OBSERVED,
+        incidence_floor_2023: null,
+        rucc_2023: 1,
+        svi_percentile: null,
+        uninsured_percent: null,
       },
     ],
-    sourceLabel: "USDA ERS",
-    unit: "code",
   };
 }
 
@@ -130,7 +112,7 @@ function paintedColors(): Map<string, string> {
 describe("national rurality load paint", () => {
   afterEach(() => {
     cleanup();
-    loadExplorerMapObservations.mockReset();
+    loadExplorerMapValues.mockReset();
     document.documentElement.style.removeProperty("--explorer-boundary");
   });
 
@@ -139,9 +121,9 @@ describe("national rurality load paint", () => {
       "--explorer-boundary",
       BOUNDARY_COLOR
     );
-    loadExplorerMapObservations.mockRejectedValue(
+    loadExplorerMapValues.mockRejectedValue(
       new ExplorerMapContractError(
-        "The observation response did not match the governed contract."
+        "The map values response did not match the governed contract."
       )
     );
     renderRurality();
@@ -166,7 +148,7 @@ describe("national rurality load paint", () => {
       "--explorer-boundary",
       BOUNDARY_COLOR
     );
-    loadExplorerMapObservations.mockResolvedValue(observedRurality());
+    loadExplorerMapValues.mockResolvedValue(observedRuralityCollection());
     renderRurality();
     await waitFor(() => {
       expect(screen.getByTestId("explorer-map-legend").dataset.legendKind).toBe(

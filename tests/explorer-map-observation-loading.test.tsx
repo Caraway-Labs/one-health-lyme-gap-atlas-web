@@ -5,32 +5,38 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { ExplorerMapContractError } from "@/features/ux-reset/review/explorer-map-observation";
-import { loadExplorerMapObservations } from "@/features/ux-reset/review/load-explorer-map-observations";
+import { loadExplorerMapValues } from "@/features/ux-reset/review/load-explorer-map-values";
 import {
   observationGate,
   observationPaintState,
   useExplorerMapObservations,
 } from "@/features/ux-reset/review/use-explorer-map-observations";
 
-vi.mock(
-  import("@/features/ux-reset/review/load-explorer-map-observations"),
-  () => ({
-    loadExplorerMapObservations:
-      vi.fn<
-        typeof import("@/features/ux-reset/review/load-explorer-map-observations").loadExplorerMapObservations
-      >(),
-  })
-);
-
-const loadObservations = vi.mocked(loadExplorerMapObservations);
-
-function readyPayload(unit: string) {
+vi.mock(import("@/features/ux-reset/review/load-explorer-map-values"), async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/features/ux-reset/review/load-explorer-map-values")
+    >();
   return {
-    omitted: 0,
-    period: "2023",
-    rows: [],
-    sourceLabel: "Published source",
-    unit,
+    ...actual,
+    loadExplorerMapValues: vi.fn(),
+  };
+});
+
+const loadMapValues = vi.mocked(loadExplorerMapValues);
+
+function readyCollection() {
+  return {
+    release_id: "release-1",
+    counties: [
+      {
+        fips: "08001",
+        incidence_floor_2023: 1,
+        svi_percentile: 0.5,
+        uninsured_percent: 10,
+        rucc_2023: 2,
+      },
+    ],
   };
 }
 
@@ -56,24 +62,22 @@ function renderLoader(initialLayer: ExplorerMapLayerId) {
 
 describe("explorer observation loading", () => {
   beforeEach(() => {
-    loadObservations.mockReset();
-    loadObservations.mockImplementation(async ({ spec }) =>
-      readyPayload(spec.unit)
-    );
+    loadMapValues.mockReset();
+    loadMapValues.mockResolvedValue(readyCollection());
   });
 
-  it("does not request observations for the default gap-score layer", async () => {
+  it("does not request map values for the default gap-score layer", async () => {
     const view = renderLoader("gap_score");
     await waitFor(() => {
       expect(view.result.current.svi.status).toBe("unloaded");
     });
-    expect(loadObservations).not.toHaveBeenCalled();
+    expect(loadMapValues).not.toHaveBeenCalled();
     expect(
       observationGate(view.result.current.incidence_floor).selectable
     ).toBeTruthy();
   });
 
-  it("loads only the selected layer and keeps that result when the layer changes", async () => {
+  it("loads map values once and keeps all four layers ready when switching", async () => {
     const view = renderLoader("svi");
     await waitFor(() => {
       expect(view.result.current.svi.status).toBe("ready");
@@ -84,23 +88,17 @@ describe("explorer observation loading", () => {
     });
     view.rerender("gap_score");
     expect({
-      calls: loadObservations.mock.calls.map((call) => ({
-        fips: call[0].fips,
-        id: call[0].spec.id,
-      })),
+      calls: loadMapValues.mock.calls.length,
       svi: view.result.current.svi.status,
       uninsured: view.result.current.uninsured.status,
     }).toStrictEqual({
-      calls: [
-        { fips: ["08001"], id: "svi" },
-        { fips: ["08001"], id: "incidence_floor" },
-      ],
+      calls: 1,
       svi: "ready",
-      uninsured: "unloaded",
+      uninsured: "ready",
     });
   });
 
-  it("does not request observations while shapes are missing", () => {
+  it("does not request map values while shapes are missing", () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -123,7 +121,7 @@ describe("explorer observation loading", () => {
     const failedShapes = observationGate(view.result.current.svi);
     view.rerender("ready");
     expect({
-      called: loadObservations.mock.calls.length,
+      called: loadMapValues.mock.calls.length,
       empty: view.result.current.svi,
       failedShapes,
       loading,
@@ -148,11 +146,9 @@ describe("explorer observation loading", () => {
     });
   });
 
-  it("disables a layer when its observation request fails", async () => {
-    loadObservations.mockRejectedValue(
-      new ExplorerMapContractError(
-        "The observation collection returned no rows for the requested counties."
-      )
+  it("disables a layer when its map-values request fails", async () => {
+    loadMapValues.mockRejectedValue(
+      new ExplorerMapContractError("Dataset release not found")
     );
     const view = renderLoader("svi");
     await waitFor(() => {
@@ -164,16 +160,14 @@ describe("explorer observation loading", () => {
       uninsured: view.result.current.uninsured.status,
     }).toStrictEqual({
       gate: {
-        reason:
-          "The observation collection returned no rows for the requested counties.",
+        reason: "Dataset release not found",
         selectable: false,
       },
       paint: {
-        reason:
-          "The observation collection returned no rows for the requested counties.",
+        reason: "Dataset release not found",
         status: "error",
       },
-      uninsured: "unloaded",
+      uninsured: "error",
     });
   });
 });
