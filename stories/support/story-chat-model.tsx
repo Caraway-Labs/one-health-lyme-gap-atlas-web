@@ -3,11 +3,19 @@
 import { useRef, useState } from "react";
 import type { FormEvent, RefObject } from "react";
 
-import type { ClientFailure } from "@/components/evidence-chat/client-failure";
+import {
+  clientFailure,
+  type ClientFailure,
+} from "@/components/evidence-chat/client-failure";
 import type { EvidenceChatConversationModel } from "@/components/evidence-chat/use-evidence-chat";
 import type { KnowledgeChatResponse } from "@/generated/models";
+import { AtlasApiError } from "@/lib/api-mutator";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
+import {
+  isOutcomeMatrixChatBody,
+  outcomeMatrixByStoryPreset,
+} from "../../tests/fixtures/ask-atlas-outcome-matrix";
 import {
   oneCitationResponse,
   STORY_CHAT_CREATED_AT,
@@ -18,13 +26,97 @@ const NEAR_LIMIT_NOTE = "Synthetic question. ";
 
 export const storyChatNearLimitMessage = NEAR_LIMIT_NOTE.repeat(45);
 
+export const OUTCOME_MATRIX_STORY_PRESETS = [
+  "matrix-answered-limited",
+  "matrix-answered-single-study",
+  "matrix-capacity-limited",
+  "matrix-corpus-gap",
+  "matrix-evidence-unavailable",
+  "matrix-network",
+  "matrix-rate-limited",
+  "matrix-safety-refusal",
+  "matrix-timeout",
+  "matrix-unprocessable",
+] as const;
+
+export type OutcomeMatrixStoryPreset =
+  (typeof OUTCOME_MATRIX_STORY_PRESETS)[number];
+
 export type StoryChatPreset =
   | "client-failure"
   | "empty"
   | "grounded"
   | "near-limit"
   | "pending"
-  | "structured-outcome";
+  | "structured-outcome"
+  | OutcomeMatrixStoryPreset;
+
+function isOutcomeMatrixStoryPreset(
+  preset: StoryChatPreset
+): preset is OutcomeMatrixStoryPreset {
+  return (OUTCOME_MATRIX_STORY_PRESETS as readonly string[]).includes(preset);
+}
+
+function matrixFailure(preset: OutcomeMatrixStoryPreset): ClientFailure | null {
+  switch (preset) {
+    case "matrix-answered-limited":
+    case "matrix-answered-single-study":
+    case "matrix-capacity-limited":
+    case "matrix-corpus-gap":
+    case "matrix-evidence-unavailable":
+    case "matrix-safety-refusal": {
+      return null;
+    }
+    case "matrix-network": {
+      return clientFailure(new TypeError("Failed to fetch"));
+    }
+    case "matrix-rate-limited": {
+      return clientFailure(
+        new AtlasApiError("busy", "/v1/knowledge-graph/chat", 429, null)
+      );
+    }
+    case "matrix-timeout": {
+      return clientFailure(
+        new AtlasApiError("timeout", "/v1/knowledge-graph/chat", 504, null)
+      );
+    }
+    case "matrix-unprocessable": {
+      return clientFailure(
+        new AtlasApiError("invalid", "/v1/knowledge-graph/chat", 422, null)
+      );
+    }
+    default: {
+      const unhandled: never = preset;
+      return unhandled;
+    }
+  }
+}
+
+function matrixStoryInitial(preset: OutcomeMatrixStoryPreset): {
+  conversations: LocalConversation[];
+  failure: ClientFailure | null;
+  message: string;
+  pending: boolean;
+  retryQuestion: string;
+} {
+  const outcome = outcomeMatrixByStoryPreset(preset);
+  if (!outcome) {
+    throw new Error(`Missing Ask Atlas outcome story for ${preset}`);
+  }
+  const failure = matrixFailure(preset);
+  const response = isOutcomeMatrixChatBody(outcome.body) ? outcome.body : null;
+  const retained = outcome.composer === "retained";
+  return {
+    conversations:
+      response === null
+        ? []
+        : [conversation([userTurn(outcome.question), assistantTurn(response)])],
+    failure,
+    message: retained ? outcome.question : "",
+    pending: false,
+    retryQuestion: failure?.retry ? outcome.question : "",
+  };
+}
 
 function conversation(turns: LocalConversation["turns"]): LocalConversation {
   return {
@@ -137,6 +229,9 @@ export function storyChatInitial(
       };
     }
     default: {
+      if (isOutcomeMatrixStoryPreset(preset)) {
+        return matrixStoryInitial(preset);
+      }
       const exhaustive: never = preset;
       return exhaustive;
     }
