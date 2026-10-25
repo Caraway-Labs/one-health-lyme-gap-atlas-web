@@ -121,6 +121,16 @@ const DEFAULT_ARIA_LABEL =
 const ACCENT_STATE_OUTLINE = "#0b7285";
 const GEOGRAPHIC_STATE_OUTLINE = "#000000";
 /**
+ * Matches nothing, including features whose properties are still selected.
+ * GeoJSON setData is applied by a worker, so a property filter would keep
+ * drawing the previous state until that update lands.
+ */
+const HIDDEN_STATE_OUTLINE_FILTER: ExpressionSpecification = [
+  "==",
+  ["literal", true],
+  ["literal", false],
+];
+/**
  * Shared weight for a selected state's perimeter and its interior county
  * borders. County polygons are the only boundary geometry, so those edges are
  * one line. This matches the previous accent stroke: visible at U.S. zoom,
@@ -170,6 +180,9 @@ function stateOutlineTreatment(input: {
   if (stateScoped) {
     return "national-selection";
   }
+  // Legacy dashboard accent. Explorer never shows this on a selected state.
+  // An empty selection must not use it either: that retint is what flashes
+  // teal when US view clears a black highlight. Callers hide the layer then.
   return "accent";
 }
 
@@ -320,7 +333,8 @@ export function AtlasMap({
    * Focused-state camera stage. County lines for that stage stay black and
    * use the zoom-based width. A selected state is also black at the shared
    * stroke width when the camera is the national frame or that state's frame.
-   * Maps with no selected state keep the accent outline.
+   * Clearing the highlight hides this stroke in place. It is not repainted
+   * with the legacy accent color.
    */
   geographicStateOutline?: boolean;
   /**
@@ -566,7 +580,10 @@ export function AtlasMap({
           type: "line",
         });
         instance.addLayer({
-          filter: ["==", ["get", "selectedState"], true],
+          filter:
+            selectedStateRef.current === "ALL"
+              ? HIDDEN_STATE_OUTLINE_FILTER
+              : ["==", ["get", "selectedState"], true],
           id: "selected-state-outline",
           paint: stateOutlinePaint(
             stateOutlineTreatment({
@@ -696,33 +713,46 @@ export function AtlasMap({
       return;
     }
     const data = enriched();
+    if (map.current.getLayer("selected-state-outline")) {
+      if (selectedState === "ALL") {
+        // Drop the stroke before the source update. Leaving the black paint
+        // in place avoids the accent retint; the constant-false filter hides
+        // features that still carry the previous selectedState flag.
+        map.current.setFilter(
+          "selected-state-outline",
+          HIDDEN_STATE_OUTLINE_FILTER
+        );
+      } else {
+        const outline = stateOutlinePaint(
+          stateOutlineTreatment({
+            cameraFrameState,
+            geographicStateOutline,
+            resetNationalView,
+            selectedState,
+          })
+        );
+        map.current.setFilter("selected-state-outline", [
+          "==",
+          ["get", "selectedState"],
+          true,
+        ]);
+        map.current.setPaintProperty(
+          "selected-state-outline",
+          "line-color",
+          outline["line-color"]
+        );
+        map.current.setPaintProperty(
+          "selected-state-outline",
+          "line-width",
+          outline["line-width"]
+        );
+      }
+    }
+    if (!selectedFips && map.current.getLayer("selected-outline")) {
+      map.current.setFilter("selected-outline", HIDDEN_STATE_OUTLINE_FILTER);
+    }
     source.setData(data);
     map.current.setPaintProperty("counties-fill", "fill-color", fillColor);
-    if (map.current.getLayer("selected-state-outline")) {
-      const outline = stateOutlinePaint(
-        stateOutlineTreatment({
-          cameraFrameState,
-          geographicStateOutline,
-          resetNationalView,
-          selectedState,
-        })
-      );
-      map.current.setFilter("selected-state-outline", [
-        "==",
-        ["get", "selectedState"],
-        true,
-      ]);
-      map.current.setPaintProperty(
-        "selected-state-outline",
-        "line-color",
-        outline["line-color"]
-      );
-      map.current.setPaintProperty(
-        "selected-state-outline",
-        "line-width",
-        outline["line-width"]
-      );
-    }
     if (map.current.getLayer("selected-district-outline")) {
       map.current.setFilter("selected-district-outline", [
         "==",
@@ -730,11 +760,12 @@ export function AtlasMap({
         true,
       ]);
     }
-    map.current.setFilter("selected-outline", [
-      "==",
-      ["get", "selected"],
-      true,
-    ]);
+    map.current.setFilter(
+      "selected-outline",
+      selectedFips
+        ? ["==", ["get", "selected"], true]
+        : HIDDEN_STATE_OUTLINE_FILTER
+    );
     if (!neutralCountyBoundaries) {
       clearCountyBoundaryHover(map.current, hoveredCountyIdRef.current);
       hoveredCountyIdRef.current = null;
