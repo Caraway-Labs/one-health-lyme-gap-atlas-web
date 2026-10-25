@@ -18,7 +18,11 @@ import {
   unsafeCitationResponse,
 } from "../stories/fixtures/story-chat";
 import { SidebarStory } from "../stories/sidebar.stories";
-import { storyChatNearLimitMessage } from "../stories/support/story-chat-model";
+import {
+  OUTCOME_MATRIX_STORY_PRESETS,
+  storyChatNearLimitMessage,
+} from "../stories/support/story-chat-model";
+import { outcomeMatrixByStoryPreset } from "./fixtures/ask-atlas-outcome-matrix";
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
   ...(await importOriginal()),
@@ -158,6 +162,135 @@ describe("Storybook chat fixtures", () => {
     expect(state()).toBe("expanded");
     view.rerender(<SidebarStory startCollapsed />);
     expect(state()).toBe("collapsed");
+  });
+
+  it("renders each shared outcome fixture with its controls and question", () => {
+    const rendered = OUTCOME_MATRIX_STORY_PRESETS.flatMap((preset) => {
+      const outcome = outcomeMatrixByStoryPreset(preset);
+      if (!outcome) {
+        return [{ preset, missing: true }];
+      }
+      render(<ConversationStory preset={preset} />);
+      const composer = screen.getByRole("textbox", {
+        name: "Your question",
+      });
+      const view = {
+        composer: composer instanceof HTMLTextAreaElement ? composer.value : "",
+        edit: screen.queryByRole("button", { name: "Edit question" }) !== null,
+        heading: screen.queryByText(outcome.heading) !== null,
+        missing: false,
+        preset,
+        retry: screen.queryByRole("button", { name: /^Retry$/ }) !== null,
+        retryLater:
+          screen.queryByRole("button", { name: "Retry later" }) !== null,
+        token:
+          document.body.textContent?.includes("conversation_token") ?? false,
+      };
+      cleanup();
+      return [view];
+    });
+    expect(rendered).toStrictEqual([
+      {
+        composer: "",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-answered-limited",
+        retry: false,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-answered-single-study",
+        retry: false,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "Fixture question 06",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-capacity-limited",
+        retry: false,
+        retryLater: true,
+        token: false,
+      },
+      {
+        composer: "Fixture question 03",
+        edit: true,
+        heading: true,
+        missing: false,
+        preset: "matrix-corpus-gap",
+        retry: false,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "Fixture question 05",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-evidence-unavailable",
+        retry: true,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "Fixture question 11",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-network",
+        retry: true,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "Fixture question 09",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-rate-limited",
+        retry: true,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "",
+        edit: true,
+        heading: true,
+        missing: false,
+        preset: "matrix-safety-refusal",
+        retry: false,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "Fixture question 08",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-timeout",
+        retry: true,
+        retryLater: false,
+        token: false,
+      },
+      {
+        composer: "Fixture question 10",
+        edit: false,
+        heading: true,
+        missing: false,
+        preset: "matrix-unprocessable",
+        retry: false,
+        retryLater: false,
+        token: false,
+      },
+    ]);
   });
 
   it("changes sources and outcomes when their presets change", () => {
