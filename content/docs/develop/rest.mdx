@@ -60,7 +60,7 @@ Canonical errors use RFC 9457 `application/problem+json`. Required problem field
 | 413 | `INVALID_REQUEST` | A GET request includes a body. Canonical routes reject that body |
 | 414 | `INVALID_REQUEST` | The query string is too long |
 | 429 | `RATE_LIMITED` | The service asks you to wait. Read `Retry-After` |
-| 503 | Declared on the geography route as `CANONICAL_DATA_UNAVAILABLE` | The canonical data service is unavailable. Read `Retry-After` when it is present |
+| 503 | `SERVICE_UNAVAILABLE` | The data service is unavailable. Read `Retry-After` when it is present. Unpublished geography identity is HTTP `200` `CANONICAL_GEOGRAPHY_UNPUBLISHED`, not `503` |
 
 Legacy Atlas routes keep their existing statuses, including `422` for invalid values and `404` for a missing county or dataset release. A checked `GET /v1/counties/00000` returned HTTP 404 `application/problem+json` with detail `County or dataset release not found` and no `code` field. Do not require `code` on every problem body.
 

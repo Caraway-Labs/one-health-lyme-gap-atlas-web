@@ -27,6 +27,7 @@ import {
   FRONT_PORCH_SYNTHESIS,
   frontPorchExploreHref,
   frontPorchExploreHrefSelectsCounty,
+  frontPorchLinkPrefetch,
   frontPorchHrefSelectsUnrelatedCounty,
 } from "@/features/front-porch/front-porch-copy";
 import { FRONT_PORCH_RELEASE_DETAIL } from "@/features/front-porch/front-porch-example";
@@ -192,6 +193,26 @@ describe("front porch copy", () => {
       frontPorchHrefSelectsUnrelatedCounty("/explore?county=37021"),
       frontPorchHrefSelectsUnrelatedCounty(frontPorchExploreHref(true)),
     ]).toStrictEqual([false, false, true, false]);
+  });
+
+  it("prefetches only routes whose CSS is already on the front porch", () => {
+    expect({
+      docs: frontPorchLinkPrefetch("/docs/releases-and-methodology"),
+      ethics: frontPorchLinkPrefetch("/ai-ethics"),
+      explore: frontPorchLinkPrefetch(frontPorchExploreHref(true)),
+      home: frontPorchLinkPrefetch("/"),
+      privacy: frontPorchLinkPrefetch("/privacy"),
+      provenance: frontPorchLinkPrefetch("/data-provenance"),
+      signIn: frontPorchLinkPrefetch(frontPorchExploreHref(false)),
+    }).toStrictEqual({
+      docs: undefined,
+      ethics: false,
+      explore: false,
+      home: undefined,
+      privacy: false,
+      provenance: false,
+      signIn: false,
+    });
   });
 });
 

@@ -118,25 +118,20 @@ export function FrontPorchScrolly() {
     let frame = 0;
 
     const update = () => {
-      const scrolling = document.documentElement;
-      const max = scrolling.scrollHeight - window.innerHeight;
-      if (progressRef.current) {
-        const progress = max > 0 ? (window.scrollY / max) * 100 : 0;
-        progressRef.current.style.width = `${progress}%`;
-      }
-
+      const viewportHeight = window.innerHeight;
       const reducedMotion =
         typeof window.matchMedia === "function" &&
         window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       let nearest = 0;
       let best = Number.POSITIVE_INFINITY;
+      const readingLine = viewportHeight * READING_LINE;
       for (let index = 0; index < beatRefs.current.length; index += 1) {
         const beat = beatRefs.current[index];
         if (!beat) {
           continue;
         }
         const distance = Math.abs(
-          beat.getBoundingClientRect().top - window.innerHeight * READING_LINE
+          beat.getBoundingClientRect().top - readingLine
         );
         if (distance < best) {
           best = distance;
@@ -144,12 +139,22 @@ export function FrontPorchScrolly() {
         }
       }
       const firstParagraph = beatRefs.current[0]?.querySelector("p");
+      const firstParagraphBottom =
+        firstParagraph?.getBoundingClientRect().bottom ??
+        Number.POSITIVE_INFINITY;
+      const max = document.documentElement.scrollHeight - viewportHeight;
+      const progress = max > 0 ? (window.scrollY / max) * 100 : 0;
+      const progressBar = progressRef.current;
+      if (progressBar) {
+        const nextWidth = `${progress}%`;
+        if (progressBar.style.width !== nextWidth) {
+          progressBar.style.width = nextWidth;
+        }
+      }
       const nextRevealed = frontPorchRevealIndex({
         nearest,
-        firstParagraphBottom:
-          firstParagraph?.getBoundingClientRect().bottom ??
-          Number.POSITIVE_INFINITY,
-        viewportHeight: window.innerHeight,
+        firstParagraphBottom,
+        viewportHeight,
         reducedMotion,
       });
       const nextReading = reducedMotion
@@ -168,7 +173,7 @@ export function FrontPorchScrolly() {
       frame = requestAnimationFrame(update);
     };
 
-    update();
+    frame = requestAnimationFrame(update);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {

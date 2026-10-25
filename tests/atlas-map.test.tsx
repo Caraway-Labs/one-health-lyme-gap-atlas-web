@@ -1527,10 +1527,12 @@ describe("AtlasMap county camera", () => {
       .map((feature) => feature.properties?.fips);
     expect({
       cleared,
+      filter: map?.filters.get("selected-state-outline"),
       outline: map?.paint.get("selected-state-outline"),
     }).toStrictEqual({
       cleared: [],
-      outline: { "line-color": "#0b7285", "line-width": 2.5 },
+      filter: ["==", ["literal", true], ["literal", false]],
+      outline: { "line-color": "#000000", "line-width": 2.5 },
     });
     view.unmount();
   });
@@ -1724,7 +1726,7 @@ describe("AtlasMap county camera", () => {
       selections: onSelect.mock.calls,
     }).toStrictEqual({
       cleared: {
-        outline: { "line-color": "#0b7285", "line-width": 2.5 },
+        outline: { "line-color": "#000000", "line-width": 2.5 },
         selectedFips: [],
       },
       coloradoAgain: {
@@ -1784,6 +1786,77 @@ describe("AtlasMap county camera", () => {
       document.querySelector<HTMLElement>(".maplibre-atlas")?.dataset
         .stateOutline
     ).toBe("black");
+  });
+
+  it("hides a zoomed-out state outline without retinting it teal", () => {
+    stubPrefersReducedMotion(false);
+    const onSelect = vi.fn<(fips: string, surface: string) => void>();
+    const view = render(
+      <AtlasMap
+        cameraFrameState="CO"
+        geographicStateOutline
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips="08001"
+        selectedState="CO"
+        onSelect={onSelect}
+      />
+    );
+    const map = loadMap();
+    const source = map?.sources.get("counties") as
+      | {
+          data?: GeoJSON.FeatureCollection;
+          setData: {
+            mockImplementation: (fn: (data: unknown) => void) => void;
+          };
+        }
+      | undefined;
+    const geographic = map?.paint.get("selected-state-outline");
+    source?.setData.mockImplementation(() => {
+      // The worker has not applied the cleared GeoJSON yet.
+    });
+    act(() => {
+      map?.emit("mousemove:counties-fill", {
+        features: [
+          {
+            id: "08001",
+            properties: { fips: "08001", selected: true, selectedState: true },
+          },
+        ],
+      });
+    });
+    map?.setPaintProperty.mockClear();
+    view.rerender(
+      <AtlasMap
+        cameraFrameState={null}
+        geographicStateOutline={false}
+        geometry={geometry}
+        resetNationalView
+        scores={[adams, losAngeles]}
+        selectedFips=""
+        selectedState="ALL"
+        onSelect={onSelect}
+      />
+    );
+    const staleSelected = (source?.data?.features ?? []).filter(
+      (feature) => feature.properties?.selectedState === true
+    );
+    expect(staleSelected.length).toBeGreaterThan(0);
+    expect({
+      countyFilter: map?.filters.get("selected-outline"),
+      filter: map?.filters.get("selected-state-outline"),
+      outline: map?.paint.get("selected-state-outline"),
+      retinted: map?.setPaintProperty.mock.calls.some(
+        (call) => call[0] === "selected-state-outline" && call[2] === "#0b7285"
+      ),
+    }).toStrictEqual({
+      countyFilter: ["==", ["literal", true], ["literal", false]],
+      filter: ["==", ["literal", true], ["literal", false]],
+      outline: geographic,
+      retinted: false,
+    });
+    view.unmount();
   });
 
   it("reports WebGL failure and empty geometry without throwing", () => {

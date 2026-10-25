@@ -15,7 +15,7 @@ import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-
 import { ProfessionalTrustFooter } from "@/features/ux-reset/professional-trust-footer";
 import { ABOUT_CARAWAY_LABS_PATH } from "@/features/ux-reset/routes";
 import { atlasAnalytics } from "@/lib/atlas-analytics";
-import { getRouteShell } from "@/lib/navigation";
+import { getRouteShell, routeMountsAnalyticsClient } from "@/lib/navigation";
 
 const amplitude = vi.hoisted(() => ({
   init: vi.fn<(apiKey: string, options: Record<string, unknown>) => unknown>(),
@@ -39,12 +39,20 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 }));
 
 function LegacyAtlasOrWorkspace() {
+  const analytics = routeMountsAnalyticsClient(pathname) ? (
+    <AnalyticsClient />
+  ) : null;
   if (getRouteShell(pathname) === "none") {
-    return <ProfessionalTrustFooter />;
+    return (
+      <>
+        {analytics}
+        <ProfessionalTrustFooter />
+      </>
+    );
   }
   return (
     <>
-      <AnalyticsClient />
+      {analytics}
       <FrontPorchTrustFooter />
     </>
   );

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { RouteChrome } from "@/components/route-chrome";
 import { TooltipProvider } from "@/components/ui/tooltip";

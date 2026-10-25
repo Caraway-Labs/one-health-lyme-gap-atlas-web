@@ -124,20 +124,20 @@ export function ResourcesPage() {
         id={RESOURCE_SECTION_IDS.cdc}
       >
         <div className="resources-cdc-heading">
-          <div className="resources-cdc-heading-copy">
+          <div className="resources-cdc-title">
             <h2 id="cdc-guidance-heading">CDC guidance & tools</h2>
-            <p className="resources-section-intro">
-              Surveillance, interpretation, and prevention references.
-            </p>
+            <Image
+              alt="Centers for Disease Control and Prevention"
+              className="resources-cdc-logo"
+              height={147}
+              src="/resources/cdc-logo.svg"
+              unoptimized
+              width={228}
+            />
           </div>
-          <Image
-            alt="Centers for Disease Control and Prevention"
-            className="resources-cdc-logo"
-            height={147}
-            src="/resources/cdc-logo.svg"
-            unoptimized
-            width={228}
-          />
+          <p className="resources-section-intro">
+            Surveillance, interpretation, and prevention references.
+          </p>
         </div>
         <div className="resources-topic-grid">
           {CDC_RESOURCE_TOPICS.map((topic) => {

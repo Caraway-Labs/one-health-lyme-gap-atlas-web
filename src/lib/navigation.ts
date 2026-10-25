@@ -454,6 +454,32 @@ export function getRouteShell(pathname: string): RouteShell {
   return findRouteMetadata(pathname)?.shell ?? "analytical";
 }
 
+/**
+ * Route ids whose layouts render `ResetProfessionalShell`. One shared
+ * analytics client covers this set. Docs, the design system, auth utilities,
+ * and the front porch stay out; the front porch page mounts its own client.
+ */
+const PROFESSIONAL_SHELL_ROUTE_IDS: ReadonlySet<string> = new Set([
+  "ask-atlas",
+  "atlas-explorer",
+  "data-provenance",
+  "resources",
+  "ux-reset-app",
+  "workspace-compare",
+]);
+
+export function routeMountsAnalyticsClient(pathname: string): boolean {
+  const shell = getRouteShell(pathname);
+  if (shell === "analytical") {
+    return true;
+  }
+  if (shell !== "none") {
+    return false;
+  }
+  const routeId = findRouteMetadata(pathname)?.id;
+  return routeId !== undefined && PROFESSIONAL_SHELL_ROUTE_IDS.has(routeId);
+}
+
 export function pageMetadataForRoute(href: string): {
   description: string;
   title: string;

@@ -18,6 +18,7 @@ import {
 } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
 import { cn } from "@/lib/utils";
 
@@ -138,6 +139,7 @@ export function ReviewPublishedCountyPreview({
       ) : null}
       <div className="ux-reset-review-preview-actions">
         <Button
+          {...analyticsControlAttributes("explorer_view_follow_up")}
           aria-controls={EXPLORER_MAP_FOLLOW_UP_ID}
           data-county={county.fips}
           data-testid="review-view-county-follow-up"
@@ -151,6 +153,7 @@ export function ReviewPublishedCountyPreview({
           View County Follow-Up
         </Button>
         <Link
+          {...analyticsControlAttributes("explorer_compare")}
           ref={openRef}
           className={cn(
             buttonVariants({ variant: "outline" }),
