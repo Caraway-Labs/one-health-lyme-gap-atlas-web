@@ -217,7 +217,7 @@ describe("explorer map values adapter", () => {
           geometryStatus: "ready",
           releaseId: "release-1",
         }),
-      { initialProps: "incidence_floor" as const, wrapper }
+      { initialProps: "incidence_floor" as ExplorerMapLayerId, wrapper }
     );
     await waitFor(() => {
       expect(view.result.current.incidence_floor.status).toBe("ready");
