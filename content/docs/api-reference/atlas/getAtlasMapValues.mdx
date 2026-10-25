@@ -1,6 +1,6 @@
 ---
 title: Get map values by county
-description: Published incidence floor, social vulnerability percentile, uninsured percent, and rural-urban continuum code for every county in the current snapshot. Optional dataset_version selects an existing release. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+description: Get map values by county
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/atlas/map-values
       - content: getAtlasMapValues
       - content: Get map values by county
-      - content: Published incidence floor, social vulnerability percentile, uninsured percent, and rural-urban continuum code for every county in the current snapshot. Optional dataset_version selects an existing release. Public cache TTL 300 seconds with informational ETag; no conditional 304.
       - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Dataset Version
@@ -67,7 +66,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/map-values","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/map-values","method":"get"}]} showDescription />
     </>
   );
 }

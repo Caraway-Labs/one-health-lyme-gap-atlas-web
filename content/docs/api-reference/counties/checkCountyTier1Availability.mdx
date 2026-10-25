@@ -1,6 +1,6 @@
 ---
 title: Check surveillance priority availability
-description: 'Check whether a county has a published Tier 1 result, and get it when it does. ### What you get back - `AVAILABLE` with the published result in `data`. - `UNAVAILABLE` with `reason` `NO_PUBLISHED_MODEL` and `data` set to `null`. - `geography_release_id` names the release used to validate the FIPS code. `NOT_ESTIMABLE` is a published result state. It is different from no published model result. The API never turns `null` into zero or creates model output. Responses can be cached for 60 seconds. ### Common problems | Response | Cause and what to do | | --- | --- | | `404` | The county is outside the current geography release. | | `422` | The FIPS code is malformed. | | `503` | A dependency failed or stored data is malformed. Retry later. |'
+description: Check surveillance priority availability
 full: true
 _openapi:
   preload:
@@ -30,22 +30,6 @@ _openapi:
       - content: GET /v1/counties/{fips}/tier1-surveillance-priority/availability
       - content: checkCountyTier1Availability
       - content: Check surveillance priority availability
-      - content: |-
-          Check whether a county has a published Tier 1 result, and get it when it does.
-
-          ### What you get back
-          - `AVAILABLE` with the published result in `data`.
-          - `UNAVAILABLE` with `reason` `NO_PUBLISHED_MODEL` and `data` set to `null`.
-          - `geography_release_id` names the release used to validate the FIPS code.
-
-          `NOT_ESTIMABLE` is a published result state. It is different from no published model result. The API never turns `null` into zero or creates model output. Responses can be cached for 60 seconds.
-
-          ### Common problems
-          | Response | Cause and what to do |
-          | --- | --- |
-          | `404` | The county is outside the current geography release. |
-          | `422` | The FIPS code is malformed. |
-          | `503` | A dependency failed or stored data is malformed. Retry later. |
       - content: 'fips path required County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
       - content: 'County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
       - content: Fips
@@ -96,7 +80,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/tier1-surveillance-priority/availability","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/tier1-surveillance-priority/availability","method":"get"}]} showDescription />
     </>
   );
 }

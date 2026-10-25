@@ -1,6 +1,6 @@
 ---
 title: List sources
-description: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+description: List sources
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/sources
       - content: listSources
       - content: List sources
-      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
       - content: page_size query optional Items per page; defaults to 100, configured maximum at most 500.
       - content: Items per page; defaults to 100, configured maximum at most 500.
       - content: Page Size
@@ -84,7 +83,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/sources","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/sources","method":"get"}]} showDescription />
     </>
   );
 }

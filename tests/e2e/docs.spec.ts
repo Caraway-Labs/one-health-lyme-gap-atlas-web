@@ -451,6 +451,38 @@ test("renders the generated observations reference with version, source, and raw
     page.getByRole("heading", { name: "Query Parameters" })
   ).toBeVisible();
   await expect(page.getByText("case_count_floor_2023").first()).toBeVisible();
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    "Query county observations"
+  );
+  await expect(
+    page.getByRole("heading", { name: "What it returns" })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Query published county observations for one measure and up to 500 counties.",
+      { exact: true }
+    )
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("cell", { name: "Annual surveillance (data is for 2023)" })
+  ).toBeVisible();
+  await expect(page.getByText("Exact discovery measure ID.")).toBeVisible();
+  await expect(page.getByText("string", { exact: true }).first()).toBeVisible();
+  const operationSpec = page.getByRole("link", { name: "OpenAPI schema" });
+  await expect(operationSpec).toHaveAttribute(
+    "href",
+    "https://api.onehealthatlas.org/openapi.json"
+  );
+  await expect(
+    page.getByRole("button", { name: "Copy as curl" })
+  ).toBeVisible();
+  const observationsOverflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth >
+      document.documentElement.clientWidth + 1
+  );
+  expect(observationsOverflow, testInfo.project.name).toBe(false);
   const parameterSearch = await page.request.get(
     "/api/search?query=case_count_floor_2023"
   );
@@ -470,7 +502,7 @@ test("renders the generated observations reference with version, source, and raw
   ).toHaveCount(1);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     "content",
-    geometryDescription
+    "Get county map geometry"
   );
   await expect(
     page.getByRole("heading", { name: "Response Body" })

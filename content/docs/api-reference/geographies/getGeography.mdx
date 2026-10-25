@@ -1,6 +1,6 @@
 ---
 title: Get geography identity
-description: 'Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`.'
+description: Get geography identity
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/geographies/{geography_type}/{geography_id}
       - content: getGeography
       - content: Get geography identity
-      - content: 'Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`.'
       - content: 'geography_type path required Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'
       - content: '#/components/schemas/GeographyType'
       - content: 'Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'
@@ -83,7 +82,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/geographies/{geography_type}/{geography_id}","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/geographies/{geography_type}/{geography_id}","method":"get"}]} showDescription />
     </>
   );
 }
