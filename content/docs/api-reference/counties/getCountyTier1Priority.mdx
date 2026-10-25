@@ -1,0 +1,102 @@
+---
+title: Get county surveillance review priority
+description: 'Get the approved Tier 1 surveillance review priority for one county from the current batch. ### How to read it - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. - LOW is a scored tier. Evidence sufficiency is separate. - Percentile is relative to the scored batch and population. - `generated_at_utc` is the model batch time, not the request time. Responses can be cached for 60 seconds. ### Common problems | Response | Cause and what to do | | --- | --- | | `404` | The county has no published result. | | `503` | The current view is unavailable or the stored result is malformed. Retry later. |'
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: |-
+          Get the approved Tier 1 surveillance review priority for one county from the current batch.
+
+          ### How to read it
+          - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis.
+          - LOW is a scored tier. Evidence sufficiency is separate.
+          - Percentile is relative to the scored batch and population.
+          - `generated_at_utc` is the model batch time, not the request time.
+
+          Responses can be cached for 60 seconds.
+
+          ### Common problems
+          | Response | Cause and what to do |
+          | --- | --- |
+          | `404` | The county has no published result. |
+          | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
+      - content: GET /v1/counties/{fips}/tier1-surveillance-priority
+      - content: getCountyTier1Priority
+      - content: Get county surveillance review priority
+      - content: |-
+          Get the approved Tier 1 surveillance review priority for one county from the current batch.
+
+          ### How to read it
+          - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis.
+          - LOW is a scored tier. Evidence sufficiency is separate.
+          - Percentile is relative to the scored batch and population.
+          - `generated_at_utc` is the model batch time, not the request time.
+
+          Responses can be cached for 60 seconds.
+
+          ### Common problems
+          | Response | Cause and what to do |
+          | --- | --- |
+          | `404` | The county has no published result. |
+          | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
+      - content: 'fips path required County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
+      - content: 'County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
+      - content: Fips
+      - content: '"08001"'
+      - content: 200 Successful response. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=60`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=60"'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/Tier1CountyPriority'
+      - content: Published review priority for `36061`
+      - content: '{"county_fips":"36061","priority_tier":"HIGH","priority_percentile":99.14094813872096,"raw_model_score":2.1089478300075464,"evidence_sufficiency":"SUFFICIENT","model_version":"tier1-statistical-reference-v1","release_id":"governed-2026-09-18-unknown-coverage","source_commit":"024bbbf74a7da8e54566bd60e8e762d85a51e24f","prediction_batch_version":"tier1-review-priority-5536b5caad95cf47","tier_policy_version":"tier1-review-percentile-v1","generated_at_utc":"2026-10-07T02:14:24Z","reasons":[{"code":"PUBLISHED_HUMAN_FLOOR","text":"Published county-linked human count-floor signal is present; its magnitude is a lower bound."},{"code":"PATHOGEN_NO_RECORDS","text":"Publisher reports No records; this is not evidence of absence."}],"limitation_ref":"docs/contracts/tier1-persisted-output-v1.md"}'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"No current Tier 1 county result","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/counties/{fips}/tier1-surveillance-priority","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/tier1-surveillance-priority","method":"get"}]} />
+    </>
+  );
+}

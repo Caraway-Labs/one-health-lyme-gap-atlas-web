@@ -42,6 +42,21 @@ describe("public OpenAPI reference", () => {
     }
   });
 
+  it("marks the generated API reference folder as a sidebar tab root", async () => {
+    const pages = await renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const navigation = JSON.parse(requiredFile(pages, "meta.json")) as {
+      root?: boolean;
+      title?: string;
+    };
+
+    expect(navigation).toMatchObject({
+      root: true,
+      title: "API reference",
+    });
+  });
+
   it("labels the pinned spec version, source, and raw schema", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const index = requiredFile(
@@ -76,10 +91,7 @@ describe("public OpenAPI reference", () => {
   it("renders the observations operation once with its example, schema, and error", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const pages = await renderPublicApiReference(contract);
-    const observations = operationPage(
-      pages,
-      "observations_v1_observations_get"
-    );
+    const observations = operationPage(pages, "listObservations");
 
     expect(
       missingPhrases(observations, [
@@ -90,20 +102,24 @@ describe("public OpenAPI reference", () => {
         "application/problem+json",
         "measure_id",
         "#/components/schemas/ProblemDetails",
+        "Observation collection response",
       ])
     ).toStrictEqual([]);
+    expect(operationPage(pages, "getGeography")).toContain(
+      "Geography response"
+    );
     const schemaPage = requiredFile(pages, "schemas.mdx");
     const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
     expect({
-      heading: headingCount(pages, "[#observations_v1_observations_get]"),
+      heading: headingCount(pages, "[#listObservations]"),
       index: requiredFile(pages, "index.mdx").includes(
         `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaCount}).`
       ),
-      indicators: operationPage(pages, "indicators_v1_indicators_get").includes(
+      indicators: operationPage(pages, "listIndicators").includes(
         "<OpenAPIPage"
       ),
       observationsIndex: requiredFile(pages, "observations/index.mdx").includes(
-        "[#observations_v1_observations_get]"
+        "[#listObservations]"
       ),
       problemDetails: schemaPage.includes("## ProblemDetails"),
       schemaCount: schemaCount > 0,
@@ -162,21 +178,16 @@ describe("public OpenAPI reference", () => {
     const badge = "<EndpointDeliveryBadge />";
     const badgeImport =
       'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";';
-    const identity = operationPage(
-      pages,
-      "geography_v1_geographies__geography_type___geography_id__get"
-    );
+    const identity = operationPage(pages, "getGeography");
     const geographies = requiredFile(pages, "geographies/index.mdx");
     const index = requiredFile(pages, "index.mdx");
     expect({
-      atlas: requiredFile(
-        pages,
-        "atlas/geometry_v1_atlas_geometry_get.mdx"
-      ).includes("EndpointDeliveryBadge"),
-      availability: operationPage(
-        pages,
-        "canonicalGeographyAvailability"
-      ).includes(badge),
+      atlas: requiredFile(pages, "atlas/getAtlasGeometry.mdx").includes(
+        "EndpointDeliveryBadge"
+      ),
+      availability: operationPage(pages, "checkGeographyAvailability").includes(
+        badge
+      ),
       geographyBadge: geographies.includes(badge),
       geographyImport: geographies.includes(badgeImport),
       geographyRoute: geographies.includes(
@@ -187,10 +198,9 @@ describe("public OpenAPI reference", () => {
       indexBadge: index.includes(badge),
       indexImport: index.includes(badgeImport),
       indexTabs: index.includes("fumadocs-ui/components/tabs"),
-      provenance: requiredFile(
-        pages,
-        "provenance/source_v1_sources__source_id__get.mdx"
-      ).includes("EndpointDeliveryBadge"),
+      provenance: requiredFile(pages, "provenance/getSource.mdx").includes(
+        "EndpointDeliveryBadge"
+      ),
     }).toStrictEqual({
       atlas: false,
       availability: false,
@@ -220,7 +230,7 @@ describe("public OpenAPI reference", () => {
             contents.includes(`${status} `) &&
             [
               "Retry-After",
-              "Seconds before retry when supplied by the service.",
+              "Seconds to wait before you retry. Wait that long when the header is present.",
               "application/problem+json",
             ].some((phrase) => !contents.includes(phrase))
         )
@@ -420,7 +430,7 @@ describe("public OpenAPI reference", () => {
     const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const indicators = operationPage(pages, "indicators_v1_indicators_get");
+    const indicators = operationPage(pages, "listIndicators");
     const submitted = operationPage(pages, "indicators_post");
 
     expect(
@@ -566,7 +576,7 @@ describe("public OpenAPI reference", () => {
     const pagePath = path.join(
       root,
       API_REFERENCE_RELATIVE_DIR,
-      "discovery/indicators_v1_indicators_get.mdx"
+      "discovery/listIndicators.mdx"
     );
     const page = readFileSync(pagePath, "utf-8");
 
@@ -590,13 +600,13 @@ describe("public OpenAPI reference", () => {
     const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const indicators = operationPage(pages, "indicators_v1_indicators_get");
+    const indicators = operationPage(pages, "listIndicators");
     const health = operationPage(pages, "health_get");
     const measures = operationPage(pages, "measures_get");
 
     expect(
       missingPhrases(indicators, [
-        "indicators_v1_indicators_get",
+        "listIndicators",
         "Alias summary",
         "Alias path.",
         "Outer county.",
@@ -675,7 +685,7 @@ describe("public OpenAPI reference", () => {
 
     expect(page).toContain("outer_indicators_get");
     expect(page).toContain("Outer operation.");
-    expect(page.includes("indicators_v1_indicators_get")).toBeFalsy();
+    expect(page.includes("listIndicators")).toBeFalsy();
   });
 
   it("treats a dropped path-item operation as a stale reference", async () => {
@@ -702,11 +712,11 @@ describe("public OpenAPI reference", () => {
         async () => await syncPublicApiReference({ check: true, root })
       )
     ).resolves.toBe("did-not-fail");
-    expect(page).toContain("indicators_v1_indicators_get");
+    expect(page).toContain("listIndicators");
     expect(page).toContain("health_get");
     writeFileSync(
       pagePath,
-      page.replace("indicators_v1_indicators_get", "omitted_operation")
+      page.replace("listIndicators", "omitted_operation")
     );
     await expect(
       failureCode(
@@ -832,7 +842,7 @@ describe("public OpenAPI reference", () => {
     const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const inherited = operationPage(pages, "indicators_v1_indicators_get");
+    const inherited = operationPage(pages, "listIndicators");
     const published = operationPage(pages, "indicators_post");
 
     expect(
@@ -930,7 +940,13 @@ function operationPage(
 }
 
 function requiredFile(files: Map<string, string>, name: string): string {
-  const contents = files.get(name);
+  const direct = files.get(name);
+  if (typeof direct === "string") return direct;
+  const suffix = name.startsWith("/") ? name : `/${name}`;
+  const matches = [...files.entries()].filter(([fileName]) =>
+    fileName.endsWith(suffix)
+  );
+  const contents = matches.length === 1 ? matches[0]?.[1] : undefined;
   if (typeof contents !== "string") {
     throw new TypeError(`Missing generated API reference file ${name}.`);
   }
@@ -1052,7 +1068,7 @@ function documentWithReusableComponents(): Record<string, unknown> {
       links: {
         ReadIndicator: {
           description: "Read the indicator again.",
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
         },
       },
       parameters: {
@@ -1102,7 +1118,7 @@ function documentWithReusableComponents(): Record<string, unknown> {
     paths: {
       "/v1/indicators": {
         get: {
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           parameters: [{ $ref: "#/components/parameters/County" }],
           responses: {
             "200": { $ref: "#/components/responses/IndicatorAlias" },
@@ -1286,7 +1302,7 @@ function duplicateOperationIds(): Record<string, unknown> {
   const paths = document.paths as Record<string, unknown>;
   paths["/v1/measures"] = {
     get: {
-      operationId: "indicators_v1_indicators_get",
+      operationId: "listIndicators",
       responses: { "204": { description: "No content." } },
       summary: "Discover measures",
       tags: ["discovery"],
@@ -1344,7 +1360,7 @@ function documentWithCollidingSchemas(): Record<string, unknown> {
     paths: {
       "/v1/indicators": {
         get: {
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           responses: {
             "200": {
               content: {
@@ -1434,7 +1450,7 @@ function documentWithPathItemReference(): Record<string, unknown> {
         },
         Indicators: {
           get: {
-            operationId: "indicators_v1_indicators_get",
+            operationId: "listIndicators",
             responses: {
               "200": {
                 $ref: "#/components/responses/IndicatorOk",
@@ -1800,7 +1816,7 @@ function documentWithInheritedSecurityAndContent(): Record<string, unknown> {
             description: "Indicator guide",
             url: "https://onehealthatlas.org/docs",
           },
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           parameters: [
             {
               allowEmptyValue: true,
@@ -1864,7 +1880,7 @@ function documentWithInheritedSecurityAndContent(): Record<string, unknown> {
               links: {
                 Again: {
                   description: "Read again.",
-                  operationId: "indicators_v1_indicators_get",
+                  operationId: "listIndicators",
                   server: {
                     description: "Link server",
                     url: "https://api.onehealthatlas.org",
@@ -1999,7 +2015,7 @@ function minimalDocument(): Record<string, unknown> {
     paths: {
       "/v1/indicators": {
         get: {
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           responses: {
             "200": {
               content: {
@@ -2055,10 +2071,7 @@ describe("public OpenAPI drift", () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const observations = contract.tags
       .flatMap((tag) => tag.operations)
-      .find(
-        (operation) =>
-          operation.operationId === "observations_v1_observations_get"
-      );
+      .find((operation) => operation.operationId === "listObservations");
     const year = observations?.parameters.find(
       (parameter) => parameter.name === "year"
     );
@@ -2083,6 +2096,41 @@ describe("public OpenAPI drift", () => {
       scapularis: true,
       vintageYear: "vintage_year",
       yearRequired: false,
+    });
+  });
+
+  it("documents geography identity as a typed 200 union", () => {
+    const contract = readAndLoadPublicOpenApiContract(process.cwd());
+    const operation = contract.document.paths as Record<string, unknown>;
+    const pathItem = operation[
+      "/v1/geographies/{geography_type}/{geography_id}"
+    ] as { get?: { responses?: Record<string, unknown> } };
+    const responses = pathItem.get?.responses ?? {};
+    const success = responses["200"] as {
+      content?: {
+        "application/json"?: { schema?: { anyOf?: { $ref?: string }[] } };
+      };
+    };
+    const branches = success.content?.["application/json"]?.schema?.anyOf?.map(
+      (branch) => branch.$ref
+    );
+
+    expect({
+      branches,
+      documented503: "503" in responses,
+      documented422: "422" in responses,
+      hasUnavailableSchema: Object.hasOwn(
+        contract.schemas,
+        "GeographyUnavailable"
+      ),
+    }).toStrictEqual({
+      branches: [
+        "#/components/schemas/ResourceEnvelope_Geography_",
+        "#/components/schemas/GeographyUnavailable",
+      ],
+      documented503: false,
+      documented422: false,
+      hasUnavailableSchema: true,
     });
   });
 
@@ -2111,8 +2159,8 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "dfa540f57f0c359f5adc0a0d8b851d964008fbea72c84f9d5f09bcdf1152fbf0",
-      sourceCommit: "e88887877440c00de0e23301f0a3eac2353134d9",
+        "c8e0b42feb019eabc4ee0033e7501d5134c946c74750432f7bd5a1ee32a44618",
+      sourceCommit: "decc4355c6eb6bfd04ca51f5a1f69eeb1b685ce2",
     });
   });
 });

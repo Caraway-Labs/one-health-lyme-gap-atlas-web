@@ -11,9 +11,9 @@ import * as zod from 'zod';
 
 
 export const PriorityReason = zod.object({
-  "code": zod.string().min(1),
-  "text": zod.string().min(1)
-})
+  "code": zod.string().min(1).describe('Stable code for the reason.'),
+  "text": zod.string().min(1).describe('Plain-language statement of the reason.')
+}).describe('One reason a county received its review priority.')
 
 export type PriorityReason = zod.input<typeof PriorityReason>;
 export type PriorityReasonOutput = zod.output<typeof PriorityReason>;

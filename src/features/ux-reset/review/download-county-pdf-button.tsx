@@ -3,6 +3,7 @@
 import { useId, useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import {
   atlasBriefFilename,
   downloadPdfReport,
@@ -121,6 +122,7 @@ function DownloadCountyPdfForSelection({
   return (
     <>
       <Button
+        {...analyticsControlAttributes("pdf_export")}
         aria-busy={phase === "downloading"}
         aria-describedby={describedBy || undefined}
         data-county={/^\d{5}$/.test(fips) ? fips : undefined}

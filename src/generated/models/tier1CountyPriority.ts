@@ -10,11 +10,14 @@ import type { Tier1CountyPriorityEvidenceSufficiency } from './tier1CountyPriori
 import type { Tier1CountyPriorityPriorityTier } from './tier1CountyPriorityPriorityTier';
 
 /**
- * Model-assisted surveillance review priority; never disease or clinical risk.
+ * Model-assisted surveillance review priority for one county.
+ *
+ * The priority helps decide where to look first. It is not a measure of disease or clinical
+ * risk, and it is not a diagnosis.
  */
 export interface Tier1CountyPriority {
   /**
-     * Five-digit county FIPS for this persisted result.
+     * Five-digit county FIPS code, with leading zeros.
      * @pattern ^\d{5}$
      */
   county_fips: string;
@@ -43,12 +46,12 @@ export interface Tier1CountyPriority {
      */
   model_version: string;
   /**
-     * Governed source release for this batch.
+     * Identifies the published data release the batch used.
      * @minLength 1
      */
   release_id: string;
   /**
-     * ML source commit for reproducibility.
+     * Commit of the model code that produced the result, for reproducibility.
      * @minLength 1
      */
   source_commit: string;
@@ -64,8 +67,14 @@ export interface Tier1CountyPriority {
   tier_policy_version: string;
   /** UTC batch generation time, not the request time or source observation date. */
   generated_at_utc: string;
-  /** @maxItems 3 */
+  /**
+     * Up to three reasons for the priority. Empty when none apply.
+     * @maxItems 3
+     */
   reasons: PriorityReason[];
-  /** @minLength 1 */
+  /**
+     * Reference to the document that lists what this result does not show.
+     * @minLength 1
+     */
   limitation_ref: string;
 }

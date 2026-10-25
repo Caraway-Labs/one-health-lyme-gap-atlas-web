@@ -1,8 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
+import type { FeedEntry } from "@/generated/models/feedEntry";
+
 import {
+  intelligenceFeedDetail,
   intelligenceFeedEnvelope,
+  intelligenceFeedEntry,
   intelligenceSourcesEnvelope,
   mixedIntelligenceFeedItems,
 } from "../fixtures/intelligence-feed-fixtures";
@@ -135,7 +140,7 @@ test("shows trusted-source items from workspace navigation", async ({
   await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
   ).toBeVisible();
-  await expect(page.getByText("CDC")).toBeVisible();
+  await expect(page.getByText("CDC", { exact: true })).toBeVisible();
   await expect(page.getByText("March 2, 2026")).toBeVisible();
   await expect(page.getByText("Publication date not provided")).toBeVisible();
   await expect(page.getByText("Publication date withheld")).toBeVisible();
@@ -172,14 +177,19 @@ test("keeps an empty feed distinct from failure and unavailability", async ({
   await installFeed(page, 200, intelligenceFeedEnvelope([]));
   await page.goto("/app/feed");
   await expect(
-    page.getByRole("heading", { name: "No items in this date window" })
+    page.getByRole("heading", { name: "No new items" })
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Approved trusted sources have no items in this feed right now."
+    )
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Show all dates" })
-  ).toBeVisible();
-  await expect(page.getByText(/no items in this feed right now/i)).toHaveCount(
-    0
-  );
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "No items in this date window" })
+  ).toHaveCount(0);
   const feed = page.getByTestId("intelligence-feed");
   await expect(feed.getByRole("alert")).toHaveCount(0);
   await expect(feed.getByText(/fail|error|unavailable/i)).toHaveCount(0);
@@ -320,10 +330,13 @@ test("filters the feed by source and publication date", async ({
   ).toBeVisible();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect.poll(() => feedUrls.length).toBeGreaterThan(0);
+  await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
+    "All dates"
+  );
   expectFeedParams(feedUrls[0], {
     page_size: null,
     page_token: null,
-    published_from: localPublishedFrom(30),
+    published_from: null,
     published_to: null,
     source_id: null,
   });
@@ -341,7 +354,7 @@ test("filters the feed by source and publication date", async ({
     .toContain("source_id=cdc-lyme");
   expectFeedParams(feedUrls.at(-1) ?? "", {
     page_token: null,
-    published_from: localPublishedFrom(30),
+    published_from: null,
     published_to: null,
     source_id: "cdc-lyme",
   });
@@ -374,6 +387,15 @@ test("filters the feed by source and publication date", async ({
     .click();
   await expect(page).not.toHaveURL(/published=/);
   await expect(page).toHaveURL(/source=cdc-lyme/);
+  await expect
+    .poll(() => feedUrls.at(-1) ?? "")
+    .toContain("source_id=cdc-lyme");
+  expectFeedParams(feedUrls.at(-1) ?? "", {
+    page_token: null,
+    published_from: null,
+    published_to: null,
+    source_id: "cdc-lyme",
+  });
   await expectNoAxeViolations(page);
 
   await page.getByRole("button", { name: "Clear filters" }).click();
@@ -389,7 +411,7 @@ test("filters the feed by source and publication date", async ({
   await expect(page.getByRole("option", { name: "Past 7 days" })).toBeVisible();
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/published=7d/);
+  await expect(page).toHaveURL(/published=90d/);
   await page.keyboard.press("Escape");
   await expectNoAxeViolations(page);
   await page.screenshot({
@@ -404,25 +426,27 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
     intelligenceFeedEnvelope(mixedIntelligenceFeedItems)
   );
   await page.goto("/app/feed");
-  await page.getByRole("combobox", { name: "Published" }).click();
-  await page.getByRole("option", { name: "All dates" }).click();
-  await expect(page).toHaveURL(/published=all/);
-  const allDatesUrl = feedUrls.at(-1) ?? "";
-  expectFeedParams(allDatesUrl, {
+  await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
+    "All dates"
+  );
+  expectFeedParams(feedUrls[0] ?? "", {
     page_token: null,
     published_from: null,
     published_to: null,
     source_id: null,
   });
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 7 days" }).click();
+  await expect(page).toHaveURL(/published=7d/);
   await page.goBack();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
-    "Past 30 days"
+    "All dates"
   );
   await page.goForward();
-  await expect(page).toHaveURL(/published=all/);
+  await expect(page).toHaveURL(/published=7d/);
   await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
-    "All dates"
+    "Past 7 days"
   );
   await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
@@ -447,9 +471,17 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expectNoAxeViolations(page);
 
+  await page.goto("/app/feed?published=all");
+  await expect(page).toHaveURL(/\/app\/feed$/);
+  await expect(page.getByRole("combobox", { name: "Published" })).toContainText(
+    "All dates"
+  );
+  await expectNoAxeViolations(page);
+
   feedUrls.length = 0;
   await page.goto("/app/feed?source=missing-source&published=30d");
-  await expect(page).toHaveURL(/\/app\/feed\?source=missing-source$/);
+  await expect(page).toHaveURL(/source=missing-source/);
+  await expect(page).toHaveURL(/published=30d/);
   await expect(page.getByRole("combobox", { name: "Source" })).toContainText(
     "missing-source"
   );
@@ -464,6 +496,13 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
   expect(
     feedUrls.some((url) => new URL(url).searchParams.get("source_id") === null)
   ).toBe(false);
+  expect(
+    feedUrls.every(
+      (url) =>
+        new URL(url).searchParams.get("published_from") ===
+        localPublishedFrom(30)
+    )
+  ).toBe(true);
   await expectNoAxeViolations(page);
 });
 
@@ -508,7 +547,10 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
   await installFeed(page, 200, intelligenceFeedEnvelope([]));
   await page.goto("/app/feed?published=7d");
   await expect(
-    page.getByRole("heading", { name: "No items match these filters" })
+    page.getByRole("heading", { name: "No items in this date window" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Show all dates" })
   ).toBeVisible();
   await expect(page.getByText("Showing 0 items")).toBeVisible();
   await expect(page.getByRole("heading", { name: "No new items" })).toHaveCount(
@@ -569,7 +611,7 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
   });
 });
 
-test("keeps a default date window empty distinct from an unfiltered feed", async ({
+test("shows every returned item by default and restores them from a short window", async ({
   page,
 }) => {
   const older = {
@@ -579,7 +621,7 @@ test("keeps a default date window empty distinct from an unfiltered feed", async
   };
   const undated = {
     ...mixedIntelligenceFeedItems[1],
-    publication_date_state: "not_provided" as const,
+    publication_date_state: "invalid" as const,
     published_at: null,
     title: "Undated surveillance note",
   };
@@ -595,16 +637,39 @@ test("keeps a default date window empty distinct from an unfiltered feed", async
   });
   await page.goto("/app/feed");
   await expect(
+    page.getByRole("heading", { name: "Older surveillance note" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Undated surveillance note" })
+  ).toBeVisible();
+  await expect(page.getByText("Publication date not available")).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/feed$/);
+  expect(
+    feedUrls.some((url) => new URL(url).searchParams.has("published_from"))
+  ).toBe(false);
+
+  await page.getByRole("combobox", { name: "Published" }).click();
+  await page.getByRole("option", { name: "Past 30 days" }).click();
+  await expect(page).toHaveURL(/published=30d/);
+  await expect(
     page.getByRole("heading", { name: "No items in this date window" })
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Approved trusted sources have no items in this feed right now."
+      "Past 30 days has no matching items. All dates includes older items and items without a publication date."
     )
-  ).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Clear filters" })).toHaveCount(
-    0
-  );
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Show all dates" })
+  ).toBeVisible();
+  expect(
+    feedUrls.some(
+      (url) =>
+        new URL(url).searchParams.get("published_from") ===
+        localPublishedFrom(30)
+    )
+  ).toBe(true);
+
   await page.getByRole("button", { name: "Show all dates" }).click();
   await expect(
     page.getByRole("heading", { name: "Older surveillance note" })
@@ -612,10 +677,7 @@ test("keeps a default date window empty distinct from an unfiltered feed", async
   await expect(
     page.getByRole("heading", { name: "Undated surveillance note" })
   ).toBeVisible();
-  await expect(page).toHaveURL(/published=all/);
-  expect(
-    feedUrls.some((url) => new URL(url).searchParams.get("published_from"))
-  ).toBe(true);
+  await expect(page).not.toHaveURL(/published=/);
   expect(
     feedUrls.some((url) => !new URL(url).searchParams.has("published_from"))
   ).toBe(true);
@@ -653,7 +715,7 @@ test("resets cached feed pages to page one when a filter changes or clears", asy
       return;
     }
     defaultPageOneVisits += 1;
-    const nextToken = `30d-${defaultPageOneVisits}`;
+    const nextToken = `all-${defaultPageOneVisits}`;
     pageOneTokens.push(nextToken);
     await route.fulfill({
       contentType: "application/json",
@@ -692,7 +754,7 @@ test("resets cached feed pages to page one when a filter changes or clears", asy
   ).toHaveCount(0);
 
   await page.getByRole("combobox", { name: "Published" }).click();
-  await page.getByRole("option", { name: "Past 30 days" }).click();
+  await page.getByRole("option", { name: "All dates" }).click();
   const returnedToken = await settledPageOneToken();
   expect(returnedToken).not.toBe(firstToken);
   await expect(
@@ -773,4 +835,246 @@ test("stacks feed filters at 375px without horizontal scroll", async ({
       "fixture-backed-intelligence-feed-filters-375.png"
     ),
   });
+});
+
+const RICH_FEED_CAVEATS = ["Fixture caveat A", "Fixture caveat B"] as const;
+
+const RICH_PREVIEW =
+  "Host-seeking nymphs were collected across the study sites.";
+const RICH_ABSTRACT = `${RICH_PREVIEW} The remainder of the abstract is only on the item.`;
+
+const describedItem = {
+  attribution: "Source: Centers for Disease Control and Prevention",
+  description: {
+    state: "present" as const,
+    text: "Wastewater surveillance detected influenza A(H5) in Oregon.",
+  },
+  limitations: [...RICH_FEED_CAVEATS],
+  organization: "Centers for Disease Control and Prevention",
+  publisher: "Centers for Disease Control and Prevention",
+  sourceFamily: "cdc_mmwr" as const,
+  sourceFamilyLabel: "CDC MMWR",
+  sourceId: "cdc-mmwr",
+  tags: ["Influenza", "Wastewater", "Oregon", "H5"],
+  title: "Described MMWR item",
+  trust: BriefingSourceReviewedTrustClassification.official_public_health,
+};
+
+const pubmedItem = {
+  abstract: {
+    copyright_line: "© 2026 Elsevier GmbH.",
+    state: "present" as const,
+    text: RICH_ABSTRACT,
+  },
+  abstractHasMore: true,
+  abstractPreview: RICH_PREVIEW,
+  abstractState: "present" as const,
+  attribution: "Courtesy of the U.S. National Library of Medicine",
+  authors: ["Smith J", "Lee K"],
+  copyrightLine: "© 2026 Elsevier GmbH.",
+  description: { state: "not_provided" as const, text: null },
+  limitations: [...RICH_FEED_CAVEATS],
+  organization: "National Library of Medicine",
+  pmid: "41234567",
+  publisher: "Ticks and Tick-borne Diseases",
+  sourceFamily: "pubmed" as const,
+  sourceFamilyLabel: "PubMed",
+  sourceId: "pubmed-tick-borne",
+  tags: ["Lyme disease"],
+  title: "PubMed abstract item",
+  trust: BriefingSourceReviewedTrustClassification.research_index,
+};
+
+function remoteItem() {
+  return {
+    description: {
+      state: "present" as const,
+      text: "Remote description text.",
+    },
+    organization: "Centers for Disease Control and Prevention",
+    publisher: "Centers for Disease Control and Prevention",
+    sourceFamily: "cdc_eid" as const,
+    sourceFamilyLabel: "CDC EID",
+    sourceId: "cdc-eid-expedited",
+    title: "Remote EID item",
+    trust: BriefingSourceReviewedTrustClassification.official_public_health,
+  };
+}
+
+async function installRichFeed(
+  page: Page,
+  details: Map<string, FeedEntry>
+): Promise<void> {
+  await installFeed(
+    page,
+    200,
+    intelligenceFeedEnvelope(
+      [
+        intelligenceFeedEntry("described", describedItem),
+        intelligenceFeedEntry("pubmed-card", pubmedItem),
+      ],
+      null
+    )
+  );
+  await page.route("**/v1/intelligence/feed/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const itemId = decodeURIComponent(pathname.split("/").at(-1) ?? "");
+    const detail = details.get(itemId);
+    if (detail) {
+      await route.fulfill({
+        json: {
+          data: detail,
+          meta: { projection_version: "intelligence-feed-read-v2" },
+        },
+        status: 200,
+      });
+      return;
+    }
+    await route.fulfill({
+      json: {
+        code: "INTELLIGENCE_ITEM_NOT_FOUND",
+        detail: "No intelligence feed entry exists for this id.",
+        status: 404,
+        title: "Not found",
+        type: "about:blank",
+      },
+      status: pathname.includes("%") ? 422 : 404,
+    });
+  });
+}
+
+test("shows richer cards and a detail drawer", async ({ page }) => {
+  const described = intelligenceFeedEntry("described", describedItem);
+  const remote = remoteItem();
+  const remoteDetail = intelligenceFeedDetail("remote-item", remote);
+  await installRichFeed(
+    page,
+    new Map([
+      [described.item_id, intelligenceFeedDetail("described", describedItem)],
+      [
+        intelligenceFeedEntry("pubmed-card", pubmedItem).item_id,
+        intelligenceFeedDetail("pubmed-card", pubmedItem),
+      ],
+      [remoteDetail.item_id, remoteDetail],
+    ])
+  );
+  await page.setViewportSize({ height: 900, width: 1280 });
+  await page.goto("/app/feed");
+  await expect(
+    page.getByRole("heading", { name: "Described MMWR item" })
+  ).toBeVisible();
+  await expect(page.getByText("CDC MMWR")).toBeVisible();
+  await expect(page.getByTestId("feed-shared-caveats")).toContainText(
+    "Fixture caveat A"
+  );
+  const copyright = page.getByTestId("feed-abstract-copyright");
+  await expect(copyright).toBeVisible();
+  await expect(copyright).toHaveText("© 2026 Elsevier GmbH.");
+  await page.screenshot({
+    fullPage: true,
+    path: "/opt/cursor/artifacts/feed-after-desktop.png",
+  });
+  await page.getByRole("button", { name: "Details" }).first().click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText(
+    "Wastewater surveillance detected influenza A(H5) in Oregon."
+  );
+  await expect(page).toHaveURL(new RegExp(`item=${described.item_id}`));
+  const pageHeading = page.locator("#intelligence-feed-heading");
+  await expect(pageHeading).toHaveText("Feed");
+  const headingBox = await pageHeading.boundingBox();
+  expect(headingBox?.width ?? 0).toBeGreaterThan(0);
+  const drawer = await dialog.boundingBox();
+  expect(drawer?.width ?? 0).toBeGreaterThan(440);
+  expect(drawer?.width ?? 0).toBeLessThan(520);
+  expect((drawer?.x ?? 0) + (drawer?.width ?? 0)).toBeGreaterThan(1200);
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/feed-after-desktop-detail.png",
+  });
+  await page.goBack();
+  await expect(dialog).toHaveCount(0);
+  await expect(page).not.toHaveURL(/item=/);
+
+  await page.goto(`/app/feed?item=${remoteDetail.item_id}`);
+  await expect(page.getByRole("dialog")).toContainText(
+    "Remote description text."
+  );
+  await page.goto(`/app/feed?item=${encodeURIComponent("%%%bad")}`);
+  await expect(page.getByRole("dialog")).toContainText(
+    "This item is no longer in the feed."
+  );
+});
+
+test("keeps the feed detail sheet inside the phone widths", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !releaseViewportRuns(testInfo.project.name, 320),
+    "Phone-width feed sheets run on the mobile project."
+  );
+  const remoteDetail = intelligenceFeedDetail("remote-item", remoteItem());
+  await installRichFeed(
+    page,
+    new Map([
+      [
+        intelligenceFeedEntry("described", describedItem).item_id,
+        intelligenceFeedDetail("described", describedItem),
+      ],
+      [
+        intelligenceFeedEntry("pubmed-card", pubmedItem).item_id,
+        intelligenceFeedDetail("pubmed-card", pubmedItem),
+      ],
+      [remoteDetail.item_id, remoteDetail],
+    ])
+  );
+  await page.goto("/app/feed");
+  await expect(
+    page.getByRole("heading", { name: "Described MMWR item" })
+  ).toBeVisible();
+
+  for (const width of [320, 375, 390]) {
+    await page.setViewportSize({ height: 800, width });
+    const cardCopyright = page.getByTestId("feed-abstract-copyright");
+    await cardCopyright.scrollIntoViewIfNeeded();
+    const cardCopyrightBox = await cardCopyright.boundingBox();
+    expect(cardCopyrightBox?.width ?? 0).toBeGreaterThan(0);
+    expect(
+      (cardCopyrightBox?.x ?? 0) + (cardCopyrightBox?.width ?? 0)
+    ).toBeLessThanOrEqual(width + 1);
+    const preview = page.getByTestId("feed-abstract");
+    await expect(preview).toHaveText(RICH_PREVIEW);
+    await expect(page.getByRole("button", { name: "Read more" })).toBeVisible();
+    if (width === 320) {
+      const lineClamp = await preview.evaluate(
+        (element) => getComputedStyle(element).webkitLineClamp
+      );
+      expect(lineClamp).toBe("none");
+    }
+    await page.getByRole("button", { name: "Read more" }).click();
+    const sheet = page.getByRole("dialog");
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+    expect(box?.x ?? 1).toBeLessThanOrEqual(1);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(width - 1);
+    await expect(sheet).toContainText(RICH_ABSTRACT);
+    const copy = sheet.getByText("© 2026 Elsevier GmbH.");
+    await expect(copy).toBeVisible();
+    const copyBox = await copy.boundingBox();
+    expect((copyBox?.x ?? 0) + (copyBox?.width ?? 0)).toBeLessThanOrEqual(
+      width + 1
+    );
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+    if (width === 390) {
+      await page.screenshot({
+        path: "/opt/cursor/artifacts/feed-after-390-detail.png",
+      });
+    }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+  }
 });

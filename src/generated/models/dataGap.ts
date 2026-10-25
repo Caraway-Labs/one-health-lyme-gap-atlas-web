@@ -6,8 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * A reason Atlas could not evaluate a county. A gap is not evidence of absence.
+ */
 export interface DataGap {
+  /** Five-digit FIPS code of the county, with leading zeros. */
   county_fips: string;
+  /** Stable code for the kind of gap, such as `OUT_OF_SCOPE`. */
   code: string;
+  /** Plain-language explanation of the gap. */
   detail: string;
 }

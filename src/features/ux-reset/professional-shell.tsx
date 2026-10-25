@@ -63,6 +63,10 @@ import {
   subscribeWorkspaceRestore,
   workspaceRestoreConcealed,
 } from "@/features/ux-reset/workspace-sign-out";
+import {
+  analyticsControlAttributes,
+  workspaceNavControlAttributes,
+} from "@/lib/atlas-analytics";
 
 const MOBILE_TRIGGER_RESTORE_FRAMES = 90;
 const MOBILE_TRIGGER_RESTORE_MS = 1000;
@@ -415,6 +419,7 @@ function ResetProfessionalFrame({
       >
         <SidebarHeader>
           <Link
+            {...analyticsControlAttributes("nav_brand")}
             href={shellHref(resetRouteById("explorer"))}
             aria-label="One Health Atlas"
             className="ux-reset-pro-brand"
@@ -456,6 +461,7 @@ function ResetProfessionalFrame({
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
+                        {...workspaceNavControlAttributes(item.id)}
                         active={current}
                         aria-current={current ? "page" : undefined}
                         aria-label={navigationLabel}
@@ -493,6 +499,7 @@ function ResetProfessionalFrame({
                       ) : null}
                       <SidebarMenuItem>
                         <SidebarMenuButton
+                          {...workspaceNavControlAttributes(item.id)}
                           active={current}
                           aria-current={current ? "page" : undefined}
                           aria-label={

@@ -7,7 +7,7 @@
  */
 
 /**
- * Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.
+ * County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher's original value stays in the observation `value`.
  * @nullable
  */
 export type SurveillanceEvidenceContextNormalizedState = typeof SurveillanceEvidenceContextNormalizedState[keyof typeof SurveillanceEvidenceContextNormalizedState] | null;

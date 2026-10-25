@@ -9,8 +9,14 @@ import type { CollectionLinks } from './collectionLinks';
 import type { CollectionMeta } from './collectionMeta';
 import type { CountyContextObservation } from './countyContextObservation';
 
+/**
+ * A page of county population or rurality observations, with paging details and links. Read `meta.availability` and `meta.next_page_token` before you use `data`.
+ */
 export interface CollectionEnvelopeCountyContextObservation {
+  /** The items on this page. Empty when there are none. */
   data: CountyContextObservation[];
+  /** Paging, release, and availability details. */
   meta: CollectionMeta;
+  /** Links related to this response. */
   links: CollectionLinks;
 }

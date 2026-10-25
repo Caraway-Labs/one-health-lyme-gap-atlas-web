@@ -1,58 +1,54 @@
 ---
 title: Developer overview
-description: Start here for anonymous Atlas REST reads, the guide map, and the limits of the public contract.
+description: Anonymous REST reads and the guide map.
 ---
 
-These guides take a developer from no Atlas context to one successful public REST read, and they explain the semantics that an operation name leaves out. Parameter tables, component schemas, and generated examples stay in the API reference. This section explains how to use the contract.
+Make an anonymous HTTPS GET to `https://api.onehealthatlas.org`. Public reads need no API key, signed-in session, SDK, or MCP server. The HTTP contract is `/v1`. OpenAPI `info.version` is a separate application version.
 
-## Access
+Send the URL and query string. A collection returns `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json`.
 
-Ordinary public reads are anonymous HTTPS GET requests. They require no API key, no signed-in session, no SDK, and no MCP server. These guides call the public API at `https://api.onehealthatlas.org`. The HTTP contract is `/v1`. The OpenAPI `info.version` is a separate application version.
+Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. Read limits with the value in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
 
-Send the request URL with its query string. A collection returns `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json`.
+## Choose a guide
 
-## Guide map
-
-| Guide | Use it when you need to |
+| Guide | Open it to |
 | --- | --- |
-| [Quickstart](/docs/develop/quickstart) | Complete one current-release county observation read |
-| [REST API](/docs/develop/rest) | Page a collection, handle errors, and tell versions apart |
-| [Geography](/docs/develop/geography) | Identify a county, see when identity delivery is pending, and request display polygons |
+| [Quickstart](/docs/develop/quickstart) | Finish one county observation read |
+| [REST API](/docs/develop/rest) | Page results, handle errors, and tell versions apart |
+| [Geography](/docs/develop/geography) | Identify a county and request display polygons |
 | [Indicators, measures, and observations](/docs/develop/resources) | Choose a measure and read `value` with `value_state` |
-| [Provenance and evidence](/docs/develop/provenance) | Cite source, methodology, release, and freshness fields |
-| [Workflow guides](/docs/develop/workflows) | Query one county, compare counties, read environmental context, choose a county PDF template, and reproduce a result |
-| [Observation queries](/docs/develop/observation-queries) | Choose a checked slice, including land cover, and see which temporal parameters that slice accepts |
-| [Tier 1 availability](/docs/develop/tier1-availability) | Choose availability or the persisted priority read, and keep abstention, no published model, and an unknown FIPS apart |
-| [MCP clients](/docs/develop/mcp-clients) | Connect Claude Desktop, Cursor, or a custom client, and copy the interpretation guardrails |
-| [OpenAPI, GitHub, and support](/docs/develop/support) | Open the machine-readable contract and report a `request_id` |
+| [Provenance and evidence](/docs/develop/provenance) | Cite source, methodology, release, and freshness |
+| [Workflow guides](/docs/develop/workflows) | Query, compare, read context, download a PDF, and cite |
+| [Observation queries](/docs/develop/observation-queries) | Choose a checked slice and its time parameters |
+| [Tier 1 availability](/docs/develop/tier1-availability) | Choose availability or the published priority read |
+| [MCP clients](/docs/develop/mcp-clients) | Connect a client and copy the interpretation guardrails |
+| [OpenAPI, GitHub, and support](/docs/develop/support) | Open the contract and report a `request_id` |
 
-Reviewers who are interpreting a screen, rather than calling the API, should use [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). MCP status stays on [API, MCP, and access](/docs/api-mcp-and-access). How governed sources are intended to become this canonical evidence contract, and which of that design is released, is in [Sources and canonical evidence](/docs/sources-and-canonical-evidence).
+For a screen, use [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). MCP status is on [API, MCP, and access](/docs/api-mcp-and-access). Source design is in [Sources and canonical evidence](/docs/sources-and-canonical-evidence).
 
-## Where the reference lives
+## Use the API reference
 
-The authoritative document is the public [OpenAPI schema](https://api.onehealthatlas.org/openapi.json). The [Swagger reference](https://api.onehealthatlas.org/docs) and [ReDoc reference](https://api.onehealthatlas.org/redoc) render that same document.
+Read parameters, schemas, and generated examples in the [API reference](/docs/api-reference). The authoritative document is the public [OpenAPI schema](https://api.onehealthatlas.org/openapi.json). [Swagger](https://api.onehealthatlas.org/docs) and [ReDoc](https://api.onehealthatlas.org/redoc) render that document.
 
-The generated reference for that contract is the [API reference](/docs/api-reference), with pages for [discovery](/docs/api-reference/discovery), [observations](/docs/api-reference/observations), [provenance](/docs/api-reference/provenance), [geographies](/docs/api-reference/geographies), [atlas](/docs/api-reference/atlas), [counties](/docs/api-reference/counties), [states](/docs/api-reference/states), and [schemas](/docs/api-reference/schemas). Those pages are produced from the pinned public spec. These guides link to that location and do not copy its operation catalog.
+Generated pages: [discovery](/docs/api-reference/discovery), [observations](/docs/api-reference/observations), [provenance](/docs/api-reference/provenance), [geographies](/docs/api-reference/geographies), [atlas](/docs/api-reference/atlas), [counties](/docs/api-reference/counties), [states](/docs/api-reference/states), and [schemas](/docs/api-reference/schemas).
 
-## Two public route families
-
-These guides cover two route families. Read the family you called.
+## Read the route family you called
 
 | Family | Routes | Error shape |
 | --- | --- | --- |
-| Canonical current-release resources | Indicators, measures, observations, sources, methodologies, and geography identity | Problem details with a stable `code` |
-| Legacy Atlas analytics and exports | County and state review, scores, display geometry, rankings, and PDF reports | Existing status codes, including `422`. A problem body may omit `code` |
+| Canonical resources | Indicators, measures, observations, sources, methodologies, geography identity | Problem details with a stable `code` |
+| Legacy analytics and exports | County and state review, scores, geometry, rankings, PDF reports | Statuses such as `422`. A problem body may omit `code` |
 
-Internal conversational AI, literature retrieval, account, and feedback product routes are excluded from this public contract.
+Conversational AI, literature retrieval, account, and feedback routes are outside this contract.
 
-## Geography used in examples
+## Use example geographies
 
-Atlas product geography for these guides is the lower 48 states and the District of Columbia. Examples use county FIPS `36061` (New York County, New York), `08001` (Adams County, Colorado), `09110` (Capitol Planning Region, Connecticut), and `51013` (Arlington County, Virginia). Preserve leading zeros. Five-digit FIPS strings are identifiers, so keep them as strings.
+Product geography is the lower 48 states and the District of Columbia. Examples use county FIPS `36061` (New York County, New York), `08001` (Adams County, Colorado), `09110` (Capitol Planning Region, Connecticut), and `51013` (Arlington County, Virginia). Preserve leading zeros. Keep five-digit FIPS values as strings.
 
-## Limits recorded with the contract
+## Apply the result limit
 
-Current-release observations have a default pre-execution logical-result ceiling of 10,000. That ceiling is not truncation. The public document does not publish a numeric request quota. Honor `Retry-After` on `429` and `503`. See [REST API](/docs/develop/rest).
+A query may select up to 10,000 results. A broader query is rejected. The API never truncates results. The public document does not publish a numeric request quota. Honor `Retry-After` on `429` and `503`. See [REST API](/docs/develop/rest).
 
-`GET /v1/geographies/{geography_type}/{geography_id}` is declared, and its description says delivery currently returns `503` with `CANONICAL_DATA_UNAVAILABLE` and no geometry. That route does not return polygons. `GET /v1/atlas/geometry` is the display-geometry route. See [Geography](/docs/develop/geography).
+`GET /v1/geographies/{geography_type}/{geography_id}` returns HTTP 200, `availability` `UNAVAILABLE`, `reason` `CANONICAL_GEOGRAPHY_UNPUBLISHED`, `data` null, and no geometry. Polygons are `GET /v1/atlas/geometry`. See [Geography](/docs/develop/geography).
 
-The observations operation describes separately enabled January 2025 environmental measures that carry `environmental_context`. On 18 October 2026 the measures catalog included those daily ids. The checked slice queries, including annual land cover, and the parameters they reject are in [Observation queries](/docs/develop/observation-queries). `surveillance_context` is optional and requires an admitted Data delivery. See [Workflow guides](/docs/develop/workflows).
+January 2025 environmental measures carry `environmental_context`. The catalog includes those daily ids. Slice queries and rejected parameters are in [Observation queries](/docs/develop/observation-queries). Optional `surveillance_context` appears only with published surveillance context on a supported slice. See [Workflow guides](/docs/develop/workflows).

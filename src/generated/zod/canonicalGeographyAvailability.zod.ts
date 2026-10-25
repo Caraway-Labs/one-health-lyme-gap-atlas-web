@@ -11,12 +11,12 @@ import * as zod from 'zod';
 
 
 export const CanonicalGeographyAvailability = zod.object({
-  "availability": zod.literal("UNAVAILABLE"),
-  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
-  "data": zod.null().describe('No canonical geography resource or geometry is fabricated.'),
-  "release_id": zod.string().min(1).describe('Governed county directory release used to confirm identity.'),
+  "availability": zod.literal("UNAVAILABLE").describe('Always `UNAVAILABLE`: the county\'s geography data is not published.'),
+  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED").describe('Why the data is unavailable. The geography data has not been published.'),
+  "data": zod.null().describe('Always `null`. The API returns no geography data or geometry.'),
+  "release_id": zod.string().min(1).describe('Identifies the county directory release used to confirm the county.'),
   "limitations": zod.array(zod.string()).min(1).describe('Publication and representation boundaries, not scientific absence.')
-})
+}).describe('The county exists, but its canonical geography data is not published yet.')
 
 export type CanonicalGeographyAvailability = zod.input<typeof CanonicalGeographyAvailability>;
 export type CanonicalGeographyAvailabilityOutput = zod.output<typeof CanonicalGeographyAvailability>;

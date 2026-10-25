@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Whether the observation can be used for the target window.
+ */
 export type TemporalAlignmentContextDisposition = typeof TemporalAlignmentContextDisposition[keyof typeof TemporalAlignmentContextDisposition];
 
 

@@ -22,10 +22,39 @@ describe("OpenAPI response headers", () => {
     const responses =
       contract.paths["/v1/atlas/geometry"]?.get?.responses ?? {};
 
-    expect(responseHeaders(responses["200"]?.headers)).toStrictEqual([]);
+    expect(responseHeaders(responses["200"]?.headers)).toStrictEqual([
+      {
+        description: "Media type of the body: `application/geo+json`.",
+        name: "Content-Type",
+        required: false,
+        schema: "string",
+      },
+      {
+        description:
+          "How long a client or shared cache can reuse the response: `public, max-age=31536000, immutable`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.",
+        name: "Cache-Control",
+        required: false,
+        schema: "string",
+      },
+      {
+        description:
+          "Opaque validator for this representation. Send it as `If-None-Match` to get an empty 304 when nothing changed. Send the value back exactly as you received it.",
+        name: "ETag",
+        required: false,
+        schema: "string",
+      },
+      {
+        description:
+          "Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.",
+        name: "X-Request-ID",
+        required: false,
+        schema: "string",
+      },
+    ]);
     expect(responseHeaders(responses["429"]?.headers)).toStrictEqual([
       {
-        description: "Seconds before retry when supplied by the service.",
+        description:
+          "Seconds to wait before you retry. Wait that long when the header is present.",
         name: "Retry-After",
         required: false,
         schema: "string",

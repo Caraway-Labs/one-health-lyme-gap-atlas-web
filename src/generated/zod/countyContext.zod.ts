@@ -8,15 +8,15 @@
 import * as zod from 'zod';
 
 export const CountyContext = zod.object({
-  "contract_version": zod.literal("atlas-county-context-consumer/1"),
-  "vintage_year": zod.int().describe('Source product\/classification vintage, not an annual date.'),
-  "source_field": zod.string(),
-  "value_type": zod.enum(['integer', 'number']),
-  "category_label": zod.string().nullable().describe('Authoritative category label; null for quantities.'),
-  "definition": zod.string(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),
-  "metadata_methodology_version": zod.string()
-})
+  "contract_version": zod.literal("atlas-county-context-consumer/1").describe('Version of the contract that defines this object.'),
+  "vintage_year": zod.int().describe('Year of the source product or classification. It is not an annual date.'),
+  "source_field": zod.string().describe('Name of the field in the source product.'),
+  "value_type": zod.enum(['integer', 'number']).describe('Whether `value` is an integer or a decimal number.'),
+  "category_label": zod.string().nullable().describe('Official label of the category. `null` for quantities.'),
+  "definition": zod.string().describe('Plain-language definition of the field.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).describe('The `value_state` values this field can return.'),
+  "metadata_methodology_version": zod.string().describe('Version of the methodology metadata that describes this field.')
+}).describe('Describes the county context field that a population or rurality value came from.')
 
 export type CountyContext = zod.input<typeof CountyContext>;
 export type CountyContextOutput = zod.output<typeof CountyContext>;

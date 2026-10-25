@@ -24,9 +24,9 @@ import {
   loadExploreSelection,
   shouldRetryExploreObservation,
 } from "@/features/ux-reset/explore/load-explore-resources";
-import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
+import { getAtlasMetadata } from "@/generated/atlas";
 import type { AtlasMetadata } from "@/generated/models";
-import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
+import { GetAtlasMetadataResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
@@ -95,7 +95,7 @@ export function useExploreWorkspace() {
 
   const metadataQuery = useQuery({
     queryFn: async ({ signal }) => {
-      const response = await metadataV1AtlasMetadataGet(
+      const response = await getAtlasMetadata(
         urlState.dataset ? { dataset_version: urlState.dataset } : undefined,
         { signal }
       );
@@ -111,7 +111,7 @@ export function useExploreWorkspace() {
       }
       return validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
+        GetAtlasMetadataResponse,
         response.data
       );
     },

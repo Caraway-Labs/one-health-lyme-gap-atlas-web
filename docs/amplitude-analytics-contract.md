@@ -4,7 +4,7 @@ Status: approved design contract for default-on product analytics with explicit 
 
 Owner: Atlas product, engineering, and privacy leads
 
-Last reviewed: 2026-10-24
+Last reviewed: 2026-10-25
 
 ## Product purpose and boundary
 
@@ -73,6 +73,7 @@ Event names use lower-case `snake_case`. One call represents one completed user-
 | `atlas_feedback_outcome_viewed` | Future feedback flow shows a controlled confirmation/outcome | Does the feedback closure path work? | `outcome` |
 | `atlas_account_flow_started` | Future authenticated account flow starts | Are accounts adopted? | `account_flow` |
 | `atlas_account_flow_completed` | Future authenticated account flow completes | Where do account funnels succeed? | `account_flow`, `outcome` |
+| `atlas_feed_item_detail_opened` | A person opens an intelligence feed item detail panel from a card. A panel opened from `?item=` on load, or restored by Back or Forward, is a render and emits nothing | Do people open feed item details, and from which card control? | `entry_surface`, `source_family` |
 
 Rows labelled future cannot be emitted until their owning account or feedback story is live and the event is reviewed in the tracking plan. Consent choice, privacy-dialog interactions, support requests, and data-rights requests are expressly **not** Amplitude events.
 
@@ -85,17 +86,95 @@ Every event includes the following common context. A property omitted from this 
 | `schema_version` | operational | Literal `atlas-analytics/v1` |
 | `release_version` | operational | Build release identifier; no branch, commit author, or host name |
 | `methodology_version` | public Atlas provenance | Published methodology version |
-| `route_id` | public product context | Closed enum of supported route IDs, not a URL |
+| `route_id` | public product context | Closed enum in the route table below, not a URL |
 | `geography_level` | public Atlas context | `national`, `state`, or `county` |
 | `state_fips` | public Atlas context | Valid two-digit state FIPS only; absent when not selected |
 | `county_fips` | public Atlas context | Valid five-digit county FIPS only; absent when not selected |
-| `entry_surface` | product context | Closed enum such as `map`, `results_table`, `summary`, or `footer` |
+| `entry_surface` | product context | Closed enum `map`, `results_table`, `summary`, `footer`, `feed_card_details`, or `feed_card_read_more` |
+| `source_family` | public product context | Closed enum `cdc_mmwr`, `cdc_eid`, `cdc_other`, `nih_niaid`, `pubmed`, `state_local`, or `other` |
 | `selection_surface` | product context | Closed enum `map`, `results_table`, `ranked_list`, or `experiment` |
 | `outcome` | operational | Closed enum `success`, `cancelled`, `validation_rejected`, or `service_unavailable` |
 
 `control_id`, `action`, `filter_dimension`, `filter_value`, `score_control`, `score_value`, `feedback_topic`, `account_flow`, `content_surface`, `selection_surface`, `summary_kind`, `export_scope`, `clear_scope`, `change_source`, and `page_bucket` are each closed, versioned enums in the typed analytics boundary. A value that is not in that allowlist causes the event to be dropped. Every JSX control attribute is created through its typed helper, so an unapproved literal cannot compile. `atlas_ui_interaction` is the complete control catalogue: every meaningful button, link, menu, selector, map/list action, and committed scenario adjustment must have a stable `control_id` before it ships. It never records labels, raw DOM selectors, hover, scroll, pointer movement, keystrokes, or text input. `active_filter_count` is an integer from 0 through 10; `page_bucket` is `1`, `2-5`, `6-10`, or `11+`.
 
 Intelligence Feed filters use the existing `atlas_filter_applied` and `atlas_filter_cleared` events with `route_id` `intelligence_feed` (`/app/feed`). They do not add event names. `filter_dimension` adds `feed_source` and `feed_published`. `filter_value` for `feed_source` is `all` or `source_selected` (never a source id or organization name). `filter_value` for `feed_published` is `7d`, `30d`, `90d`, or `all`. `clear_scope` is `single` (one chip removed) or `all` (Clear filters). Both events include `active_filter_count` after the change. Home state and evidence filters keep their existing `filter_dimension` and `filter_value` values. The source-catalog retry button emits `atlas_ui_interaction` with `control_id` `feed_sources_retry` and `action` `activated`. It does not send a source id or organization name.
+
+Opening a feed item's detail panel emits `atlas_feed_item_detail_opened` with `route_id` `intelligence_feed`. `entry_surface` is `feed_card_details` (Details) or `feed_card_read_more` (Read more). `source_family` is the entry's family enum. The event does not include an item id, PMID, title, URL, or any other item text. A panel opened from the `item` query on load, or restored by Back or Forward, emits nothing. Close emits `atlas_ui_interaction` with `control_id` `feed_item_details_close`. Retry on the panel's unavailable state uses `feed_item_details_retry`. "View on PubMed" uses `feed_item_pubmed_open`. "NCBI copyright and disclaimers" in the panel or the feed footer uses `feed_ncbi_copyright_open`. Escape, the backdrop, and Back emit nothing. `feed_item_details_open` and `feed_item_read_more` stay in the control catalogue for the `atlas_ui_interaction` fallback and are not emitted while the dedicated event is in use. `feed_item_open` remains the publisher link and is a different control.
+
+### Route identifiers
+
+`routeIdForPathname` is the only classifier. A query string, fragment, or trailing slash does not change the id and is never sent. A value outside this table is dropped locally and is not sent to Amplitude.
+
+| `route_id` | Path | Notes |
+| --- | --- | --- |
+| `front_porch` | `/` | Public Front Porch |
+| `atlas_home` | `/overview`, and any unmatched analytical path | Legacy Overview. Canonical UX Reset paths are not this id |
+| `privacy` | `/privacy` |  |
+| `knowledge_graph` | `/knowledge-graph` |  |
+| `atlas_variant` | `/variant_*` | Retired URLs. Kept distinct from `atlas_home` |
+| `account` | `/account` |  |
+| `assistant` | `/assistant` and nested paths | Public literature workspace. Not Ask Atlas |
+| `geographic_explorer` | `/geographic_explorer` |  |
+| `ai_ethics` | `/ai-ethics` |  |
+| `atlas_explorer` | `/explore` and nested paths | Canonical Atlas Explorer |
+| `compare` | `/compare` and nested paths | Canonical Compare |
+| `ask_atlas` | `/askatlas` and nested paths | Canonical Ask Atlas |
+| `intelligence_feed` | `/app/feed` and nested paths | Canonical Feed |
+| `settings` | `/app/settings` and nested paths | Canonical Settings. Consent, privacy-settings, and data-rights controls on this page are not analytics events |
+| `resources` | `/resources` and nested paths |  |
+| `data_provenance` | `/data-provenance` and nested paths |  |
+| `documentation` | `/docs` and nested paths | Classifies the path only. ADR 0020 still keeps the documentation site free of the analytics client |
+
+Redirect aliases such as `/app/review`, `/app/compare`, `/app/assistant`, `/investigate`, and `/app` stay on `atlas_home` until the browser is on the canonical path above.
+
+### Professional workspace controls
+
+These `control_id` values extend the existing catalogue for Explorer, Compare, Ask Atlas, Settings, Feed, and the professional shell. `action` remains `activated`. Ask Atlas conversation controls keep the existing `evidence_chat_*` ids; `route_id` `ask_atlas` distinguishes that workspace from the public assistant. County PDF export reuses `pdf_export`. An unknown `control_id` still drops the event locally.
+
+| `control_id` | Control |
+| --- | --- |
+| `nav_brand` | Professional shell wordmark |
+| `nav_atlas_explorer` | Sidebar Atlas Explorer |
+| `nav_compare` | Sidebar Compare |
+| `nav_ask_atlas` | Sidebar Ask Atlas |
+| `nav_feed` | Sidebar Research & News |
+| `nav_resources` | Sidebar Resources |
+| `nav_settings` | Sidebar Settings |
+| `nav_data_provenance` | Sidebar Data Provenance |
+| `nav_docs` | Sidebar Docs |
+| `workspace_sign_in` | Shell sign-in |
+| `workspace_sign_out` | Shell or Settings sign-out. Not a data-rights event |
+| `explorer_county_select` | Explorer county option |
+| `explorer_county_clear` | Explorer clear county |
+| `explorer_map_layer` | Explorer map layer choice |
+| `explorer_us_view` | Explorer US view |
+| `explorer_fit_map` | Explorer fit map |
+| `explorer_view_county_evidence` | Open county evidence |
+| `explorer_view_follow_up` | View county follow-up |
+| `explorer_compare` | Open Compare for the selected county |
+| `explorer_ask_atlas` | Open Ask Atlas from Explorer |
+| `explorer_back_to_map` | Back to map |
+| `explorer_retry_evidence` | Retry county evidence |
+| `explorer_retry_directory` | Retry county list |
+| `compare_state_filter` | Compare state filter choice |
+| `compare_county_select` | Compare county choice |
+| `compare_county_clear` | Clear one compare county |
+| `compare_swap` | Swap the compare pair |
+| `compare_clear_pair` | Clear both compare counties |
+| `compare_edit_counties` | Change counties from the pinned pair |
+| `compare_pdf_export` | Download the compare county PDFs |
+| `settings_save_starting_view` | Save starting view |
+| `settings_profile_retry` | Retry the saved starting-view read |
+| `feed_item_open` | Open a feed item at its publisher. The event does not include the URL, title, or publisher |
+| `feed_retry` | Retry the feed request |
+| `feed_clear_filters` | Clear feed filters or show all dates |
+| `feed_remove_filter` | Remove one feed filter chip |
+| `feed_item_details_open` | Fallback only: Details on a feed card. The dedicated `atlas_feed_item_detail_opened` event is used instead |
+| `feed_item_read_more` | Fallback only: Read more under a PubMed abstract. The dedicated event is used instead |
+| `feed_item_details_close` | Close button in the feed item panel. Escape and Back emit nothing |
+| `feed_item_details_retry` | Retry in the feed item panel's unavailable state |
+| `feed_item_pubmed_open` | Open the PubMed record from the item panel |
+| `feed_ncbi_copyright_open` | Open the NCBI copyright and disclaimers page from the item panel or the feed footer |
 
 The following are prohibited in event names, properties, user properties, groups, IDs, URLs, logs, and Amplitude Data: free text; raw search terms; feedback or chat content; email, name, phone, address, account ID, authentication/session token, IP address, cookie value, device ID, user agent, referrer, marketing parameter, exact timestamp supplied by the app, health information, diagnosis, treatment, accessibility preference, or arbitrary error message.
 
@@ -153,7 +232,16 @@ Do Not Track check: with `doNotTrack` of `1` or `yes`, confirm no Amplitude requ
 - Vitest asserts `getAmplitudeBrowserInitOptions().offline` is `OfflineDisabled` (falsy), not a truthy string that suppresses delivery.
 - Playwright loads a fresh session with a synthetic API key and expects at least one Amplitude network request without an opt-in click, and expects zero requests after opt-out and under Do Not Track. Test updates belong to the implementation stories, not to this policy record.
 
-Live confirmation that events land in projects `856061` and `860994` requires valid project API keys (Matthew / platform owners).
+Live confirmation that events land in projects `856061` and `860994` uses the production project (event segmentation by `route_id`, or User Lookup / Event Stream when that role is enabled). Do not record the Browser API key.
+
+### Professional workspace production check (#919)
+
+Run this after a production deploy that includes the default-on client. The project is Atlas Web - Production (`856061`). The repeatable procedure and the latest execution note are in [the #919 verification record](evidence/web-919-production-amplitude-verification.md). Related key configuration is [#380](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/380) and [#381](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/381).
+
+1. Bundle spot-check. On `https://onehealthatlas.org/`, the compiled API-key reader in the client chunks must return a non-empty trimmed string. `"".trim()` means the Docker build did not receive `NEXT_PUBLIC_AMPLITUDE_API_KEY`. Record presence only.
+2. Fresh signed-in browser on `/explore`, Do Not Track off, storage available, no opt-in click. Expect an Amplitude HTTP 2xx whose body is `atlas_route_viewed` with `route_id` `atlas_explorer` and only allowlisted properties. Unsigned `/explore` stops at sign-in and is not this check.
+3. On `/app/settings`, turn optional analytics off, reload `/explore`, and confirm no further Amplitude request. Vendor `AMP_` / `amplitude` keys are cleared. The first-party preference remains.
+4. In project `856061`, confirm the `atlas_explorer` event, then record the deployment SHA, timestamp, and event names in the verification record.
 
 ## Pre-production acceptance tests
 

@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
 import { isLower48ReviewScope } from "@/features/ux-reset/review/review-state-fips";
-import { stateReviewV1StatesStateReviewGet } from "@/generated/atlas";
-import { StateReviewV1StatesStateReviewGetResponse } from "@/generated/zod/atlas";
+import { getStateReview } from "@/generated/atlas";
+import { GetStateReviewResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
 
@@ -32,7 +32,7 @@ export function useStateReview(
       if (!resolvedRelease) {
         throw new Error("State review requires a resolved release.");
       }
-      const response = await stateReviewV1StatesStateReviewGet(
+      const response = await getStateReview(
         scope,
         { dataset_version: resolvedRelease },
         { signal }
@@ -47,7 +47,7 @@ export function useStateReview(
       }
       const review = validateApiResponse(
         "State review",
-        StateReviewV1StatesStateReviewGetResponse,
+        GetStateReviewResponse,
         response.data
       );
       if (review.requested_state !== scope) {

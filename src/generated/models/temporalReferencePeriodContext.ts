@@ -6,9 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * The reference period of a source dataset.
+ */
 export interface TemporalReferencePeriodContext {
+  /** Identifies the reference period. */
   id: string;
+  /** First date in the reference period. */
   start: string;
+  /** First date after the reference period. It is not in the period. */
   end_exclusive: string;
+  /** Reference year or period of the source dataset. It is not an annual value. */
   source_vintage: string;
 }

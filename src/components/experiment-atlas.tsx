@@ -16,20 +16,16 @@ import {
 import { PdfExportButton } from "@/components/pdf-export-button";
 import { ScoringCalculationPreview } from "@/components/scoring-calculation-preview";
 import { Button } from "@/components/ui/button";
-import {
-  countyV1CountiesFipsGet,
-  metadataV1AtlasMetadataGet,
-  scoresV1AtlasScoresGet,
-} from "@/generated/atlas";
+import { getCounty, getAtlasMetadata, getAtlasScores } from "@/generated/atlas";
 import type {
   AtlasMetadata,
   CountyDetail,
   CountyScoreSummary,
 } from "@/generated/models";
 import {
-  CountyV1CountiesFipsGetResponse,
-  MetadataV1AtlasMetadataGetResponse,
-  ScoresV1AtlasScoresGetResponse,
+  GetCountyResponse,
+  GetAtlasMetadataResponse,
+  GetAtlasScoresResponse,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
@@ -107,8 +103,8 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
     queryFn: async () =>
       validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
-        (await metadataV1AtlasMetadataGet()).data
+        GetAtlasMetadataResponse,
+        (await getAtlasMetadata()).data
       ),
     queryKey: ["metadata"],
   });
@@ -125,9 +121,9 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
     queryFn: async () =>
       validateApiResponse(
         "Atlas scores",
-        ScoresV1AtlasScoresGetResponse,
+        GetAtlasScoresResponse,
         (
-          await scoresV1AtlasScoresGet({
+          await getAtlasScores({
             dataset_version: metadataQuery.data!.release_id,
             ...debouncedSettings,
           })
@@ -140,9 +136,9 @@ export function ExperimentAtlas({ variant }: ExperimentProps) {
     queryFn: async () =>
       validateApiResponse(
         "County detail",
-        CountyV1CountiesFipsGetResponse,
+        GetCountyResponse,
         (
-          await countyV1CountiesFipsGet(selectedFips, {
+          await getCounty(selectedFips, {
             dataset_version: metadataQuery.data!.release_id,
             ...debouncedSettings,
           })

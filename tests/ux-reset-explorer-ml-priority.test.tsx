@@ -66,10 +66,7 @@ const { publishedCounties, tier1Get } = vi.hoisted(() => ({
       stateName: "Colorado",
     },
   ]),
-  tier1Get:
-    vi.fn<
-      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
-    >(),
+  tier1Get: vi.fn<typeof import("@/generated/atlas").getCountyTier1Priority>(),
 }));
 
 vi.mock(import("next/navigation"), async (importOriginal) => ({
@@ -115,18 +112,16 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    countyTier1SurveillancePriorityGet: (
+    getCountyTier1Priority: (
       ...args: Parameters<
-        typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+        typeof import("@/generated/atlas").getCountyTier1Priority
       >
     ) => tier1Get(...args),
-    scoresV1AtlasScoresGet: vi.fn<typeof actual.scoresV1AtlasScoresGet>(
-      async () => ({
-        data: reviewScopeScoresFixture,
-        headers: new Headers(),
-        status: 200,
-      })
-    ),
+    getAtlasScores: vi.fn<typeof actual.getAtlasScores>(async () => ({
+      data: reviewScopeScoresFixture,
+      headers: new Headers(),
+      status: 200,
+    })),
   };
 });
 

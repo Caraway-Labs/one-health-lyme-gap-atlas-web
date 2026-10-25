@@ -1,11 +1,11 @@
 ---
 title: OpenAPI, GitHub, and support
-description: Open the public Atlas contract, the GitHub repositories that own it, and the fields to include when you ask for help.
+description: Open the public Atlas contract, the repositories that own it, and the fields to include in a support report.
 ---
 
-These guides explain how to call the public API. The contract itself stays in the owning service.
+Open the contract on the API service. Report a failed read with the fields below.
 
-## OpenAPI
+## Open the contract
 
 | Surface | Status | URL |
 | --- | --- | --- |
@@ -13,67 +13,42 @@ These guides explain how to call the public API. The contract itself stays in th
 | OpenAPI schema | Available | [openapi.json](https://api.onehealthatlas.org/openapi.json) |
 | Swagger reference | Available | [Swagger reference](https://api.onehealthatlas.org/docs) |
 | ReDoc reference | Available | [ReDoc reference](https://api.onehealthatlas.org/redoc) |
-| Generated reference in this site | Rendered from the pinned public spec | [API reference](/docs/api-reference) |
+| Generated reference | From the pinned public spec | [API reference](/docs/api-reference) |
 
-The generated section uses these paths:
+Parameters and examples stay in that reference: [discovery](/docs/api-reference/discovery), [observations](/docs/api-reference/observations), [provenance](/docs/api-reference/provenance), [geographies](/docs/api-reference/geographies), [atlas](/docs/api-reference/atlas), [counties](/docs/api-reference/counties), [states](/docs/api-reference/states), and [schemas](/docs/api-reference/schemas). Task wording is in [the developer overview](/docs/develop).
 
-| Path | Contents |
-| --- | --- |
-| [API reference](/docs/api-reference) | Document version, source commit, and the operation index |
-| [Discovery](/docs/api-reference/discovery) | Indicators and measures |
-| [Observations](/docs/api-reference/observations) | Observation query |
-| [Provenance](/docs/api-reference/provenance) | Sources and methodologies |
-| [Geographies](/docs/api-reference/geographies) | Geography identity |
-| [Atlas](/docs/api-reference/atlas) | Legacy metadata, scores, geometry, and ranking export |
-| [Counties](/docs/api-reference/counties) | Legacy county analytics and reports |
-| [States](/docs/api-reference/states) | Legacy state review and reports |
-| [Schemas](/docs/api-reference/schemas) | Component schemas, including `ProblemDetails` |
+## Read machine-readable docs
 
-Use those pages for parameters, schemas, and the contract's own examples. Use [the developer overview](/docs/develop) when you need the task and the meaning of a field.
+[llms.txt](/llms.txt) indexes current pages. [llms-full.txt](/llms-full.txt) joins them. [Support page as Markdown](/docs/develop/support.md) and [Support page as MDX](/docs/develop/support.mdx) export the support URL. Add md or mdx to a page URL. The index is [docs.md](/docs.md) and [docs.mdx](/docs.mdx). Home: [https://onehealthatlas.org/docs](https://onehealthatlas.org/docs).
 
-## Machine-readable docs
+These exports are separate from the OpenAPI contract. `/v1` and OpenAPI `info.version` are different identifiers.
 
-These files are generated from the current documentation source for this deployment. They are not a second copy of the OpenAPI contract. The API reference pages cite the pinned public spec and link the raw schema.
-
-| File | Contents |
-| --- | --- |
-| [llms.txt](/llms.txt) | Index of the current documentation pages |
-| [llms-full.txt](/llms-full.txt) | Every current page in one Markdown file |
-| [This page as Markdown](/docs/develop/support.md) | Processed Markdown for this page |
-| [This page as MDX](/docs/develop/support.mdx) | Current MDX source for this page |
-
-Add md to the end of a documentation page URL for processed Markdown. Add mdx for the MDX source. The docs index is [docs.md](/docs.md) and [docs.mdx](/docs.mdx).
-
-`/v1` is the HTTP contract. OpenAPI `info.version` is the application version. They are different identifiers.
-
-## GitHub
+## Find the owning repository
 
 | Repository | What it owns |
 | --- | --- |
-| [one-health-lyme-gap-atlas-api](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api) | The public HTTP contract and `openapi.json` |
-| [one-health-lyme-gap-atlas-web](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web) | This documentation site and the Atlas web application |
-| [one-health-lyme-gap-atlas-mcp](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) | The MCP server. It is not required for public REST reads |
+| [one-health-lyme-gap-atlas-api](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api) | Public HTTP contract and `openapi.json` |
+| [one-health-lyme-gap-atlas-web](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web) | Documentation site and web application |
+| [one-health-lyme-gap-atlas-mcp](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) | MCP server, separate from public REST reads |
 
-Contract questions belong with the API repository. Guide wording belongs with the web repository. [API, MCP, and access](/docs/api-mcp-and-access) records the current MCP boundary: bounded anonymous read-only evidence tools, with county identity kept separate from evidence. [MCP clients](/docs/develop/mcp-clients) has the production Streamable HTTP recipes. The September 2026 smoke-only receipt is historical.
+Contract questions go to the API repository. Guide wording goes to the web repository. [API, MCP, and access](/docs/api-mcp-and-access) records the MCP boundary. [MCP clients](/docs/develop/mcp-clients) has the Streamable HTTP recipes. The September 2026 smoke-only receipt is historical.
 
-## Support
+## Report a failed read
 
-Include these items when you report a failed or surprising read:
-
-- The full request URL, without an Authorization header. Public reads do not use one.
-- The HTTP status and `content-type`.
+- Full request URL, with no Authorization header. Public reads do not use one.
+- HTTP status and `content-type`.
 - `request_id` from the problem body.
 - `Retry-After` when the status is `429` or `503`.
-- For a successful observation, `measure_id`, `geography_id`, period, `value_state`, `release_id`, and `semantic_version`.
+- For an observation, `measure_id`, `geography_id`, period, `value_state`, `release_id`, and `semantic_version`.
 
 There is no API key to rotate and no SDK version to report.
 
-## Unavailable in this contract
+## Check what the contract omits
 
 | Item | Status |
 | --- | --- |
-| Numeric rate-limit quota and concurrency cap | Not published in the public OpenAPI document. Honor `Retry-After` |
-| Geography identity payload | Declared route currently returns `503` `CANONICAL_DATA_UNAVAILABLE` and no geometry. Polygons are `GET /v1/atlas/geometry` |
-| Daily environmental measure id | Present on 18 October 2026. The checked id is `nclimgrid_tavg_county_day`. Read `environmental_context` when that observation includes it. See [Observation queries](/docs/develop/observation-queries) |
-| API keys, required SDKs, and required MCP tools | Not part of anonymous public reads |
-| Account, feedback, conversational AI, and literature retrieval | Excluded from the public OpenAPI document |
+| Numeric quota and concurrency cap | Not in the public OpenAPI document. Honor `Retry-After` |
+| Geography identity payload | HTTP `200` `GeographyUnavailable` (`CANONICAL_GEOGRAPHY_UNPUBLISHED`, `data` null) and no geometry. Polygons are `GET /v1/atlas/geometry` |
+| Daily environmental measure | In the current catalog. Checked id: `nclimgrid_tavg_county_day`. See [Observation queries](/docs/develop/observation-queries) |
+| API keys, required SDKs, required MCP | Outside anonymous public reads |
+| Account, feedback, conversational AI, literature retrieval | Excluded from the public OpenAPI document |

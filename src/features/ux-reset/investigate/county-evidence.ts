@@ -439,8 +439,10 @@ export function resolveCountyIdentity(
 
 /**
  * County name and state from the published score directory. That list is the
- * delivered identity contract. `/v1/geographies/{type}/{id}` is still pending
- * and responds 503, so it is not used to open a county.
+ * delivered identity contract. `GET /v1/geographies/{type}/{id}` is not used
+ * to open a county. Its HTTP 200 is a union: a future geography envelope, or
+ * `GeographyUnavailable` (`data: null`, no label) while canonical identity is
+ * unpublished. That unpublished answer is not missing county data.
  */
 export function identityFromPublishedCounty(input: {
   county: string;

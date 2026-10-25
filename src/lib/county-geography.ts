@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { geometryV1AtlasGeometryGet } from "@/generated/atlas";
+import { getAtlasGeometry } from "@/generated/atlas";
 import type { GeographyIdentity } from "@/generated/models";
 import { GeographyIdentity as geographyIdentitySchema } from "@/generated/zod/geographyIdentity.zod";
 
@@ -143,7 +143,7 @@ export function countyDisplayGeometryQueryKey(
   return ["county-display-geometry", scope, releaseId];
 }
 
-type GeometryRequestOptions = Parameters<typeof geometryV1AtlasGeometryGet>[1];
+type GeometryRequestOptions = Parameters<typeof getAtlasGeometry>[1];
 
 /**
  * Loads governed county **display** geometry for map rendering. Callers must not
@@ -154,7 +154,7 @@ export async function fetchCountyDisplayGeometry(
   options?: GeometryRequestOptions
 ): Promise<CountyDisplayGeometryFeatureCollection> {
   assertApprovedCountyDisplayGeometryPath(COUNTY_DISPLAY_GEOMETRY_API_PATH);
-  const response = await geometryV1AtlasGeometryGet(
+  const response = await getAtlasGeometry(
     { dataset_version: datasetVersion },
     options
   );

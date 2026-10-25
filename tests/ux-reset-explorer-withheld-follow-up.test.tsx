@@ -67,22 +67,22 @@ vi.mock(import("@/lib/county-geography"), async (importOriginal) => {
 
 vi.mock(import("@/generated/atlas"), () => {
   const atlas = {
-    countySurveillanceSituationsGet: vi.fn<
+    getCountySurveillanceSituations: vi.fn<
       () => Promise<{ data: null; status: number }>
     >(async () => ({ data: null, status: 503 })),
-    countyTier1SurveillancePriorityGet: vi.fn<
+    getCountyTier1Priority: vi.fn<
       () => Promise<{ data: null; status: number }>
     >(async () => ({ data: null, status: 404 })),
-    getProfileV1MeProfileGet: vi.fn<
+    getProfile: vi.fn<
       () => Promise<{ data: { profile: null }; status: number }>
     >(async () => ({ data: { profile: null }, status: 200 })),
-    metadataV1AtlasMetadataGet: vi.fn<
+    getAtlasMetadata: vi.fn<
       () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
     >(async () => ({ data: reviewScopeMetadataFixture, status: 200 })),
-    scoresV1AtlasScoresGet: vi.fn<
+    getAtlasScores: vi.fn<
       () => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
     >(async () => ({ data: reviewScopeScoresFixture, status: 200 })),
-    stateReviewV1StatesStateReviewGet: vi.fn<
+    getStateReview: vi.fn<
       (state: string) => Promise<{
         data: ReturnType<typeof buildStateReview>;
         status: number;

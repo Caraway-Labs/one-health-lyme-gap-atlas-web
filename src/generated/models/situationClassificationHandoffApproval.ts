@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Record of the review that approved the model output for use.
+ */
 export type SituationClassificationHandoffApproval = { [key: string]: unknown };

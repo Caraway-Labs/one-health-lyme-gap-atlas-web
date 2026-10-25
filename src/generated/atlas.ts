@@ -27,54 +27,58 @@ import type {
 import type {
   AtlasMetadata,
   CanonicalGeographyAvailability,
+  CheckLiveness200,
   CollectionEnvelopeCountyContextObservation,
   CollectionEnvelopeIndicator,
   CollectionEnvelopeMeasure,
   CollectionEnvelopeObservation,
   CollectionEnvelopeSource,
   CountyDetail,
-  CountyReportPdfV1CountiesFipsReportPdfGetParams,
   CountySurveillanceSituations,
-  CountyV1CountiesFipsGetParams,
+  DownloadAtlasRankingParams,
+  DownloadCountyReportParams,
+  DownloadStateReportParams,
+  FeedEntryRead,
   FeedItems,
   FeedSources,
   FeedbackSubmissionRequest,
   FeedbackSubmissionResponse,
   GeographyType,
-  GeometryV1AtlasGeometryGet200,
-  GeometryV1AtlasGeometryGetParams,
+  GeographyUnavailable,
+  GetAtlasGeometry200,
+  GetAtlasGeometryParams,
+  GetAtlasMapValuesParams,
+  GetAtlasMetadataParams,
+  GetAtlasScoresParams,
+  GetCountyParams,
+  GetStateReviewParams,
   HTTPValidationError,
-  IndicatorsV1IndicatorsGetParams,
   KnowledgeChatRequest,
   KnowledgeChatResponse,
+  ListIndicatorsParams,
   ListIntelligenceFeedParams,
   ListIntelligenceItemsParams,
   ListIntelligenceSourcesParams,
-  LiveHealthLiveGet200,
-  MeasuresV1MeasuresGetParams,
+  ListMeasuresParams,
+  ListObservationsParams,
+  ListSourcesParams,
+  MapValuesCollection,
   MetadataFeed,
-  MetadataV1AtlasMetadataGetParams,
   MixedAssistantRequest,
   MixedAssistantResponse,
-  ObservationsV1ObservationsGetParams,
   PrivacyRequestConfirm,
   PrivacyRequestCreate,
   PrivacyRequestCreated,
   PrivacyRequestStatus,
   ProblemDetails,
-  RankingCsvV1AtlasRankingCsvGetParams,
-  ReadyHealthReadyGet200,
+  ReadinessResponse,
   ResourceEnvelopeGeography,
   ResourceEnvelopeIndicator,
   ResourceEnvelopeMeasure,
   ResourceEnvelopeMethodology,
   ResourceEnvelopeSource,
   ScoreCollection,
-  ScoresV1AtlasScoresGetParams,
-  SourcesV1SourcesGetParams,
-  StateReportPdfV1StatesStateReportPdfGetParams,
   StateReview,
-  StateReviewV1StatesStateReviewGetParams,
   StructuredAssistantRequest,
   StructuredAssistantResponse,
   Tier1CountyPriority,
@@ -105,51 +109,51 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export type indicatorsV1IndicatorsGetResponse200 = {
+export type listIndicatorsResponse200 = {
   data: CollectionEnvelopeIndicator
   status: 200
 }
 
-export type indicatorsV1IndicatorsGetResponse400 = {
+export type listIndicatorsResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type indicatorsV1IndicatorsGetResponse404 = {
+export type listIndicatorsResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type indicatorsV1IndicatorsGetResponse413 = {
+export type listIndicatorsResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type indicatorsV1IndicatorsGetResponse414 = {
+export type listIndicatorsResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type indicatorsV1IndicatorsGetResponse429 = {
+export type listIndicatorsResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type indicatorsV1IndicatorsGetResponse503 = {
+export type listIndicatorsResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type indicatorsV1IndicatorsGetResponseSuccess = (indicatorsV1IndicatorsGetResponse200) & {
+export type listIndicatorsResponseSuccess = (listIndicatorsResponse200) & {
   headers: Headers;
 };
-export type indicatorsV1IndicatorsGetResponseError = (indicatorsV1IndicatorsGetResponse400 | indicatorsV1IndicatorsGetResponse404 | indicatorsV1IndicatorsGetResponse413 | indicatorsV1IndicatorsGetResponse414 | indicatorsV1IndicatorsGetResponse429 | indicatorsV1IndicatorsGetResponse503) & {
+export type listIndicatorsResponseError = (listIndicatorsResponse400 | listIndicatorsResponse404 | listIndicatorsResponse413 | listIndicatorsResponse414 | listIndicatorsResponse429 | listIndicatorsResponse503) & {
   headers: Headers;
 };
 
-export type indicatorsV1IndicatorsGetResponse = (indicatorsV1IndicatorsGetResponseSuccess | indicatorsV1IndicatorsGetResponseError)
+export type listIndicatorsResponse = (listIndicatorsResponseSuccess | listIndicatorsResponseError)
 
-export const getIndicatorsV1IndicatorsGetUrl = (params?: IndicatorsV1IndicatorsGetParams,) => {
+export const getListIndicatorsUrl = (params?: ListIndicatorsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -166,11 +170,11 @@ export const getIndicatorsV1IndicatorsGetUrl = (params?: IndicatorsV1IndicatorsG
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover indicators
+ * @summary List indicators
  */
-export const indicatorsV1IndicatorsGet = async (params?: IndicatorsV1IndicatorsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<indicatorsV1IndicatorsGetResponse> => {
+export const listIndicators = async (params?: ListIndicatorsParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIndicatorsResponse> => {
 
-  return apiMutator<indicatorsV1IndicatorsGetResponse>(getIndicatorsV1IndicatorsGetUrl(params),
+  return apiMutator<listIndicatorsResponse>(getListIndicatorsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -183,69 +187,69 @@ export const indicatorsV1IndicatorsGet = async (params?: IndicatorsV1IndicatorsG
 
 
 
-export const getIndicatorsV1IndicatorsGetQueryKey = (params?: IndicatorsV1IndicatorsGetParams,) => {
+export const getListIndicatorsQueryKey = (params?: ListIndicatorsParams,) => {
     return [
     `/v1/indicators`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getIndicatorsV1IndicatorsGetQueryOptions = <TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getListIndicatorsQueryOptions = <TData = Awaited<ReturnType<typeof listIndicators>>, TError = ProblemDetails>(params?: ListIndicatorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIndicators>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getIndicatorsV1IndicatorsGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getListIndicatorsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>> = ({ signal }) => indicatorsV1IndicatorsGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIndicators>>> = ({ signal }) => listIndicators(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIndicators>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type IndicatorsV1IndicatorsGetQueryResult = NonNullable<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>>
-export type IndicatorsV1IndicatorsGetQueryError = ProblemDetails
+export type ListIndicatorsQueryResult = NonNullable<Awaited<ReturnType<typeof listIndicators>>>
+export type ListIndicatorsQueryError = ProblemDetails
 
 
-export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
- params: undefined |  IndicatorsV1IndicatorsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>> & Pick<
+export function useListIndicators<TData = Awaited<ReturnType<typeof listIndicators>>, TError = ProblemDetails>(
+ params: undefined |  ListIndicatorsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIndicators>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>,
+          Awaited<ReturnType<typeof listIndicators>>,
           TError,
-          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>
+          Awaited<ReturnType<typeof listIndicators>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
- params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>> & Pick<
+export function useListIndicators<TData = Awaited<ReturnType<typeof listIndicators>>, TError = ProblemDetails>(
+ params?: ListIndicatorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIndicators>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>,
+          Awaited<ReturnType<typeof listIndicators>>,
           TError,
-          Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>
+          Awaited<ReturnType<typeof listIndicators>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
- params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListIndicators<TData = Awaited<ReturnType<typeof listIndicators>>, TError = ProblemDetails>(
+ params?: ListIndicatorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIndicators>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Discover indicators
+ * @summary List indicators
  */
 
-export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
- params?: IndicatorsV1IndicatorsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListIndicators<TData = Awaited<ReturnType<typeof listIndicators>>, TError = ProblemDetails>(
+ params?: ListIndicatorsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIndicators>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getIndicatorsV1IndicatorsGetQueryOptions(params,options)
+  const queryOptions = getListIndicatorsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -258,56 +262,56 @@ export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof i
 
 
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse200 = {
+export type getIndicatorResponse200 = {
   data: ResourceEnvelopeIndicator
   status: 200
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse304 = {
+export type getIndicatorResponse304 = {
   data: void
   status: 304
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse400 = {
+export type getIndicatorResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse404 = {
+export type getIndicatorResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse413 = {
+export type getIndicatorResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse414 = {
+export type getIndicatorResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse429 = {
+export type getIndicatorResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse503 = {
+export type getIndicatorResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type indicatorV1IndicatorsIndicatorIdGetResponseSuccess = (indicatorV1IndicatorsIndicatorIdGetResponse200) & {
+export type getIndicatorResponseSuccess = (getIndicatorResponse200) & {
   headers: Headers;
 };
-export type indicatorV1IndicatorsIndicatorIdGetResponseError = (indicatorV1IndicatorsIndicatorIdGetResponse304 | indicatorV1IndicatorsIndicatorIdGetResponse400 | indicatorV1IndicatorsIndicatorIdGetResponse404 | indicatorV1IndicatorsIndicatorIdGetResponse413 | indicatorV1IndicatorsIndicatorIdGetResponse414 | indicatorV1IndicatorsIndicatorIdGetResponse429 | indicatorV1IndicatorsIndicatorIdGetResponse503) & {
+export type getIndicatorResponseError = (getIndicatorResponse304 | getIndicatorResponse400 | getIndicatorResponse404 | getIndicatorResponse413 | getIndicatorResponse414 | getIndicatorResponse429 | getIndicatorResponse503) & {
   headers: Headers;
 };
 
-export type indicatorV1IndicatorsIndicatorIdGetResponse = (indicatorV1IndicatorsIndicatorIdGetResponseSuccess | indicatorV1IndicatorsIndicatorIdGetResponseError)
+export type getIndicatorResponse = (getIndicatorResponseSuccess | getIndicatorResponseError)
 
-export const getIndicatorV1IndicatorsIndicatorIdGetUrl = (indicatorId: string,) => {
+export const getGetIndicatorUrl = (indicatorId: string,) => {
 
 
 
@@ -319,9 +323,9 @@ export const getIndicatorV1IndicatorsIndicatorIdGetUrl = (indicatorId: string,) 
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get an indicator
  */
-export const indicatorV1IndicatorsIndicatorIdGet = async (indicatorId: string, options?: Parameters<typeof apiMutator>[1]): Promise<indicatorV1IndicatorsIndicatorIdGetResponse> => {
+export const getIndicator = async (indicatorId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getIndicatorResponse> => {
 
-  return apiMutator<indicatorV1IndicatorsIndicatorIdGetResponse>(getIndicatorV1IndicatorsIndicatorIdGetUrl(indicatorId),
+  return apiMutator<getIndicatorResponse>(getGetIndicatorUrl(indicatorId),
   {
     ...options,
     method: 'GET'
@@ -334,69 +338,69 @@ export const indicatorV1IndicatorsIndicatorIdGet = async (indicatorId: string, o
 
 
 
-export const getIndicatorV1IndicatorsIndicatorIdGetQueryKey = (indicatorId: string,) => {
+export const getGetIndicatorQueryKey = (indicatorId: string,) => {
     return [
     `/v1/indicators/${indicatorId}`
     ] as const;
     }
 
 
-export const getIndicatorV1IndicatorsIndicatorIdGetQueryOptions = <TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetIndicatorQueryOptions = <TData = Awaited<ReturnType<typeof getIndicator>>, TError = void | ProblemDetails>(indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIndicator>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getIndicatorV1IndicatorsIndicatorIdGetQueryKey(indicatorId);
+  const queryKey =  queryOptions?.queryKey ?? getGetIndicatorQueryKey(indicatorId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>> = ({ signal }) => indicatorV1IndicatorsIndicatorIdGet(indicatorId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIndicator>>> = ({ signal }) => getIndicator(indicatorId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: indicatorId !== null && indicatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: indicatorId !== null && indicatorId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIndicator>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type IndicatorV1IndicatorsIndicatorIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>>
-export type IndicatorV1IndicatorsIndicatorIdGetQueryError = void | ProblemDetails
+export type GetIndicatorQueryResult = NonNullable<Awaited<ReturnType<typeof getIndicator>>>
+export type GetIndicatorQueryError = void | ProblemDetails
 
 
-export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
- indicatorId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>> & Pick<
+export function useGetIndicator<TData = Awaited<ReturnType<typeof getIndicator>>, TError = void | ProblemDetails>(
+ indicatorId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIndicator>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>,
+          Awaited<ReturnType<typeof getIndicator>>,
           TError,
-          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>
+          Awaited<ReturnType<typeof getIndicator>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
- indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>> & Pick<
+export function useGetIndicator<TData = Awaited<ReturnType<typeof getIndicator>>, TError = void | ProblemDetails>(
+ indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIndicator>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>,
+          Awaited<ReturnType<typeof getIndicator>>,
           TError,
-          Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>
+          Awaited<ReturnType<typeof getIndicator>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
- indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetIndicator<TData = Awaited<ReturnType<typeof getIndicator>>, TError = void | ProblemDetails>(
+ indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIndicator>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get an indicator
  */
 
-export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError = void | ProblemDetails>(
- indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof indicatorV1IndicatorsIndicatorIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetIndicator<TData = Awaited<ReturnType<typeof getIndicator>>, TError = void | ProblemDetails>(
+ indicatorId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIndicator>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getIndicatorV1IndicatorsIndicatorIdGetQueryOptions(indicatorId,options)
+  const queryOptions = getGetIndicatorQueryOptions(indicatorId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -409,51 +413,51 @@ export function useIndicatorV1IndicatorsIndicatorIdGet<TData = Awaited<ReturnTyp
 
 
 
-export type measuresV1MeasuresGetResponse200 = {
+export type listMeasuresResponse200 = {
   data: CollectionEnvelopeMeasure
   status: 200
 }
 
-export type measuresV1MeasuresGetResponse400 = {
+export type listMeasuresResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type measuresV1MeasuresGetResponse404 = {
+export type listMeasuresResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type measuresV1MeasuresGetResponse413 = {
+export type listMeasuresResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type measuresV1MeasuresGetResponse414 = {
+export type listMeasuresResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type measuresV1MeasuresGetResponse429 = {
+export type listMeasuresResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type measuresV1MeasuresGetResponse503 = {
+export type listMeasuresResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type measuresV1MeasuresGetResponseSuccess = (measuresV1MeasuresGetResponse200) & {
+export type listMeasuresResponseSuccess = (listMeasuresResponse200) & {
   headers: Headers;
 };
-export type measuresV1MeasuresGetResponseError = (measuresV1MeasuresGetResponse400 | measuresV1MeasuresGetResponse404 | measuresV1MeasuresGetResponse413 | measuresV1MeasuresGetResponse414 | measuresV1MeasuresGetResponse429 | measuresV1MeasuresGetResponse503) & {
+export type listMeasuresResponseError = (listMeasuresResponse400 | listMeasuresResponse404 | listMeasuresResponse413 | listMeasuresResponse414 | listMeasuresResponse429 | listMeasuresResponse503) & {
   headers: Headers;
 };
 
-export type measuresV1MeasuresGetResponse = (measuresV1MeasuresGetResponseSuccess | measuresV1MeasuresGetResponseError)
+export type listMeasuresResponse = (listMeasuresResponseSuccess | listMeasuresResponseError)
 
-export const getMeasuresV1MeasuresGetUrl = (params?: MeasuresV1MeasuresGetParams,) => {
+export const getListMeasuresUrl = (params?: ListMeasuresParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -470,11 +474,11 @@ export const getMeasuresV1MeasuresGetUrl = (params?: MeasuresV1MeasuresGetParams
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover measures
+ * @summary List measures
  */
-export const measuresV1MeasuresGet = async (params?: MeasuresV1MeasuresGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<measuresV1MeasuresGetResponse> => {
+export const listMeasures = async (params?: ListMeasuresParams, options?: Parameters<typeof apiMutator>[1]): Promise<listMeasuresResponse> => {
 
-  return apiMutator<measuresV1MeasuresGetResponse>(getMeasuresV1MeasuresGetUrl(params),
+  return apiMutator<listMeasuresResponse>(getListMeasuresUrl(params),
   {
     ...options,
     method: 'GET'
@@ -487,69 +491,69 @@ export const measuresV1MeasuresGet = async (params?: MeasuresV1MeasuresGetParams
 
 
 
-export const getMeasuresV1MeasuresGetQueryKey = (params?: MeasuresV1MeasuresGetParams,) => {
+export const getListMeasuresQueryKey = (params?: ListMeasuresParams,) => {
     return [
     `/v1/measures`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getMeasuresV1MeasuresGetQueryOptions = <TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getListMeasuresQueryOptions = <TData = Awaited<ReturnType<typeof listMeasures>>, TError = ProblemDetails>(params?: ListMeasuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMeasures>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getMeasuresV1MeasuresGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getListMeasuresQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof measuresV1MeasuresGet>>> = ({ signal }) => measuresV1MeasuresGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMeasures>>> = ({ signal }) => listMeasures(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMeasures>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type MeasuresV1MeasuresGetQueryResult = NonNullable<Awaited<ReturnType<typeof measuresV1MeasuresGet>>>
-export type MeasuresV1MeasuresGetQueryError = ProblemDetails
+export type ListMeasuresQueryResult = NonNullable<Awaited<ReturnType<typeof listMeasures>>>
+export type ListMeasuresQueryError = ProblemDetails
 
 
-export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
- params: undefined |  MeasuresV1MeasuresGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>> & Pick<
+export function useListMeasures<TData = Awaited<ReturnType<typeof listMeasures>>, TError = ProblemDetails>(
+ params: undefined |  ListMeasuresParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMeasures>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof measuresV1MeasuresGet>>,
+          Awaited<ReturnType<typeof listMeasures>>,
           TError,
-          Awaited<ReturnType<typeof measuresV1MeasuresGet>>
+          Awaited<ReturnType<typeof listMeasures>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
- params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>> & Pick<
+export function useListMeasures<TData = Awaited<ReturnType<typeof listMeasures>>, TError = ProblemDetails>(
+ params?: ListMeasuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMeasures>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof measuresV1MeasuresGet>>,
+          Awaited<ReturnType<typeof listMeasures>>,
           TError,
-          Awaited<ReturnType<typeof measuresV1MeasuresGet>>
+          Awaited<ReturnType<typeof listMeasures>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
- params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListMeasures<TData = Awaited<ReturnType<typeof listMeasures>>, TError = ProblemDetails>(
+ params?: ListMeasuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMeasures>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Discover measures
+ * @summary List measures
  */
 
-export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
- params?: MeasuresV1MeasuresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListMeasures<TData = Awaited<ReturnType<typeof listMeasures>>, TError = ProblemDetails>(
+ params?: ListMeasuresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMeasures>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getMeasuresV1MeasuresGetQueryOptions(params,options)
+  const queryOptions = getListMeasuresQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -562,56 +566,56 @@ export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measu
 
 
 
-export type measureV1MeasuresMeasureIdGetResponse200 = {
+export type getMeasureResponse200 = {
   data: ResourceEnvelopeMeasure
   status: 200
 }
 
-export type measureV1MeasuresMeasureIdGetResponse304 = {
+export type getMeasureResponse304 = {
   data: void
   status: 304
 }
 
-export type measureV1MeasuresMeasureIdGetResponse400 = {
+export type getMeasureResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type measureV1MeasuresMeasureIdGetResponse404 = {
+export type getMeasureResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type measureV1MeasuresMeasureIdGetResponse413 = {
+export type getMeasureResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type measureV1MeasuresMeasureIdGetResponse414 = {
+export type getMeasureResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type measureV1MeasuresMeasureIdGetResponse429 = {
+export type getMeasureResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type measureV1MeasuresMeasureIdGetResponse503 = {
+export type getMeasureResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type measureV1MeasuresMeasureIdGetResponseSuccess = (measureV1MeasuresMeasureIdGetResponse200) & {
+export type getMeasureResponseSuccess = (getMeasureResponse200) & {
   headers: Headers;
 };
-export type measureV1MeasuresMeasureIdGetResponseError = (measureV1MeasuresMeasureIdGetResponse304 | measureV1MeasuresMeasureIdGetResponse400 | measureV1MeasuresMeasureIdGetResponse404 | measureV1MeasuresMeasureIdGetResponse413 | measureV1MeasuresMeasureIdGetResponse414 | measureV1MeasuresMeasureIdGetResponse429 | measureV1MeasuresMeasureIdGetResponse503) & {
+export type getMeasureResponseError = (getMeasureResponse304 | getMeasureResponse400 | getMeasureResponse404 | getMeasureResponse413 | getMeasureResponse414 | getMeasureResponse429 | getMeasureResponse503) & {
   headers: Headers;
 };
 
-export type measureV1MeasuresMeasureIdGetResponse = (measureV1MeasuresMeasureIdGetResponseSuccess | measureV1MeasuresMeasureIdGetResponseError)
+export type getMeasureResponse = (getMeasureResponseSuccess | getMeasureResponseError)
 
-export const getMeasureV1MeasuresMeasureIdGetUrl = (measureId: string,) => {
+export const getGetMeasureUrl = (measureId: string,) => {
 
 
 
@@ -623,9 +627,9 @@ export const getMeasureV1MeasuresMeasureIdGetUrl = (measureId: string,) => {
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a measure
  */
-export const measureV1MeasuresMeasureIdGet = async (measureId: string, options?: Parameters<typeof apiMutator>[1]): Promise<measureV1MeasuresMeasureIdGetResponse> => {
+export const getMeasure = async (measureId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getMeasureResponse> => {
 
-  return apiMutator<measureV1MeasuresMeasureIdGetResponse>(getMeasureV1MeasuresMeasureIdGetUrl(measureId),
+  return apiMutator<getMeasureResponse>(getGetMeasureUrl(measureId),
   {
     ...options,
     method: 'GET'
@@ -638,69 +642,69 @@ export const measureV1MeasuresMeasureIdGet = async (measureId: string, options?:
 
 
 
-export const getMeasureV1MeasuresMeasureIdGetQueryKey = (measureId: string,) => {
+export const getGetMeasureQueryKey = (measureId: string,) => {
     return [
     `/v1/measures/${measureId}`
     ] as const;
     }
 
 
-export const getMeasureV1MeasuresMeasureIdGetQueryOptions = <TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetMeasureQueryOptions = <TData = Awaited<ReturnType<typeof getMeasure>>, TError = void | ProblemDetails>(measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeasure>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getMeasureV1MeasuresMeasureIdGetQueryKey(measureId);
+  const queryKey =  queryOptions?.queryKey ?? getGetMeasureQueryKey(measureId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>> = ({ signal }) => measureV1MeasuresMeasureIdGet(measureId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeasure>>> = ({ signal }) => getMeasure(measureId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: measureId !== null && measureId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: measureId !== null && measureId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeasure>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type MeasureV1MeasuresMeasureIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>>
-export type MeasureV1MeasuresMeasureIdGetQueryError = void | ProblemDetails
+export type GetMeasureQueryResult = NonNullable<Awaited<ReturnType<typeof getMeasure>>>
+export type GetMeasureQueryError = void | ProblemDetails
 
 
-export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
- measureId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>> & Pick<
+export function useGetMeasure<TData = Awaited<ReturnType<typeof getMeasure>>, TError = void | ProblemDetails>(
+ measureId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeasure>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>,
+          Awaited<ReturnType<typeof getMeasure>>,
           TError,
-          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>
+          Awaited<ReturnType<typeof getMeasure>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
- measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>> & Pick<
+export function useGetMeasure<TData = Awaited<ReturnType<typeof getMeasure>>, TError = void | ProblemDetails>(
+ measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeasure>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>,
+          Awaited<ReturnType<typeof getMeasure>>,
           TError,
-          Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>
+          Awaited<ReturnType<typeof getMeasure>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
- measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetMeasure<TData = Awaited<ReturnType<typeof getMeasure>>, TError = void | ProblemDetails>(
+ measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeasure>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get a measure
  */
 
-export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError = void | ProblemDetails>(
- measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof measureV1MeasuresMeasureIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetMeasure<TData = Awaited<ReturnType<typeof getMeasure>>, TError = void | ProblemDetails>(
+ measureId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeasure>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getMeasureV1MeasuresMeasureIdGetQueryOptions(measureId,options)
+  const queryOptions = getGetMeasureQueryOptions(measureId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -713,51 +717,51 @@ export function useMeasureV1MeasuresMeasureIdGet<TData = Awaited<ReturnType<type
 
 
 
-export type sourcesV1SourcesGetResponse200 = {
+export type listSourcesResponse200 = {
   data: CollectionEnvelopeSource
   status: 200
 }
 
-export type sourcesV1SourcesGetResponse400 = {
+export type listSourcesResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type sourcesV1SourcesGetResponse404 = {
+export type listSourcesResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type sourcesV1SourcesGetResponse413 = {
+export type listSourcesResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type sourcesV1SourcesGetResponse414 = {
+export type listSourcesResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type sourcesV1SourcesGetResponse429 = {
+export type listSourcesResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type sourcesV1SourcesGetResponse503 = {
+export type listSourcesResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type sourcesV1SourcesGetResponseSuccess = (sourcesV1SourcesGetResponse200) & {
+export type listSourcesResponseSuccess = (listSourcesResponse200) & {
   headers: Headers;
 };
-export type sourcesV1SourcesGetResponseError = (sourcesV1SourcesGetResponse400 | sourcesV1SourcesGetResponse404 | sourcesV1SourcesGetResponse413 | sourcesV1SourcesGetResponse414 | sourcesV1SourcesGetResponse429 | sourcesV1SourcesGetResponse503) & {
+export type listSourcesResponseError = (listSourcesResponse400 | listSourcesResponse404 | listSourcesResponse413 | listSourcesResponse414 | listSourcesResponse429 | listSourcesResponse503) & {
   headers: Headers;
 };
 
-export type sourcesV1SourcesGetResponse = (sourcesV1SourcesGetResponseSuccess | sourcesV1SourcesGetResponseError)
+export type listSourcesResponse = (listSourcesResponseSuccess | listSourcesResponseError)
 
-export const getSourcesV1SourcesGetUrl = (params?: SourcesV1SourcesGetParams,) => {
+export const getListSourcesUrl = (params?: ListSourcesParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -774,11 +778,11 @@ export const getSourcesV1SourcesGetUrl = (params?: SourcesV1SourcesGetParams,) =
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover sources
+ * @summary List sources
  */
-export const sourcesV1SourcesGet = async (params?: SourcesV1SourcesGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<sourcesV1SourcesGetResponse> => {
+export const listSources = async (params?: ListSourcesParams, options?: Parameters<typeof apiMutator>[1]): Promise<listSourcesResponse> => {
 
-  return apiMutator<sourcesV1SourcesGetResponse>(getSourcesV1SourcesGetUrl(params),
+  return apiMutator<listSourcesResponse>(getListSourcesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -791,69 +795,69 @@ export const sourcesV1SourcesGet = async (params?: SourcesV1SourcesGetParams, op
 
 
 
-export const getSourcesV1SourcesGetQueryKey = (params?: SourcesV1SourcesGetParams,) => {
+export const getListSourcesQueryKey = (params?: ListSourcesParams,) => {
     return [
     `/v1/sources`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getSourcesV1SourcesGetQueryOptions = <TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getListSourcesQueryOptions = <TData = Awaited<ReturnType<typeof listSources>>, TError = ProblemDetails>(params?: ListSourcesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSources>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getSourcesV1SourcesGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getListSourcesQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof sourcesV1SourcesGet>>> = ({ signal }) => sourcesV1SourcesGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSources>>> = ({ signal }) => listSources(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSources>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type SourcesV1SourcesGetQueryResult = NonNullable<Awaited<ReturnType<typeof sourcesV1SourcesGet>>>
-export type SourcesV1SourcesGetQueryError = ProblemDetails
+export type ListSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof listSources>>>
+export type ListSourcesQueryError = ProblemDetails
 
 
-export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
- params: undefined |  SourcesV1SourcesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>> & Pick<
+export function useListSources<TData = Awaited<ReturnType<typeof listSources>>, TError = ProblemDetails>(
+ params: undefined |  ListSourcesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSources>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof sourcesV1SourcesGet>>,
+          Awaited<ReturnType<typeof listSources>>,
           TError,
-          Awaited<ReturnType<typeof sourcesV1SourcesGet>>
+          Awaited<ReturnType<typeof listSources>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
- params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>> & Pick<
+export function useListSources<TData = Awaited<ReturnType<typeof listSources>>, TError = ProblemDetails>(
+ params?: ListSourcesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSources>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof sourcesV1SourcesGet>>,
+          Awaited<ReturnType<typeof listSources>>,
           TError,
-          Awaited<ReturnType<typeof sourcesV1SourcesGet>>
+          Awaited<ReturnType<typeof listSources>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
- params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListSources<TData = Awaited<ReturnType<typeof listSources>>, TError = ProblemDetails>(
+ params?: ListSourcesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSources>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Discover sources
+ * @summary List sources
  */
 
-export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
- params?: SourcesV1SourcesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListSources<TData = Awaited<ReturnType<typeof listSources>>, TError = ProblemDetails>(
+ params?: ListSourcesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listSources>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getSourcesV1SourcesGetQueryOptions(params,options)
+  const queryOptions = getListSourcesQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -866,56 +870,56 @@ export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sources
 
 
 
-export type sourceV1SourcesSourceIdGetResponse200 = {
+export type getSourceResponse200 = {
   data: ResourceEnvelopeSource
   status: 200
 }
 
-export type sourceV1SourcesSourceIdGetResponse304 = {
+export type getSourceResponse304 = {
   data: void
   status: 304
 }
 
-export type sourceV1SourcesSourceIdGetResponse400 = {
+export type getSourceResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type sourceV1SourcesSourceIdGetResponse404 = {
+export type getSourceResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type sourceV1SourcesSourceIdGetResponse413 = {
+export type getSourceResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type sourceV1SourcesSourceIdGetResponse414 = {
+export type getSourceResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type sourceV1SourcesSourceIdGetResponse429 = {
+export type getSourceResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type sourceV1SourcesSourceIdGetResponse503 = {
+export type getSourceResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type sourceV1SourcesSourceIdGetResponseSuccess = (sourceV1SourcesSourceIdGetResponse200) & {
+export type getSourceResponseSuccess = (getSourceResponse200) & {
   headers: Headers;
 };
-export type sourceV1SourcesSourceIdGetResponseError = (sourceV1SourcesSourceIdGetResponse304 | sourceV1SourcesSourceIdGetResponse400 | sourceV1SourcesSourceIdGetResponse404 | sourceV1SourcesSourceIdGetResponse413 | sourceV1SourcesSourceIdGetResponse414 | sourceV1SourcesSourceIdGetResponse429 | sourceV1SourcesSourceIdGetResponse503) & {
+export type getSourceResponseError = (getSourceResponse304 | getSourceResponse400 | getSourceResponse404 | getSourceResponse413 | getSourceResponse414 | getSourceResponse429 | getSourceResponse503) & {
   headers: Headers;
 };
 
-export type sourceV1SourcesSourceIdGetResponse = (sourceV1SourcesSourceIdGetResponseSuccess | sourceV1SourcesSourceIdGetResponseError)
+export type getSourceResponse = (getSourceResponseSuccess | getSourceResponseError)
 
-export const getSourceV1SourcesSourceIdGetUrl = (sourceId: string,) => {
+export const getGetSourceUrl = (sourceId: string,) => {
 
 
 
@@ -927,9 +931,9 @@ export const getSourceV1SourcesSourceIdGetUrl = (sourceId: string,) => {
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a source
  */
-export const sourceV1SourcesSourceIdGet = async (sourceId: string, options?: Parameters<typeof apiMutator>[1]): Promise<sourceV1SourcesSourceIdGetResponse> => {
+export const getSource = async (sourceId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getSourceResponse> => {
 
-  return apiMutator<sourceV1SourcesSourceIdGetResponse>(getSourceV1SourcesSourceIdGetUrl(sourceId),
+  return apiMutator<getSourceResponse>(getGetSourceUrl(sourceId),
   {
     ...options,
     method: 'GET'
@@ -942,69 +946,69 @@ export const sourceV1SourcesSourceIdGet = async (sourceId: string, options?: Par
 
 
 
-export const getSourceV1SourcesSourceIdGetQueryKey = (sourceId: string,) => {
+export const getGetSourceQueryKey = (sourceId: string,) => {
     return [
     `/v1/sources/${sourceId}`
     ] as const;
     }
 
 
-export const getSourceV1SourcesSourceIdGetQueryOptions = <TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetSourceQueryOptions = <TData = Awaited<ReturnType<typeof getSource>>, TError = void | ProblemDetails>(sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSource>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getSourceV1SourcesSourceIdGetQueryKey(sourceId);
+  const queryKey =  queryOptions?.queryKey ?? getGetSourceQueryKey(sourceId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>> = ({ signal }) => sourceV1SourcesSourceIdGet(sourceId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSource>>> = ({ signal }) => getSource(sourceId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: sourceId !== null && sourceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: sourceId !== null && sourceId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSource>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type SourceV1SourcesSourceIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>>
-export type SourceV1SourcesSourceIdGetQueryError = void | ProblemDetails
+export type GetSourceQueryResult = NonNullable<Awaited<ReturnType<typeof getSource>>>
+export type GetSourceQueryError = void | ProblemDetails
 
 
-export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
- sourceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>> & Pick<
+export function useGetSource<TData = Awaited<ReturnType<typeof getSource>>, TError = void | ProblemDetails>(
+ sourceId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSource>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>,
+          Awaited<ReturnType<typeof getSource>>,
           TError,
-          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>
+          Awaited<ReturnType<typeof getSource>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
- sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>> & Pick<
+export function useGetSource<TData = Awaited<ReturnType<typeof getSource>>, TError = void | ProblemDetails>(
+ sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSource>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>,
+          Awaited<ReturnType<typeof getSource>>,
           TError,
-          Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>
+          Awaited<ReturnType<typeof getSource>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
- sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetSource<TData = Awaited<ReturnType<typeof getSource>>, TError = void | ProblemDetails>(
+ sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSource>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get a source
  */
 
-export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError = void | ProblemDetails>(
- sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof sourceV1SourcesSourceIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetSource<TData = Awaited<ReturnType<typeof getSource>>, TError = void | ProblemDetails>(
+ sourceId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSource>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getSourceV1SourcesSourceIdGetQueryOptions(sourceId,options)
+  const queryOptions = getGetSourceQueryOptions(sourceId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1017,56 +1021,56 @@ export function useSourceV1SourcesSourceIdGet<TData = Awaited<ReturnType<typeof 
 
 
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse200 = {
+export type getMethodologyResponse200 = {
   data: ResourceEnvelopeMethodology
   status: 200
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse304 = {
+export type getMethodologyResponse304 = {
   data: void
   status: 304
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse400 = {
+export type getMethodologyResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse404 = {
+export type getMethodologyResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse413 = {
+export type getMethodologyResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse414 = {
+export type getMethodologyResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse429 = {
+export type getMethodologyResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse503 = {
+export type getMethodologyResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type methodologyV1MethodologiesMethodologyIdGetResponseSuccess = (methodologyV1MethodologiesMethodologyIdGetResponse200) & {
+export type getMethodologyResponseSuccess = (getMethodologyResponse200) & {
   headers: Headers;
 };
-export type methodologyV1MethodologiesMethodologyIdGetResponseError = (methodologyV1MethodologiesMethodologyIdGetResponse304 | methodologyV1MethodologiesMethodologyIdGetResponse400 | methodologyV1MethodologiesMethodologyIdGetResponse404 | methodologyV1MethodologiesMethodologyIdGetResponse413 | methodologyV1MethodologiesMethodologyIdGetResponse414 | methodologyV1MethodologiesMethodologyIdGetResponse429 | methodologyV1MethodologiesMethodologyIdGetResponse503) & {
+export type getMethodologyResponseError = (getMethodologyResponse304 | getMethodologyResponse400 | getMethodologyResponse404 | getMethodologyResponse413 | getMethodologyResponse414 | getMethodologyResponse429 | getMethodologyResponse503) & {
   headers: Headers;
 };
 
-export type methodologyV1MethodologiesMethodologyIdGetResponse = (methodologyV1MethodologiesMethodologyIdGetResponseSuccess | methodologyV1MethodologiesMethodologyIdGetResponseError)
+export type getMethodologyResponse = (getMethodologyResponseSuccess | getMethodologyResponseError)
 
-export const getMethodologyV1MethodologiesMethodologyIdGetUrl = (methodologyId: string,) => {
+export const getGetMethodologyUrl = (methodologyId: string,) => {
 
 
 
@@ -1078,9 +1082,9 @@ export const getMethodologyV1MethodologiesMethodologyIdGetUrl = (methodologyId: 
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a methodology
  */
-export const methodologyV1MethodologiesMethodologyIdGet = async (methodologyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<methodologyV1MethodologiesMethodologyIdGetResponse> => {
+export const getMethodology = async (methodologyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getMethodologyResponse> => {
 
-  return apiMutator<methodologyV1MethodologiesMethodologyIdGetResponse>(getMethodologyV1MethodologiesMethodologyIdGetUrl(methodologyId),
+  return apiMutator<getMethodologyResponse>(getGetMethodologyUrl(methodologyId),
   {
     ...options,
     method: 'GET'
@@ -1093,69 +1097,69 @@ export const methodologyV1MethodologiesMethodologyIdGet = async (methodologyId: 
 
 
 
-export const getMethodologyV1MethodologiesMethodologyIdGetQueryKey = (methodologyId: string,) => {
+export const getGetMethodologyQueryKey = (methodologyId: string,) => {
     return [
     `/v1/methodologies/${methodologyId}`
     ] as const;
     }
 
 
-export const getMethodologyV1MethodologiesMethodologyIdGetQueryOptions = <TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetMethodologyQueryOptions = <TData = Awaited<ReturnType<typeof getMethodology>>, TError = void | ProblemDetails>(methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMethodology>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getMethodologyV1MethodologiesMethodologyIdGetQueryKey(methodologyId);
+  const queryKey =  queryOptions?.queryKey ?? getGetMethodologyQueryKey(methodologyId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>> = ({ signal }) => methodologyV1MethodologiesMethodologyIdGet(methodologyId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMethodology>>> = ({ signal }) => getMethodology(methodologyId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: methodologyId !== null && methodologyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: methodologyId !== null && methodologyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMethodology>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type MethodologyV1MethodologiesMethodologyIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>>
-export type MethodologyV1MethodologiesMethodologyIdGetQueryError = void | ProblemDetails
+export type GetMethodologyQueryResult = NonNullable<Awaited<ReturnType<typeof getMethodology>>>
+export type GetMethodologyQueryError = void | ProblemDetails
 
 
-export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
- methodologyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>> & Pick<
+export function useGetMethodology<TData = Awaited<ReturnType<typeof getMethodology>>, TError = void | ProblemDetails>(
+ methodologyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMethodology>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>,
+          Awaited<ReturnType<typeof getMethodology>>,
           TError,
-          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>
+          Awaited<ReturnType<typeof getMethodology>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
- methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>> & Pick<
+export function useGetMethodology<TData = Awaited<ReturnType<typeof getMethodology>>, TError = void | ProblemDetails>(
+ methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMethodology>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>,
+          Awaited<ReturnType<typeof getMethodology>>,
           TError,
-          Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>
+          Awaited<ReturnType<typeof getMethodology>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
- methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetMethodology<TData = Awaited<ReturnType<typeof getMethodology>>, TError = void | ProblemDetails>(
+ methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMethodology>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get a methodology
  */
 
-export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError = void | ProblemDetails>(
- methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof methodologyV1MethodologiesMethodologyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetMethodology<TData = Awaited<ReturnType<typeof getMethodology>>, TError = void | ProblemDetails>(
+ methodologyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMethodology>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getMethodologyV1MethodologiesMethodologyIdGetQueryOptions(methodologyId,options)
+  const queryOptions = getGetMethodologyQueryOptions(methodologyId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1168,51 +1172,46 @@ export function useMethodologyV1MethodologiesMethodologyIdGet<TData = Awaited<Re
 
 
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse200 = {
-  data: ResourceEnvelopeGeography
+export type getGeographyResponse200 = {
+  data: ResourceEnvelopeGeography | GeographyUnavailable
   status: 200
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 = {
+export type getGeographyResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 = {
+export type getGeographyResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 = {
+export type getGeographyResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 = {
+export type getGeographyResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 = {
+export type getGeographyResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse503 = {
-  data: ProblemDetails
-  status: 503
-}
-
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseSuccess = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse200) & {
+export type getGeographyResponseSuccess = (getGeographyResponse200) & {
   headers: Headers;
 };
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponseError = (geographyV1GeographiesGeographyTypeGeographyIdGetResponse400 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse404 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse413 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse414 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse429 | geographyV1GeographiesGeographyTypeGeographyIdGetResponse503) & {
+export type getGeographyResponseError = (getGeographyResponse400 | getGeographyResponse404 | getGeographyResponse413 | getGeographyResponse414 | getGeographyResponse429) & {
   headers: Headers;
 };
 
-export type geographyV1GeographiesGeographyTypeGeographyIdGetResponse = (geographyV1GeographiesGeographyTypeGeographyIdGetResponseSuccess | geographyV1GeographiesGeographyTypeGeographyIdGetResponseError)
+export type getGeographyResponse = (getGeographyResponseSuccess | getGeographyResponseError)
 
-export const getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl = (geographyType: GeographyType,
+export const getGetGeographyUrl = (geographyType: GeographyType,
     geographyId: string,) => {
 
 
@@ -1222,13 +1221,13 @@ export const getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl = (geograph
 }
 
 /**
- * Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.
- * @summary Get geography identity (delivery pending)
+ * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`.
+ * @summary Get geography identity
  */
-export const geographyV1GeographiesGeographyTypeGeographyIdGet = async (geographyType: GeographyType,
-    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<geographyV1GeographiesGeographyTypeGeographyIdGetResponse> => {
+export const getGeography = async (geographyType: GeographyType,
+    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getGeographyResponse> => {
 
-  return apiMutator<geographyV1GeographiesGeographyTypeGeographyIdGetResponse>(getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl(geographyType,geographyId),
+  return apiMutator<getGeographyResponse>(getGetGeographyUrl(geographyType,geographyId),
   {
     ...options,
     method: 'GET'
@@ -1241,7 +1240,7 @@ export const geographyV1GeographiesGeographyTypeGeographyIdGet = async (geograph
 
 
 
-export const getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryKey = (geographyType: GeographyType,
+export const getGetGeographyQueryKey = (geographyType: GeographyType,
     geographyId: string,) => {
     return [
     `/v1/geographies/${geographyType}/${geographyId}`
@@ -1249,67 +1248,67 @@ export const getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryKey = (geo
     }
 
 
-export const getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryOptions = <TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetGeographyQueryOptions = <TData = Awaited<ReturnType<typeof getGeography>>, TError = ProblemDetails>(geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeography>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryKey(geographyType,geographyId);
+  const queryKey =  queryOptions?.queryKey ?? getGetGeographyQueryKey(geographyType,geographyId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>> = ({ signal }) => geographyV1GeographiesGeographyTypeGeographyIdGet(geographyType,geographyId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGeography>>> = ({ signal }) => getGeography(geographyType,geographyId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGeography>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GeographyV1GeographiesGeographyTypeGeographyIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>>
-export type GeographyV1GeographiesGeographyTypeGeographyIdGetQueryError = ProblemDetails
+export type GetGeographyQueryResult = NonNullable<Awaited<ReturnType<typeof getGeography>>>
+export type GetGeographyQueryError = ProblemDetails
 
 
-export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+export function useGetGeography<TData = Awaited<ReturnType<typeof getGeography>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>> & Pick<
+    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeography>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>,
+          Awaited<ReturnType<typeof getGeography>>,
           TError,
-          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>
+          Awaited<ReturnType<typeof getGeography>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+export function useGetGeography<TData = Awaited<ReturnType<typeof getGeography>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>> & Pick<
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeography>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>,
+          Awaited<ReturnType<typeof getGeography>>,
           TError,
-          Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>
+          Awaited<ReturnType<typeof getGeography>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+export function useGetGeography<TData = Awaited<ReturnType<typeof getGeography>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeography>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get geography identity (delivery pending)
+ * @summary Get geography identity
  */
 
-export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
+export function useGetGeography<TData = Awaited<ReturnType<typeof getGeography>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getGeography>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGeographyV1GeographiesGeographyTypeGeographyIdGetQueryOptions(geographyType,geographyId,options)
+  const queryOptions = getGetGeographyQueryOptions(geographyType,geographyId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1322,51 +1321,51 @@ export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awa
 
 
 
-export type canonicalGeographyAvailabilityResponse200 = {
+export type checkGeographyAvailabilityResponse200 = {
   data: CanonicalGeographyAvailability
   status: 200
 }
 
-export type canonicalGeographyAvailabilityResponse400 = {
+export type checkGeographyAvailabilityResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type canonicalGeographyAvailabilityResponse404 = {
+export type checkGeographyAvailabilityResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type canonicalGeographyAvailabilityResponse413 = {
+export type checkGeographyAvailabilityResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type canonicalGeographyAvailabilityResponse414 = {
+export type checkGeographyAvailabilityResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type canonicalGeographyAvailabilityResponse429 = {
+export type checkGeographyAvailabilityResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type canonicalGeographyAvailabilityResponse503 = {
+export type checkGeographyAvailabilityResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type canonicalGeographyAvailabilityResponseSuccess = (canonicalGeographyAvailabilityResponse200) & {
+export type checkGeographyAvailabilityResponseSuccess = (checkGeographyAvailabilityResponse200) & {
   headers: Headers;
 };
-export type canonicalGeographyAvailabilityResponseError = (canonicalGeographyAvailabilityResponse400 | canonicalGeographyAvailabilityResponse404 | canonicalGeographyAvailabilityResponse413 | canonicalGeographyAvailabilityResponse414 | canonicalGeographyAvailabilityResponse429 | canonicalGeographyAvailabilityResponse503) & {
+export type checkGeographyAvailabilityResponseError = (checkGeographyAvailabilityResponse400 | checkGeographyAvailabilityResponse404 | checkGeographyAvailabilityResponse413 | checkGeographyAvailabilityResponse414 | checkGeographyAvailabilityResponse429 | checkGeographyAvailabilityResponse503) & {
   headers: Headers;
 };
 
-export type canonicalGeographyAvailabilityResponse = (canonicalGeographyAvailabilityResponseSuccess | canonicalGeographyAvailabilityResponseError)
+export type checkGeographyAvailabilityResponse = (checkGeographyAvailabilityResponseSuccess | checkGeographyAvailabilityResponseError)
 
-export const getCanonicalGeographyAvailabilityUrl = (geographyType: GeographyType,
+export const getCheckGeographyAvailabilityUrl = (geographyType: GeographyType,
     geographyId: string,) => {
 
 
@@ -1376,13 +1375,25 @@ export const getCanonicalGeographyAvailabilityUrl = (geographyType: GeographyTyp
 }
 
 /**
- * Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.
- * @summary Check canonical county geography publication availability
+ * Check whether a county has published canonical geography data.
+ *
+ * ### When to use it
+ * The API confirms the county exists in the current release. It returns HTTP 200 with `availability` set to `UNAVAILABLE`, `reason` set to `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` set to `null`. The resource describes identity only, and the API returns no geometry. State availability is not supported.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `400` | The ID is malformed, or you asked for a state. Send a five-digit county FIPS code. |
+ * | `404` | The county is not in the current release. |
+ * | `503` | The county directory is unavailable, empty, duplicated, or inconsistent with the current release. Retry later. |
+ *
+ * The response must not be cached.
+ * @summary Check county geography availability
  */
-export const canonicalGeographyAvailability = async (geographyType: GeographyType,
-    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<canonicalGeographyAvailabilityResponse> => {
+export const checkGeographyAvailability = async (geographyType: GeographyType,
+    geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<checkGeographyAvailabilityResponse> => {
 
-  return apiMutator<canonicalGeographyAvailabilityResponse>(getCanonicalGeographyAvailabilityUrl(geographyType,geographyId),
+  return apiMutator<checkGeographyAvailabilityResponse>(getCheckGeographyAvailabilityUrl(geographyType,geographyId),
   {
     ...options,
     method: 'GET'
@@ -1395,7 +1406,7 @@ export const canonicalGeographyAvailability = async (geographyType: GeographyTyp
 
 
 
-export const getCanonicalGeographyAvailabilityQueryKey = (geographyType: GeographyType,
+export const getCheckGeographyAvailabilityQueryKey = (geographyType: GeographyType,
     geographyId: string,) => {
     return [
     `/v1/geographies/${geographyType}/${geographyId}/availability`
@@ -1403,67 +1414,67 @@ export const getCanonicalGeographyAvailabilityQueryKey = (geographyType: Geograp
     }
 
 
-export const getCanonicalGeographyAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getCheckGeographyAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof checkGeographyAvailability>>, TError = ProblemDetails>(geographyType: GeographyType,
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCanonicalGeographyAvailabilityQueryKey(geographyType,geographyId);
+  const queryKey =  queryOptions?.queryKey ?? getCheckGeographyAvailabilityQueryKey(geographyType,geographyId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof canonicalGeographyAvailability>>> = ({ signal }) => canonicalGeographyAvailability(geographyType,geographyId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkGeographyAvailability>>> = ({ signal }) => checkGeographyAvailability(geographyType,geographyId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: geographyType !== null && geographyType !== undefined && geographyId !== null && geographyId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkGeographyAvailability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CanonicalGeographyAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof canonicalGeographyAvailability>>>
-export type CanonicalGeographyAvailabilityQueryError = ProblemDetails
+export type CheckGeographyAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof checkGeographyAvailability>>>
+export type CheckGeographyAvailabilityQueryError = ProblemDetails
 
 
-export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+export function useCheckGeographyAvailability<TData = Awaited<ReturnType<typeof checkGeographyAvailability>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>> & Pick<
+    geographyId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkGeographyAvailability>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof canonicalGeographyAvailability>>,
+          Awaited<ReturnType<typeof checkGeographyAvailability>>,
           TError,
-          Awaited<ReturnType<typeof canonicalGeographyAvailability>>
+          Awaited<ReturnType<typeof checkGeographyAvailability>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+export function useCheckGeographyAvailability<TData = Awaited<ReturnType<typeof checkGeographyAvailability>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>> & Pick<
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkGeographyAvailability>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof canonicalGeographyAvailability>>,
+          Awaited<ReturnType<typeof checkGeographyAvailability>>,
           TError,
-          Awaited<ReturnType<typeof canonicalGeographyAvailability>>
+          Awaited<ReturnType<typeof checkGeographyAvailability>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+export function useCheckGeographyAvailability<TData = Awaited<ReturnType<typeof checkGeographyAvailability>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Check canonical county geography publication availability
+ * @summary Check county geography availability
  */
 
-export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
+export function useCheckGeographyAvailability<TData = Awaited<ReturnType<typeof checkGeographyAvailability>>, TError = ProblemDetails>(
  geographyType: GeographyType,
-    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    geographyId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkGeographyAvailability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCanonicalGeographyAvailabilityQueryOptions(geographyType,geographyId,options)
+  const queryOptions = getCheckGeographyAvailabilityQueryOptions(geographyType,geographyId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1476,51 +1487,51 @@ export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typ
 
 
 
-export type observationsV1ObservationsGetResponse200 = {
+export type listObservationsResponse200 = {
   data: CollectionEnvelopeCountyContextObservation | CollectionEnvelopeObservation
   status: 200
 }
 
-export type observationsV1ObservationsGetResponse400 = {
+export type listObservationsResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type observationsV1ObservationsGetResponse404 = {
+export type listObservationsResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type observationsV1ObservationsGetResponse413 = {
+export type listObservationsResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type observationsV1ObservationsGetResponse414 = {
+export type listObservationsResponse414 = {
   data: ProblemDetails
   status: 414
 }
 
-export type observationsV1ObservationsGetResponse429 = {
+export type listObservationsResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type observationsV1ObservationsGetResponse503 = {
+export type listObservationsResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type observationsV1ObservationsGetResponseSuccess = (observationsV1ObservationsGetResponse200) & {
+export type listObservationsResponseSuccess = (listObservationsResponse200) & {
   headers: Headers;
 };
-export type observationsV1ObservationsGetResponseError = (observationsV1ObservationsGetResponse400 | observationsV1ObservationsGetResponse404 | observationsV1ObservationsGetResponse413 | observationsV1ObservationsGetResponse414 | observationsV1ObservationsGetResponse429 | observationsV1ObservationsGetResponse503) & {
+export type listObservationsResponseError = (listObservationsResponse400 | listObservationsResponse404 | listObservationsResponse413 | listObservationsResponse414 | listObservationsResponse429 | listObservationsResponse503) & {
   headers: Headers;
 };
 
-export type observationsV1ObservationsGetResponse = (observationsV1ObservationsGetResponseSuccess | observationsV1ObservationsGetResponseError)
+export type listObservationsResponse = (listObservationsResponseSuccess | listObservationsResponseError)
 
-export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1ObservationsGetParams,) => {
+export const getListObservationsUrl = (params: ListObservationsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -1544,12 +1555,48 @@ export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1Observ
 }
 
 /**
- * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.
+ * Query published county observations for one measure and up to 500 counties.
+ *
+ * ### What it returns
+ * Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations.
+ *
+ * ### Required parameters
+ * Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts.
+ *
+ * ### Time parameters by measure type
+ * | Measure type | Send | Wrong choice returns |
+ * | --- | --- | --- |
+ * | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+ * | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+ * | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. |
+ * | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+ * | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+ *
+ * ### Value states
+ * | Case | How to read it |
+ * | --- | --- |
+ * | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. |
+ * | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. |
+ * | Missing context | It does not establish absence or temporal comparability. |
+ * | Absent county context rows | They are unavailable evidence, never zero. |
+ *
+ * ### Empty versus unavailable results
+ * | Situation | Response |
+ * | --- | --- |
+ * | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. |
+ * | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. |
+ * | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. |
+ *
+ * ### Paging
+ * Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release.
+ *
+ * ### Caching
+ * An `UNAVAILABLE` collection must not be cached.
  * @summary Query county observations
  */
-export const observationsV1ObservationsGet = async (params: ObservationsV1ObservationsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<observationsV1ObservationsGetResponse> => {
+export const listObservations = async (params: ListObservationsParams, options?: Parameters<typeof apiMutator>[1]): Promise<listObservationsResponse> => {
 
-  return apiMutator<observationsV1ObservationsGetResponse>(getObservationsV1ObservationsGetUrl(params),
+  return apiMutator<listObservationsResponse>(getListObservationsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1562,69 +1609,69 @@ export const observationsV1ObservationsGet = async (params: ObservationsV1Observ
 
 
 
-export const getObservationsV1ObservationsGetQueryKey = (params?: ObservationsV1ObservationsGetParams,) => {
+export const getListObservationsQueryKey = (params?: ListObservationsParams,) => {
     return [
     `/v1/observations`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getObservationsV1ObservationsGetQueryOptions = <TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getListObservationsQueryOptions = <TData = Awaited<ReturnType<typeof listObservations>>, TError = ProblemDetails>(params: ListObservationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listObservations>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getObservationsV1ObservationsGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getListObservationsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof observationsV1ObservationsGet>>> = ({ signal }) => observationsV1ObservationsGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listObservations>>> = ({ signal }) => listObservations(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listObservations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ObservationsV1ObservationsGetQueryResult = NonNullable<Awaited<ReturnType<typeof observationsV1ObservationsGet>>>
-export type ObservationsV1ObservationsGetQueryError = ProblemDetails
+export type ListObservationsQueryResult = NonNullable<Awaited<ReturnType<typeof listObservations>>>
+export type ListObservationsQueryError = ProblemDetails
 
 
-export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
- params: ObservationsV1ObservationsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>> & Pick<
+export function useListObservations<TData = Awaited<ReturnType<typeof listObservations>>, TError = ProblemDetails>(
+ params: ListObservationsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listObservations>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof observationsV1ObservationsGet>>,
+          Awaited<ReturnType<typeof listObservations>>,
           TError,
-          Awaited<ReturnType<typeof observationsV1ObservationsGet>>
+          Awaited<ReturnType<typeof listObservations>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
- params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>> & Pick<
+export function useListObservations<TData = Awaited<ReturnType<typeof listObservations>>, TError = ProblemDetails>(
+ params: ListObservationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listObservations>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof observationsV1ObservationsGet>>,
+          Awaited<ReturnType<typeof listObservations>>,
           TError,
-          Awaited<ReturnType<typeof observationsV1ObservationsGet>>
+          Awaited<ReturnType<typeof listObservations>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
- params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListObservations<TData = Awaited<ReturnType<typeof listObservations>>, TError = ProblemDetails>(
+ params: ListObservationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listObservations>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Query county observations
  */
 
-export function useObservationsV1ObservationsGet<TData = Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError = ProblemDetails>(
- params: ObservationsV1ObservationsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof observationsV1ObservationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useListObservations<TData = Awaited<ReturnType<typeof listObservations>>, TError = ProblemDetails>(
+ params: ListObservationsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listObservations>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getObservationsV1ObservationsGetQueryOptions(params,options)
+  const queryOptions = getListObservationsQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -1860,7 +1907,7 @@ export const getListIntelligenceSourcesUrl = (params?: ListIntelligenceSourcesPa
 }
 
 /**
- * First-party read only. Source catalog covers represented item sources, not the private registry or all active sources. Health is explicitly unavailable until DATA publishes it. No freshness thresholds are inferred. page_size 1–500, state-bound tokens, no-store. No ingestion.
+ * First-party read only. Each source_id appears once, with its highest registry_version. The catalog lists sources represented by published items, not the private registry or every registered source. operational_state is healthy, stale, or failing from PRESENTATION.INTELLIGENCE_SOURCE_HEALTH_V1, and unavailable with diagnostic SOURCE_HEALTH_NOT_PUBLISHED when that source has no health row or the health projection cannot be read. last_completed_at and last_error_code come from that projection. Run identifiers and free text are omitted. The health read is cached for 5 minutes. page_size is 1–500 with state-bound tokens. The response must not be cached. No ingestion.
  * @summary Read source identities represented by published intelligence
  */
 export const listIntelligenceSources = async (params?: ListIntelligenceSourcesParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIntelligenceSourcesResponse> => {
@@ -2018,7 +2065,7 @@ export const getListIntelligenceFeedUrl = (params?: ListIntelligenceFeedParams,)
 }
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. No excerpts, article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. Each list entry includes abstract_preview, abstract_has_more, abstract_state, copyright_line, pubmed_url, and attribution. abstract_preview is at most 1000 characters, cut at a word boundary, and is null when abstract_state is not present. The list does not include the full abstract text. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination. The response must not be cached. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeed = async (params?: ListIntelligenceFeedParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIntelligenceFeedResponse> => {
@@ -2111,19 +2158,170 @@ export function useListIntelligenceFeed<TData = Awaited<ReturnType<typeof listIn
 
 
 
-export type liveHealthLiveGetResponse200 = {
-  data: LiveHealthLiveGet200
+export type getIntelligenceFeedEntryResponse200 = {
+  data: FeedEntryRead
   status: 200
 }
 
-export type liveHealthLiveGetResponseSuccess = (liveHealthLiveGetResponse200) & {
+export type getIntelligenceFeedEntryResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getIntelligenceFeedEntryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getIntelligenceFeedEntryResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type getIntelligenceFeedEntryResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type getIntelligenceFeedEntryResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type getIntelligenceFeedEntryResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type getIntelligenceFeedEntryResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type getIntelligenceFeedEntryResponseSuccess = (getIntelligenceFeedEntryResponse200) & {
+  headers: Headers;
+};
+export type getIntelligenceFeedEntryResponseError = (getIntelligenceFeedEntryResponse400 | getIntelligenceFeedEntryResponse404 | getIntelligenceFeedEntryResponse413 | getIntelligenceFeedEntryResponse414 | getIntelligenceFeedEntryResponse422 | getIntelligenceFeedEntryResponse429 | getIntelligenceFeedEntryResponse503) & {
+  headers: Headers;
+};
+
+export type getIntelligenceFeedEntryResponse = (getIntelligenceFeedEntryResponseSuccess | getIntelligenceFeedEntryResponseError)
+
+export const getGetIntelligenceFeedEntryUrl = (itemId: string,) => {
+
+
+
+
+  return `/v1/intelligence/feed/${itemId}`
+}
+
+/**
+ * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. The entry includes the full abstract as abstract.text, abstract.state, and abstract.copyright_line, plus pubmed_url and attribution. The response must not be cached. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
+ * @summary Read one source-attributed publication
+ */
+export const getIntelligenceFeedEntry = async (itemId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getIntelligenceFeedEntryResponse> => {
+
+  return apiMutator<getIntelligenceFeedEntryResponse>(getGetIntelligenceFeedEntryUrl(itemId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIntelligenceFeedEntryQueryKey = (itemId: string,) => {
+    return [
+    `/v1/intelligence/feed/${itemId}`
+    ] as const;
+    }
+
+
+export const getGetIntelligenceFeedEntryQueryOptions = <TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIntelligenceFeedEntryQueryKey(itemId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>> = ({ signal }) => getIntelligenceFeedEntry(itemId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: itemId !== null && itemId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIntelligenceFeedEntryQueryResult = NonNullable<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>>
+export type GetIntelligenceFeedEntryQueryError = ProblemDetails
+
+
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>,
+          TError,
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>,
+          TError,
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read one source-attributed publication
+ */
+
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIntelligenceFeedEntryQueryOptions(itemId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type checkLivenessResponse200 = {
+  data: CheckLiveness200
+  status: 200
+}
+
+export type checkLivenessResponseSuccess = (checkLivenessResponse200) & {
   headers: Headers;
 };
 ;
 
-export type liveHealthLiveGetResponse = (liveHealthLiveGetResponseSuccess)
+export type checkLivenessResponse = (checkLivenessResponseSuccess)
 
-export const getLiveHealthLiveGetUrl = () => {
+export const getCheckLivenessUrl = () => {
 
 
 
@@ -2134,9 +2332,9 @@ export const getLiveHealthLiveGetUrl = () => {
 /**
  * @summary Live
  */
-export const liveHealthLiveGet = async ( options?: Parameters<typeof apiMutator>[1]): Promise<liveHealthLiveGetResponse> => {
+export const checkLiveness = async ( options?: Parameters<typeof apiMutator>[1]): Promise<checkLivenessResponse> => {
 
-  return apiMutator<liveHealthLiveGetResponse>(getLiveHealthLiveGetUrl(),
+  return apiMutator<checkLivenessResponse>(getCheckLivenessUrl(),
   {
     ...options,
     method: 'GET'
@@ -2149,69 +2347,69 @@ export const liveHealthLiveGet = async ( options?: Parameters<typeof apiMutator>
 
 
 
-export const getLiveHealthLiveGetQueryKey = () => {
+export const getCheckLivenessQueryKey = () => {
     return [
     `/health/live`
     ] as const;
     }
 
 
-export const getLiveHealthLiveGetQueryOptions = <TData = Awaited<ReturnType<typeof liveHealthLiveGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof liveHealthLiveGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getCheckLivenessQueryOptions = <TData = Awaited<ReturnType<typeof checkLiveness>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkLiveness>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getLiveHealthLiveGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCheckLivenessQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof liveHealthLiveGet>>> = ({ signal }) => liveHealthLiveGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkLiveness>>> = ({ signal }) => checkLiveness({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof liveHealthLiveGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkLiveness>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type LiveHealthLiveGetQueryResult = NonNullable<Awaited<ReturnType<typeof liveHealthLiveGet>>>
-export type LiveHealthLiveGetQueryError = unknown
+export type CheckLivenessQueryResult = NonNullable<Awaited<ReturnType<typeof checkLiveness>>>
+export type CheckLivenessQueryError = unknown
 
 
-export function useLiveHealthLiveGet<TData = Awaited<ReturnType<typeof liveHealthLiveGet>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof liveHealthLiveGet>>, TError, TData>> & Pick<
+export function useCheckLiveness<TData = Awaited<ReturnType<typeof checkLiveness>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkLiveness>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof liveHealthLiveGet>>,
+          Awaited<ReturnType<typeof checkLiveness>>,
           TError,
-          Awaited<ReturnType<typeof liveHealthLiveGet>>
+          Awaited<ReturnType<typeof checkLiveness>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLiveHealthLiveGet<TData = Awaited<ReturnType<typeof liveHealthLiveGet>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof liveHealthLiveGet>>, TError, TData>> & Pick<
+export function useCheckLiveness<TData = Awaited<ReturnType<typeof checkLiveness>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkLiveness>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof liveHealthLiveGet>>,
+          Awaited<ReturnType<typeof checkLiveness>>,
           TError,
-          Awaited<ReturnType<typeof liveHealthLiveGet>>
+          Awaited<ReturnType<typeof checkLiveness>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useLiveHealthLiveGet<TData = Awaited<ReturnType<typeof liveHealthLiveGet>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof liveHealthLiveGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useCheckLiveness<TData = Awaited<ReturnType<typeof checkLiveness>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkLiveness>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Live
  */
 
-export function useLiveHealthLiveGet<TData = Awaited<ReturnType<typeof liveHealthLiveGet>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof liveHealthLiveGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useCheckLiveness<TData = Awaited<ReturnType<typeof checkLiveness>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkLiveness>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getLiveHealthLiveGetQueryOptions(options)
+  const queryOptions = getCheckLivenessQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -2224,19 +2422,19 @@ export function useLiveHealthLiveGet<TData = Awaited<ReturnType<typeof liveHealt
 
 
 
-export type readyHealthReadyGetResponse200 = {
-  data: ReadyHealthReadyGet200
+export type checkReadinessResponse200 = {
+  data: ReadinessResponse
   status: 200
 }
 
-export type readyHealthReadyGetResponseSuccess = (readyHealthReadyGetResponse200) & {
+export type checkReadinessResponseSuccess = (checkReadinessResponse200) & {
   headers: Headers;
 };
 ;
 
-export type readyHealthReadyGetResponse = (readyHealthReadyGetResponseSuccess)
+export type checkReadinessResponse = (checkReadinessResponseSuccess)
 
-export const getReadyHealthReadyGetUrl = () => {
+export const getCheckReadinessUrl = () => {
 
 
 
@@ -2247,9 +2445,9 @@ export const getReadyHealthReadyGetUrl = () => {
 /**
  * @summary Ready
  */
-export const readyHealthReadyGet = async ( options?: Parameters<typeof apiMutator>[1]): Promise<readyHealthReadyGetResponse> => {
+export const checkReadiness = async ( options?: Parameters<typeof apiMutator>[1]): Promise<checkReadinessResponse> => {
 
-  return apiMutator<readyHealthReadyGetResponse>(getReadyHealthReadyGetUrl(),
+  return apiMutator<checkReadinessResponse>(getCheckReadinessUrl(),
   {
     ...options,
     method: 'GET'
@@ -2262,69 +2460,69 @@ export const readyHealthReadyGet = async ( options?: Parameters<typeof apiMutato
 
 
 
-export const getReadyHealthReadyGetQueryKey = () => {
+export const getCheckReadinessQueryKey = () => {
     return [
     `/health/ready`
     ] as const;
     }
 
 
-export const getReadyHealthReadyGetQueryOptions = <TData = Awaited<ReturnType<typeof readyHealthReadyGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyHealthReadyGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getCheckReadinessQueryOptions = <TData = Awaited<ReturnType<typeof checkReadiness>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkReadiness>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getReadyHealthReadyGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCheckReadinessQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof readyHealthReadyGet>>> = ({ signal }) => readyHealthReadyGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkReadiness>>> = ({ signal }) => checkReadiness({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof readyHealthReadyGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkReadiness>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ReadyHealthReadyGetQueryResult = NonNullable<Awaited<ReturnType<typeof readyHealthReadyGet>>>
-export type ReadyHealthReadyGetQueryError = unknown
+export type CheckReadinessQueryResult = NonNullable<Awaited<ReturnType<typeof checkReadiness>>>
+export type CheckReadinessQueryError = unknown
 
 
-export function useReadyHealthReadyGet<TData = Awaited<ReturnType<typeof readyHealthReadyGet>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyHealthReadyGet>>, TError, TData>> & Pick<
+export function useCheckReadiness<TData = Awaited<ReturnType<typeof checkReadiness>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkReadiness>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof readyHealthReadyGet>>,
+          Awaited<ReturnType<typeof checkReadiness>>,
           TError,
-          Awaited<ReturnType<typeof readyHealthReadyGet>>
+          Awaited<ReturnType<typeof checkReadiness>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useReadyHealthReadyGet<TData = Awaited<ReturnType<typeof readyHealthReadyGet>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyHealthReadyGet>>, TError, TData>> & Pick<
+export function useCheckReadiness<TData = Awaited<ReturnType<typeof checkReadiness>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkReadiness>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof readyHealthReadyGet>>,
+          Awaited<ReturnType<typeof checkReadiness>>,
           TError,
-          Awaited<ReturnType<typeof readyHealthReadyGet>>
+          Awaited<ReturnType<typeof checkReadiness>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useReadyHealthReadyGet<TData = Awaited<ReturnType<typeof readyHealthReadyGet>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyHealthReadyGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useCheckReadiness<TData = Awaited<ReturnType<typeof checkReadiness>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkReadiness>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Ready
  */
 
-export function useReadyHealthReadyGet<TData = Awaited<ReturnType<typeof readyHealthReadyGet>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof readyHealthReadyGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useCheckReadiness<TData = Awaited<ReturnType<typeof checkReadiness>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkReadiness>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getReadyHealthReadyGetQueryOptions(options)
+  const queryOptions = getCheckReadinessQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -2337,36 +2535,36 @@ export function useReadyHealthReadyGet<TData = Awaited<ReturnType<typeof readyHe
 
 
 
-export type getProfileV1MeProfileGetResponse200 = {
+export type getProfileResponse200 = {
   data: UserProfileResponse
   status: 200
 }
 
-export type getProfileV1MeProfileGetResponse401 = {
+export type getProfileResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type getProfileV1MeProfileGetResponse422 = {
+export type getProfileResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type getProfileV1MeProfileGetResponse503 = {
+export type getProfileResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type getProfileV1MeProfileGetResponseSuccess = (getProfileV1MeProfileGetResponse200) & {
+export type getProfileResponseSuccess = (getProfileResponse200) & {
   headers: Headers;
 };
-export type getProfileV1MeProfileGetResponseError = (getProfileV1MeProfileGetResponse401 | getProfileV1MeProfileGetResponse422 | getProfileV1MeProfileGetResponse503) & {
+export type getProfileResponseError = (getProfileResponse401 | getProfileResponse422 | getProfileResponse503) & {
   headers: Headers;
 };
 
-export type getProfileV1MeProfileGetResponse = (getProfileV1MeProfileGetResponseSuccess | getProfileV1MeProfileGetResponseError)
+export type getProfileResponse = (getProfileResponseSuccess | getProfileResponseError)
 
-export const getGetProfileV1MeProfileGetUrl = () => {
+export const getGetProfileUrl = () => {
 
 
 
@@ -2377,9 +2575,9 @@ export const getGetProfileV1MeProfileGetUrl = () => {
 /**
  * @summary Get Profile
  */
-export const getProfileV1MeProfileGet = async ( options?: Parameters<typeof apiMutator>[1]): Promise<getProfileV1MeProfileGetResponse> => {
+export const getProfile = async ( options?: Parameters<typeof apiMutator>[1]): Promise<getProfileResponse> => {
 
-  return apiMutator<getProfileV1MeProfileGetResponse>(getGetProfileV1MeProfileGetUrl(),
+  return apiMutator<getProfileResponse>(getGetProfileUrl(),
   {
     ...options,
     method: 'GET'
@@ -2392,69 +2590,69 @@ export const getProfileV1MeProfileGet = async ( options?: Parameters<typeof apiM
 
 
 
-export const getGetProfileV1MeProfileGetQueryKey = () => {
+export const getGetProfileQueryKey = () => {
     return [
     `/v1/me/profile`
     ] as const;
     }
 
 
-export const getGetProfileV1MeProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetProfileQueryOptions = <TData = Awaited<ReturnType<typeof getProfile>>, TError = ProblemDetails | HTTPValidationError>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetProfileV1MeProfileGetQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetProfileQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>> = ({ signal }) => getProfileV1MeProfileGet({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProfile>>> = ({ signal }) => getProfile({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetProfileV1MeProfileGetQueryResult = NonNullable<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>>
-export type GetProfileV1MeProfileGetQueryError = ProblemDetails | HTTPValidationError
+export type GetProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getProfile>>>
+export type GetProfileQueryError = ProblemDetails | HTTPValidationError
 
 
-export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>> & Pick<
+export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = ProblemDetails | HTTPValidationError>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>,
+          Awaited<ReturnType<typeof getProfile>>,
           TError,
-          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>
+          Awaited<ReturnType<typeof getProfile>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>> & Pick<
+export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = ProblemDetails | HTTPValidationError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>,
+          Awaited<ReturnType<typeof getProfile>>,
           TError,
-          Awaited<ReturnType<typeof getProfileV1MeProfileGet>>
+          Awaited<ReturnType<typeof getProfile>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = ProblemDetails | HTTPValidationError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get Profile
  */
 
-export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError = ProblemDetails | HTTPValidationError>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfileV1MeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetProfile<TData = Awaited<ReturnType<typeof getProfile>>, TError = ProblemDetails | HTTPValidationError>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getProfile>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetProfileV1MeProfileGetQueryOptions(options)
+  const queryOptions = getGetProfileQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -2467,36 +2665,36 @@ export function useGetProfileV1MeProfileGet<TData = Awaited<ReturnType<typeof ge
 
 
 
-export type saveProfileV1MeProfilePutResponse200 = {
+export type updateProfileResponse200 = {
   data: UserProfileResponse
   status: 200
 }
 
-export type saveProfileV1MeProfilePutResponse401 = {
+export type updateProfileResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type saveProfileV1MeProfilePutResponse422 = {
+export type updateProfileResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type saveProfileV1MeProfilePutResponse503 = {
+export type updateProfileResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type saveProfileV1MeProfilePutResponseSuccess = (saveProfileV1MeProfilePutResponse200) & {
+export type updateProfileResponseSuccess = (updateProfileResponse200) & {
   headers: Headers;
 };
-export type saveProfileV1MeProfilePutResponseError = (saveProfileV1MeProfilePutResponse401 | saveProfileV1MeProfilePutResponse422 | saveProfileV1MeProfilePutResponse503) & {
+export type updateProfileResponseError = (updateProfileResponse401 | updateProfileResponse422 | updateProfileResponse503) & {
   headers: Headers;
 };
 
-export type saveProfileV1MeProfilePutResponse = (saveProfileV1MeProfilePutResponseSuccess | saveProfileV1MeProfilePutResponseError)
+export type updateProfileResponse = (updateProfileResponseSuccess | updateProfileResponseError)
 
-export const getSaveProfileV1MeProfilePutUrl = () => {
+export const getUpdateProfileUrl = () => {
 
 
 
@@ -2507,9 +2705,9 @@ export const getSaveProfileV1MeProfilePutUrl = () => {
 /**
  * @summary Save Profile
  */
-export const saveProfileV1MeProfilePut = async (userProfileWrite: UserProfileWrite, options?: Parameters<typeof apiMutator>[1]): Promise<saveProfileV1MeProfilePutResponse> => {
+export const updateProfile = async (userProfileWrite: UserProfileWrite, options?: Parameters<typeof apiMutator>[1]): Promise<updateProfileResponse> => {
 
-  return apiMutator<saveProfileV1MeProfilePutResponse>(getSaveProfileV1MeProfilePutUrl(),
+  return apiMutator<updateProfileResponse>(getUpdateProfileUrl(),
   {
     ...options,
     method: 'PUT',
@@ -2522,11 +2720,11 @@ export const saveProfileV1MeProfilePut = async (userProfileWrite: UserProfileWri
 
 
 
-export const getSaveProfileV1MeProfilePutMutationOptions = <TError = ProblemDetails | HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, TError,{data: UserProfileWrite}, TContext>, request?: SecondParameter<typeof apiMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, TError,{data: UserProfileWrite}, TContext> => {
+export const getUpdateProfileMutationOptions = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UserProfileWrite}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UserProfileWrite}, TContext> => {
 
-const mutationKey = ['saveProfileV1MeProfilePut'];
+const mutationKey = ['updateProfile'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2536,10 +2734,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, {data: UserProfileWrite}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfile>>, {data: UserProfileWrite}> = (props) => {
           const {data} = props ?? {};
 
-          return  saveProfileV1MeProfilePut(data,requestOptions)
+          return  updateProfile(data,requestOptions)
         }
 
 
@@ -2549,54 +2747,54 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SaveProfileV1MeProfilePutMutationResult = NonNullable<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>>
-    export type SaveProfileV1MeProfilePutMutationBody = UserProfileWrite
-    export type SaveProfileV1MeProfilePutMutationError = ProblemDetails | HTTPValidationError
+    export type UpdateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfile>>>
+    export type UpdateProfileMutationBody = UserProfileWrite
+    export type UpdateProfileMutationError = ProblemDetails | HTTPValidationError
 
     /**
  * @summary Save Profile
  */
-export const useSaveProfileV1MeProfilePut = <TError = ProblemDetails | HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>, TError,{data: UserProfileWrite}, TContext>, request?: SecondParameter<typeof apiMutator>}
+export const useUpdateProfile = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: UserProfileWrite}, TContext>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof saveProfileV1MeProfilePut>>,
+        Awaited<ReturnType<typeof updateProfile>>,
         TError,
         {data: UserProfileWrite},
         TContext
       > => {
-      return useMutation(getSaveProfileV1MeProfilePutMutationOptions(options), queryClient);
+      return useMutation(getUpdateProfileMutationOptions(options), queryClient);
     }
 
-export type createPrivacyRequestV1MePrivacyRequestsPostResponse200 = {
+export type createPrivacyRequestResponse200 = {
   data: PrivacyRequestCreated
   status: 200
 }
 
-export type createPrivacyRequestV1MePrivacyRequestsPostResponse401 = {
+export type createPrivacyRequestResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type createPrivacyRequestV1MePrivacyRequestsPostResponse422 = {
+export type createPrivacyRequestResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type createPrivacyRequestV1MePrivacyRequestsPostResponse503 = {
+export type createPrivacyRequestResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type createPrivacyRequestV1MePrivacyRequestsPostResponseSuccess = (createPrivacyRequestV1MePrivacyRequestsPostResponse200) & {
+export type createPrivacyRequestResponseSuccess = (createPrivacyRequestResponse200) & {
   headers: Headers;
 };
-export type createPrivacyRequestV1MePrivacyRequestsPostResponseError = (createPrivacyRequestV1MePrivacyRequestsPostResponse401 | createPrivacyRequestV1MePrivacyRequestsPostResponse422 | createPrivacyRequestV1MePrivacyRequestsPostResponse503) & {
+export type createPrivacyRequestResponseError = (createPrivacyRequestResponse401 | createPrivacyRequestResponse422 | createPrivacyRequestResponse503) & {
   headers: Headers;
 };
 
-export type createPrivacyRequestV1MePrivacyRequestsPostResponse = (createPrivacyRequestV1MePrivacyRequestsPostResponseSuccess | createPrivacyRequestV1MePrivacyRequestsPostResponseError)
+export type createPrivacyRequestResponse = (createPrivacyRequestResponseSuccess | createPrivacyRequestResponseError)
 
-export const getCreatePrivacyRequestV1MePrivacyRequestsPostUrl = () => {
+export const getCreatePrivacyRequestUrl = () => {
 
 
 
@@ -2607,9 +2805,9 @@ export const getCreatePrivacyRequestV1MePrivacyRequestsPostUrl = () => {
 /**
  * @summary Create Privacy Request
  */
-export const createPrivacyRequestV1MePrivacyRequestsPost = async (privacyRequestCreate: PrivacyRequestCreate, options?: Parameters<typeof apiMutator>[1]): Promise<createPrivacyRequestV1MePrivacyRequestsPostResponse> => {
+export const createPrivacyRequest = async (privacyRequestCreate: PrivacyRequestCreate, options?: Parameters<typeof apiMutator>[1]): Promise<createPrivacyRequestResponse> => {
 
-  return apiMutator<createPrivacyRequestV1MePrivacyRequestsPostResponse>(getCreatePrivacyRequestV1MePrivacyRequestsPostUrl(),
+  return apiMutator<createPrivacyRequestResponse>(getCreatePrivacyRequestUrl(),
   {
     ...options,
     method: 'POST',
@@ -2622,11 +2820,11 @@ export const createPrivacyRequestV1MePrivacyRequestsPost = async (privacyRequest
 
 
 
-export const getCreatePrivacyRequestV1MePrivacyRequestsPostMutationOptions = <TError = ProblemDetails | HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, TError,{data: PrivacyRequestCreate}, TContext>, request?: SecondParameter<typeof apiMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, TError,{data: PrivacyRequestCreate}, TContext> => {
+export const getCreatePrivacyRequestMutationOptions = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequest>>, TError,{data: PrivacyRequestCreate}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequest>>, TError,{data: PrivacyRequestCreate}, TContext> => {
 
-const mutationKey = ['createPrivacyRequestV1MePrivacyRequestsPost'];
+const mutationKey = ['createPrivacyRequest'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2636,10 +2834,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, {data: PrivacyRequestCreate}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPrivacyRequest>>, {data: PrivacyRequestCreate}> = (props) => {
           const {data} = props ?? {};
 
-          return  createPrivacyRequestV1MePrivacyRequestsPost(data,requestOptions)
+          return  createPrivacyRequest(data,requestOptions)
         }
 
 
@@ -2649,69 +2847,69 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreatePrivacyRequestV1MePrivacyRequestsPostMutationResult = NonNullable<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>>
-    export type CreatePrivacyRequestV1MePrivacyRequestsPostMutationBody = PrivacyRequestCreate
-    export type CreatePrivacyRequestV1MePrivacyRequestsPostMutationError = ProblemDetails | HTTPValidationError
+    export type CreatePrivacyRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createPrivacyRequest>>>
+    export type CreatePrivacyRequestMutationBody = PrivacyRequestCreate
+    export type CreatePrivacyRequestMutationError = ProblemDetails | HTTPValidationError
 
     /**
  * @summary Create Privacy Request
  */
-export const useCreatePrivacyRequestV1MePrivacyRequestsPost = <TError = ProblemDetails | HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>, TError,{data: PrivacyRequestCreate}, TContext>, request?: SecondParameter<typeof apiMutator>}
+export const useCreatePrivacyRequest = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPrivacyRequest>>, TError,{data: PrivacyRequestCreate}, TContext>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof createPrivacyRequestV1MePrivacyRequestsPost>>,
+        Awaited<ReturnType<typeof createPrivacyRequest>>,
         TError,
         {data: PrivacyRequestCreate},
         TContext
       > => {
-      return useMutation(getCreatePrivacyRequestV1MePrivacyRequestsPostMutationOptions(options), queryClient);
+      return useMutation(getCreatePrivacyRequestMutationOptions(options), queryClient);
     }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse200 = {
+export type confirmPrivacyRequestResponse200 = {
   data: PrivacyRequestStatus
   status: 200
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse400 = {
+export type confirmPrivacyRequestResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse401 = {
+export type confirmPrivacyRequestResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse404 = {
+export type confirmPrivacyRequestResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse409 = {
+export type confirmPrivacyRequestResponse409 = {
   data: ProblemDetails
   status: 409
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse422 = {
+export type confirmPrivacyRequestResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse503 = {
+export type confirmPrivacyRequestResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseSuccess = (confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse200) & {
+export type confirmPrivacyRequestResponseSuccess = (confirmPrivacyRequestResponse200) & {
   headers: Headers;
 };
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseError = (confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse400 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse401 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse404 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse409 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse422 | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse503) & {
+export type confirmPrivacyRequestResponseError = (confirmPrivacyRequestResponse400 | confirmPrivacyRequestResponse401 | confirmPrivacyRequestResponse404 | confirmPrivacyRequestResponse409 | confirmPrivacyRequestResponse422 | confirmPrivacyRequestResponse503) & {
   headers: Headers;
 };
 
-export type confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse = (confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseSuccess | confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseError)
+export type confirmPrivacyRequestResponse = (confirmPrivacyRequestResponseSuccess | confirmPrivacyRequestResponseError)
 
-export const getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostUrl = (requestId: string,) => {
+export const getConfirmPrivacyRequestUrl = (requestId: string,) => {
 
 
 
@@ -2722,10 +2920,10 @@ export const getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostUrl 
 /**
  * @summary Confirm Privacy Request
  */
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost = async (requestId: string,
-    privacyRequestConfirm: PrivacyRequestConfirm, options?: Parameters<typeof apiMutator>[1]): Promise<confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse> => {
+export const confirmPrivacyRequest = async (requestId: string,
+    privacyRequestConfirm: PrivacyRequestConfirm, options?: Parameters<typeof apiMutator>[1]): Promise<confirmPrivacyRequestResponse> => {
 
-  return apiMutator<confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse>(getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostUrl(requestId),
+  return apiMutator<confirmPrivacyRequestResponse>(getConfirmPrivacyRequestUrl(requestId),
   {
     ...options,
     method: 'POST',
@@ -2738,11 +2936,11 @@ export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost = asyn
 
 
 
-export const getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationOptions = <TError = ProblemDetails | HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext>, request?: SecondParameter<typeof apiMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext> => {
+export const getConfirmPrivacyRequestMutationOptions = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequest>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequest>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext> => {
 
-const mutationKey = ['confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost'];
+const mutationKey = ['confirmPrivacyRequest'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2752,10 +2950,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, {requestId: string;data: PrivacyRequestConfirm}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPrivacyRequest>>, {requestId: string;data: PrivacyRequestConfirm}> = (props) => {
           const {requestId,data} = props ?? {};
 
-          return  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(requestId,data,requestOptions)
+          return  confirmPrivacyRequest(requestId,data,requestOptions)
         }
 
 
@@ -2765,59 +2963,59 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>>
-    export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationBody = PrivacyRequestConfirm
-    export type ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationError = ProblemDetails | HTTPValidationError
+    export type ConfirmPrivacyRequestMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPrivacyRequest>>>
+    export type ConfirmPrivacyRequestMutationBody = PrivacyRequestConfirm
+    export type ConfirmPrivacyRequestMutationError = ProblemDetails | HTTPValidationError
 
     /**
  * @summary Confirm Privacy Request
  */
-export const useConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost = <TError = ProblemDetails | HTTPValidationError,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext>, request?: SecondParameter<typeof apiMutator>}
+export const useConfirmPrivacyRequest = <TError = ProblemDetails | HTTPValidationError,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPrivacyRequest>>, TError,{requestId: string;data: PrivacyRequestConfirm}, TContext>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost>>,
+        Awaited<ReturnType<typeof confirmPrivacyRequest>>,
         TError,
         {requestId: string;data: PrivacyRequestConfirm},
         TContext
       > => {
-      return useMutation(getConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostMutationOptions(options), queryClient);
+      return useMutation(getConfirmPrivacyRequestMutationOptions(options), queryClient);
     }
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse200 = {
+export type getPrivacyRequestResponse200 = {
   data: PrivacyRequestStatus
   status: 200
 }
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse401 = {
+export type getPrivacyRequestResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse404 = {
+export type getPrivacyRequestResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse422 = {
+export type getPrivacyRequestResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse503 = {
+export type getPrivacyRequestResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseSuccess = (getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse200) & {
+export type getPrivacyRequestResponseSuccess = (getPrivacyRequestResponse200) & {
   headers: Headers;
 };
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseError = (getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse401 | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse404 | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse422 | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse503) & {
+export type getPrivacyRequestResponseError = (getPrivacyRequestResponse401 | getPrivacyRequestResponse404 | getPrivacyRequestResponse422 | getPrivacyRequestResponse503) & {
   headers: Headers;
 };
 
-export type getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = (getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseSuccess | getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseError)
+export type getPrivacyRequestResponse = (getPrivacyRequestResponseSuccess | getPrivacyRequestResponseError)
 
-export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetUrl = (requestId: string,) => {
+export const getGetPrivacyRequestUrl = (requestId: string,) => {
 
 
 
@@ -2828,9 +3026,9 @@ export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetUrl = (requestId
 /**
  * @summary Get Privacy Request
  */
-export const getPrivacyRequestV1MePrivacyRequestsRequestIdGet = async (requestId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse> => {
+export const getPrivacyRequest = async (requestId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getPrivacyRequestResponse> => {
 
-  return apiMutator<getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse>(getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetUrl(requestId),
+  return apiMutator<getPrivacyRequestResponse>(getGetPrivacyRequestUrl(requestId),
   {
     ...options,
     method: 'GET'
@@ -2843,69 +3041,69 @@ export const getPrivacyRequestV1MePrivacyRequestsRequestIdGet = async (requestId
 
 
 
-export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryKey = (requestId: string,) => {
+export const getGetPrivacyRequestQueryKey = (requestId: string,) => {
     return [
     `/v1/me/privacy-requests/${requestId}`
     ] as const;
     }
 
 
-export const getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetPrivacyRequestQueryOptions = <TData = Awaited<ReturnType<typeof getPrivacyRequest>>, TError = ProblemDetails | HTTPValidationError>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequest>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryKey(requestId);
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivacyRequestQueryKey(requestId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>> = ({ signal }) => getPrivacyRequestV1MePrivacyRequestsRequestIdGet(requestId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivacyRequest>>> = ({ signal }) => getPrivacyRequest(requestId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequest>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>>
-export type GetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryError = ProblemDetails | HTTPValidationError
+export type GetPrivacyRequestQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivacyRequest>>>
+export type GetPrivacyRequestQueryError = ProblemDetails | HTTPValidationError
 
 
-export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>> & Pick<
+export function useGetPrivacyRequest<TData = Awaited<ReturnType<typeof getPrivacyRequest>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequest>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>,
+          Awaited<ReturnType<typeof getPrivacyRequest>>,
           TError,
-          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>
+          Awaited<ReturnType<typeof getPrivacyRequest>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>> & Pick<
+export function useGetPrivacyRequest<TData = Awaited<ReturnType<typeof getPrivacyRequest>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequest>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>,
+          Awaited<ReturnType<typeof getPrivacyRequest>>,
           TError,
-          Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>
+          Awaited<ReturnType<typeof getPrivacyRequest>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetPrivacyRequest<TData = Awaited<ReturnType<typeof getPrivacyRequest>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequest>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get Privacy Request
  */
 
-export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequestV1MePrivacyRequestsRequestIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetPrivacyRequest<TData = Awaited<ReturnType<typeof getPrivacyRequest>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPrivacyRequest>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetPrivacyRequestV1MePrivacyRequestsRequestIdGetQueryOptions(requestId,options)
+  const queryOptions = getGetPrivacyRequestQueryOptions(requestId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -2918,46 +3116,46 @@ export function useGetPrivacyRequestV1MePrivacyRequestsRequestIdGet<TData = Awai
 
 
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse200 = {
+export type downloadPrivacyExportResponse200 = {
   data: unknown
   status: 200
 }
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse401 = {
+export type downloadPrivacyExportResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse404 = {
+export type downloadPrivacyExportResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse409 = {
+export type downloadPrivacyExportResponse409 = {
   data: ProblemDetails
   status: 409
 }
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse422 = {
+export type downloadPrivacyExportResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse503 = {
+export type downloadPrivacyExportResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseSuccess = (downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse200) & {
+export type downloadPrivacyExportResponseSuccess = (downloadPrivacyExportResponse200) & {
   headers: Headers;
 };
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseError = (downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse401 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse404 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse409 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse422 | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse503) & {
+export type downloadPrivacyExportResponseError = (downloadPrivacyExportResponse401 | downloadPrivacyExportResponse404 | downloadPrivacyExportResponse409 | downloadPrivacyExportResponse422 | downloadPrivacyExportResponse503) & {
   headers: Headers;
 };
 
-export type downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse = (downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseSuccess | downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponseError)
+export type downloadPrivacyExportResponse = (downloadPrivacyExportResponseSuccess | downloadPrivacyExportResponseError)
 
-export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetUrl = (requestId: string,) => {
+export const getDownloadPrivacyExportUrl = (requestId: string,) => {
 
 
 
@@ -2968,9 +3166,9 @@ export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetUrl = 
 /**
  * @summary Download Privacy Export
  */
-export const downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet = async (requestId: string, options?: Parameters<typeof apiMutator>[1]): Promise<downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse> => {
+export const downloadPrivacyExport = async (requestId: string, options?: Parameters<typeof apiMutator>[1]): Promise<downloadPrivacyExportResponse> => {
 
-  return apiMutator<downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse>(getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetUrl(requestId),
+  return apiMutator<downloadPrivacyExportResponse>(getDownloadPrivacyExportUrl(requestId),
   {
     ...options,
     method: 'GET'
@@ -2983,69 +3181,69 @@ export const downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet = async 
 
 
 
-export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryKey = (requestId: string,) => {
+export const getDownloadPrivacyExportQueryKey = (requestId: string,) => {
     return [
     `/v1/me/privacy-requests/${requestId}/export`
     ] as const;
     }
 
 
-export const getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryOptions = <TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getDownloadPrivacyExportQueryOptions = <TData = Awaited<ReturnType<typeof downloadPrivacyExport>>, TError = ProblemDetails | HTTPValidationError>(requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryKey(requestId);
+  const queryKey =  queryOptions?.queryKey ?? getDownloadPrivacyExportQueryKey(requestId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>> = ({ signal }) => downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(requestId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadPrivacyExport>>> = ({ signal }) => downloadPrivacyExport(requestId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: requestId !== null && requestId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryResult = NonNullable<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>>
-export type DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryError = ProblemDetails | HTTPValidationError
+export type DownloadPrivacyExportQueryResult = NonNullable<Awaited<ReturnType<typeof downloadPrivacyExport>>>
+export type DownloadPrivacyExportQueryError = ProblemDetails | HTTPValidationError
 
 
-export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>> & Pick<
+export function useDownloadPrivacyExport<TData = Awaited<ReturnType<typeof downloadPrivacyExport>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExport>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>,
+          Awaited<ReturnType<typeof downloadPrivacyExport>>,
           TError,
-          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>
+          Awaited<ReturnType<typeof downloadPrivacyExport>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>> & Pick<
+export function useDownloadPrivacyExport<TData = Awaited<ReturnType<typeof downloadPrivacyExport>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExport>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>,
+          Awaited<ReturnType<typeof downloadPrivacyExport>>,
           TError,
-          Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>
+          Awaited<ReturnType<typeof downloadPrivacyExport>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useDownloadPrivacyExport<TData = Awaited<ReturnType<typeof downloadPrivacyExport>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Download Privacy Export
  */
 
-export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TData = Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError = ProblemDetails | HTTPValidationError>(
- requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useDownloadPrivacyExport<TData = Awaited<ReturnType<typeof downloadPrivacyExport>>, TError = ProblemDetails | HTTPValidationError>(
+ requestId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadPrivacyExport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetQueryOptions(requestId,options)
+  const queryOptions = getDownloadPrivacyExportQueryOptions(requestId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3058,42 +3256,42 @@ export function useDownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet<TD
 
 
 
-export type stateReviewV1StatesStateReviewGetResponse200 = {
+export type getStateReviewResponse200 = {
   data: StateReview
   status: 200
 }
 
-export type stateReviewV1StatesStateReviewGetResponse404 = {
+export type getStateReviewResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type stateReviewV1StatesStateReviewGetResponse422 = {
+export type getStateReviewResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type stateReviewV1StatesStateReviewGetResponse429 = {
+export type getStateReviewResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type stateReviewV1StatesStateReviewGetResponse503 = {
+export type getStateReviewResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type stateReviewV1StatesStateReviewGetResponseSuccess = (stateReviewV1StatesStateReviewGetResponse200) & {
+export type getStateReviewResponseSuccess = (getStateReviewResponse200) & {
   headers: Headers;
 };
-export type stateReviewV1StatesStateReviewGetResponseError = (stateReviewV1StatesStateReviewGetResponse404 | stateReviewV1StatesStateReviewGetResponse422 | stateReviewV1StatesStateReviewGetResponse429 | stateReviewV1StatesStateReviewGetResponse503) & {
+export type getStateReviewResponseError = (getStateReviewResponse404 | getStateReviewResponse422 | getStateReviewResponse429 | getStateReviewResponse503) & {
   headers: Headers;
 };
 
-export type stateReviewV1StatesStateReviewGetResponse = (stateReviewV1StatesStateReviewGetResponseSuccess | stateReviewV1StatesStateReviewGetResponseError)
+export type getStateReviewResponse = (getStateReviewResponseSuccess | getStateReviewResponseError)
 
-export const getStateReviewV1StatesStateReviewGetUrl = (state: string,
-    params?: StateReviewV1StatesStateReviewGetParams,) => {
+export const getGetStateReviewUrl = (state: string,
+    params?: GetStateReviewParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -3112,10 +3310,10 @@ export const getStateReviewV1StatesStateReviewGetUrl = (state: string,
  * Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
  * @summary Review a state's county evidence
  */
-export const stateReviewV1StatesStateReviewGet = async (state: string,
-    params?: StateReviewV1StatesStateReviewGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<stateReviewV1StatesStateReviewGetResponse> => {
+export const getStateReview = async (state: string,
+    params?: GetStateReviewParams, options?: Parameters<typeof apiMutator>[1]): Promise<getStateReviewResponse> => {
 
-  return apiMutator<stateReviewV1StatesStateReviewGetResponse>(getStateReviewV1StatesStateReviewGetUrl(state,params),
+  return apiMutator<getStateReviewResponse>(getGetStateReviewUrl(state,params),
   {
     ...options,
     method: 'GET'
@@ -3128,75 +3326,75 @@ export const stateReviewV1StatesStateReviewGet = async (state: string,
 
 
 
-export const getStateReviewV1StatesStateReviewGetQueryKey = (state: string,
-    params?: StateReviewV1StatesStateReviewGetParams,) => {
+export const getGetStateReviewQueryKey = (state: string,
+    params?: GetStateReviewParams,) => {
     return [
     `/v1/states/${state}/review`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getStateReviewV1StatesStateReviewGetQueryOptions = <TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(state: string,
-    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetStateReviewQueryOptions = <TData = Awaited<ReturnType<typeof getStateReview>>, TError = ProblemDetails>(state: string,
+    params?: GetStateReviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStateReview>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getStateReviewV1StatesStateReviewGetQueryKey(state,params);
+  const queryKey =  queryOptions?.queryKey ?? getGetStateReviewQueryKey(state,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>> = ({ signal }) => stateReviewV1StatesStateReviewGet(state,params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStateReview>>> = ({ signal }) => getStateReview(state,params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: state !== null && state !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: state !== null && state !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStateReview>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type StateReviewV1StatesStateReviewGetQueryResult = NonNullable<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>>
-export type StateReviewV1StatesStateReviewGetQueryError = ProblemDetails
+export type GetStateReviewQueryResult = NonNullable<Awaited<ReturnType<typeof getStateReview>>>
+export type GetStateReviewQueryError = ProblemDetails
 
 
-export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+export function useGetStateReview<TData = Awaited<ReturnType<typeof getStateReview>>, TError = ProblemDetails>(
  state: string,
-    params: undefined |  StateReviewV1StatesStateReviewGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>> & Pick<
+    params: undefined |  GetStateReviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStateReview>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>,
+          Awaited<ReturnType<typeof getStateReview>>,
           TError,
-          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>
+          Awaited<ReturnType<typeof getStateReview>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+export function useGetStateReview<TData = Awaited<ReturnType<typeof getStateReview>>, TError = ProblemDetails>(
  state: string,
-    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>> & Pick<
+    params?: GetStateReviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStateReview>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>,
+          Awaited<ReturnType<typeof getStateReview>>,
           TError,
-          Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>
+          Awaited<ReturnType<typeof getStateReview>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+export function useGetStateReview<TData = Awaited<ReturnType<typeof getStateReview>>, TError = ProblemDetails>(
  state: string,
-    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: GetStateReviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStateReview>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Review a state's county evidence
  */
 
-export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError = ProblemDetails>(
+export function useGetStateReview<TData = Awaited<ReturnType<typeof getStateReview>>, TError = ProblemDetails>(
  state: string,
-    params?: StateReviewV1StatesStateReviewGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReviewV1StatesStateReviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: GetStateReviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getStateReview>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getStateReviewV1StatesStateReviewGetQueryOptions(state,params,options)
+  const queryOptions = getGetStateReviewQueryOptions(state,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3209,41 +3407,41 @@ export function useStateReviewV1StatesStateReviewGet<TData = Awaited<ReturnType<
 
 
 
-export type metadataV1AtlasMetadataGetResponse200 = {
+export type getAtlasMetadataResponse200 = {
   data: AtlasMetadata
   status: 200
 }
 
-export type metadataV1AtlasMetadataGetResponse404 = {
+export type getAtlasMetadataResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type metadataV1AtlasMetadataGetResponse422 = {
+export type getAtlasMetadataResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type metadataV1AtlasMetadataGetResponse429 = {
+export type getAtlasMetadataResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type metadataV1AtlasMetadataGetResponse503 = {
+export type getAtlasMetadataResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type metadataV1AtlasMetadataGetResponseSuccess = (metadataV1AtlasMetadataGetResponse200) & {
+export type getAtlasMetadataResponseSuccess = (getAtlasMetadataResponse200) & {
   headers: Headers;
 };
-export type metadataV1AtlasMetadataGetResponseError = (metadataV1AtlasMetadataGetResponse404 | metadataV1AtlasMetadataGetResponse422 | metadataV1AtlasMetadataGetResponse429 | metadataV1AtlasMetadataGetResponse503) & {
+export type getAtlasMetadataResponseError = (getAtlasMetadataResponse404 | getAtlasMetadataResponse422 | getAtlasMetadataResponse429 | getAtlasMetadataResponse503) & {
   headers: Headers;
 };
 
-export type metadataV1AtlasMetadataGetResponse = (metadataV1AtlasMetadataGetResponseSuccess | metadataV1AtlasMetadataGetResponseError)
+export type getAtlasMetadataResponse = (getAtlasMetadataResponseSuccess | getAtlasMetadataResponseError)
 
-export const getMetadataV1AtlasMetadataGetUrl = (params?: MetadataV1AtlasMetadataGetParams,) => {
+export const getGetAtlasMetadataUrl = (params?: GetAtlasMetadataParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -3260,11 +3458,11 @@ export const getMetadataV1AtlasMetadataGetUrl = (params?: MetadataV1AtlasMetadat
 
 /**
  * Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
- * @summary Get Atlas release metadata
+ * @summary Get release metadata
  */
-export const metadataV1AtlasMetadataGet = async (params?: MetadataV1AtlasMetadataGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<metadataV1AtlasMetadataGetResponse> => {
+export const getAtlasMetadata = async (params?: GetAtlasMetadataParams, options?: Parameters<typeof apiMutator>[1]): Promise<getAtlasMetadataResponse> => {
 
-  return apiMutator<metadataV1AtlasMetadataGetResponse>(getMetadataV1AtlasMetadataGetUrl(params),
+  return apiMutator<getAtlasMetadataResponse>(getGetAtlasMetadataUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3277,69 +3475,69 @@ export const metadataV1AtlasMetadataGet = async (params?: MetadataV1AtlasMetadat
 
 
 
-export const getMetadataV1AtlasMetadataGetQueryKey = (params?: MetadataV1AtlasMetadataGetParams,) => {
+export const getGetAtlasMetadataQueryKey = (params?: GetAtlasMetadataParams,) => {
     return [
     `/v1/atlas/metadata`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getMetadataV1AtlasMetadataGetQueryOptions = <TData = Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError = ProblemDetails>(params?: MetadataV1AtlasMetadataGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetAtlasMetadataQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasMetadata>>, TError = ProblemDetails>(params?: GetAtlasMetadataParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMetadata>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getMetadataV1AtlasMetadataGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasMetadataQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>> = ({ signal }) => metadataV1AtlasMetadataGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasMetadata>>> = ({ signal }) => getAtlasMetadata(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasMetadata>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type MetadataV1AtlasMetadataGetQueryResult = NonNullable<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>>
-export type MetadataV1AtlasMetadataGetQueryError = ProblemDetails
+export type GetAtlasMetadataQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasMetadata>>>
+export type GetAtlasMetadataQueryError = ProblemDetails
 
 
-export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError = ProblemDetails>(
- params: undefined |  MetadataV1AtlasMetadataGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError, TData>> & Pick<
+export function useGetAtlasMetadata<TData = Awaited<ReturnType<typeof getAtlasMetadata>>, TError = ProblemDetails>(
+ params: undefined |  GetAtlasMetadataParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMetadata>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>,
+          Awaited<ReturnType<typeof getAtlasMetadata>>,
           TError,
-          Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>
+          Awaited<ReturnType<typeof getAtlasMetadata>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError = ProblemDetails>(
- params?: MetadataV1AtlasMetadataGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError, TData>> & Pick<
+export function useGetAtlasMetadata<TData = Awaited<ReturnType<typeof getAtlasMetadata>>, TError = ProblemDetails>(
+ params?: GetAtlasMetadataParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMetadata>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>,
+          Awaited<ReturnType<typeof getAtlasMetadata>>,
           TError,
-          Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>
+          Awaited<ReturnType<typeof getAtlasMetadata>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError = ProblemDetails>(
- params?: MetadataV1AtlasMetadataGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetAtlasMetadata<TData = Awaited<ReturnType<typeof getAtlasMetadata>>, TError = ProblemDetails>(
+ params?: GetAtlasMetadataParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMetadata>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get Atlas release metadata
+ * @summary Get release metadata
  */
 
-export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError = ProblemDetails>(
- params?: MetadataV1AtlasMetadataGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetAtlasMetadata<TData = Awaited<ReturnType<typeof getAtlasMetadata>>, TError = ProblemDetails>(
+ params?: GetAtlasMetadataParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMetadata>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getMetadataV1AtlasMetadataGetQueryOptions(params,options)
+  const queryOptions = getGetAtlasMetadataQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3352,46 +3550,46 @@ export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof 
 
 
 
-export type geometryV1AtlasGeometryGetResponse200 = {
-  data: GeometryV1AtlasGeometryGet200
+export type getAtlasGeometryResponse200 = {
+  data: GetAtlasGeometry200
   status: 200
 }
 
-export type geometryV1AtlasGeometryGetResponse304 = {
+export type getAtlasGeometryResponse304 = {
   data: void
   status: 304
 }
 
-export type geometryV1AtlasGeometryGetResponse404 = {
+export type getAtlasGeometryResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type geometryV1AtlasGeometryGetResponse422 = {
+export type getAtlasGeometryResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type geometryV1AtlasGeometryGetResponse429 = {
+export type getAtlasGeometryResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type geometryV1AtlasGeometryGetResponse503 = {
+export type getAtlasGeometryResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type geometryV1AtlasGeometryGetResponseSuccess = (geometryV1AtlasGeometryGetResponse200) & {
+export type getAtlasGeometryResponseSuccess = (getAtlasGeometryResponse200) & {
   headers: Headers;
 };
-export type geometryV1AtlasGeometryGetResponseError = (geometryV1AtlasGeometryGetResponse304 | geometryV1AtlasGeometryGetResponse404 | geometryV1AtlasGeometryGetResponse422 | geometryV1AtlasGeometryGetResponse429 | geometryV1AtlasGeometryGetResponse503) & {
+export type getAtlasGeometryResponseError = (getAtlasGeometryResponse304 | getAtlasGeometryResponse404 | getAtlasGeometryResponse422 | getAtlasGeometryResponse429 | getAtlasGeometryResponse503) & {
   headers: Headers;
 };
 
-export type geometryV1AtlasGeometryGetResponse = (geometryV1AtlasGeometryGetResponseSuccess | geometryV1AtlasGeometryGetResponseError)
+export type getAtlasGeometryResponse = (getAtlasGeometryResponseSuccess | getAtlasGeometryResponseError)
 
-export const getGeometryV1AtlasGeometryGetUrl = (params?: GeometryV1AtlasGeometryGetParams,) => {
+export const getGetAtlasGeometryUrl = (params?: GetAtlasGeometryParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -3408,11 +3606,11 @@ export const getGeometryV1AtlasGeometryGetUrl = (params?: GeometryV1AtlasGeometr
 
 /**
  * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
- * @summary Get county display geometry
+ * @summary Get county map geometry
  */
-export const geometryV1AtlasGeometryGet = async (params?: GeometryV1AtlasGeometryGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<geometryV1AtlasGeometryGetResponse> => {
+export const getAtlasGeometry = async (params?: GetAtlasGeometryParams, options?: Parameters<typeof apiMutator>[1]): Promise<getAtlasGeometryResponse> => {
 
-  return apiMutator<geometryV1AtlasGeometryGetResponse>(getGeometryV1AtlasGeometryGetUrl(params),
+  return apiMutator<getAtlasGeometryResponse>(getGetAtlasGeometryUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3425,69 +3623,69 @@ export const geometryV1AtlasGeometryGet = async (params?: GeometryV1AtlasGeometr
 
 
 
-export const getGeometryV1AtlasGeometryGetQueryKey = (params?: GeometryV1AtlasGeometryGetParams,) => {
+export const getGetAtlasGeometryQueryKey = (params?: GetAtlasGeometryParams,) => {
     return [
     `/v1/atlas/geometry`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGeometryV1AtlasGeometryGetQueryOptions = <TData = Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError = void | ProblemDetails>(params?: GeometryV1AtlasGeometryGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetAtlasGeometryQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasGeometry>>, TError = void | ProblemDetails>(params?: GetAtlasGeometryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGeometryV1AtlasGeometryGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasGeometryQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>> = ({ signal }) => geometryV1AtlasGeometryGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasGeometry>>> = ({ signal }) => getAtlasGeometry(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasGeometry>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GeometryV1AtlasGeometryGetQueryResult = NonNullable<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>>
-export type GeometryV1AtlasGeometryGetQueryError = void | ProblemDetails
+export type GetAtlasGeometryQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasGeometry>>>
+export type GetAtlasGeometryQueryError = void | ProblemDetails
 
 
-export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError = void | ProblemDetails>(
- params: undefined |  GeometryV1AtlasGeometryGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError, TData>> & Pick<
+export function useGetAtlasGeometry<TData = Awaited<ReturnType<typeof getAtlasGeometry>>, TError = void | ProblemDetails>(
+ params: undefined |  GetAtlasGeometryParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasGeometry>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>,
+          Awaited<ReturnType<typeof getAtlasGeometry>>,
           TError,
-          Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>
+          Awaited<ReturnType<typeof getAtlasGeometry>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError = void | ProblemDetails>(
- params?: GeometryV1AtlasGeometryGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError, TData>> & Pick<
+export function useGetAtlasGeometry<TData = Awaited<ReturnType<typeof getAtlasGeometry>>, TError = void | ProblemDetails>(
+ params?: GetAtlasGeometryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasGeometry>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>,
+          Awaited<ReturnType<typeof getAtlasGeometry>>,
           TError,
-          Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>
+          Awaited<ReturnType<typeof getAtlasGeometry>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError = void | ProblemDetails>(
- params?: GeometryV1AtlasGeometryGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetAtlasGeometry<TData = Awaited<ReturnType<typeof getAtlasGeometry>>, TError = void | ProblemDetails>(
+ params?: GetAtlasGeometryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get county display geometry
+ * @summary Get county map geometry
  */
 
-export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError = void | ProblemDetails>(
- params?: GeometryV1AtlasGeometryGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetAtlasGeometry<TData = Awaited<ReturnType<typeof getAtlasGeometry>>, TError = void | ProblemDetails>(
+ params?: GetAtlasGeometryParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasGeometry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGeometryV1AtlasGeometryGetQueryOptions(params,options)
+  const queryOptions = getGetAtlasGeometryQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3500,41 +3698,41 @@ export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof 
 
 
 
-export type scoresV1AtlasScoresGetResponse200 = {
+export type getAtlasScoresResponse200 = {
   data: ScoreCollection
   status: 200
 }
 
-export type scoresV1AtlasScoresGetResponse404 = {
+export type getAtlasScoresResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type scoresV1AtlasScoresGetResponse422 = {
+export type getAtlasScoresResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type scoresV1AtlasScoresGetResponse429 = {
+export type getAtlasScoresResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type scoresV1AtlasScoresGetResponse503 = {
+export type getAtlasScoresResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type scoresV1AtlasScoresGetResponseSuccess = (scoresV1AtlasScoresGetResponse200) & {
+export type getAtlasScoresResponseSuccess = (getAtlasScoresResponse200) & {
   headers: Headers;
 };
-export type scoresV1AtlasScoresGetResponseError = (scoresV1AtlasScoresGetResponse404 | scoresV1AtlasScoresGetResponse422 | scoresV1AtlasScoresGetResponse429 | scoresV1AtlasScoresGetResponse503) & {
+export type getAtlasScoresResponseError = (getAtlasScoresResponse404 | getAtlasScoresResponse422 | getAtlasScoresResponse429 | getAtlasScoresResponse503) & {
   headers: Headers;
 };
 
-export type scoresV1AtlasScoresGetResponse = (scoresV1AtlasScoresGetResponseSuccess | scoresV1AtlasScoresGetResponseError)
+export type getAtlasScoresResponse = (getAtlasScoresResponseSuccess | getAtlasScoresResponseError)
 
-export const getScoresV1AtlasScoresGetUrl = (params?: ScoresV1AtlasScoresGetParams,) => {
+export const getGetAtlasScoresUrl = (params?: GetAtlasScoresParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -3553,9 +3751,9 @@ export const getScoresV1AtlasScoresGetUrl = (params?: ScoresV1AtlasScoresGetPara
  * Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
  * @summary Get county gap scores
  */
-export const scoresV1AtlasScoresGet = async (params?: ScoresV1AtlasScoresGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<scoresV1AtlasScoresGetResponse> => {
+export const getAtlasScores = async (params?: GetAtlasScoresParams, options?: Parameters<typeof apiMutator>[1]): Promise<getAtlasScoresResponse> => {
 
-  return apiMutator<scoresV1AtlasScoresGetResponse>(getScoresV1AtlasScoresGetUrl(params),
+  return apiMutator<getAtlasScoresResponse>(getGetAtlasScoresUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3568,69 +3766,69 @@ export const scoresV1AtlasScoresGet = async (params?: ScoresV1AtlasScoresGetPara
 
 
 
-export const getScoresV1AtlasScoresGetQueryKey = (params?: ScoresV1AtlasScoresGetParams,) => {
+export const getGetAtlasScoresQueryKey = (params?: GetAtlasScoresParams,) => {
     return [
     `/v1/atlas/scores`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getScoresV1AtlasScoresGetQueryOptions = <TData = Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError = ProblemDetails>(params?: ScoresV1AtlasScoresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetAtlasScoresQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasScores>>, TError = ProblemDetails>(params?: GetAtlasScoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasScores>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getScoresV1AtlasScoresGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasScoresQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>> = ({ signal }) => scoresV1AtlasScoresGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasScores>>> = ({ signal }) => getAtlasScores(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasScores>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type ScoresV1AtlasScoresGetQueryResult = NonNullable<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>>
-export type ScoresV1AtlasScoresGetQueryError = ProblemDetails
+export type GetAtlasScoresQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasScores>>>
+export type GetAtlasScoresQueryError = ProblemDetails
 
 
-export function useScoresV1AtlasScoresGet<TData = Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError = ProblemDetails>(
- params: undefined |  ScoresV1AtlasScoresGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError, TData>> & Pick<
+export function useGetAtlasScores<TData = Awaited<ReturnType<typeof getAtlasScores>>, TError = ProblemDetails>(
+ params: undefined |  GetAtlasScoresParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasScores>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>,
+          Awaited<ReturnType<typeof getAtlasScores>>,
           TError,
-          Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>
+          Awaited<ReturnType<typeof getAtlasScores>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useScoresV1AtlasScoresGet<TData = Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError = ProblemDetails>(
- params?: ScoresV1AtlasScoresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError, TData>> & Pick<
+export function useGetAtlasScores<TData = Awaited<ReturnType<typeof getAtlasScores>>, TError = ProblemDetails>(
+ params?: GetAtlasScoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasScores>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>,
+          Awaited<ReturnType<typeof getAtlasScores>>,
           TError,
-          Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>
+          Awaited<ReturnType<typeof getAtlasScores>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useScoresV1AtlasScoresGet<TData = Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError = ProblemDetails>(
- params?: ScoresV1AtlasScoresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetAtlasScores<TData = Awaited<ReturnType<typeof getAtlasScores>>, TError = ProblemDetails>(
+ params?: GetAtlasScoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasScores>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Get county gap scores
  */
 
-export function useScoresV1AtlasScoresGet<TData = Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError = ProblemDetails>(
- params?: ScoresV1AtlasScoresGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof scoresV1AtlasScoresGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetAtlasScores<TData = Awaited<ReturnType<typeof getAtlasScores>>, TError = ProblemDetails>(
+ params?: GetAtlasScoresParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasScores>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getScoresV1AtlasScoresGetQueryOptions(params,options)
+  const queryOptions = getGetAtlasScoresQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3643,42 +3841,185 @@ export function useScoresV1AtlasScoresGet<TData = Awaited<ReturnType<typeof scor
 
 
 
-export type countyV1CountiesFipsGetResponse200 = {
-  data: CountyDetail
+export type getAtlasMapValuesResponse200 = {
+  data: MapValuesCollection
   status: 200
 }
 
-export type countyV1CountiesFipsGetResponse404 = {
+export type getAtlasMapValuesResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type countyV1CountiesFipsGetResponse422 = {
+export type getAtlasMapValuesResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type countyV1CountiesFipsGetResponse429 = {
+export type getAtlasMapValuesResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type countyV1CountiesFipsGetResponse503 = {
+export type getAtlasMapValuesResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type countyV1CountiesFipsGetResponseSuccess = (countyV1CountiesFipsGetResponse200) & {
+export type getAtlasMapValuesResponseSuccess = (getAtlasMapValuesResponse200) & {
   headers: Headers;
 };
-export type countyV1CountiesFipsGetResponseError = (countyV1CountiesFipsGetResponse404 | countyV1CountiesFipsGetResponse422 | countyV1CountiesFipsGetResponse429 | countyV1CountiesFipsGetResponse503) & {
+export type getAtlasMapValuesResponseError = (getAtlasMapValuesResponse404 | getAtlasMapValuesResponse422 | getAtlasMapValuesResponse429 | getAtlasMapValuesResponse503) & {
   headers: Headers;
 };
 
-export type countyV1CountiesFipsGetResponse = (countyV1CountiesFipsGetResponseSuccess | countyV1CountiesFipsGetResponseError)
+export type getAtlasMapValuesResponse = (getAtlasMapValuesResponseSuccess | getAtlasMapValuesResponseError)
 
-export const getCountyV1CountiesFipsGetUrl = (fips: string,
-    params?: CountyV1CountiesFipsGetParams,) => {
+export const getGetAtlasMapValuesUrl = (params?: GetAtlasMapValuesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/atlas/map-values?${stringifiedParams}` : `/v1/atlas/map-values`
+}
+
+/**
+ * Published incidence floor, social vulnerability percentile, uninsured percent, and rural-urban continuum code for every county in the current snapshot. Optional dataset_version selects an existing release. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+ * @summary Get map values by county
+ */
+export const getAtlasMapValues = async (params?: GetAtlasMapValuesParams, options?: Parameters<typeof apiMutator>[1]): Promise<getAtlasMapValuesResponse> => {
+
+  return apiMutator<getAtlasMapValuesResponse>(getGetAtlasMapValuesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAtlasMapValuesQueryKey = (params?: GetAtlasMapValuesParams,) => {
+    return [
+    `/v1/atlas/map-values`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAtlasMapValuesQueryOptions = <TData = Awaited<ReturnType<typeof getAtlasMapValues>>, TError = ProblemDetails>(params?: GetAtlasMapValuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMapValues>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAtlasMapValuesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAtlasMapValues>>> = ({ signal }) => getAtlasMapValues(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAtlasMapValues>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetAtlasMapValuesQueryResult = NonNullable<Awaited<ReturnType<typeof getAtlasMapValues>>>
+export type GetAtlasMapValuesQueryError = ProblemDetails
+
+
+export function useGetAtlasMapValues<TData = Awaited<ReturnType<typeof getAtlasMapValues>>, TError = ProblemDetails>(
+ params: undefined |  GetAtlasMapValuesParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMapValues>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAtlasMapValues>>,
+          TError,
+          Awaited<ReturnType<typeof getAtlasMapValues>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAtlasMapValues<TData = Awaited<ReturnType<typeof getAtlasMapValues>>, TError = ProblemDetails>(
+ params?: GetAtlasMapValuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMapValues>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAtlasMapValues>>,
+          TError,
+          Awaited<ReturnType<typeof getAtlasMapValues>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAtlasMapValues<TData = Awaited<ReturnType<typeof getAtlasMapValues>>, TError = ProblemDetails>(
+ params?: GetAtlasMapValuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMapValues>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get map values by county
+ */
+
+export function useGetAtlasMapValues<TData = Awaited<ReturnType<typeof getAtlasMapValues>>, TError = ProblemDetails>(
+ params?: GetAtlasMapValuesParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAtlasMapValues>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAtlasMapValuesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getCountyResponse200 = {
+  data: CountyDetail
+  status: 200
+}
+
+export type getCountyResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getCountyResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type getCountyResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type getCountyResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type getCountyResponseSuccess = (getCountyResponse200) & {
+  headers: Headers;
+};
+export type getCountyResponseError = (getCountyResponse404 | getCountyResponse422 | getCountyResponse429 | getCountyResponse503) & {
+  headers: Headers;
+};
+
+export type getCountyResponse = (getCountyResponseSuccess | getCountyResponseError)
+
+export const getGetCountyUrl = (fips: string,
+    params?: GetCountyParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -3695,12 +4036,12 @@ export const getCountyV1CountiesFipsGetUrl = (fips: string,
 
 /**
  * Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
- * @summary Get county analytics and provenance
+ * @summary Get county detail and provenance
  */
-export const countyV1CountiesFipsGet = async (fips: string,
-    params?: CountyV1CountiesFipsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<countyV1CountiesFipsGetResponse> => {
+export const getCounty = async (fips: string,
+    params?: GetCountyParams, options?: Parameters<typeof apiMutator>[1]): Promise<getCountyResponse> => {
 
-  return apiMutator<countyV1CountiesFipsGetResponse>(getCountyV1CountiesFipsGetUrl(fips,params),
+  return apiMutator<getCountyResponse>(getGetCountyUrl(fips,params),
   {
     ...options,
     method: 'GET'
@@ -3713,75 +4054,75 @@ export const countyV1CountiesFipsGet = async (fips: string,
 
 
 
-export const getCountyV1CountiesFipsGetQueryKey = (fips: string,
-    params?: CountyV1CountiesFipsGetParams,) => {
+export const getGetCountyQueryKey = (fips: string,
+    params?: GetCountyParams,) => {
     return [
     `/v1/counties/${fips}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCountyV1CountiesFipsGetQueryOptions = <TData = Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError = ProblemDetails>(fips: string,
-    params?: CountyV1CountiesFipsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetCountyQueryOptions = <TData = Awaited<ReturnType<typeof getCounty>>, TError = ProblemDetails>(fips: string,
+    params?: GetCountyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCounty>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCountyV1CountiesFipsGetQueryKey(fips,params);
+  const queryKey =  queryOptions?.queryKey ?? getGetCountyQueryKey(fips,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>> = ({ signal }) => countyV1CountiesFipsGet(fips,params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCounty>>> = ({ signal }) => getCounty(fips,params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCounty>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CountyV1CountiesFipsGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>>
-export type CountyV1CountiesFipsGetQueryError = ProblemDetails
+export type GetCountyQueryResult = NonNullable<Awaited<ReturnType<typeof getCounty>>>
+export type GetCountyQueryError = ProblemDetails
 
 
-export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError = ProblemDetails>(
+export function useGetCounty<TData = Awaited<ReturnType<typeof getCounty>>, TError = ProblemDetails>(
  fips: string,
-    params: undefined |  CountyV1CountiesFipsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError, TData>> & Pick<
+    params: undefined |  GetCountyParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCounty>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyV1CountiesFipsGet>>,
+          Awaited<ReturnType<typeof getCounty>>,
           TError,
-          Awaited<ReturnType<typeof countyV1CountiesFipsGet>>
+          Awaited<ReturnType<typeof getCounty>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError = ProblemDetails>(
+export function useGetCounty<TData = Awaited<ReturnType<typeof getCounty>>, TError = ProblemDetails>(
  fips: string,
-    params?: CountyV1CountiesFipsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError, TData>> & Pick<
+    params?: GetCountyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCounty>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyV1CountiesFipsGet>>,
+          Awaited<ReturnType<typeof getCounty>>,
           TError,
-          Awaited<ReturnType<typeof countyV1CountiesFipsGet>>
+          Awaited<ReturnType<typeof getCounty>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError = ProblemDetails>(
+export function useGetCounty<TData = Awaited<ReturnType<typeof getCounty>>, TError = ProblemDetails>(
  fips: string,
-    params?: CountyV1CountiesFipsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: GetCountyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCounty>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get county analytics and provenance
+ * @summary Get county detail and provenance
  */
 
-export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError = ProblemDetails>(
+export function useGetCounty<TData = Awaited<ReturnType<typeof getCounty>>, TError = ProblemDetails>(
  fips: string,
-    params?: CountyV1CountiesFipsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: GetCountyParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCounty>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCountyV1CountiesFipsGetQueryOptions(fips,params,options)
+  const queryOptions = getGetCountyQueryOptions(fips,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3794,41 +4135,41 @@ export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof cou
 
 
 
-export type countySurveillanceSituationsGetResponse200 = {
+export type getCountySurveillanceSituationsResponse200 = {
   data: CountySurveillanceSituations
   status: 200
 }
 
-export type countySurveillanceSituationsGetResponse404 = {
+export type getCountySurveillanceSituationsResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type countySurveillanceSituationsGetResponse422 = {
+export type getCountySurveillanceSituationsResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type countySurveillanceSituationsGetResponse429 = {
+export type getCountySurveillanceSituationsResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type countySurveillanceSituationsGetResponse503 = {
+export type getCountySurveillanceSituationsResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type countySurveillanceSituationsGetResponseSuccess = (countySurveillanceSituationsGetResponse200) & {
+export type getCountySurveillanceSituationsResponseSuccess = (getCountySurveillanceSituationsResponse200) & {
   headers: Headers;
 };
-export type countySurveillanceSituationsGetResponseError = (countySurveillanceSituationsGetResponse404 | countySurveillanceSituationsGetResponse422 | countySurveillanceSituationsGetResponse429 | countySurveillanceSituationsGetResponse503) & {
+export type getCountySurveillanceSituationsResponseError = (getCountySurveillanceSituationsResponse404 | getCountySurveillanceSituationsResponse422 | getCountySurveillanceSituationsResponse429 | getCountySurveillanceSituationsResponse503) & {
   headers: Headers;
 };
 
-export type countySurveillanceSituationsGetResponse = (countySurveillanceSituationsGetResponseSuccess | countySurveillanceSituationsGetResponseError)
+export type getCountySurveillanceSituationsResponse = (getCountySurveillanceSituationsResponseSuccess | getCountySurveillanceSituationsResponseError)
 
-export const getCountySurveillanceSituationsGetUrl = (fips: string,) => {
+export const getGetCountySurveillanceSituationsUrl = (fips: string,) => {
 
 
 
@@ -3837,12 +4178,27 @@ export const getCountySurveillanceSituationsGetUrl = (fips: string,) => {
 }
 
 /**
- * Primary four_state includes human surveillance; secondary tick_pathogen excludes it. Returns reviewed labels, four membership probabilities per model (0-1, sum 1 within 1e-6), immutable model/batch lineage, source vintages and interpretation limits. Unknown is an available class; No records does not establish absence. Membership is not disease risk, incidence, pathogen presence, causation or Tier 1 priority. HTTP 200 can contain typed UNAVAILABLE variants with null data, including an incompatible release. Unknown county 404; malformed FIPS 422; dependency, malformed persisted data or changing release 503. Cache-Control: no-store; no fallback or inference.
- * @summary Get both persisted county surveillance-situation classifications
+ * Get both surveillance-situation classifications for one county: the primary `four_state` model, which includes human surveillance, and the secondary `tick_pathogen` model, which excludes it.
+ *
+ * ### What you get back
+ * - Reviewed labels and four membership probabilities per model. Each is between 0 and 1, and they sum to 1 within 1e-6.
+ * - Model and batch lineage, source vintages, and interpretation limits.
+ * - `Unknown` is an available class. `No records` does not establish absence.
+ * - Membership is not disease risk, incidence, pathogen presence, causation, or Tier 1 priority.
+ *
+ * A model variant can return HTTP 200 with `UNAVAILABLE` and `null` data, including when the release is incompatible. The API does not infer or fall back to another result. The response must not be cached.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county is unknown. |
+ * | `422` | The FIPS code is malformed. |
+ * | `503` | A dependency failed, stored data is malformed, or the release changed during the request. Retry later. |
+ * @summary Get county surveillance situations
  */
-export const countySurveillanceSituationsGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countySurveillanceSituationsGetResponse> => {
+export const getCountySurveillanceSituations = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<getCountySurveillanceSituationsResponse> => {
 
-  return apiMutator<countySurveillanceSituationsGetResponse>(getCountySurveillanceSituationsGetUrl(fips),
+  return apiMutator<getCountySurveillanceSituationsResponse>(getGetCountySurveillanceSituationsUrl(fips),
   {
     ...options,
     method: 'GET'
@@ -3855,69 +4211,69 @@ export const countySurveillanceSituationsGet = async (fips: string, options?: Pa
 
 
 
-export const getCountySurveillanceSituationsGetQueryKey = (fips: string,) => {
+export const getGetCountySurveillanceSituationsQueryKey = (fips: string,) => {
     return [
     `/v1/counties/${fips}/surveillance-situations`
     ] as const;
     }
 
 
-export const getCountySurveillanceSituationsGetQueryOptions = <TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetCountySurveillanceSituationsQueryOptions = <TData = Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCountySurveillanceSituationsGetQueryKey(fips);
+  const queryKey =  queryOptions?.queryKey ?? getGetCountySurveillanceSituationsQueryKey(fips);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>> = ({ signal }) => countySurveillanceSituationsGet(fips, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCountySurveillanceSituations>>> = ({ signal }) => getCountySurveillanceSituations(fips, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CountySurveillanceSituationsGetQueryResult = NonNullable<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>>
-export type CountySurveillanceSituationsGetQueryError = ProblemDetails
+export type GetCountySurveillanceSituationsQueryResult = NonNullable<Awaited<ReturnType<typeof getCountySurveillanceSituations>>>
+export type GetCountySurveillanceSituationsQueryError = ProblemDetails
 
 
-export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
- fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>> & Pick<
+export function useGetCountySurveillanceSituations<TData = Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>,
+          Awaited<ReturnType<typeof getCountySurveillanceSituations>>,
           TError,
-          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>
+          Awaited<ReturnType<typeof getCountySurveillanceSituations>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>> & Pick<
+export function useGetCountySurveillanceSituations<TData = Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>,
+          Awaited<ReturnType<typeof getCountySurveillanceSituations>>,
           TError,
-          Awaited<ReturnType<typeof countySurveillanceSituationsGet>>
+          Awaited<ReturnType<typeof getCountySurveillanceSituations>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetCountySurveillanceSituations<TData = Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get both persisted county surveillance-situation classifications
+ * @summary Get county surveillance situations
  */
 
-export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetCountySurveillanceSituations<TData = Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountySurveillanceSituations>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCountySurveillanceSituationsGetQueryOptions(fips,options)
+  const queryOptions = getGetCountySurveillanceSituationsQueryOptions(fips,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3930,41 +4286,41 @@ export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<ty
 
 
 
-export type countyTier1SurveillancePriorityGetResponse200 = {
+export type getCountyTier1PriorityResponse200 = {
   data: Tier1CountyPriority
   status: 200
 }
 
-export type countyTier1SurveillancePriorityGetResponse404 = {
+export type getCountyTier1PriorityResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type countyTier1SurveillancePriorityGetResponse422 = {
+export type getCountyTier1PriorityResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type countyTier1SurveillancePriorityGetResponse429 = {
+export type getCountyTier1PriorityResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type countyTier1SurveillancePriorityGetResponse503 = {
+export type getCountyTier1PriorityResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type countyTier1SurveillancePriorityGetResponseSuccess = (countyTier1SurveillancePriorityGetResponse200) & {
+export type getCountyTier1PriorityResponseSuccess = (getCountyTier1PriorityResponse200) & {
   headers: Headers;
 };
-export type countyTier1SurveillancePriorityGetResponseError = (countyTier1SurveillancePriorityGetResponse404 | countyTier1SurveillancePriorityGetResponse422 | countyTier1SurveillancePriorityGetResponse429 | countyTier1SurveillancePriorityGetResponse503) & {
+export type getCountyTier1PriorityResponseError = (getCountyTier1PriorityResponse404 | getCountyTier1PriorityResponse422 | getCountyTier1PriorityResponse429 | getCountyTier1PriorityResponse503) & {
   headers: Headers;
 };
 
-export type countyTier1SurveillancePriorityGetResponse = (countyTier1SurveillancePriorityGetResponseSuccess | countyTier1SurveillancePriorityGetResponseError)
+export type getCountyTier1PriorityResponse = (getCountyTier1PriorityResponseSuccess | getCountyTier1PriorityResponseError)
 
-export const getCountyTier1SurveillancePriorityGetUrl = (fips: string,) => {
+export const getGetCountyTier1PriorityUrl = (fips: string,) => {
 
 
 
@@ -3973,12 +4329,26 @@ export const getCountyTier1SurveillancePriorityGetUrl = (fips: string,) => {
 }
 
 /**
- * Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
- * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ * Get the approved Tier 1 surveillance review priority for one county from the current batch.
+ *
+ * ### How to read it
+ * - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis.
+ * - LOW is a scored tier. Evidence sufficiency is separate.
+ * - Percentile is relative to the scored batch and population.
+ * - `generated_at_utc` is the model batch time, not the request time.
+ *
+ * Responses can be cached for 60 seconds.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county has no published result. |
+ * | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
+ * @summary Get county surveillance review priority
  */
-export const countyTier1SurveillancePriorityGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countyTier1SurveillancePriorityGetResponse> => {
+export const getCountyTier1Priority = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<getCountyTier1PriorityResponse> => {
 
-  return apiMutator<countyTier1SurveillancePriorityGetResponse>(getCountyTier1SurveillancePriorityGetUrl(fips),
+  return apiMutator<getCountyTier1PriorityResponse>(getGetCountyTier1PriorityUrl(fips),
   {
     ...options,
     method: 'GET'
@@ -3991,69 +4361,69 @@ export const countyTier1SurveillancePriorityGet = async (fips: string, options?:
 
 
 
-export const getCountyTier1SurveillancePriorityGetQueryKey = (fips: string,) => {
+export const getGetCountyTier1PriorityQueryKey = (fips: string,) => {
     return [
     `/v1/counties/${fips}/tier1-surveillance-priority`
     ] as const;
     }
 
 
-export const getCountyTier1SurveillancePriorityGetQueryOptions = <TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getGetCountyTier1PriorityQueryOptions = <TData = Awaited<ReturnType<typeof getCountyTier1Priority>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountyTier1Priority>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCountyTier1SurveillancePriorityGetQueryKey(fips);
+  const queryKey =  queryOptions?.queryKey ?? getGetCountyTier1PriorityQueryKey(fips);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>> = ({ signal }) => countyTier1SurveillancePriorityGet(fips, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCountyTier1Priority>>> = ({ signal }) => getCountyTier1Priority(fips, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCountyTier1Priority>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CountyTier1SurveillancePriorityGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>>
-export type CountyTier1SurveillancePriorityGetQueryError = ProblemDetails
+export type GetCountyTier1PriorityQueryResult = NonNullable<Awaited<ReturnType<typeof getCountyTier1Priority>>>
+export type GetCountyTier1PriorityQueryError = ProblemDetails
 
 
-export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
- fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>> & Pick<
+export function useGetCountyTier1Priority<TData = Awaited<ReturnType<typeof getCountyTier1Priority>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountyTier1Priority>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>,
+          Awaited<ReturnType<typeof getCountyTier1Priority>>,
           TError,
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>
+          Awaited<ReturnType<typeof getCountyTier1Priority>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>> & Pick<
+export function useGetCountyTier1Priority<TData = Awaited<ReturnType<typeof getCountyTier1Priority>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountyTier1Priority>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>,
+          Awaited<ReturnType<typeof getCountyTier1Priority>>,
           TError,
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>
+          Awaited<ReturnType<typeof getCountyTier1Priority>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetCountyTier1Priority<TData = Awaited<ReturnType<typeof getCountyTier1Priority>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountyTier1Priority>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ * @summary Get county surveillance review priority
  */
 
-export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useGetCountyTier1Priority<TData = Awaited<ReturnType<typeof getCountyTier1Priority>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCountyTier1Priority>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCountyTier1SurveillancePriorityGetQueryOptions(fips,options)
+  const queryOptions = getGetCountyTier1PriorityQueryOptions(fips,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -4066,41 +4436,41 @@ export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType
 
 
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponse200 = {
+export type checkCountyTier1AvailabilityResponse200 = {
   data: Tier1CountyPriorityAvailability
   status: 200
 }
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponse404 = {
+export type checkCountyTier1AvailabilityResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponse422 = {
+export type checkCountyTier1AvailabilityResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponse429 = {
+export type checkCountyTier1AvailabilityResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponse503 = {
+export type checkCountyTier1AvailabilityResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponseSuccess = (countyTier1SurveillancePriorityAvailabilityGetResponse200) & {
+export type checkCountyTier1AvailabilityResponseSuccess = (checkCountyTier1AvailabilityResponse200) & {
   headers: Headers;
 };
-export type countyTier1SurveillancePriorityAvailabilityGetResponseError = (countyTier1SurveillancePriorityAvailabilityGetResponse404 | countyTier1SurveillancePriorityAvailabilityGetResponse422 | countyTier1SurveillancePriorityAvailabilityGetResponse429 | countyTier1SurveillancePriorityAvailabilityGetResponse503) & {
+export type checkCountyTier1AvailabilityResponseError = (checkCountyTier1AvailabilityResponse404 | checkCountyTier1AvailabilityResponse422 | checkCountyTier1AvailabilityResponse429 | checkCountyTier1AvailabilityResponse503) & {
   headers: Headers;
 };
 
-export type countyTier1SurveillancePriorityAvailabilityGetResponse = (countyTier1SurveillancePriorityAvailabilityGetResponseSuccess | countyTier1SurveillancePriorityAvailabilityGetResponseError)
+export type checkCountyTier1AvailabilityResponse = (checkCountyTier1AvailabilityResponseSuccess | checkCountyTier1AvailabilityResponseError)
 
-export const getCountyTier1SurveillancePriorityAvailabilityGetUrl = (fips: string,) => {
+export const getCheckCountyTier1AvailabilityUrl = (fips: string,) => {
 
 
 
@@ -4109,12 +4479,26 @@ export const getCountyTier1SurveillancePriorityAvailabilityGetUrl = (fips: strin
 }
 
 /**
- * Additive availability contract for current supported county geographies. A successful lookup returns AVAILABLE with the exact persisted result, or UNAVAILABLE with reason NO_PUBLISHED_MODEL and null data after the current geography release and Tier 1 projection have both been read successfully. geography_release_id identifies the release used to validate the FIPS. This endpoint does not turn null into zero or synthesize model output. NOT_ESTIMABLE is a persisted result state and is distinct from no published model result. Malformed FIPS returns 422; an identity outside the current geography release returns typed 404; dependency or malformed-data failures return 503. Public cache TTL 60 seconds.
- * @summary Get Tier 1 result availability and persisted data
+ * Check whether a county has a published Tier 1 result, and get it when it does.
+ *
+ * ### What you get back
+ * - `AVAILABLE` with the published result in `data`.
+ * - `UNAVAILABLE` with `reason` `NO_PUBLISHED_MODEL` and `data` set to `null`.
+ * - `geography_release_id` names the release used to validate the FIPS code.
+ *
+ * `NOT_ESTIMABLE` is a published result state. It is different from no published model result. The API never turns `null` into zero or creates model output. Responses can be cached for 60 seconds.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county is outside the current geography release. |
+ * | `422` | The FIPS code is malformed. |
+ * | `503` | A dependency failed or stored data is malformed. Retry later. |
+ * @summary Check surveillance priority availability
  */
-export const countyTier1SurveillancePriorityAvailabilityGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countyTier1SurveillancePriorityAvailabilityGetResponse> => {
+export const checkCountyTier1Availability = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<checkCountyTier1AvailabilityResponse> => {
 
-  return apiMutator<countyTier1SurveillancePriorityAvailabilityGetResponse>(getCountyTier1SurveillancePriorityAvailabilityGetUrl(fips),
+  return apiMutator<checkCountyTier1AvailabilityResponse>(getCheckCountyTier1AvailabilityUrl(fips),
   {
     ...options,
     method: 'GET'
@@ -4127,69 +4511,69 @@ export const countyTier1SurveillancePriorityAvailabilityGet = async (fips: strin
 
 
 
-export const getCountyTier1SurveillancePriorityAvailabilityGetQueryKey = (fips: string,) => {
+export const getCheckCountyTier1AvailabilityQueryKey = (fips: string,) => {
     return [
     `/v1/counties/${fips}/tier1-surveillance-priority/availability`
     ] as const;
     }
 
 
-export const getCountyTier1SurveillancePriorityAvailabilityGetQueryOptions = <TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getCheckCountyTier1AvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError = ProblemDetails>(fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCountyTier1SurveillancePriorityAvailabilityGetQueryKey(fips);
+  const queryKey =  queryOptions?.queryKey ?? getCheckCountyTier1AvailabilityQueryKey(fips);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>> = ({ signal }) => countyTier1SurveillancePriorityAvailabilityGet(fips, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof checkCountyTier1Availability>>> = ({ signal }) => checkCountyTier1Availability(fips, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CountyTier1SurveillancePriorityAvailabilityGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>>
-export type CountyTier1SurveillancePriorityAvailabilityGetQueryError = ProblemDetails
+export type CheckCountyTier1AvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof checkCountyTier1Availability>>>
+export type CheckCountyTier1AvailabilityQueryError = ProblemDetails
 
 
-export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
- fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>> & Pick<
+export function useCheckCountyTier1Availability<TData = Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError = ProblemDetails>(
+ fips: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>,
+          Awaited<ReturnType<typeof checkCountyTier1Availability>>,
           TError,
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>
+          Awaited<ReturnType<typeof checkCountyTier1Availability>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>> & Pick<
+export function useCheckCountyTier1Availability<TData = Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>,
+          Awaited<ReturnType<typeof checkCountyTier1Availability>>,
           TError,
-          Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>
+          Awaited<ReturnType<typeof checkCountyTier1Availability>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useCheckCountyTier1Availability<TData = Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get Tier 1 result availability and persisted data
+ * @summary Check surveillance priority availability
  */
 
-export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
- fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useCheckCountyTier1Availability<TData = Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError = ProblemDetails>(
+ fips: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof checkCountyTier1Availability>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCountyTier1SurveillancePriorityAvailabilityGetQueryOptions(fips,options)
+  const queryOptions = getCheckCountyTier1AvailabilityQueryOptions(fips,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -4202,57 +4586,57 @@ export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaite
 
 
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse200 = {
+export type downloadCountyReportResponse200 = {
   data: Blob
   status: 200
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse304 = {
+export type downloadCountyReportResponse304 = {
   data: void
   status: 304
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse400 = {
+export type downloadCountyReportResponse400 = {
   data: ProblemDetails
   status: 400
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse404 = {
+export type downloadCountyReportResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse413 = {
+export type downloadCountyReportResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse422 = {
+export type downloadCountyReportResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse429 = {
+export type downloadCountyReportResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse503 = {
+export type downloadCountyReportResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponseSuccess = (countyReportPdfV1CountiesFipsReportPdfGetResponse200) & {
+export type downloadCountyReportResponseSuccess = (downloadCountyReportResponse200) & {
   headers: Headers;
 };
-export type countyReportPdfV1CountiesFipsReportPdfGetResponseError = (countyReportPdfV1CountiesFipsReportPdfGetResponse304 | countyReportPdfV1CountiesFipsReportPdfGetResponse400 | countyReportPdfV1CountiesFipsReportPdfGetResponse404 | countyReportPdfV1CountiesFipsReportPdfGetResponse413 | countyReportPdfV1CountiesFipsReportPdfGetResponse422 | countyReportPdfV1CountiesFipsReportPdfGetResponse429 | countyReportPdfV1CountiesFipsReportPdfGetResponse503) & {
+export type downloadCountyReportResponseError = (downloadCountyReportResponse304 | downloadCountyReportResponse400 | downloadCountyReportResponse404 | downloadCountyReportResponse413 | downloadCountyReportResponse422 | downloadCountyReportResponse429 | downloadCountyReportResponse503) & {
   headers: Headers;
 };
 
-export type countyReportPdfV1CountiesFipsReportPdfGetResponse = (countyReportPdfV1CountiesFipsReportPdfGetResponseSuccess | countyReportPdfV1CountiesFipsReportPdfGetResponseError)
+export type downloadCountyReportResponse = (downloadCountyReportResponseSuccess | downloadCountyReportResponseError)
 
-export const getCountyReportPdfV1CountiesFipsReportPdfGetUrl = (fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams,) => {
+export const getDownloadCountyReportUrl = (fips: string,
+    params?: DownloadCountyReportParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -4268,13 +4652,37 @@ export const getCountyReportPdfV1CountiesFipsReportPdfGetUrl = (fips: string,
 }
 
 /**
- * PDF attachment. The default template is county-v3, the two-page County Data Brief for the published gap score and Explorer follow-up. county-v3 ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. Explicit county-v1 remains the immutable legacy county report and still binds score settings. Optional dataset_version selects a release. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. county-v1 and county-v3 reject observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; published briefs use public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+ * Download a PDF report for one county.
+ *
+ * ### Templates
+ * | `template` | What it returns |
+ * | --- | --- |
+ * | `county-v3` (default) | The two-page County Data Brief for the published gap score and Explorer follow-up. It ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. |
+ * | `county-v1` | The immutable earlier county report. It still binds score settings. |
+ * | `county-v2` | An opt-in report for selected observations. It reads canonical evidence, lineage, value states, and limitations. |
+ *
+ * ### Key parameters
+ * | Parameter | What to send |
+ * | --- | --- |
+ * | `dataset_version` | Optional release to report on. `county-v2` requires it. |
+ * | `period_start`, `period_end`, `measure_id` | `county-v2` only. Send both dates and 1 to 20 measure IDs, repeated or comma-separated. `county-v1` and `county-v3` reject them with 422. |
+ *
+ * ### Caching
+ * `ETag` and `If-None-Match` support 304. Published briefs can be cached for 300 seconds with revalidation. `county-v2` responses must not be cached, and the API revalidates authoritative context before it answers 304.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | A `county-v2` observation is unknown. |
+ * | `413` | The report exceeds the resource limits. Narrow the selection. |
+ * | `422` | The template is unknown, or observation selectors were sent to `county-v1` or `county-v3`. |
+ * | `503` | `county-v2` provenance is missing or mismatched, or the renderer failed or timed out. Retry later. |
  * @summary Download a county report
  */
-export const countyReportPdfV1CountiesFipsReportPdfGet = async (fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<countyReportPdfV1CountiesFipsReportPdfGetResponse> => {
+export const downloadCountyReport = async (fips: string,
+    params?: DownloadCountyReportParams, options?: Parameters<typeof apiMutator>[1]): Promise<downloadCountyReportResponse> => {
 
-  return apiMutator<countyReportPdfV1CountiesFipsReportPdfGetResponse>(getCountyReportPdfV1CountiesFipsReportPdfGetUrl(fips,params),
+  return apiMutator<downloadCountyReportResponse>(getDownloadCountyReportUrl(fips,params),
   {
     ...options,
     method: 'GET'
@@ -4287,75 +4695,75 @@ export const countyReportPdfV1CountiesFipsReportPdfGet = async (fips: string,
 
 
 
-export const getCountyReportPdfV1CountiesFipsReportPdfGetQueryKey = (fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams,) => {
+export const getDownloadCountyReportQueryKey = (fips: string,
+    params?: DownloadCountyReportParams,) => {
     return [
     `/v1/counties/${fips}/report.pdf`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCountyReportPdfV1CountiesFipsReportPdfGetQueryOptions = <TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = void | ProblemDetails>(fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getDownloadCountyReportQueryOptions = <TData = Awaited<ReturnType<typeof downloadCountyReport>>, TError = void | ProblemDetails>(fips: string,
+    params?: DownloadCountyReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCountyReport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCountyReportPdfV1CountiesFipsReportPdfGetQueryKey(fips,params);
+  const queryKey =  queryOptions?.queryKey ?? getDownloadCountyReportQueryKey(fips,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>> = ({ signal }) => countyReportPdfV1CountiesFipsReportPdfGet(fips,params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCountyReport>>> = ({ signal }) => downloadCountyReport(fips,params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: fips !== null && fips !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadCountyReport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type CountyReportPdfV1CountiesFipsReportPdfGetQueryResult = NonNullable<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>>
-export type CountyReportPdfV1CountiesFipsReportPdfGetQueryError = void | ProblemDetails
+export type DownloadCountyReportQueryResult = NonNullable<Awaited<ReturnType<typeof downloadCountyReport>>>
+export type DownloadCountyReportQueryError = void | ProblemDetails
 
 
-export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadCountyReport<TData = Awaited<ReturnType<typeof downloadCountyReport>>, TError = void | ProblemDetails>(
  fips: string,
-    params: undefined |  CountyReportPdfV1CountiesFipsReportPdfGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>> & Pick<
+    params: undefined |  DownloadCountyReportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCountyReport>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>,
+          Awaited<ReturnType<typeof downloadCountyReport>>,
           TError,
-          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>
+          Awaited<ReturnType<typeof downloadCountyReport>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadCountyReport<TData = Awaited<ReturnType<typeof downloadCountyReport>>, TError = void | ProblemDetails>(
  fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>> & Pick<
+    params?: DownloadCountyReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCountyReport>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>,
+          Awaited<ReturnType<typeof downloadCountyReport>>,
           TError,
-          Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>
+          Awaited<ReturnType<typeof downloadCountyReport>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadCountyReport<TData = Awaited<ReturnType<typeof downloadCountyReport>>, TError = void | ProblemDetails>(
  fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: DownloadCountyReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCountyReport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Download a county report
  */
 
-export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadCountyReport<TData = Awaited<ReturnType<typeof downloadCountyReport>>, TError = void | ProblemDetails>(
  fips: string,
-    params?: CountyReportPdfV1CountiesFipsReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof countyReportPdfV1CountiesFipsReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: DownloadCountyReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCountyReport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCountyReportPdfV1CountiesFipsReportPdfGetQueryOptions(fips,params,options)
+  const queryOptions = getDownloadCountyReportQueryOptions(fips,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -4368,52 +4776,52 @@ export function useCountyReportPdfV1CountiesFipsReportPdfGet<TData = Awaited<Ret
 
 
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse200 = {
+export type downloadStateReportResponse200 = {
   data: Blob
   status: 200
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse304 = {
+export type downloadStateReportResponse304 = {
   data: void
   status: 304
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse404 = {
+export type downloadStateReportResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse413 = {
+export type downloadStateReportResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse422 = {
+export type downloadStateReportResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse429 = {
+export type downloadStateReportResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse503 = {
+export type downloadStateReportResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type stateReportPdfV1StatesStateReportPdfGetResponseSuccess = (stateReportPdfV1StatesStateReportPdfGetResponse200) & {
+export type downloadStateReportResponseSuccess = (downloadStateReportResponse200) & {
   headers: Headers;
 };
-export type stateReportPdfV1StatesStateReportPdfGetResponseError = (stateReportPdfV1StatesStateReportPdfGetResponse304 | stateReportPdfV1StatesStateReportPdfGetResponse404 | stateReportPdfV1StatesStateReportPdfGetResponse413 | stateReportPdfV1StatesStateReportPdfGetResponse422 | stateReportPdfV1StatesStateReportPdfGetResponse429 | stateReportPdfV1StatesStateReportPdfGetResponse503) & {
+export type downloadStateReportResponseError = (downloadStateReportResponse304 | downloadStateReportResponse404 | downloadStateReportResponse413 | downloadStateReportResponse422 | downloadStateReportResponse429 | downloadStateReportResponse503) & {
   headers: Headers;
 };
 
-export type stateReportPdfV1StatesStateReportPdfGetResponse = (stateReportPdfV1StatesStateReportPdfGetResponseSuccess | stateReportPdfV1StatesStateReportPdfGetResponseError)
+export type downloadStateReportResponse = (downloadStateReportResponseSuccess | downloadStateReportResponseError)
 
-export const getStateReportPdfV1StatesStateReportPdfGetUrl = (state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams,) => {
+export const getDownloadStateReportUrl = (state: string,
+    params?: DownloadStateReportParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -4432,10 +4840,10 @@ export const getStateReportPdfV1StatesStateReportPdfGetUrl = (state: string,
  * PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
  * @summary Download a state report
  */
-export const stateReportPdfV1StatesStateReportPdfGet = async (state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<stateReportPdfV1StatesStateReportPdfGetResponse> => {
+export const downloadStateReport = async (state: string,
+    params?: DownloadStateReportParams, options?: Parameters<typeof apiMutator>[1]): Promise<downloadStateReportResponse> => {
 
-  return apiMutator<stateReportPdfV1StatesStateReportPdfGetResponse>(getStateReportPdfV1StatesStateReportPdfGetUrl(state,params),
+  return apiMutator<downloadStateReportResponse>(getDownloadStateReportUrl(state,params),
   {
     ...options,
     method: 'GET'
@@ -4448,75 +4856,75 @@ export const stateReportPdfV1StatesStateReportPdfGet = async (state: string,
 
 
 
-export const getStateReportPdfV1StatesStateReportPdfGetQueryKey = (state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams,) => {
+export const getDownloadStateReportQueryKey = (state: string,
+    params?: DownloadStateReportParams,) => {
     return [
     `/v1/states/${state}/report.pdf`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getStateReportPdfV1StatesStateReportPdfGetQueryOptions = <TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = void | ProblemDetails>(state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getDownloadStateReportQueryOptions = <TData = Awaited<ReturnType<typeof downloadStateReport>>, TError = void | ProblemDetails>(state: string,
+    params?: DownloadStateReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadStateReport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getStateReportPdfV1StatesStateReportPdfGetQueryKey(state,params);
+  const queryKey =  queryOptions?.queryKey ?? getDownloadStateReportQueryKey(state,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>> = ({ signal }) => stateReportPdfV1StatesStateReportPdfGet(state,params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadStateReport>>> = ({ signal }) => downloadStateReport(state,params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: state !== null && state !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: state !== null && state !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadStateReport>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type StateReportPdfV1StatesStateReportPdfGetQueryResult = NonNullable<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>>
-export type StateReportPdfV1StatesStateReportPdfGetQueryError = void | ProblemDetails
+export type DownloadStateReportQueryResult = NonNullable<Awaited<ReturnType<typeof downloadStateReport>>>
+export type DownloadStateReportQueryError = void | ProblemDetails
 
 
-export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadStateReport<TData = Awaited<ReturnType<typeof downloadStateReport>>, TError = void | ProblemDetails>(
  state: string,
-    params: undefined |  StateReportPdfV1StatesStateReportPdfGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>> & Pick<
+    params: undefined |  DownloadStateReportParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadStateReport>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>,
+          Awaited<ReturnType<typeof downloadStateReport>>,
           TError,
-          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>
+          Awaited<ReturnType<typeof downloadStateReport>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadStateReport<TData = Awaited<ReturnType<typeof downloadStateReport>>, TError = void | ProblemDetails>(
  state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>> & Pick<
+    params?: DownloadStateReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadStateReport>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>,
+          Awaited<ReturnType<typeof downloadStateReport>>,
           TError,
-          Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>
+          Awaited<ReturnType<typeof downloadStateReport>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadStateReport<TData = Awaited<ReturnType<typeof downloadStateReport>>, TError = void | ProblemDetails>(
  state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: DownloadStateReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadStateReport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Download a state report
  */
 
-export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError = void | ProblemDetails>(
+export function useDownloadStateReport<TData = Awaited<ReturnType<typeof downloadStateReport>>, TError = void | ProblemDetails>(
  state: string,
-    params?: StateReportPdfV1StatesStateReportPdfGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof stateReportPdfV1StatesStateReportPdfGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+    params?: DownloadStateReportParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadStateReport>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getStateReportPdfV1StatesStateReportPdfGetQueryOptions(state,params,options)
+  const queryOptions = getDownloadStateReportQueryOptions(state,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -4529,41 +4937,41 @@ export function useStateReportPdfV1StatesStateReportPdfGet<TData = Awaited<Retur
 
 
 
-export type rankingCsvV1AtlasRankingCsvGetResponse200 = {
+export type downloadAtlasRankingResponse200 = {
   data: string
   status: 200
 }
 
-export type rankingCsvV1AtlasRankingCsvGetResponse404 = {
+export type downloadAtlasRankingResponse404 = {
   data: ProblemDetails
   status: 404
 }
 
-export type rankingCsvV1AtlasRankingCsvGetResponse422 = {
+export type downloadAtlasRankingResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type rankingCsvV1AtlasRankingCsvGetResponse429 = {
+export type downloadAtlasRankingResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type rankingCsvV1AtlasRankingCsvGetResponse503 = {
+export type downloadAtlasRankingResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type rankingCsvV1AtlasRankingCsvGetResponseSuccess = (rankingCsvV1AtlasRankingCsvGetResponse200) & {
+export type downloadAtlasRankingResponseSuccess = (downloadAtlasRankingResponse200) & {
   headers: Headers;
 };
-export type rankingCsvV1AtlasRankingCsvGetResponseError = (rankingCsvV1AtlasRankingCsvGetResponse404 | rankingCsvV1AtlasRankingCsvGetResponse422 | rankingCsvV1AtlasRankingCsvGetResponse429 | rankingCsvV1AtlasRankingCsvGetResponse503) & {
+export type downloadAtlasRankingResponseError = (downloadAtlasRankingResponse404 | downloadAtlasRankingResponse422 | downloadAtlasRankingResponse429 | downloadAtlasRankingResponse503) & {
   headers: Headers;
 };
 
-export type rankingCsvV1AtlasRankingCsvGetResponse = (rankingCsvV1AtlasRankingCsvGetResponseSuccess | rankingCsvV1AtlasRankingCsvGetResponseError)
+export type downloadAtlasRankingResponse = (downloadAtlasRankingResponseSuccess | downloadAtlasRankingResponseError)
 
-export const getRankingCsvV1AtlasRankingCsvGetUrl = (params?: RankingCsvV1AtlasRankingCsvGetParams,) => {
+export const getDownloadAtlasRankingUrl = (params?: DownloadAtlasRankingParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -4580,11 +4988,11 @@ export const getRankingCsvV1AtlasRankingCsvGetUrl = (params?: RankingCsvV1AtlasR
 
 /**
  * Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.
- * @summary Download filtered county rankings
+ * @summary Download county rankings as CSV
  */
-export const rankingCsvV1AtlasRankingCsvGet = async (params?: RankingCsvV1AtlasRankingCsvGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<rankingCsvV1AtlasRankingCsvGetResponse> => {
+export const downloadAtlasRanking = async (params?: DownloadAtlasRankingParams, options?: Parameters<typeof apiMutator>[1]): Promise<downloadAtlasRankingResponse> => {
 
-  return apiMutator<rankingCsvV1AtlasRankingCsvGetResponse>(getRankingCsvV1AtlasRankingCsvGetUrl(params),
+  return apiMutator<downloadAtlasRankingResponse>(getDownloadAtlasRankingUrl(params),
   {
     ...options,
     method: 'GET'
@@ -4597,69 +5005,69 @@ export const rankingCsvV1AtlasRankingCsvGet = async (params?: RankingCsvV1AtlasR
 
 
 
-export const getRankingCsvV1AtlasRankingCsvGetQueryKey = (params?: RankingCsvV1AtlasRankingCsvGetParams,) => {
+export const getDownloadAtlasRankingQueryKey = (params?: DownloadAtlasRankingParams,) => {
     return [
     `/v1/atlas/ranking.csv`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getRankingCsvV1AtlasRankingCsvGetQueryOptions = <TData = Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError = ProblemDetails>(params?: RankingCsvV1AtlasRankingCsvGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export const getDownloadAtlasRankingQueryOptions = <TData = Awaited<ReturnType<typeof downloadAtlasRanking>>, TError = ProblemDetails>(params?: DownloadAtlasRankingParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadAtlasRanking>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getRankingCsvV1AtlasRankingCsvGetQueryKey(params);
+  const queryKey =  queryOptions?.queryKey ?? getDownloadAtlasRankingQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>> = ({ signal }) => rankingCsvV1AtlasRankingCsvGet(params, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadAtlasRanking>>> = ({ signal }) => downloadAtlasRanking(params, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadAtlasRanking>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type RankingCsvV1AtlasRankingCsvGetQueryResult = NonNullable<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>>
-export type RankingCsvV1AtlasRankingCsvGetQueryError = ProblemDetails
+export type DownloadAtlasRankingQueryResult = NonNullable<Awaited<ReturnType<typeof downloadAtlasRanking>>>
+export type DownloadAtlasRankingQueryError = ProblemDetails
 
 
-export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError = ProblemDetails>(
- params: undefined |  RankingCsvV1AtlasRankingCsvGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError, TData>> & Pick<
+export function useDownloadAtlasRanking<TData = Awaited<ReturnType<typeof downloadAtlasRanking>>, TError = ProblemDetails>(
+ params: undefined |  DownloadAtlasRankingParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadAtlasRanking>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>,
+          Awaited<ReturnType<typeof downloadAtlasRanking>>,
           TError,
-          Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>
+          Awaited<ReturnType<typeof downloadAtlasRanking>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError = ProblemDetails>(
- params?: RankingCsvV1AtlasRankingCsvGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError, TData>> & Pick<
+export function useDownloadAtlasRanking<TData = Awaited<ReturnType<typeof downloadAtlasRanking>>, TError = ProblemDetails>(
+ params?: DownloadAtlasRankingParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadAtlasRanking>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>,
+          Awaited<ReturnType<typeof downloadAtlasRanking>>,
           TError,
-          Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>
+          Awaited<ReturnType<typeof downloadAtlasRanking>>
         > , 'initialData'
       >, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError = ProblemDetails>(
- params?: RankingCsvV1AtlasRankingCsvGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useDownloadAtlasRanking<TData = Awaited<ReturnType<typeof downloadAtlasRanking>>, TError = ProblemDetails>(
+ params?: DownloadAtlasRankingParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadAtlasRanking>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Download filtered county rankings
+ * @summary Download county rankings as CSV
  */
 
-export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError = ProblemDetails>(
- params?: RankingCsvV1AtlasRankingCsvGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+export function useDownloadAtlasRanking<TData = Awaited<ReturnType<typeof downloadAtlasRanking>>, TError = ProblemDetails>(
+ params?: DownloadAtlasRankingParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadAtlasRanking>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getRankingCsvV1AtlasRankingCsvGetQueryOptions(params,options)
+  const queryOptions = getDownloadAtlasRankingQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -4672,56 +5080,56 @@ export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typ
 
 
 
-export type submitFeedbackV1FeedbackPostResponse200 = {
+export type submitFeedbackResponse200 = {
   data: FeedbackSubmissionResponse
   status: 200
 }
 
-export type submitFeedbackV1FeedbackPostResponse401 = {
+export type submitFeedbackResponse401 = {
   data: ProblemDetails
   status: 401
 }
 
-export type submitFeedbackV1FeedbackPostResponse409 = {
+export type submitFeedbackResponse409 = {
   data: ProblemDetails
   status: 409
 }
 
-export type submitFeedbackV1FeedbackPostResponse413 = {
+export type submitFeedbackResponse413 = {
   data: ProblemDetails
   status: 413
 }
 
-export type submitFeedbackV1FeedbackPostResponse415 = {
+export type submitFeedbackResponse415 = {
   data: ProblemDetails
   status: 415
 }
 
-export type submitFeedbackV1FeedbackPostResponse422 = {
+export type submitFeedbackResponse422 = {
   data: ProblemDetails
   status: 422
 }
 
-export type submitFeedbackV1FeedbackPostResponse429 = {
+export type submitFeedbackResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type submitFeedbackV1FeedbackPostResponse503 = {
+export type submitFeedbackResponse503 = {
   data: ProblemDetails
   status: 503
 }
 
-export type submitFeedbackV1FeedbackPostResponseSuccess = (submitFeedbackV1FeedbackPostResponse200) & {
+export type submitFeedbackResponseSuccess = (submitFeedbackResponse200) & {
   headers: Headers;
 };
-export type submitFeedbackV1FeedbackPostResponseError = (submitFeedbackV1FeedbackPostResponse401 | submitFeedbackV1FeedbackPostResponse409 | submitFeedbackV1FeedbackPostResponse413 | submitFeedbackV1FeedbackPostResponse415 | submitFeedbackV1FeedbackPostResponse422 | submitFeedbackV1FeedbackPostResponse429 | submitFeedbackV1FeedbackPostResponse503) & {
+export type submitFeedbackResponseError = (submitFeedbackResponse401 | submitFeedbackResponse409 | submitFeedbackResponse413 | submitFeedbackResponse415 | submitFeedbackResponse422 | submitFeedbackResponse429 | submitFeedbackResponse503) & {
   headers: Headers;
 };
 
-export type submitFeedbackV1FeedbackPostResponse = (submitFeedbackV1FeedbackPostResponseSuccess | submitFeedbackV1FeedbackPostResponseError)
+export type submitFeedbackResponse = (submitFeedbackResponseSuccess | submitFeedbackResponseError)
 
-export const getSubmitFeedbackV1FeedbackPostUrl = () => {
+export const getSubmitFeedbackUrl = () => {
 
 
 
@@ -4732,9 +5140,9 @@ export const getSubmitFeedbackV1FeedbackPostUrl = () => {
 /**
  * @summary Submit Feedback
  */
-export const submitFeedbackV1FeedbackPost = async (feedbackSubmissionRequest: FeedbackSubmissionRequest, options?: Parameters<typeof apiMutator>[1]): Promise<submitFeedbackV1FeedbackPostResponse> => {
+export const submitFeedback = async (feedbackSubmissionRequest: FeedbackSubmissionRequest, options?: Parameters<typeof apiMutator>[1]): Promise<submitFeedbackResponse> => {
 
-  return apiMutator<submitFeedbackV1FeedbackPostResponse>(getSubmitFeedbackV1FeedbackPostUrl(),
+  return apiMutator<submitFeedbackResponse>(getSubmitFeedbackUrl(),
   {
     ...options,
     method: 'POST',
@@ -4747,11 +5155,11 @@ export const submitFeedbackV1FeedbackPost = async (feedbackSubmissionRequest: Fe
 
 
 
-export const getSubmitFeedbackV1FeedbackPostMutationOptions = <TError = ProblemDetails,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, TError,{data: FeedbackSubmissionRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, TError,{data: FeedbackSubmissionRequest}, TContext> => {
+export const getSubmitFeedbackMutationOptions = <TError = ProblemDetails,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedback>>, TError,{data: FeedbackSubmissionRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitFeedback>>, TError,{data: FeedbackSubmissionRequest}, TContext> => {
 
-const mutationKey = ['submitFeedbackV1FeedbackPost'];
+const mutationKey = ['submitFeedback'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -4761,10 +5169,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, {data: FeedbackSubmissionRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitFeedback>>, {data: FeedbackSubmissionRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  submitFeedbackV1FeedbackPost(data,requestOptions)
+          return  submitFeedback(data,requestOptions)
         }
 
 
@@ -4774,22 +5182,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SubmitFeedbackV1FeedbackPostMutationResult = NonNullable<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>>
-    export type SubmitFeedbackV1FeedbackPostMutationBody = FeedbackSubmissionRequest
-    export type SubmitFeedbackV1FeedbackPostMutationError = ProblemDetails
+    export type SubmitFeedbackMutationResult = NonNullable<Awaited<ReturnType<typeof submitFeedback>>>
+    export type SubmitFeedbackMutationBody = FeedbackSubmissionRequest
+    export type SubmitFeedbackMutationError = ProblemDetails
 
     /**
  * @summary Submit Feedback
  */
-export const useSubmitFeedbackV1FeedbackPost = <TError = ProblemDetails,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>, TError,{data: FeedbackSubmissionRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
+export const useSubmitFeedback = <TError = ProblemDetails,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitFeedback>>, TError,{data: FeedbackSubmissionRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof submitFeedbackV1FeedbackPost>>,
+        Awaited<ReturnType<typeof submitFeedback>>,
         TError,
         {data: FeedbackSubmissionRequest},
         TContext
       > => {
-      return useMutation(getSubmitFeedbackV1FeedbackPostMutationOptions(options), queryClient);
+      return useMutation(getSubmitFeedbackMutationOptions(options), queryClient);
     }
 
 export type askAtlasStructuredResponse200 = {
@@ -4984,31 +5392,31 @@ export const useAskAtlasMixed = <TError = HTTPValidationError | ProblemDetails |
       return useMutation(getAskAtlasMixedMutationOptions(options), queryClient);
     }
 
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse200 = {
+export type askKnowledgeGraphResponse200 = {
   data: KnowledgeChatResponse
   status: 200
 }
 
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse422 = {
+export type askKnowledgeGraphResponse422 = {
   data: HTTPValidationError
   status: 422
 }
 
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse429 = {
+export type askKnowledgeGraphResponse429 = {
   data: ProblemDetails
   status: 429
 }
 
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponseSuccess = (knowledgeGraphChatV1KnowledgeGraphChatPostResponse200) & {
+export type askKnowledgeGraphResponseSuccess = (askKnowledgeGraphResponse200) & {
   headers: Headers;
 };
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponseError = (knowledgeGraphChatV1KnowledgeGraphChatPostResponse422 | knowledgeGraphChatV1KnowledgeGraphChatPostResponse429) & {
+export type askKnowledgeGraphResponseError = (askKnowledgeGraphResponse422 | askKnowledgeGraphResponse429) & {
   headers: Headers;
 };
 
-export type knowledgeGraphChatV1KnowledgeGraphChatPostResponse = (knowledgeGraphChatV1KnowledgeGraphChatPostResponseSuccess | knowledgeGraphChatV1KnowledgeGraphChatPostResponseError)
+export type askKnowledgeGraphResponse = (askKnowledgeGraphResponseSuccess | askKnowledgeGraphResponseError)
 
-export const getKnowledgeGraphChatV1KnowledgeGraphChatPostUrl = () => {
+export const getAskKnowledgeGraphUrl = () => {
 
 
 
@@ -5019,9 +5427,9 @@ export const getKnowledgeGraphChatV1KnowledgeGraphChatPostUrl = () => {
 /**
  * @summary Knowledge Graph Chat
  */
-export const knowledgeGraphChatV1KnowledgeGraphChatPost = async (knowledgeChatRequest: KnowledgeChatRequest, options?: Parameters<typeof apiMutator>[1]): Promise<knowledgeGraphChatV1KnowledgeGraphChatPostResponse> => {
+export const askKnowledgeGraph = async (knowledgeChatRequest: KnowledgeChatRequest, options?: Parameters<typeof apiMutator>[1]): Promise<askKnowledgeGraphResponse> => {
 
-  return apiMutator<knowledgeGraphChatV1KnowledgeGraphChatPostResponse>(getKnowledgeGraphChatV1KnowledgeGraphChatPostUrl(),
+  return apiMutator<askKnowledgeGraphResponse>(getAskKnowledgeGraphUrl(),
   {
     ...options,
     method: 'POST',
@@ -5034,11 +5442,11 @@ export const knowledgeGraphChatV1KnowledgeGraphChatPost = async (knowledgeChatRe
 
 
 
-export const getKnowledgeGraphChatV1KnowledgeGraphChatPostMutationOptions = <TError = HTTPValidationError | ProblemDetails,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, TError,{data: KnowledgeChatRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
-): UseMutationOptions<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, TError,{data: KnowledgeChatRequest}, TContext> => {
+export const getAskKnowledgeGraphMutationOptions = <TError = HTTPValidationError | ProblemDetails,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askKnowledgeGraph>>, TError,{data: KnowledgeChatRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
+): UseMutationOptions<Awaited<ReturnType<typeof askKnowledgeGraph>>, TError,{data: KnowledgeChatRequest}, TContext> => {
 
-const mutationKey = ['knowledgeGraphChatV1KnowledgeGraphChatPost'];
+const mutationKey = ['askKnowledgeGraph'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -5048,10 +5456,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, {data: KnowledgeChatRequest}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof askKnowledgeGraph>>, {data: KnowledgeChatRequest}> = (props) => {
           const {data} = props ?? {};
 
-          return  knowledgeGraphChatV1KnowledgeGraphChatPost(data,requestOptions)
+          return  askKnowledgeGraph(data,requestOptions)
         }
 
 
@@ -5061,21 +5469,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationResult = NonNullable<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>>
-    export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationBody = KnowledgeChatRequest
-    export type KnowledgeGraphChatV1KnowledgeGraphChatPostMutationError = HTTPValidationError | ProblemDetails
+    export type AskKnowledgeGraphMutationResult = NonNullable<Awaited<ReturnType<typeof askKnowledgeGraph>>>
+    export type AskKnowledgeGraphMutationBody = KnowledgeChatRequest
+    export type AskKnowledgeGraphMutationError = HTTPValidationError | ProblemDetails
 
     /**
  * @summary Knowledge Graph Chat
  */
-export const useKnowledgeGraphChatV1KnowledgeGraphChatPost = <TError = HTTPValidationError | ProblemDetails,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>, TError,{data: KnowledgeChatRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
+export const useAskKnowledgeGraph = <TError = HTTPValidationError | ProblemDetails,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof askKnowledgeGraph>>, TError,{data: KnowledgeChatRequest}, TContext>, request?: SecondParameter<typeof apiMutator>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>>,
+        Awaited<ReturnType<typeof askKnowledgeGraph>>,
         TError,
         {data: KnowledgeChatRequest},
         TContext
       > => {
-      return useMutation(getKnowledgeGraphChatV1KnowledgeGraphChatPostMutationOptions(options), queryClient);
+      return useMutation(getAskKnowledgeGraphMutationOptions(options), queryClient);
     }
 

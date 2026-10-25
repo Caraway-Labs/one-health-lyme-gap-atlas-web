@@ -30,6 +30,24 @@ function seededGrant(now: number): string {
   });
 }
 
+async function expectNoAmplitudeRequest(
+  page: Page,
+  amplitudeCalls: string[],
+  baseline: number
+): Promise<void> {
+  let amplitudeRequested = false;
+  try {
+    await page.waitForRequest(/amplitude/i, { timeout: AMPLITUDE_QUIET_MS });
+    amplitudeRequested = true;
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== "TimeoutError") {
+      throw error;
+    }
+  }
+  expect(amplitudeRequested).toBe(false);
+  expect(amplitudeCalls).toHaveLength(baseline);
+}
+
 async function storedDecision(page: Page): Promise<string | null> {
   return page.evaluate((key) => {
     const raw = localStorage.getItem(key);
@@ -185,24 +203,13 @@ test("honors Do Not Track on Settings opened from the footer", async ({
     { key: PREFERENCE_KEY, preference: seededGrant(Date.now()) }
   );
 
-  // `/` mounts AnalyticsClient. Workspace shell "none" routes, including
-  // Settings, do not, so a Settings-only check would miss a startup that
-  // ignored Do Not Track for an existing grant.
+  // `/` mounts AnalyticsClient from the front porch page. `/explore` and
+  // Settings mount the shared professional-shell client. Do Not Track has to
+  // suppress startup for an existing grant on every one of those routes.
   await page.goto("/");
   await expect(
     page.getByRole("button", { name: "Privacy settings" })
   ).toBeVisible();
-  expect(amplitudeCalls).toEqual([]);
-  let amplitudeRequested = false;
-  try {
-    await page.waitForRequest(/amplitude/i, { timeout: AMPLITUDE_QUIET_MS });
-    amplitudeRequested = true;
-  } catch (error) {
-    if (!(error instanceof Error) || error.name !== "TimeoutError") {
-      throw error;
-    }
-  }
-  expect(amplitudeRequested).toBe(false);
   expect(amplitudeCalls).toEqual([]);
 
   const privacy = await openSettingsFromFooter(page);
@@ -217,9 +224,51 @@ test("honors Do Not Track on Settings opened from the footer", async ({
   await expect(privacy.getByRole("status")).toHaveText(DO_NOT_TRACK);
   await expect(allow).toBeDisabled();
   expect(await storedDecision(page)).toBe("granted");
+  expect(amplitudeCalls).toEqual([]);
+  await expectNoAmplitudeRequest(page, amplitudeCalls, 0);
   await privacy.screenshot({
     path: testInfo.outputPath("consent-do-not-track.png"),
   });
+});
+
+test("sends an Amplitude request from Atlas Explorer by default and none after opt-out", async ({
+  page,
+}) => {
+  const amplitudeCalls: string[] = [];
+  await page.route(/amplitude/i, async (route) => {
+    amplitudeCalls.push(route.request().url());
+    await route.fulfill({ status: 200, body: "{}" });
+  });
+  await installWorkspaceReads(page);
+  await page.goto("/explore");
+  await expect.poll(() => nationalExploreReady(page)).toBe(true);
+  await expect
+    .poll(() => amplitudeCalls.length, { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  expect(await storedDecision(page)).toBeNull();
+  const callsOnExplore = amplitudeCalls.length;
+
+  await page
+    .getByRole("contentinfo")
+    .getByRole("link", { name: "Privacy settings" })
+    .click();
+  await expect(page).toHaveURL(/\/app\/settings$/);
+  const privacy = page.getByTestId("settings-privacy-preferences");
+  await expect(privacy.getByRole("status")).toHaveText(NOT_DECIDED);
+  await expect
+    .poll(() => amplitudeCalls.length, { timeout: 10_000 })
+    .toBeGreaterThan(callsOnExplore);
+  await privacy
+    .getByRole("button", { name: "Turn off optional analytics" })
+    .click();
+  await expect(privacy.getByRole("status")).toHaveText(DENIED);
+  expect(await storedDecision(page)).toBe("denied");
+
+  const callsAfterOptOut = amplitudeCalls.length;
+  await page.goto("/explore");
+  await expect.poll(() => nationalExploreReady(page)).toBe(true);
+  expect(await storedDecision(page)).toBe("denied");
+  await expectNoAmplitudeRequest(page, amplitudeCalls, callsAfterOptOut);
 });
 
 test("reaches Settings consent controls from the footer on a phone viewport", async ({

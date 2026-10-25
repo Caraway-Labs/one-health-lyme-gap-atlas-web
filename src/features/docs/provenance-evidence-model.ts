@@ -7,48 +7,49 @@ import type { TypeNode } from "fumadocs-ui/components/type-table";
 export const observationNullSemantics = {
   atlas_acquired_at: {
     description:
-      "Atlas acquisition time when governed; distinct from source publication and processing.",
+      "When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.",
     required: false,
     type: "date-time | null",
   },
   atlas_processed_at: {
     description:
-      "Atlas processing time when governed; distinct from response time.",
+      "When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.",
     required: false,
     type: "date-time | null",
   },
   denominator: {
     description:
-      "Governed denominator; null means it is not supplied and must not be inferred.",
+      "What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.",
     required: true,
     type: "string | null",
   },
   limitations: {
     description:
-      "Governed interpretation limitations; preserve alongside values and versions.",
+      "Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.",
     required: true,
     type: "string[]",
   },
   methodology_id: {
     description:
-      "Exact governed methodology resource ID; null when not governed.",
+      "Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies.",
     required: true,
     type: "string | null",
   },
   source_published_at: {
     description:
-      "Publisher timestamp when governed; null is not inferred freshness.",
+      "When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.",
     required: false,
     type: "date-time | null",
   },
   value: {
-    description: "Read with value_state and unit; null never means zero.",
+    description:
+      "The reported value. Read it with `value_state` and `unit`. `null` never means zero.",
     required: true,
     type: "number | string | null",
   },
   value_state: {
     description:
-      "OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC's No records. Neither establishes biological absence.",
+      "How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero.",
     required: true,
     type: "ValueState",
   },
@@ -66,7 +67,7 @@ export interface ProvenanceNameRow {
 export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   {
     description:
-      "Public source resource key; distinct from lineage_source_id and dataset_id.",
+      "Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.",
     name: "source_id",
     required: true,
     schema: "Observation",
@@ -74,7 +75,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Observation field. The source resource field with this value is label.",
+      "Display name of the source. `null` when none is published. The source resource field with this value is label.",
     name: "source_label",
     required: false,
     schema: "Observation",
@@ -82,7 +83,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Publisher timestamp when governed; null is not inferred freshness.",
+      "When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.",
     name: "source_published_at",
     required: false,
     schema: "Observation",
@@ -90,7 +91,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Source field. Deprecated. The observation publisher timestamp is source_published_at.",
+      "Deprecated. Use `upstream_updated_at`. When the publisher published the data. The observation publisher timestamp is source_published_at.",
     name: "published_at",
     required: false,
     schema: "Source",
@@ -98,7 +99,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Atlas acquisition time when governed; distinct from source publication and processing. Deprecated on Source. Not deprecated on Observation.",
+      "When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded. Deprecated on Source. Not deprecated on Observation.",
     name: "atlas_acquired_at",
     required: false,
     schema: "Observation",
@@ -106,21 +107,23 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Atlas processing time when governed; distinct from response time. Observation field. Source has no atlas_processed_at.",
+      "When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded. Source has no atlas_processed_at.",
     name: "atlas_processed_at",
     required: false,
     schema: "Observation",
     type: "date-time | null",
   },
   {
-    description: "Governed publisher update time; null when unavailable.",
+    description:
+      "When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.",
     name: "upstream_updated_at",
     required: false,
     schema: "Source",
     type: "date-time | null",
   },
   {
-    description: "Governed source retrieval time; null when unavailable.",
+    description:
+      "When Atlas last retrieved the data from the publisher. `null` when unavailable.",
     name: "source_retrieved_at",
     required: false,
     schema: "Source",
@@ -128,7 +131,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Same name on Observation and Source. Nullable and not required on Observation. Required string on Source.",
+      "Identifies the source in Atlas lineage records. It differs from `source_id`. Nullable and not required on Observation. Required string on Source.",
     name: "lineage_source_id",
     required: false,
     schema: "Observation",
@@ -136,14 +139,15 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Same name on Observation and Source. Nullable and not required on Observation. Required string on Source.",
+      "Identifies the publisher's dataset. It differs from `source_id`. Nullable and not required on Observation. Required string on Source.",
     name: "dataset_id",
     required: false,
     schema: "Observation",
     type: "Source.dataset_id",
   },
   {
-    description: "Governed release identity for reproducibility.",
+    description:
+      "Identifies the published data release the result came from. Results from different releases are not directly comparable.",
     name: "release_id",
     required: true,
     schema: "Observation",
@@ -151,7 +155,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Exact governed methodology resource ID; null when not governed.",
+      "Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies.",
     name: "methodology_id",
     required: true,
     schema: "Observation",
@@ -159,7 +163,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Observation text field. The methodology resource field with this text is description.",
+      "Short name of the method that produced the value. The methodology resource field with this text is description.",
     name: "methodology",
     required: false,
     schema: "Observation",
@@ -167,7 +171,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Transformation version, distinct from methodology resource version.",
+      "Version of the transformation applied to this observation. It is separate from the version of the methodology resource.",
     name: "methodology_version",
     required: true,
     schema: "Observation",
@@ -175,7 +179,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Observation field. The methodology resource version is Methodology.version.",
+      "Version of the methodology as published in this release. `null` when none. The methodology resource version is Methodology.version.",
     name: "release_methodology_version",
     required: false,
     schema: "Observation",
@@ -183,7 +187,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Governed interpretation limitations; preserve alongside values and versions.",
+      "Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.",
     name: "limitations",
     required: true,
     schema: "Observation",
@@ -191,7 +195,7 @@ export const provenanceNameRows: readonly ProvenanceNameRow[] = [
   },
   {
     description:
-      "Structured observation provenance identity; not a literature citation.",
+      "Identifies the provenance record for this observation. It is not a literature citation.",
     name: "provenance_ref",
     required: true,
     schema: "Observation",

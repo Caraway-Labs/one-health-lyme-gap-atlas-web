@@ -7,7 +7,7 @@
  */
 
 /**
- * Stable reason when no persisted result is published; null when data is available.
+ * Why no result is published. `NO_PUBLISHED_MODEL` means no model result is published for the county. `null` when a result is available.
  * @nullable
  */
 export type Tier1CountyPriorityAvailabilityReason = typeof Tier1CountyPriorityAvailabilityReason[keyof typeof Tier1CountyPriorityAvailabilityReason] | null;

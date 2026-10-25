@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Each review rule by name, marked `enabled` or `disabled`.
+ */
 export type ReviewCoverageRuleCoverage = {[key: string]: string};

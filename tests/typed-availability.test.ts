@@ -197,7 +197,7 @@ describe("canonical geography availability", () => {
   });
 
   it("reads the unpublished envelope without building a geography", async () => {
-    vi.spyOn(atlasClient, "canonicalGeographyAvailability").mockResolvedValue({
+    vi.spyOn(atlasClient, "checkGeographyAvailability").mockResolvedValue({
       data: {
         availability: "UNAVAILABLE",
         data: null,
@@ -223,7 +223,7 @@ describe("canonical geography availability", () => {
     });
     expect(view).not.toHaveProperty("data");
     expect(view).not.toHaveProperty("geography");
-    expect(atlasClient.canonicalGeographyAvailability).toHaveBeenCalledWith(
+    expect(atlasClient.checkGeographyAvailability).toHaveBeenCalledWith(
       "county",
       "01001",
       expect.objectContaining({ signal: expect.any(AbortSignal) })

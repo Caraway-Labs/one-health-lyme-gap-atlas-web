@@ -1,0 +1,74 @@
+---
+title: Get county map geometry
+description: Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
+      - content: GET /v1/atlas/geometry
+      - content: getAtlasGeometry
+      - content: Get county map geometry
+      - content: Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: 200 Display GeoJSON, EPSG:4326; immutable TTL 31536000; ETag.
+      - content: 'Content-Type Media type of the body: `application/geo+json`.'
+      - content: '"application/geo+json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=31536000, immutable`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=31536000, immutable"'
+      - content: ETag Opaque validator for this representation. Send it as `If-None-Match` to get an empty 304 when nothing changed. Send the value back exactly as you received it.
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/geo+json
+      - content: One county feature from the full collection
+      - content: 'Response headers: `Content-Type: application/geo+json`, a weak `ETag`, and `Cache-Control: public, max-age=31536000, immutable`. The body is a `FeatureCollection` with one feature per county; this sample keeps one feature.'
+      - content: '{"type":"FeatureCollection","features":[{"type":"Feature","id":"56045","properties":{"fips":"56045"},"geometry":{"coordinates":[[[-105.081,43.966],[-105.079,44.176],[-104.055,44.18],[-104.055,43.503],[-105.08,43.498],[-105.081,43.966]]],"type":"Polygon"}}]}'
+      - content: 304 Not modified. Your `If-None-Match` value matches the current `ETag`. The response has no body.
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"Dataset release not found","instance":"/v1/atlas/geometry","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/atlas/geometry","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/atlas/geometry","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/atlas/geometry","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/geometry","method":"get"}]} />
+    </>
+  );
+}

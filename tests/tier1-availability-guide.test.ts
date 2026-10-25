@@ -167,7 +167,7 @@ describe("Tier 1 availability guide", () => {
         "There is no retrieved `NO_PUBLISHED_MODEL` payload"
       ),
       nationalInventory: guide.includes(
-        "This was a national API inventory, not the lower-48-and-DC scope used by these guides. Retain that geography scope when selecting counties; `AVAILABLE` reports a persisted result, not product-scope eligibility."
+        "This was a national API inventory, outside the lower-48-and-DC scope used by the geography guide. Keep that geography scope when you select counties. `AVAILABLE` reports a published result, not product-scope eligibility."
       ),
       geographyGuide: guide.includes("](/docs/develop/geography)"),
       outsideProductGeography: /Alaska|Hawaii|\b(?:AK|HI)\b/u.test(guide),

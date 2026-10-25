@@ -23,15 +23,15 @@ import {
   type KnownEmptyObservationSelection,
 } from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
-import { observationsV1ObservationsGet } from "@/generated/atlas";
+import { listObservations } from "@/generated/atlas";
 import type {
   Measure,
   Observation,
-  ObservationsV1ObservationsGetParams,
+  ListObservationsParams,
 } from "@/generated/models";
 import {
-  ObservationsV1ObservationsGetResponse,
-  observationsV1ObservationsGetQueryPageSizeMax,
+  ListObservationsResponse,
+  listObservationsQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -241,7 +241,7 @@ export function compareEvidenceQueryKey(input: {
  * Delegates the shared geography, time, and token rules to Investigate.
  */
 export function compareObservationRequestRejection(
-  params: ObservationsV1ObservationsGetParams
+  params: ListObservationsParams
 ): 400 | 414 | null {
   return investigateObservationRequestRejection(params);
 }
@@ -251,12 +251,12 @@ export function buildCompareObservationParams(input: {
   pageToken?: string | null;
   pair: readonly [string, string];
   timeBound: ExploreTimeBound;
-}): ObservationsV1ObservationsGetParams {
-  const params: ObservationsV1ObservationsGetParams = {
+}): ListObservationsParams {
+  const params: ListObservationsParams = {
     geography_id: [input.pair[0], input.pair[1]],
     geography_type: "county",
     measure_id: input.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeMax,
+    page_size: listObservationsQueryPageSizeMax,
   };
   switch (input.timeBound.kind) {
     case "year": {
@@ -348,13 +348,13 @@ function acceptPairObservations(input: {
 }
 
 async function readCompareObservationPage(
-  params: ObservationsV1ObservationsGetParams,
+  params: ListObservationsParams,
   scope: CompareCooldownScope,
   signal: AbortSignal
 ) {
   for (let attempt = 1; attempt <= TRANSIENT_ATTEMPT_LIMIT; attempt += 1) {
     try {
-      const response = await observationsV1ObservationsGet(params, { signal });
+      const response = await listObservations(params, { signal });
       if (response.status === 200) {
         forgetObservationCooldown(scope);
         return response;
@@ -437,7 +437,7 @@ async function fetchCompareObservations(input: {
     );
     const parsed = validateApiResponse(
       "Observations",
-      ObservationsV1ObservationsGetResponse,
+      ListObservationsResponse,
       response.data
     );
     selection.note({

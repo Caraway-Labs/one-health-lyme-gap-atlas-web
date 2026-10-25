@@ -7,7 +7,7 @@
  */
 
 /**
- * Whether a persisted Tier 1 result exists for this supported current geography.
+ * Whether a published Tier 1 result exists for this county.
  */
 export type Tier1CountyPriorityAvailabilityAvailability = typeof Tier1CountyPriorityAvailabilityAvailability[keyof typeof Tier1CountyPriorityAvailabilityAvailability];
 

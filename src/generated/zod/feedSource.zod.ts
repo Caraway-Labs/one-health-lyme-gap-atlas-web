@@ -15,13 +15,18 @@ export const feedSourceOrganizationMax = 1000;
 export const feedSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedSourceOperationalStateDefault = `unavailable`;
 export const feedSourceDiagnosticDefault = `SOURCE_HEALTH_NOT_PUBLISHED`;
+export const feedSourceLastCompletedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedSourceLastErrorCodeRegExp = new RegExp('^(?:INTELLIGENCE_[A-Z0-9_]{3,80}|FEED_[A-Z0-9_]{1,64}|MALFORMED_FEED|UNCLASSIFIED_[A-Za-z][A-Za-z0-9]{0,80})$');
+
 export const FeedSource = zod.object({
   "source_id": zod.string().regex(feedSourceSourceIdRegExp),
   "registry_version": zod.int().min(1),
   "organization": zod.string().min(1).max(feedSourceOrganizationMax).regex(feedSourceOrganizationRegExp),
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other']),
-  "operational_state": zod.literal("unavailable").default(feedSourceOperationalStateDefault),
-  "diagnostic": zod.literal("SOURCE_HEALTH_NOT_PUBLISHED").default(feedSourceDiagnosticDefault)
+  "operational_state": zod.enum(['healthy', 'stale', 'failing', 'unavailable']).default(feedSourceOperationalStateDefault).describe('healthy, stale, or failing when the source-health projection has a row for this source. unavailable when it does not, or when that projection cannot be read.'),
+  "diagnostic": zod.union([zod.literal('SOURCE_HEALTH_NOT_PUBLISHED'),zod.literal(null)]).nullish().default(feedSourceDiagnosticDefault).describe('SOURCE_HEALTH_NOT_PUBLISHED when operational_state is unavailable. Null when a health row supplies the operational state.'),
+  "last_completed_at": zod.string().regex(feedSourceLastCompletedAtRegExp).nullish().describe('UTC completion time from the source-health projection. Null when unavailable or absent on that row.'),
+  "last_error_code": zod.string().regex(feedSourceLastErrorCodeRegExp).nullish().describe('Allowlisted error code from the source-health projection. Free text and run identifiers are omitted.')
 })
 
 export type FeedSource = zod.input<typeof FeedSource>;

@@ -1,8 +1,8 @@
 {
   "pages": [
     "index",
-    "geography_v1_geographies__geography_type___geography_id__get",
-    "canonicalGeographyAvailability"
+    "getGeography",
+    "checkGeographyAvailability"
   ],
   "title": "Geographies"
 }

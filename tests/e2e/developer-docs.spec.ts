@@ -140,6 +140,9 @@ test("keeps the developer quickstart usable at 375px", async ({
   });
   expect(overflow).toBeLessThanOrEqual(1);
 
+  await expect(
+    page.getByRole("link", { exact: true, name: "Developers" })
+  ).toBeVisible();
   const openSidebar = page.getByRole("button", { name: "Open Sidebar" });
   if ((await openSidebar.count()) > 0) {
     await openSidebar.click();
@@ -147,6 +150,9 @@ test("keeps the developer quickstart usable at 375px", async ({
   const sidebar = page.locator(
     "#nd-sidebar:visible, #nd-sidebar-mobile:visible"
   );
+  const developersTab = sidebar.getByRole("tab", { name: "Developers" });
+  await expect(developersTab).toHaveAttribute("aria-selected", "true");
+  await expect(developersTab).toHaveAttribute("aria-current", "page");
   await expect(
     sidebar.getByRole("link", { name: "Developer overview", exact: true })
   ).toBeVisible();
@@ -224,9 +230,7 @@ test("switches county report template tabs and records the selector", async ({
     )
   ).toEqual([]);
 
-  await page.goto(
-    "/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get"
-  );
+  await page.goto("/docs/api-reference/counties#downloadCountyReport");
   await expectTemplatePanel(
     page,
     scoringTabLabel,
@@ -440,7 +444,7 @@ test("persists the observation slice tab and shows the temporal matrix", async (
     page.getByRole("columnheader", { name: "vintage_year", exact: true })
   ).toBeVisible();
   await page
-    .getByRole("heading", { name: "Temporal parameters", exact: true })
+    .getByRole("heading", { name: "Choose a time parameter", exact: true })
     .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath("observation-queries-matrix.png"),
@@ -668,7 +672,7 @@ test("keeps observation query tabs usable at 375px", async ({
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/docs/develop/observation-queries");
   await expect(
-    page.getByRole("heading", { name: "Temporal parameters", exact: true })
+    page.getByRole("heading", { name: "Choose a time parameter", exact: true })
   ).toBeVisible();
   await page.getByRole("tab", { name: "January 2025 environment" }).click();
   await expect(
@@ -759,7 +763,7 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
 
   await page.goto("/docs/develop/rest");
   await expect(
-    page.getByRole("heading", { name: "Pagination", exact: true })
+    page.getByRole("heading", { name: "Page through results", exact: true })
   ).toBeVisible();
   await expectClientLanguage(page, "R", "page_token = token");
   await expect(

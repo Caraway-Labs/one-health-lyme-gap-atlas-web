@@ -7,6 +7,10 @@
  */
 import type { Source } from './source';
 
+/**
+ * One source, wrapped in `data`.
+ */
 export interface ResourceEnvelopeSource {
+  /** The requested resource. */
   data: Source;
 }

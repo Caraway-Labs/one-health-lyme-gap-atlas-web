@@ -1,5 +1,7 @@
 {
   "title": "Developers",
+  "description": "Quickstart, guides, and MCP",
+  "root": true,
   "defaultOpen": true,
   "pages": [
     "index",

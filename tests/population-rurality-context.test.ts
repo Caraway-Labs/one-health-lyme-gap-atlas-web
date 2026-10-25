@@ -13,7 +13,7 @@ import {
   type PopulationRuralityMeasureId,
 } from "@/features/ux-reset/review/population-rurality-context";
 import { ValueState, type CountyContextObservation } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -25,7 +25,7 @@ import {
 } from "./fixtures/population-rurality-context";
 
 const observationsGet = vi.hoisted(() =>
-  vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>()
+  vi.fn<typeof import("@/generated/atlas").listObservations>()
 );
 
 vi.mock(import("@/generated/atlas"), async () => {
@@ -35,7 +35,7 @@ vi.mock(import("@/generated/atlas"), async () => {
     );
   return {
     ...actual,
-    observationsV1ObservationsGet: observationsGet,
+    listObservations: observationsGet,
   };
 });
 
@@ -187,7 +187,7 @@ describe("population and rurality presentation", () => {
       ],
     ] as const;
     const displayed = files.map(([measureId, fileName, expected]) => {
-      const parsed = ObservationsV1ObservationsGetResponse.parse(
+      const parsed = ListObservationsResponse.parse(
         JSON.parse(
           readFileSync(
             `tests/fixtures/live-county-context/${fileName}`,
@@ -242,7 +242,7 @@ describe("population and rurality presentation", () => {
 describe("population and rurality loading", () => {
   it("requests vintage_year and refuses year or date filters", async () => {
     observationsGet.mockResolvedValue({
-      data: ObservationsV1ObservationsGetResponse.parse(
+      data: ListObservationsResponse.parse(
         populationRuralityEnvelope([
           populationRuralityObservation({ measureId: "rucc_2023" }),
         ])
@@ -273,9 +273,7 @@ describe("population and rurality loading", () => {
 
   it("treats an empty collection and a 404 as absence", async () => {
     observationsGet.mockResolvedValueOnce({
-      data: ObservationsV1ObservationsGetResponse.parse(
-        populationRuralityEnvelope([])
-      ),
+      data: ListObservationsResponse.parse(populationRuralityEnvelope([])),
       headers: new Headers(),
       status: 200,
     });
@@ -322,7 +320,7 @@ describe("population and rurality loading", () => {
     expect(() => readDatedObservations([dated])).toThrow(/county context/i);
     const { county_context: _context, ...datedRow } = dated;
     observationsGet.mockResolvedValueOnce({
-      data: ObservationsV1ObservationsGetResponse.parse(
+      data: ListObservationsResponse.parse(
         populationRuralityEnvelope([datedRow as CountyContextObservation])
       ),
       headers: new Headers(),

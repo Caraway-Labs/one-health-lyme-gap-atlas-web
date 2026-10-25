@@ -46,11 +46,11 @@ GET /v1/geographies/{geography_type}/{geography_id}
 
 <EndpointDeliveryBadge />
 
-The operation summary is "Get geography identity (delivery pending)". The description says the route validates a county or state FIPS and currently returns `503` `CANONICAL_DATA_UNAVAILABLE`. No geometry is returned. The success schema exists on the operation for a later delivery. Callers do not receive a `Geography` label or parent from this route today.
+The operation summary is "Get geography identity (delivery pending)". The description says a validated county or state FIPS returns HTTP `200` with `availability` `UNAVAILABLE`, `reason` `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` null. The identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`. The `200` schema is a union of `ResourceEnvelope_Geography_` and `GeographyUnavailable`. Callers do not receive a `Geography` label or parent from this route today.
 
 A request to `/v1/geographies/county/08001` on 18 October 2026 returned an HTML error page. The origin status was `503`. The client status line was `504`. There was no `Geography` JSON body and no `Retry-After` header on that response. Treat geography identity delivery as unavailable. Do not parse the HTML page as a resource, and do not invent a label from the FIPS. The badge records that production check. It is not a live health indicator.
 
-The same operation still declares the canonical problem statuses, including `400`, `404` `RESOURCE_NOT_FOUND`, `429` with `Retry-After`, `413`, `414`, and `503` with `Retry-After`.
+The same operation declares `400`, `404` `RESOURCE_NOT_FOUND`, `429` with `Retry-After`, `413`, and `414`. It does not declare `503` or `422`.
 
 ## Polygons are a different resource
 
@@ -62,7 +62,7 @@ GET /v1/atlas/geometry
 
 <DisplayGeometryCurl />
 
-On 18 October 2026 that request returned HTTP 200 `application/geo+json`. The response used `Cache-Control: public, max-age=31536000, immutable` and an `ETag`. The body was a GeoJSON FeatureCollection of 3,144 features. Each feature carried `fips` and a polygon. `36061` and `11001` were in the collection. That count is a national display inventory. These guides still use the lower 48 states and the District of Columbia. The operation is [Get county display geometry](/docs/api-reference/atlas#geometry_v1_atlas_geometry_get).
+On 18 October 2026 that request returned HTTP 200 `application/geo+json`. The response used `Cache-Control: public, max-age=31536000, immutable` and an `ETag`. The body was a GeoJSON FeatureCollection of 3,144 features. Each feature carried `fips` and a polygon. `36061` and `11001` were in the collection. That count is a national display inventory. These guides still use the lower 48 states and the District of Columbia. The operation is [Get county display geometry](/docs/api-reference/atlas#getAtlasGeometry).
 
 The contract describes that response as display GeoJSON, EPSG:4326, with an immutable cache and an `ETag`. It is a generalized display boundary for maps. It is not the FIPS join key and it is not the analysis geometry used to build measures. `environmental_context.geometry_version`, when that object is present, names analysis geometry and still contains no polygons.
 

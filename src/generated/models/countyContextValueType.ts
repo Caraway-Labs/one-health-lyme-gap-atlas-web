@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Whether `value` is an integer or a decimal number.
+ */
 export type CountyContextValueType = typeof CountyContextValueType[keyof typeof CountyContextValueType];
 
 

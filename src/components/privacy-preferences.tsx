@@ -25,7 +25,7 @@ import {
 } from "@/lib/analytics-consent";
 
 const ANALYTICS_PURPOSE =
-  "Atlas exploration works the same whether optional product analytics stay on or you turn them off. Product analytics are on by default in this browser, and you can turn them off at any time.";
+  "Product analytics are on by default on public Atlas pages and in the signed-in professional workspace. Turn them off here at any time. If your browser sends Do Not Track, Atlas keeps them off. Atlas works the same either way.";
 
 const STORAGE_LIMITATION =
   "This setting stores only your choice, its date, expiry, and a format version in this browser for up to six months. It does not create an analytics identifier or send an event.";
@@ -197,8 +197,9 @@ export function PrivacyPreferences({
           Privacy settings
         </h2>
         <p className="type-body">
-          Optional analytics. This browser choice does not change the required
-          starting view or the optional profile fields.
+          This browser choice covers public Atlas pages and the signed-in
+          professional workspace. It does not change the required starting view
+          or the optional profile fields.
         </p>
         <p className="type-body">{ANALYTICS_PURPOSE}</p>
         <PrivacyChoiceCopy consent={storedConsent} doNotTrack={doNotTrack} />

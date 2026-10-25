@@ -9,35 +9,35 @@ import * as zod from 'zod';
 
 export const ResourceEnvelopeMeasure = zod.object({
   "data": zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})
-})
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('The requested resource.')
+}).describe('One measure, wrapped in `data`.')
 
 export type ResourceEnvelopeMeasure = zod.input<typeof ResourceEnvelopeMeasure>;
 export type ResourceEnvelopeMeasureOutput = zod.output<typeof ResourceEnvelopeMeasure>;

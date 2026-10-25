@@ -15,15 +15,15 @@ import { ResultsTable } from "@/components/results-table";
 import { ScoringLab } from "@/components/scoring-lab";
 import { Button } from "@/components/ui/button";
 import {
-  countyV1CountiesFipsGet,
-  getRankingCsvV1AtlasRankingCsvGetUrl,
-  metadataV1AtlasMetadataGet,
-  scoresV1AtlasScoresGet,
+  getCounty,
+  getDownloadAtlasRankingUrl,
+  getAtlasMetadata,
+  getAtlasScores,
 } from "@/generated/atlas";
 import {
-  CountyV1CountiesFipsGetResponse,
-  MetadataV1AtlasMetadataGetResponse,
-  ScoresV1AtlasScoresGetResponse,
+  GetCountyResponse,
+  GetAtlasMetadataResponse,
+  GetAtlasScoresResponse,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
@@ -115,8 +115,8 @@ function AtlasPage() {
     queryFn: async () =>
       validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
-        (await metadataV1AtlasMetadataGet()).data
+        GetAtlasMetadataResponse,
+        (await getAtlasMetadata()).data
       ),
     queryKey: ["metadata"],
   });
@@ -133,9 +133,9 @@ function AtlasPage() {
     queryFn: async () =>
       validateApiResponse(
         "Atlas scores",
-        ScoresV1AtlasScoresGetResponse,
+        GetAtlasScoresResponse,
         (
-          await scoresV1AtlasScoresGet({
+          await getAtlasScores({
             dataset_version: metadataQuery.data!.release_id,
             ...debouncedSettings,
           })
@@ -149,9 +149,9 @@ function AtlasPage() {
     queryFn: async () =>
       validateApiResponse(
         "County detail",
-        CountyV1CountiesFipsGetResponse,
+        GetCountyResponse,
         (
-          await countyV1CountiesFipsGet(selectedFips, {
+          await getCounty(selectedFips, {
             dataset_version: metadataQuery.data!.release_id,
             ...debouncedSettings,
           })
@@ -205,7 +205,7 @@ function AtlasPage() {
   }
 
   function downloadCsv() {
-    const url = getRankingCsvV1AtlasRankingCsvGetUrl({
+    const url = getDownloadAtlasRankingUrl({
       evidence,
       q: query,
       state: stateFilter,

@@ -206,6 +206,7 @@ export function IntelligenceFeedFilters({
                 <Badge className="ux-reset-feed-chip h-auto" variant="outline">
                   <span>{`Source: ${selectedSourceLabel}`}</span>
                   <Button
+                    {...analyticsControlAttributes("feed_remove_filter")}
                     aria-label={`Remove filter Source: ${selectedSourceLabel}`}
                     className="ux-reset-feed-chip-remove"
                     onClick={onRemoveSource}
@@ -222,6 +223,7 @@ export function IntelligenceFeedFilters({
                 <Badge className="ux-reset-feed-chip h-auto" variant="outline">
                   <span>{`Published: ${publishedLabel}`}</span>
                   <Button
+                    {...analyticsControlAttributes("feed_remove_filter")}
                     aria-label={`Remove filter Published: ${publishedLabel}`}
                     className="ux-reset-feed-chip-remove"
                     onClick={onRemovePublished}
@@ -234,7 +236,12 @@ export function IntelligenceFeedFilters({
               </li>
             )}
           </ul>
-          <Button onClick={onClear} type="button" variant="outline">
+          <Button
+            {...analyticsControlAttributes("feed_clear_filters")}
+            onClick={onClear}
+            type="button"
+            variant="outline"
+          >
             Clear filters
           </Button>
         </div>

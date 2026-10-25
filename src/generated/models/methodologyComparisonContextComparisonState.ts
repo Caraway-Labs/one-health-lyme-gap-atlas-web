@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`.
+ */
 export type MethodologyComparisonContextComparisonState = typeof MethodologyComparisonContextComparisonState[keyof typeof MethodologyComparisonContextComparisonState];
 
 

@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Edge of the target window that the lag is measured from.
+ */
 export type TemporalLagContextAnchor = typeof TemporalLagContextAnchor[keyof typeof TemporalLagContextAnchor];
 
 

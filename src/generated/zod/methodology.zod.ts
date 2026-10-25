@@ -8,14 +8,14 @@
 import * as zod from 'zod';
 
 export const Methodology = zod.object({
-  "methodology_id": zod.string().describe('Exact governed methodology resource ID; null when not governed.'),
-  "measure_id": zod.string(),
-  "version": zod.string(),
-  "description": zod.string(),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.')
-})
+  "methodology_id": zod.string().describe('Identifies the methodology. Use it with `\/v1\/methodologies\/{methodology_id}`.'),
+  "measure_id": zod.string().describe('Identifier of the measure the methodology applies to.'),
+  "version": zod.string().describe('Version of this methodology resource.'),
+  "description": zod.string().describe('Plain-language description of the method.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.')
+}).describe('The method Atlas used to produce or interpret a measure\'s values.')
 
 export type Methodology = zod.input<typeof Methodology>;
 export type MethodologyOutput = zod.output<typeof Methodology>;

@@ -8,11 +8,11 @@
 import * as zod from 'zod';
 
 export const TemporalReferencePeriodContext = zod.object({
-  "id": zod.string(),
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "source_vintage": zod.string()
-})
+  "id": zod.string().describe('Identifies the reference period.'),
+  "start": zod.iso.date().describe('First date in the reference period.'),
+  "end_exclusive": zod.iso.date().describe('First date after the reference period. It is not in the period.'),
+  "source_vintage": zod.string().describe('Reference year or period of the source dataset. It is not an annual value.')
+}).describe('The reference period of a source dataset.')
 
 export type TemporalReferencePeriodContext = zod.input<typeof TemporalReferencePeriodContext>;
 export type TemporalReferencePeriodContextOutput = zod.output<typeof TemporalReferencePeriodContext>;

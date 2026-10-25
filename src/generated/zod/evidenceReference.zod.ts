@@ -8,15 +8,15 @@
 import * as zod from 'zod';
 
 export const EvidenceReference = zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-})
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs a result.')
 
 export type EvidenceReference = zod.input<typeof EvidenceReference>;
 export type EvidenceReferenceOutput = zod.output<typeof EvidenceReference>;

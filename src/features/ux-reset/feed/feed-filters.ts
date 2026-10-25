@@ -9,7 +9,7 @@ export const FEED_PUBLISHED_PRESETS = ["7d", "30d", "90d", "all"] as const;
 
 export type FeedPublishedPreset = (typeof FEED_PUBLISHED_PRESETS)[number];
 
-export const DEFAULT_FEED_PUBLISHED: FeedPublishedPreset = "30d";
+export const DEFAULT_FEED_PUBLISHED: FeedPublishedPreset = "all";
 
 export const FEED_PUBLISHED_LABELS: Record<FeedPublishedPreset, string> = {
   "7d": "Past 7 days",
@@ -135,8 +135,8 @@ export function activeFeedFilterCount(filters: FeedFilterState): number {
 
 /**
  * True when the feed request sends source_id or published_from.
- * The default Past 30 days control still narrows; only All dates with no
- * source is an unfiltered request. Chip count stays separate.
+ * All dates with no source sends neither. A shorter date window or a
+ * selected source still narrows.
  */
 export function feedRequestNarrows(filters: FeedFilterState): boolean {
   return buildFeedListParams(filters, new Date()) !== undefined;
@@ -243,7 +243,7 @@ export function isStaleFeedPageToken(error: unknown): boolean {
   if (isFeedQueryTooBroad(error)) {
     return false;
   }
-  return problemFields(error).detail.includes("Projection changed");
+  return problemFields(error).detail.includes("Invalid page_token");
 }
 
 export const feedSourceParser = createParser({
@@ -259,7 +259,18 @@ export const feedPublishedParser = parseAsStringEnum([
   ...FEED_PUBLISHED_PRESETS,
 ]).withDefault(DEFAULT_FEED_PUBLISHED);
 
+/** Any non-empty `item` value is kept so a malformed id can be looked up. */
+export const feedItemParser = createParser({
+  parse(value: string) {
+    return value.length > 0 ? value : null;
+  },
+  serialize(value: string) {
+    return value;
+  },
+});
+
 export const feedSearchParams = {
+  item: feedItemParser,
   published: feedPublishedParser,
   source: feedSourceParser,
 };

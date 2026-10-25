@@ -36,16 +36,16 @@ export const scoreRuralSignalMax = 100;
 
 
 export const Score = zod.object({
-  "score": zod.number().min(scoreScoreMin).max(scoreScoreMax),
-  "human_weakness": zod.number().min(scoreHumanWeaknessMin).max(scoreHumanWeaknessMax),
-  "ecological": zod.number().min(scoreEcologicalMin).max(scoreEcologicalMax),
-  "community": zod.number().min(scoreCommunityMin).max(scoreCommunityMax),
-  "tick_signal": zod.number().min(scoreTickSignalMin).max(scoreTickSignalMax),
-  "pathogen_signal": zod.number().min(scorePathogenSignalMin).max(scorePathogenSignalMax),
-  "svi_signal": zod.number().min(scoreSviSignalMin).max(scoreSviSignalMax),
-  "access_signal": zod.number().min(scoreAccessSignalMin).max(scoreAccessSignalMax),
-  "rural_signal": zod.number().min(scoreRuralSignalMin).max(scoreRuralSignalMax)
-})
+  "score": zod.number().min(scoreScoreMin).max(scoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
+  "human_weakness": zod.number().min(scoreHumanWeaknessMin).max(scoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
+  "ecological": zod.number().min(scoreEcologicalMin).max(scoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
+  "community": zod.number().min(scoreCommunityMin).max(scoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
+  "tick_signal": zod.number().min(scoreTickSignalMin).max(scoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
+  "pathogen_signal": zod.number().min(scorePathogenSignalMin).max(scorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
+  "svi_signal": zod.number().min(scoreSviSignalMin).max(scoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
+  "access_signal": zod.number().min(scoreAccessSignalMin).max(scoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
+  "rural_signal": zod.number().min(scoreRuralSignalMin).max(scoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
+}).describe('The Surveillance Gap Score and the signals it combines. Every value runs from 0 to 100. Atlas results are not a diagnosis.')
 
 export type Score = zod.input<typeof Score>;
 export type ScoreOutput = zod.output<typeof Score>;

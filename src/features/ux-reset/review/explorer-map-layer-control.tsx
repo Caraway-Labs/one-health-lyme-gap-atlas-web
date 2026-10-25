@@ -14,6 +14,7 @@ import {
   type ExplorerLayerGate,
   type ExplorerMapLayerId,
 } from "@/features/ux-reset/review/explorer-map-layers";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 type ExplorerMapLayerControlProps = {
   gates: Record<ExplorerMapLayerId, ExplorerLayerGate>;
@@ -58,6 +59,7 @@ export function ExplorerMapLayerControl({
             const selectable = gate?.selectable ?? false;
             return (
               <SelectItem
+                {...analyticsControlAttributes("explorer_map_layer")}
                 disabled={!selectable}
                 key={layer.id}
                 value={layer.id}

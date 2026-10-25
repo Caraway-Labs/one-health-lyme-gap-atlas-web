@@ -70,93 +70,96 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    countyV1CountiesFipsGet: vi.fn<
-      typeof import("@/generated/atlas").countyV1CountiesFipsGet
-    >(async (fips) => {
-      countyRecordRequests.push(fips);
-      if (countyRateLimitRemaining > 0) {
-        countyRateLimitRemaining -= 1;
-        throw new AtlasApiError(
-          "The published county record could not be loaded.",
-          `/v1/counties/${fips}`,
-          429,
-          null,
-          countyRetryAfterSeconds
-        );
-      }
-      if (fips === "08013") {
-        return {
-          data: null,
-          headers: new Headers(),
-          status: 404,
-        } as never;
-      }
-      const detail = compareCountyDetail(fips);
-      const limitationOverride = countyLimitationOverrides.get(fips);
-      if (limitationOverride !== undefined) {
-        detail.release = {
-          ...detail.release,
-          limitations: limitationOverride,
-        };
-      }
-      const priorityOverride = countyPriorityOverrides.get(fips);
-      if (priorityOverride) {
-        detail.priority = priorityOverride;
-      }
-      if (blankContextSourceNote) {
-        detail.release = {
-          ...detail.release,
-          sources: detail.release.sources.map((source) =>
-            source.key === "context_svi" ? { ...source, note: "" } : source
-          ),
-        };
-      }
-      return {
-        data: detail,
-        headers: new Headers(),
-        status: 200,
-      } as never;
-    }),
-    measuresV1MeasuresGet: vi.fn<
-      typeof import("@/generated/atlas").measuresV1MeasuresGet
-    >(async (params) => {
-      catalogRequests.push(params?.geography_type ?? "");
-      if (catalogFailuresRemaining > 0) {
-        catalogFailuresRemaining -= 1;
-        const headers = new Headers();
-        if (catalogRetryAfter) {
-          headers.set("Retry-After", catalogRetryAfter);
+    getCounty: vi.fn<typeof import("@/generated/atlas").getCounty>(
+      async (fips) => {
+        countyRecordRequests.push(fips);
+        if (countyRateLimitRemaining > 0) {
+          countyRateLimitRemaining -= 1;
+          throw new AtlasApiError(
+            "The published county record could not be loaded.",
+            `/v1/counties/${fips}`,
+            429,
+            null,
+            countyRetryAfterSeconds
+          );
+        }
+        if (fips === "08013") {
+          return {
+            data: null,
+            headers: new Headers(),
+            status: 404,
+          } as never;
+        }
+        const detail = compareCountyDetail(fips);
+        const limitationOverride = countyLimitationOverrides.get(fips);
+        if (limitationOverride !== undefined) {
+          detail.release = {
+            ...detail.release,
+            limitations: limitationOverride,
+          };
+        }
+        const priorityOverride = countyPriorityOverrides.get(fips);
+        if (priorityOverride) {
+          detail.priority = priorityOverride;
+        }
+        if (blankContextSourceNote) {
+          detail.release = {
+            ...detail.release,
+            sources: detail.release.sources.map((source) =>
+              source.key === "context_svi" ? { ...source, note: "" } : source
+            ),
+          };
         }
         return {
-          data: { detail: "unavailable" },
-          headers,
-          status: catalogFailureStatus,
-        } as never;
-      }
-      if (params?.page_token === null || params?.geography_type === "county") {
-        return {
-          data: { detail: "invalid catalog request" },
+          data: detail,
           headers: new Headers(),
-          status: 400,
+          status: 200,
         } as never;
       }
-      return {
-        data: {
-          data: [...compareMeasuresFixture, ...extraCatalogMeasures]
-            .toReversed()
-            .filter(
-              (measure) =>
-                measure.geography_semantics === params?.geography_type
-            ),
-          links: { self: "/v1/measures" },
-          meta: {},
-        },
-        headers: new Headers(),
-        status: 200,
-      } as never;
-    }),
-    metadataV1AtlasMetadataGet: vi.fn<
-      typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
+    ),
+    listMeasures: vi.fn<typeof import("@/generated/atlas").listMeasures>(
+      async (params) => {
+        catalogRequests.push(params?.geography_type ?? "");
+        if (catalogFailuresRemaining > 0) {
+          catalogFailuresRemaining -= 1;
+          const headers = new Headers();
+          if (catalogRetryAfter) {
+            headers.set("Retry-After", catalogRetryAfter);
+          }
+          return {
+            data: { detail: "unavailable" },
+            headers,
+            status: catalogFailureStatus,
+          } as never;
+        }
+        if (
+          params?.page_token === null ||
+          params?.geography_type === "county"
+        ) {
+          return {
+            data: { detail: "invalid catalog request" },
+            headers: new Headers(),
+            status: 400,
+          } as never;
+        }
+        return {
+          data: {
+            data: [...compareMeasuresFixture, ...extraCatalogMeasures]
+              .toReversed()
+              .filter(
+                (measure) =>
+                  measure.geography_semantics === params?.geography_type
+              ),
+            links: { self: "/v1/measures" },
+            meta: {},
+          },
+          headers: new Headers(),
+          status: 200,
+        } as never;
+      }
+    ),
+    getAtlasMetadata: vi.fn<
+      typeof import("@/generated/atlas").getAtlasMetadata
     >(
       async () =>
         ({
@@ -165,8 +168,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 200,
         }) as never
     ),
-    observationsV1ObservationsGet: vi.fn<
-      typeof import("@/generated/atlas").observationsV1ObservationsGet
+    listObservations: vi.fn<
+      typeof import("@/generated/atlas").listObservations
     >(async (params) => {
       observationRequests.push(JSON.stringify(params));
       const failuresLeft =
@@ -210,9 +213,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    scoresV1AtlasScoresGet: vi.fn<
-      typeof import("@/generated/atlas").scoresV1AtlasScoresGet
-    >(
+    getAtlasScores: vi.fn<typeof import("@/generated/atlas").getAtlasScores>(
       async () =>
         ({
           data: compareScoresFixture,
@@ -220,8 +221,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 200,
         }) as never
     ),
-    countySurveillanceSituationsGet: vi.fn<
-      typeof import("@/generated/atlas").countySurveillanceSituationsGet
+    getCountySurveillanceSituations: vi.fn<
+      typeof import("@/generated/atlas").getCountySurveillanceSituations
     >(
       async () =>
         ({
@@ -230,8 +231,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 404,
         }) as never
     ),
-    countyTier1SurveillancePriorityGet: vi.fn<
-      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+    getCountyTier1Priority: vi.fn<
+      typeof import("@/generated/atlas").getCountyTier1Priority
     >(
       async () =>
         ({

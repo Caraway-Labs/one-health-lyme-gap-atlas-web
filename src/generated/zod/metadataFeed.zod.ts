@@ -37,6 +37,43 @@ export const metadataFeedDataItemSourceOrganizationMax = 1000;
 
 
 export const metadataFeedDataItemSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const metadataFeedDataItemSourceFamilyLabelMax = 200;
+
+
+export const metadataFeedDataItemSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemDescriptionTextMax = 4096;
+
+
+export const metadataFeedDataItemDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemTagsItemMax = 200;
+
+
+export const metadataFeedDataItemTagsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemTagsMax = 100;
+
+export const metadataFeedDataItemAuthorsItemMax = 300;
+
+
+export const metadataFeedDataItemAuthorsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemAuthorsMax = 20;
+
+export const metadataFeedDataItemPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const metadataFeedDataItemPubmedUrlMax = 80;
+
+
+export const metadataFeedDataItemPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemAttributionMax = 200;
+
+
+export const metadataFeedDataItemAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemAbstractPreviewMax = 1000;
+
+
+export const metadataFeedDataItemAbstractPreviewRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const metadataFeedDataItemCopyrightLineMax = 1000;
+
+
+export const metadataFeedDataItemCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const metadataFeedMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const metadataFeedMetaSourceHealthAvailableDefault = false;
 export const metadataFeedMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
@@ -65,8 +102,23 @@ export const MetadataFeed = zod.object({
   "registry_version": zod.int().min(1),
   "organization": zod.string().min(1).max(metadataFeedDataItemSourceOrganizationMax).regex(metadataFeedDataItemSourceOrganizationRegExp),
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
-})
-})),
+}),
+  "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(metadataFeedDataItemSourceFamilyLabelMax).regex(metadataFeedDataItemSourceFamilyLabelRegExp).describe('Display label for source_family.'),
+  "description": zod.object({
+  "text": zod.string().max(metadataFeedDataItemDescriptionTextMax).regex(metadataFeedDataItemDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
+}).describe('Publisher summary for this entry.'),
+  "tags": zod.array(zod.string().max(metadataFeedDataItemTagsItemMax).regex(metadataFeedDataItemTagsItemRegExp)).max(metadataFeedDataItemTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
+  "authors": zod.array(zod.string().max(metadataFeedDataItemAuthorsItemMax).regex(metadataFeedDataItemAuthorsItemRegExp)).max(metadataFeedDataItemAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
+  "pmid": zod.string().regex(metadataFeedDataItemPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
+  "pubmed_url": zod.string().max(metadataFeedDataItemPubmedUrlMax).regex(metadataFeedDataItemPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(metadataFeedDataItemAttributionMax).regex(metadataFeedDataItemAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract_preview": zod.string().max(metadataFeedDataItemAbstractPreviewMax).regex(metadataFeedDataItemAbstractPreviewRegExp).nullable().describe('Plain-text preview of a present PubMed abstract, cut at a word boundary. At most 1000 characters. The whole abstract when it is shorter. An empty string when the abstract is present and no complete word fits. Null when abstract_state is not present. No ellipsis is added.'),
+  "abstract_has_more": zod.boolean().describe('True when abstract_preview omits part of a present abstract. False when the preview is the whole abstract, or when abstract_state is not present.'),
+  "abstract_state": zod.union([zod.literal('present'),zod.literal('empty'),zod.literal('not_provided'),zod.literal('withheld'),zod.literal('suppressed'),zod.literal(null)]).nullable().describe('present: the abstract text is non-empty. empty: the abstract element is blank. not_provided: the PubMed record has no abstract. withheld: the abstract is not shown. suppressed: the abstract is not shown. Null when the entry is not PubMed, matching a null abstract on the by-id route.'),
+  "copyright_line": zod.string().max(metadataFeedDataItemCopyrightLineMax).regex(metadataFeedDataItemCopyrightLineRegExp).nullable().describe('Copyright line from the record, verbatim. Present only when abstract_state is present and the record has one; otherwise null.')
+}).describe('One feed list row. The full abstract text is omitted.')),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(metadataFeedMetaProjectionVersionDefault),

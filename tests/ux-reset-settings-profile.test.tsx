@@ -25,20 +25,18 @@ vi.mock(
 );
 
 vi.mock(import("@/generated/atlas"), () => ({
-  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
-    vi.fn<() => Promise<never>>(),
-  createPrivacyRequestV1MePrivacyRequestsPost: vi.fn<() => Promise<never>>(),
-  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
-    vi.fn<() => Promise<never>>(),
-  getProfileV1MeProfileGet: getProfile,
-  metadataV1AtlasMetadataGet: vi.fn<() => Promise<never>>(),
-  saveProfileV1MeProfilePut: saveProfile,
+  confirmPrivacyRequest: vi.fn<() => Promise<never>>(),
+  createPrivacyRequest: vi.fn<() => Promise<never>>(),
+  downloadPrivacyExport: vi.fn<() => Promise<never>>(),
+  getProfile,
+  getAtlasMetadata: vi.fn<() => Promise<never>>(),
+  updateProfile: saveProfile,
 }));
 
 import { resetSavedProfileCoordinationForTests } from "@/features/ux-reset/profile/saved-profile-client";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
 import { settingsMetadataQueryKey } from "@/features/ux-reset/settings/use-settings-state-options";
-import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
+import { getAtlasMetadata } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 function asResponse<T>(value: T): never {
@@ -60,7 +58,7 @@ describe("Settings profile form", () => {
     resetSavedProfileCoordinationForTests();
     getProfile.mockReset();
     saveProfile.mockReset();
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+    vi.mocked(getAtlasMetadata).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
   });
@@ -291,7 +289,7 @@ describe("Settings profile form", () => {
   });
 
   it("does not confirm a saved state while the state list is unavailable", async () => {
-    vi.mocked(metadataV1AtlasMetadataGet).mockRejectedValue(
+    vi.mocked(getAtlasMetadata).mockRejectedValue(
       new AtlasApiError("down", "/v1/atlas/metadata", 503, null)
     );
     getProfile.mockResolvedValue(
@@ -323,7 +321,7 @@ describe("Settings profile form", () => {
   });
 
   it("resyncs a pristine state draft after the state list recovers", async () => {
-    vi.mocked(metadataV1AtlasMetadataGet).mockRejectedValueOnce(
+    vi.mocked(getAtlasMetadata).mockRejectedValueOnce(
       new AtlasApiError("down", "/v1/atlas/metadata", 503, null)
     );
     getProfile.mockResolvedValue(
@@ -359,7 +357,7 @@ describe("Settings profile form", () => {
       select: null,
       unitedStates: false,
     });
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+    vi.mocked(getAtlasMetadata).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
     await client.refetchQueries({ queryKey: settingsMetadataQueryKey });
@@ -409,7 +407,7 @@ describe("Settings profile form", () => {
   });
 
   it("keeps a dirty organization edit when the state list recovers", async () => {
-    vi.mocked(metadataV1AtlasMetadataGet).mockRejectedValueOnce(
+    vi.mocked(getAtlasMetadata).mockRejectedValueOnce(
       new AtlasApiError("down", "/v1/atlas/metadata", 503, null)
     );
     getProfile.mockResolvedValue(
@@ -428,7 +426,7 @@ describe("Settings profile form", () => {
     const { client } = renderSettings();
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "Edited" } });
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+    vi.mocked(getAtlasMetadata).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
     await client.refetchQueries({ queryKey: settingsMetadataQueryKey });

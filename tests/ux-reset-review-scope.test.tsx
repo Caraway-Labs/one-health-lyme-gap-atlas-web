@@ -170,16 +170,16 @@ vi.mock(import("@/components/atlas-map"), () => ({
 }));
 
 vi.mock(import("@/generated/atlas"), () => ({
-  getProfileV1MeProfileGet: vi.fn<
-    () => Promise<{ data: { profile: null }; status: number }>
-  >(async () => ({
-    data: { profile: null },
-    status: 200,
-  })),
-  metadataV1AtlasMetadataGet: vi.fn<
+  getProfile: vi.fn<() => Promise<{ data: { profile: null }; status: number }>>(
+    async () => ({
+      data: { profile: null },
+      status: 200,
+    })
+  ),
+  getAtlasMetadata: vi.fn<
     () => Promise<{ data: typeof reviewScopeMetadataFixture; status: number }>
   >(async () => defaultMetadataResponse()),
-  scoresV1AtlasScoresGet: vi.fn<
+  getAtlasScores: vi.fn<
     (params?: {
       dataset_version?: string;
     }) => Promise<{ data: typeof reviewScopeScoresFixture; status: number }>
@@ -190,13 +190,13 @@ vi.mock(import("@/generated/atlas"), () => ({
     },
     status: 200,
   })),
-  saveProfileV1MeProfilePut: vi.fn<
+  updateProfile: vi.fn<
     () => Promise<{ data: { profile: null }; status: number }>
   >(async () => ({
     data: { profile: null },
     status: 200,
   })),
-  stateReviewV1StatesStateReviewGet: vi.fn<
+  getStateReview: vi.fn<
     (
       state: string,
       params?: { dataset_version?: string }
@@ -207,8 +207,8 @@ vi.mock(import("@/generated/atlas"), () => ({
   >(async (state: string, params?: { dataset_version?: string }) =>
     defaultStateReviewResponse(state, params)
   ),
-  countyTier1SurveillancePriorityGet: vi.fn<
-    typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+  getCountyTier1Priority: vi.fn<
+    typeof import("@/generated/atlas").getCountyTier1Priority
   >(async (fips) => {
     const result = reviewReleaseControls.tier1Result;
     if (!result) {
@@ -398,9 +398,8 @@ async function observeSettledStartup(input: {
   saves: number;
   scope: string;
 }> {
-  const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-    await import("@/generated/atlas");
-  const save = vi.mocked(saveProfileV1MeProfilePut);
+  const { getProfile, updateProfile } = await import("@/generated/atlas");
+  const save = vi.mocked(updateProfile);
   save.mockClear();
   const updates: { history: string; query: string }[] = [];
   const client = new QueryClient({
@@ -414,7 +413,7 @@ async function observeSettledStartup(input: {
         status: number;
       }>()
     : null;
-  vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+  vi.mocked(getProfile).mockImplementation(
     () =>
       (held
         ? held.promise
@@ -490,8 +489,8 @@ async function observeSettledStartup(input: {
 
 describe("Reset Review scope UI", () => {
   beforeEach(async () => {
-    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
-    vi.mocked(scoresV1AtlasScoresGet).mockImplementation(
+    const { getAtlasScores } = await import("@/generated/atlas");
+    vi.mocked(getAtlasScores).mockImplementation(
       async (params) =>
         ({
           data: {
@@ -564,10 +563,10 @@ describe("Reset Review scope UI", () => {
   });
 
   it("does not offer Alaska or Hawaii as Review scopes", async () => {
-    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+    const { getAtlasMetadata, getStateReview } =
       await import("@/generated/atlas");
-    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const metadata = vi.mocked(getAtlasMetadata);
+    const review = vi.mocked(getStateReview);
     metadata.mockResolvedValue({
       data: {
         ...reviewScopeMetadataFixture,
@@ -683,9 +682,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("clears a stale county when the review scope is not supported", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     review.mockClear();
     const urlUpdates: string[] = [];
     const search =
@@ -756,9 +754,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("clears a mismatched county for scopes outside the lower 48", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     const codes = ["PR", "ZZ", "GU"] as const;
     const snapshots: {
       clearedCounty: boolean;
@@ -839,9 +836,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("clears the prior county when the next state's review does not succeed", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     let mode: "fail" | "hold" | "ok" = "ok";
     const search = "scope=CO&county=08001&dataset=alpha-2026&period=2023-01-01";
     mockedSearch = search;
@@ -1018,9 +1014,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("normalizes mismatched counties on direct loads and scope changes before shell links publish", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     let mode: "empty" | "fail" | "hold" | "ok" = "ok";
     const origin =
       "scope=CO&county=08001&compare=08001,08013&dataset=alpha-2026&period=2023-01-01";
@@ -1426,9 +1421,8 @@ describe("Reset Review scope UI", () => {
   }, 20_000);
 
   it("uses published identity for Ask Atlas when the candidate name is blank", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     review.mockResolvedValue({
       data: buildStateReview({
         candidates: [
@@ -1530,9 +1524,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("hides a loaded review when a later refetch fails", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     let failRefresh = false;
     review.mockImplementation(async (state: string) => {
       if (failRefresh) {
@@ -1668,8 +1661,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("honors explicit URL scope over profile default", async () => {
-    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValueOnce({
+    const { getProfile } = await import("@/generated/atlas");
+    vi.mocked(getProfile).mockResolvedValueOnce({
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
@@ -1685,9 +1678,9 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps a county URL when the saved starting view is a state", async () => {
-    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    const { getProfile } = await import("@/generated/atlas");
     const updates: string[] = [];
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+    vi.mocked(getProfile).mockResolvedValue({
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
@@ -1714,9 +1707,9 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps a focus-only URL on the national map when the saved view is a state", async () => {
-    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
+    const { getProfile } = await import("@/generated/atlas");
     const updates: string[] = [];
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+    vi.mocked(getProfile).mockResolvedValue({
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
@@ -1764,8 +1757,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps explicit national scope when profile default is a state", async () => {
-    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+    const { getProfile } = await import("@/generated/atlas");
+    vi.mocked(getProfile).mockResolvedValue({
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
@@ -1779,16 +1772,13 @@ describe("Reset Review scope UI", () => {
   });
 
   it("applies a state profile default with replace and without a national flash", async () => {
-    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-      await import("@/generated/atlas");
+    const { getProfile, updateProfile } = await import("@/generated/atlas");
     const updates: { history: string; query: string }[] = [];
     const profileGate = Promise.withResolvers<{
       data: { profile: { state_code: string } };
       status: number;
     }>();
-    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
-      profileGate.promise as never
-    );
+    vi.mocked(getProfile).mockReturnValue(profileGate.promise as never);
     renderReview("", {
       onUrlUpdate: (query, history) => {
         updates.push({ history, query });
@@ -1812,7 +1802,7 @@ describe("Reset Review scope UI", () => {
       history: updates[0]?.history ?? "",
       national: screen.queryByTestId("review-national-orientation"),
       query: updates[0]?.query ?? "",
-      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      saves: vi.mocked(updateProfile).mock.calls.length,
       status: screen.getByTestId("review-scope-status").textContent,
     }).toStrictEqual({
       history: "replace",
@@ -1824,15 +1814,12 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps a scope chosen before the profile default arrives", async () => {
-    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-      await import("@/generated/atlas");
+    const { getProfile, updateProfile } = await import("@/generated/atlas");
     const profileGate = Promise.withResolvers<{
       data: { profile: { state_code: string } };
       status: number;
     }>();
-    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
-      profileGate.promise as never
-    );
+    vi.mocked(getProfile).mockReturnValue(profileGate.promise as never);
     renderReview("");
     await waitFor(() =>
       expect(screen.getByTestId("review-scope-select")).toBeTruthy()
@@ -1859,7 +1846,7 @@ describe("Reset Review scope UI", () => {
     );
     expect({
       denver: screen.queryByText("Denver"),
-      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      saves: vi.mocked(updateProfile).mock.calls.length,
       scope: screen.getByTestId("review-scope-status").textContent,
     }).toStrictEqual({
       denver: null,
@@ -1869,15 +1856,12 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps an explicit United States choice made while the profile is loading", async () => {
-    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-      await import("@/generated/atlas");
+    const { getProfile, updateProfile } = await import("@/generated/atlas");
     const profileGate = Promise.withResolvers<{
       data: { profile: { state_code: string } };
       status: number;
     }>();
-    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
-      profileGate.promise as never
-    );
+    vi.mocked(getProfile).mockReturnValue(profileGate.promise as never);
     const updates: { history: string; query: string }[] = [];
     renderReview("", {
       onUrlUpdate: (query, history) => {
@@ -1911,7 +1895,7 @@ describe("Reset Review scope UI", () => {
       panel: screen.queryByTestId("review-state-panel"),
       rendered: screen.getByTestId("review-scope-results").dataset
         .renderedScope,
-      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      saves: vi.mocked(updateProfile).mock.calls.length,
       write: updates.find((update) => update.query.includes("scope=ALL")),
     }).toStrictEqual({
       denver: null,
@@ -1921,6 +1905,30 @@ describe("Reset Review scope UI", () => {
       saves: 0,
       write: { history: "push", query: expect.stringContaining("scope=ALL") },
     });
+  });
+
+  it("writes scope=ALL when United States is chosen while the address bar is still a state", async () => {
+    window.history.replaceState(null, "", "/explore?scope=CO&county=08001");
+    const updates: { history: string; query: string }[] = [];
+    renderReview("?scope=ALL", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    fireEvent.click(await screen.findByTestId("review-scope-select"));
+    const unitedStates = await screen.findByRole("option", {
+      name: "United States",
+    });
+    fireEvent.pointerDown(unitedStates, { pointerType: "mouse" });
+    fireEvent.click(unitedStates);
+    await waitFor(() =>
+      expect(
+        updates.some(
+          (update) =>
+            update.history === "push" && update.query.includes("scope=ALL")
+        )
+      ).toBeTruthy()
+    );
   });
 
   it("writes the saved state again when a scope-less entry reverts to national", async () => {
@@ -1959,15 +1967,12 @@ describe("Reset Review scope UI", () => {
   });
 
   it("applies the saved state after Back from a scope chosen during profile load", async () => {
-    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-      await import("@/generated/atlas");
+    const { getProfile, updateProfile } = await import("@/generated/atlas");
     const profileGate = Promise.withResolvers<{
       data: { profile: { state_code: string } };
       status: number;
     }>();
-    vi.mocked(getProfileV1MeProfileGet).mockReturnValue(
-      profileGate.promise as never
-    );
+    vi.mocked(getProfile).mockReturnValue(profileGate.promise as never);
     const updates: { history: string; query: string }[] = [];
     renderReview("", {
       onUrlUpdate: (query, history) => {
@@ -1999,7 +2004,7 @@ describe("Reset Review scope UI", () => {
     expect({
       loading: screen.queryByText("Loading review scope…"),
       national: screen.queryByTestId("review-national-orientation"),
-      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      saves: vi.mocked(updateProfile).mock.calls.length,
       status: screen.getByTestId("review-scope-status").textContent,
       write: updates.at(-1),
     }).toStrictEqual({
@@ -2012,10 +2017,9 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps the national fallback when a failed profile read later returns a state", async () => {
-    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-      await import("@/generated/atlas");
+    const { getProfile, updateProfile } = await import("@/generated/atlas");
     let failProfile = true;
-    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    vi.mocked(getProfile).mockImplementation(
       () =>
         (failProfile
           ? Promise.reject(new Error("profile unavailable"))
@@ -2048,7 +2052,7 @@ describe("Reset Review scope UI", () => {
       loading: screen.queryByText("Loading review scope…"),
       national: Boolean(screen.queryByTestId("review-national-orientation")),
       panel: screen.queryByTestId("review-state-panel"),
-      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      saves: vi.mocked(updateProfile).mock.calls.length,
       scopeWrites: updates.some((query) => query.includes("scope=CO")),
     }).toStrictEqual({
       loading: null,
@@ -2191,8 +2195,7 @@ describe("Reset Review scope UI", () => {
   it("keeps the resolved state when a later profile refetch returns a different state", async () => {
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");
-    const { getProfileV1MeProfileGet, saveProfileV1MeProfilePut } =
-      await import("@/generated/atlas");
+    const { getProfile, updateProfile } = await import("@/generated/atlas");
     const geometry = vi.mocked(fetchCountyDisplayGeometry);
     geometry.mockResolvedValue({
       features: [
@@ -2210,7 +2213,7 @@ describe("Reset Review scope UI", () => {
       type: "FeatureCollection",
     });
     let profileState = "CO";
-    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    vi.mocked(getProfile).mockImplementation(
       () =>
         Promise.resolve({
           data: {
@@ -2255,7 +2258,7 @@ describe("Reset Review scope UI", () => {
         loading: screen.queryByText("Loading review scope…"),
         rendered: screen.getByTestId("review-scope-results").dataset
           .renderedScope,
-        saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+        saves: vi.mocked(updateProfile).mock.calls.length,
         url: updates.at(-1) ?? "",
       }).toStrictEqual({
         albany: null,
@@ -2275,16 +2278,13 @@ describe("Reset Review scope UI", () => {
   });
 
   it("rewrites an invalid scope to national without applying the profile state", async () => {
-    const {
-      getProfileV1MeProfileGet,
-      saveProfileV1MeProfilePut,
-      stateReviewV1StatesStateReviewGet,
-    } = await import("@/generated/atlas");
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue({
+    const { getProfile, updateProfile, getStateReview } =
+      await import("@/generated/atlas");
+    vi.mocked(getProfile).mockResolvedValue({
       data: { profile: { starting_view_version: 1, state_code: "CO" } },
       status: 200,
     } as never);
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    vi.mocked(getStateReview).mockClear();
     const updates: string[] = [];
     renderReview("?scope=NOT", {
       onUrlUpdate: (query) => {
@@ -2296,9 +2296,8 @@ describe("Reset Review scope UI", () => {
     );
     expect({
       panel: screen.queryByTestId("review-state-panel"),
-      reviewCalls: vi.mocked(stateReviewV1StatesStateReviewGet).mock.calls
-        .length,
-      saves: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      reviewCalls: vi.mocked(getStateReview).mock.calls.length,
+      saves: vi.mocked(updateProfile).mock.calls.length,
       status: screen.getByTestId("review-scope-status").textContent,
       updates,
     }).toStrictEqual({
@@ -2311,9 +2310,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("does not request a review for an unrecognized state code", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    const { getStateReview } = await import("@/generated/atlas");
+    vi.mocked(getStateReview).mockClear();
     renderReview("?scope=ZZ");
     await waitFor(() =>
       expect(screen.getByTestId("review-scope-unsupported").textContent).toBe(
@@ -2324,8 +2322,7 @@ describe("Reset Review scope UI", () => {
       national: screen.queryByTestId("review-national-orientation"),
       requestScope: screen.getByTestId("review-scope-status").dataset
         .requestScope,
-      reviewCalls: vi.mocked(stateReviewV1StatesStateReviewGet).mock.calls
-        .length,
+      reviewCalls: vi.mocked(getStateReview).mock.calls.length,
     }).toStrictEqual({
       national: null,
       requestScope: "ZZ",
@@ -2336,9 +2333,8 @@ describe("Reset Review scope UI", () => {
   it("keeps URL, list, map, and handoff on the new scope when a prior review arrives late", async () => {
     const { fetchCountyDisplayGeometry } =
       await import("@/lib/county-geography");
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     vi.mocked(fetchCountyDisplayGeometry).mockResolvedValue({
       features: [
         {
@@ -2435,12 +2431,12 @@ describe("Reset Review scope UI", () => {
   });
 
   it("requests metadata for a supplied dataset query param", async () => {
-    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+    const { getAtlasMetadata, getStateReview } =
       await import("@/generated/atlas");
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    vi.mocked(getStateReview).mockClear();
     renderReview("?scope=CO&dataset=legacy-release");
     await waitFor(() =>
-      expect(metadataV1AtlasMetadataGet).toHaveBeenCalledWith(
+      expect(getAtlasMetadata).toHaveBeenCalledWith(
         { dataset_version: "legacy-release" },
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
@@ -2448,7 +2444,7 @@ describe("Reset Review scope UI", () => {
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain("legacy-release")
     );
-    expect(stateReviewV1StatesStateReviewGet).not.toHaveBeenCalled();
+    expect(getStateReview).not.toHaveBeenCalled();
   });
 
   it("follows a restored URL county after an interactive selection", async () => {
@@ -2624,19 +2620,19 @@ describe("Reset Review scope UI", () => {
   });
 
   it("surfaces unavailable dataset metadata without a perpetual loading state", async () => {
-    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+    const { getAtlasMetadata, getStateReview } =
       await import("@/generated/atlas");
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValueOnce({
+    vi.mocked(getAtlasMetadata).mockResolvedValueOnce({
       data: null,
       status: 404,
     } as never);
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockClear();
+    vi.mocked(getStateReview).mockClear();
     renderReview("?scope=CO&dataset=older-release");
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toContain("older-release")
     );
     expect(screen.queryByText("Loading county scores…")).toBeNull();
-    expect(stateReviewV1StatesStateReviewGet).not.toHaveBeenCalled();
+    expect(getStateReview).not.toHaveBeenCalled();
   });
 
   it("realigns the active county when switching state scopes", async () => {
@@ -2803,8 +2799,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("previews a map selection without leaving Review", async () => {
-    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
-    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValue({
+    const { getAtlasScores } = await import("@/generated/atlas");
+    vi.mocked(getAtlasScores).mockResolvedValue({
       data: reviewScopeScoresFixture,
       status: 200,
     } as never);
@@ -3036,9 +3032,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps request failure distinct from nothing stands out", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockRejectedValueOnce(
+    const { getStateReview } = await import("@/generated/atlas");
+    vi.mocked(getStateReview).mockRejectedValueOnce(
       new Error("service unavailable")
     );
     renderReview("?scope=CO");
@@ -3053,9 +3048,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("renders nothing-stands-out without turning gaps into candidates", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+    const { getStateReview } = await import("@/generated/atlas");
+    vi.mocked(getStateReview).mockResolvedValue({
       data: buildStateReview({
         resultState: "none_stand_out",
         state: "CO",
@@ -3078,9 +3072,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("renders insufficient evidence separately from data-gap-only", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+    const { getStateReview } = await import("@/generated/atlas");
+    vi.mocked(getStateReview).mockResolvedValue({
       data: buildStateReview({
         gaps: [
           {
@@ -3111,9 +3104,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("renders unsupported gaps as data-gap-only", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    vi.mocked(stateReviewV1StatesStateReviewGet).mockResolvedValue({
+    const { getStateReview } = await import("@/generated/atlas");
+    vi.mocked(getStateReview).mockResolvedValue({
       data: buildStateReview({
         gaps: [
           {
@@ -3144,9 +3136,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("requests review with the explicit release metadata confirmed", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     review.mockClear();
     renderReview("?scope=CO&dataset=alpha-2026");
     await waitFor(() =>
@@ -3159,10 +3150,10 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps metadata and review on one release when the default rolls over", async () => {
-    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+    const { getAtlasMetadata, getStateReview } =
       await import("@/generated/atlas");
-    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const metadata = vi.mocked(getAtlasMetadata);
+    const review = vi.mocked(getStateReview);
     const releases = ["release-a"];
     metadata.mockImplementation(
       async () =>
@@ -3254,9 +3245,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("rejects a review body from a different release", async () => {
-    const { stateReviewV1StatesStateReviewGet } =
-      await import("@/generated/atlas");
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const { getStateReview } = await import("@/generated/atlas");
+    const review = vi.mocked(getStateReview);
     review.mockClear();
     review.mockResolvedValue({
       data: {
@@ -3310,10 +3300,10 @@ describe("Reset Review scope UI", () => {
   });
 
   it("keeps the resolved release on shell links when no county is selected", async () => {
-    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+    const { getAtlasMetadata, getStateReview } =
       await import("@/generated/atlas");
-    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const metadata = vi.mocked(getAtlasMetadata);
+    const review = vi.mocked(getStateReview);
     const gap = {
       code: "SOURCE_NATIVE_LINEAGE_UNAVAILABLE",
       county_fips: "08031",
@@ -3729,10 +3719,10 @@ describe("Reset Review scope UI", () => {
   });
 
   it("does not mix reproducibility identifiers across scope or release changes", async () => {
-    const { metadataV1AtlasMetadataGet, stateReviewV1StatesStateReviewGet } =
+    const { getAtlasMetadata, getStateReview } =
       await import("@/generated/atlas");
-    const metadata = vi.mocked(metadataV1AtlasMetadataGet);
-    const review = vi.mocked(stateReviewV1StatesStateReviewGet);
+    const metadata = vi.mocked(getAtlasMetadata);
+    const review = vi.mocked(getStateReview);
     const hashFor = (seed: string) => seed.repeat(64);
     const coloradoHash = hashFor("a");
     const newYorkHash = hashFor("b");
@@ -3951,8 +3941,8 @@ describe("Reset Review scope UI", () => {
   });
 
   it("opens a listed state from the scope control without writing Settings", async () => {
-    const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
-    const save = vi.mocked(saveProfileV1MeProfilePut);
+    const { updateProfile } = await import("@/generated/atlas");
+    const save = vi.mocked(updateProfile);
     save.mockClear();
     renderReview("?scope=ALL");
     await screen.findByTestId("review-national-orientation");
@@ -4165,7 +4155,7 @@ describe("Reset Review scope UI", () => {
   });
 
   it("returns a state county to national scope without saving the starting view", async () => {
-    const { saveProfileV1MeProfilePut } = await import("@/generated/atlas");
+    const { updateProfile } = await import("@/generated/atlas");
     const updates: string[] = [];
     renderReview("?scope=CO&county=08013&layer=rurality&eco=55", {
       onUrlUpdate: (query) => {
@@ -4200,7 +4190,7 @@ describe("Reset Review scope UI", () => {
       focus: latest.includes("focus="),
       layer: latest.includes("layer=rurality"),
       preview: screen.queryByTestId("review-published-county-preview"),
-      profileWrites: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+      profileWrites: vi.mocked(updateProfile).mock.calls.length,
       rankings: screen
         .getAllByTestId("national-published-county")
         .map((row) => row.dataset.fips)
@@ -4470,8 +4460,8 @@ describe("Settings default jurisdiction readout", () => {
   });
 
   it("surfaces profile read failures distinctly from national default", async () => {
-    const { getProfileV1MeProfileGet } = await import("@/generated/atlas");
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValueOnce({
+    const { getProfile } = await import("@/generated/atlas");
+    vi.mocked(getProfile).mockResolvedValueOnce({
       data: null,
       status: 503,
     } as never);

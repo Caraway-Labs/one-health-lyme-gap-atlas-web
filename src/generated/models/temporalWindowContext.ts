@@ -6,9 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * A span of time with an inclusive start and an exclusive end.
+ */
 export interface TemporalWindowContext {
+  /** First date in the window. */
   start: string;
+  /** First date after the window. It is not in the window. */
   end_exclusive: string;
+  /** Calendar the dates use. */
   calendar: 'GREGORIAN';
+  /** Time zone the dates use. */
   timezone: 'UTC';
 }

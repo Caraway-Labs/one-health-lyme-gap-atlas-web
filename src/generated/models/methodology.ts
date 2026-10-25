@@ -6,16 +6,22 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * The method Atlas used to produce or interpret a measure's values.
+ */
 export interface Methodology {
-  /** Exact governed methodology resource ID; null when not governed. */
+  /** Identifies the methodology. Use it with `/v1/methodologies/{methodology_id}`. */
   methodology_id: string;
+  /** Identifier of the measure the methodology applies to. */
   measure_id: string;
+  /** Version of this methodology resource. */
   version: string;
+  /** Plain-language description of the method. */
   description: string;
-  /** Governed interpretation limitations; preserve alongside values and versions. */
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations: string[];
-  /** Governed semantic contract version, separate from HTTP V1 and application version. */
+  /** Version of the data contract the value follows. It is separate from the API version and the application version. */
   semantic_version: string;
-  /** Governed current-release relationship version. */
+  /** Identifies the published data release this record belongs to. */
   release_version: string;
 }

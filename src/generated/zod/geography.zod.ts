@@ -9,15 +9,15 @@ import * as zod from 'zod';
 
 export const Geography = zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "label": zod.string(),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Type and FIPS code of the place.'),
+  "label": zod.string().describe('Display name of the place.'),
   "parent": zod.union([zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),zod.null()]).optional()
-}).describe('County\/state identity metadata; geometry is a separate display resource.')
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),zod.null()]).optional().describe('The state that contains a county. `null` for a state.')
+}).describe('Identity and display name of a county or state. It carries no geometry.')
 
 export type Geography = zod.input<typeof Geography>;
 export type GeographyOutput = zod.output<typeof Geography>;

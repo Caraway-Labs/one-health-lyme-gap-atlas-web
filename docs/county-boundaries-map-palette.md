@@ -24,7 +24,7 @@ This layer has no numeric measure, bin, or value state. It does not recolor gap 
 | Map surround | `.map-wrap` gradient `#f7fbfb` to `#f0f6f5`, showing through a transparent canvas |
 | County fill | `#e4e9ea` (`--explorer-boundary`) because `colorsByFips` is empty |
 | County stroke | `fill-outline-color` `rgba(255,255,255,.9)` on every layer |
-| Selected state | `selected-state-outline` strokes every county ring in the selected state. Black `#000000` at width `2.5`, or the zoom width when the camera is state-focused. Accent `#0b7285` only when no state is selected. |
+| Selected state | `selected-state-outline` strokes every county ring in the selected state. Black `#000000` at width `2.5`, or the zoom width when the camera is state-focused. A fresh map with nothing selected may still hold the legacy accent `#0b7285`, but clearing a highlight hides the layer immediately and does not repaint that stroke teal. |
 | Selected county | Solid `#000000` at full opacity. Constant width `5` CSS pixels. No casing or blur. |
 | Legend | One full-width swatch, `var(--explorer-boundary)`, label `County boundary`, no numeric captions |
 
