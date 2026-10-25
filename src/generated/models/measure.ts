@@ -9,53 +9,98 @@ import type { GeographyType } from './geographyType';
 import type { StandardsMapping } from './standardsMapping';
 import type { ValueState } from './valueState';
 
+/**
+ * One variable you can query, such as a case count. It belongs to one indicator.
+ */
 export interface Measure {
+  /** Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. */
   measure_id: string;
+  /** Identifier of the indicator this measure belongs to. */
   indicator_id: string;
+  /** Short display name of the measure. */
   label: string;
-  /** @nullable */
+  /**
+     * Plain-language definition of the measure. `null` when none is published.
+     * @nullable
+     */
   definition: string | null;
-  /** Governed semantic contract version, separate from HTTP V1 and application version. */
+  /** Version of the data contract the value follows. It is separate from the API version and the application version. */
   semantic_version: string;
   /**
-     * Governed current-release relationship version.
+     * Identifies the published data release this record belongs to.
      * @nullable
      */
   release_version?: string | null;
-  /** @nullable */
+  /**
+     * How the value is produced, such as `DERIVED`. `null` when none is published.
+     * @nullable
+     */
   measure_type?: string | null;
-  /** @nullable */
+  /**
+     * Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.
+     * @nullable
+     */
   unit?: string | null;
   /**
-     * Governed denominator; null means it is not supplied and must not be inferred.
+     * What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.
      * @nullable
      */
   denominator?: string | null;
-  /** @nullable */
+  /**
+     * Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.
+     * @nullable
+     */
   geography_types?: GeographyType[] | null;
-  /** @nullable */
+  /**
+     * Time intervals the measure is reported in, such as `DAY`. `null` when not listed.
+     * @nullable
+     */
   temporal_grains?: string[] | null;
-  /** @nullable */
+  /**
+     * What the place dimension means for this measure. `null` when not published.
+     * @nullable
+     */
   geography_semantics?: string | null;
-  /** @nullable */
+  /**
+     * What the time dimension means for this measure. `null` when not published.
+     * @nullable
+     */
   temporal_semantics?: string | null;
-  /** @nullable */
+  /**
+     * The `value_state` values this measure can return. `null` when not listed.
+     * @nullable
+     */
   allowed_value_states?: ValueState[] | null;
-  /** @nullable */
+  /**
+     * Breakdowns, such as age group, that the measure supports. `null` when it has none.
+     * @nullable
+     */
   allowed_strata?: string[] | null;
-  /** @nullable */
+  /**
+     * How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.
+     * @nullable
+     */
   missingness_semantics?: string | null;
   /**
-     * Exact governed methodology resource ID; null when not governed.
+     * Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies.
      * @nullable
      */
   methodology_id?: string | null;
-  /** @nullable */
+  /**
+     * Short name of the method that produces the value.
+     * @nullable
+     */
   methodology?: string | null;
-  /** @nullable */
+  /**
+     * Identifiers of the sources the measure draws on. `null` when not listed.
+     * @nullable
+     */
   source_ids?: string[] | null;
-  /** Governed interpretation limitations; preserve alongside values and versions. */
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations?: string[];
-  /** @nullable */
+  /**
+     * Optional reviewed links to external standards. `null` when none exist.
+     * @nullable
+     */
   standards_mappings?: StandardsMapping[] | null;
 }

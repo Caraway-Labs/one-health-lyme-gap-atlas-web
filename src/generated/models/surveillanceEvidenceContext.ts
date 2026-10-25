@@ -9,24 +9,38 @@ import type { SurveillanceEvidenceContextNormalizedState } from './surveillanceE
 import type { SurveillanceEvidenceContextState } from './surveillanceEvidenceContextState';
 
 /**
- * Data-projector evidence, never an API classification.
+ * Evidence state for a county as supplied with the data. Atlas adds no classification.
  */
 export interface SurveillanceEvidenceContext {
+  /** Version of the contract that defines this object. */
   contract_version: 'atlas-surveillance-evidence-v3';
   /**
-     * Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.
+     * County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher's original value stays in the observation `value`.
      * @nullable
      */
   normalized_state?: SurveillanceEvidenceContextNormalizedState;
+  /** Evidence state for the county. None of these values proves absence. */
   state: SurveillanceEvidenceContextState;
-  /** @minItems 1 */
+  /**
+     * Codes that explain why the state applies.
+     * @minItems 1
+     */
   reason_codes: string[];
+  /** How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping. */
   evidence_tier: 'GOVERNED_MAPPING';
+  /** Identifies the observation this state describes. */
   observation_key: string;
+  /** Identifies the revision of the evidence record. */
   revision_id: string;
+  /** The `value_state` of the observation this state describes. */
   value_state: string;
+  /** Identifies the rule that mapped the source value. */
   source_rule_id: string;
-  /** @minItems 1 */
+  /**
+     * Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.
+     * @minItems 1
+     */
   limitations: string[];
+  /** Identifies the revision of the evidence set. */
   evidence_revision_id: string;
 }

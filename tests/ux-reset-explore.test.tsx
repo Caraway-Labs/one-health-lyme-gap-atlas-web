@@ -102,9 +102,9 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    knowledgeGraphChatV1KnowledgeGraphChatPost: chatRequest as never,
-    metadataV1AtlasMetadataGet: vi.fn<
-      typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
+    askKnowledgeGraph: chatRequest as never,
+    getAtlasMetadata: vi.fn<
+      typeof import("@/generated/atlas").getAtlasMetadata
     >(async (params) => {
       if (
         metadataControls.delayDataset &&
@@ -121,32 +121,35 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    measuresV1MeasuresGet: vi.fn<
-      typeof import("@/generated/atlas").measuresV1MeasuresGet
-    >(async (params) => {
-      if (params?.page_token === null || params?.geography_type === "county") {
+    listMeasures: vi.fn<typeof import("@/generated/atlas").listMeasures>(
+      async (params) => {
+        if (
+          params?.page_token === null ||
+          params?.geography_type === "county"
+        ) {
+          return {
+            data: { detail: "invalid catalog request" },
+            headers: new Headers(),
+            status: 400,
+          } as never;
+        }
+        const data = exploreMeasuresEnvelope.data
+          .filter(
+            (measure) => measure.geography_semantics === params?.geography_type
+          )
+          .map((measure) => ({
+            ...measure,
+            release_version: catalogControls.releaseVersion,
+          }));
         return {
-          data: { detail: "invalid catalog request" },
+          data: { ...exploreMeasuresEnvelope, data },
           headers: new Headers(),
-          status: 400,
+          status: 200,
         } as never;
       }
-      const data = exploreMeasuresEnvelope.data
-        .filter(
-          (measure) => measure.geography_semantics === params?.geography_type
-        )
-        .map((measure) => ({
-          ...measure,
-          release_version: catalogControls.releaseVersion,
-        }));
-      return {
-        data: { ...exploreMeasuresEnvelope, data },
-        headers: new Headers(),
-        status: 200,
-      } as never;
-    }),
-    observationsV1ObservationsGet: vi.fn<
-      typeof import("@/generated/atlas").observationsV1ObservationsGet
+    ),
+    listObservations: vi.fn<
+      typeof import("@/generated/atlas").listObservations
     >(async (params) => {
       const hasYear = typeof params.year === "number";
       const hasRange = Boolean(params.start_date && params.end_date);
@@ -194,9 +197,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    scoresV1AtlasScoresGet: vi.fn<
-      typeof import("@/generated/atlas").scoresV1AtlasScoresGet
-    >(
+    getAtlasScores: vi.fn<typeof import("@/generated/atlas").getAtlasScores>(
       async () =>
         ({
           data: {

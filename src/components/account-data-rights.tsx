@@ -20,9 +20,9 @@ import {
   workspaceSignOutSuppressesExpiryRedirect,
 } from "@/features/ux-reset/workspace-sign-out";
 import {
-  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost,
-  createPrivacyRequestV1MePrivacyRequestsPost,
-  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet,
+  confirmPrivacyRequest,
+  createPrivacyRequest,
+  downloadPrivacyExport,
 } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
@@ -155,7 +155,7 @@ export function AccountDataRights({
       setBusy(true);
       setNotice(null);
       try {
-        const created = await createPrivacyRequestV1MePrivacyRequestsPost(
+        const created = await createPrivacyRequest(
           { action },
           privacyRequestHeaders(createToken)
         );
@@ -165,12 +165,11 @@ export function AccountDataRights({
         }
         const confirmToken = await accessTokenForSubject(subjectId);
         if (!confirmToken || !operationCurrent()) return;
-        const confirmed =
-          await confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost(
-            created.data.request_id,
-            { nonce: created.data.confirmation_nonce },
-            privacyRequestHeaders(confirmToken)
-          );
+        const confirmed = await confirmPrivacyRequest(
+          created.data.request_id,
+          { nonce: created.data.confirmation_nonce },
+          privacyRequestHeaders(confirmToken)
+        );
         if (!(await sameAccount())) return;
         if (confirmed.status !== 200) {
           throw new Error("Privacy request confirmation failed.");
@@ -184,11 +183,10 @@ export function AccountDataRights({
         if (action === "export") {
           const downloadToken = await accessTokenForSubject(subjectId);
           if (!downloadToken || !operationCurrent()) return;
-          const file =
-            await downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet(
-              created.data.request_id,
-              privacyRequestHeaders(downloadToken)
-            );
+          const file = await downloadPrivacyExport(
+            created.data.request_id,
+            privacyRequestHeaders(downloadToken)
+          );
           if (!(await sameAccount())) return;
           if (file.status !== 200) {
             throw new Error("Export download failed.");

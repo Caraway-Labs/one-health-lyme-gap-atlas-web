@@ -6,9 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BriefingSource } from './briefingSource';
+import type { FeedAbstract } from './feedAbstract';
+import type { FeedDescription } from './feedDescription';
 import type { FeedEntryPublicationDateState } from './feedEntryPublicationDateState';
+import type { FeedEntrySourceFamily } from './feedEntrySourceFamily';
 import type { ProjectionProvenance } from './projectionProvenance';
 
+/**
+ * One source-attributed publication in the intelligence feed.
+ */
 export interface FeedEntry {
   /** @pattern ^[a-f0-9]{64}$ */
   item_id: string;
@@ -51,4 +57,36 @@ export interface FeedEntry {
      */
   publisher: string | null;
   source: BriefingSource;
+  /** Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other. */
+  source_family: FeedEntrySourceFamily;
+  /** Publisher summary for this entry. */
+  description: FeedDescription;
+  /** PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. */
+  abstract: FeedAbstract | null;
+  /**
+     * Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.
+     * @maxItems 100
+     * @items.maxLength 200
+     * @items.pattern ^[^<>\x00-\x1f\x7f]*$
+     */
+  tags: string[];
+  /**
+     * Structured author names in record order. Empty when the entry has none.
+     * @maxItems 20
+     * @items.maxLength 300
+     * @items.pattern ^[^<>\x00-\x1f\x7f]*$
+     */
+  authors: string[];
+  /**
+     * PubMed identifier. Null when the entry is not a PubMed record.
+     * @nullable
+     * @pattern ^[1-9][0-9]{0,9}$
+     */
+  pmid: string | null;
+  /**
+     * Credit line shown with the entry.
+     * @maxLength 200
+     * @pattern ^[^<>\x00-\x1f\x7f]*$
+     */
+  attribution: string;
 }

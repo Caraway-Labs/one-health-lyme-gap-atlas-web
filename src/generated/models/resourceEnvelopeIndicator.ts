@@ -7,6 +7,10 @@
  */
 import type { Indicator } from './indicator';
 
+/**
+ * One indicator, wrapped in `data`.
+ */
 export interface ResourceEnvelopeIndicator {
+  /** The requested resource. */
   data: Indicator;
 }

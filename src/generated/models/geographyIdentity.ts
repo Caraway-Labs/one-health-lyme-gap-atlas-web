@@ -8,10 +8,11 @@
 import type { GeographyType } from './geographyType';
 
 /**
- * Stable FIPS join identity, independent of display or analysis polygons.
+ * Identifies one place by type and FIPS code. It carries no geometry.
  */
 export interface GeographyIdentity {
+  /** Kind of place: `county` or `state`. It sets how long `geography_id` is. */
   geography_type: GeographyType;
-  /** FIPS string with leading zeros: five digits for counties, two for states. */
+  /** FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`. */
   geography_id: string;
 }

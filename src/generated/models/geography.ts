@@ -8,10 +8,13 @@
 import type { GeographyIdentity } from './geographyIdentity';
 
 /**
- * County/state identity metadata; geometry is a separate display resource.
+ * Identity and display name of a county or state. It carries no geometry.
  */
 export interface Geography {
+  /** Type and FIPS code of the place. */
   geography: GeographyIdentity;
+  /** Display name of the place. */
   label: string;
+  /** The state that contains a county. `null` for a state. */
   parent?: GeographyIdentity | null;
 }

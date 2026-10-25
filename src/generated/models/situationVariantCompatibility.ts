@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * How the classification relates to the current data release. `EXACT_INPUT` means the model read the current release. `ADMITTED_CARRY_FORWARD` means a reviewed result computed from an earlier release is published for the current one. `UNAVAILABLE` means there is no classification.
+ */
 export type SituationVariantCompatibility = typeof SituationVariantCompatibility[keyof typeof SituationVariantCompatibility];
 
 

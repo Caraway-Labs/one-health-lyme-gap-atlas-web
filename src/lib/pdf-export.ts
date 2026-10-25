@@ -1,12 +1,12 @@
 import {
-  getCountyReportPdfV1CountiesFipsReportPdfGetUrl,
-  getStateReportPdfV1StatesStateReportPdfGetUrl,
+  getDownloadCountyReportUrl,
+  getDownloadStateReportUrl,
 } from "@/generated/atlas";
 import {
-  countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareDefault,
-  countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKDefault,
-  countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault,
-} from "@/generated/zod/countyReportPdfV1CountiesFipsReportPdfGetParams.zod";
+  downloadCountyReportParamsEcologicalShareDefault,
+  downloadCountyReportParamsSmoothKDefault,
+  downloadCountyReportParamsMissingHumanWeaknessDefault,
+} from "@/generated/zod/downloadCountyReportParams.zod";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 import { getPublicConfig } from "@/lib/public-config";
 
@@ -38,11 +38,10 @@ export type PdfDownloadResult = {
  */
 export function governedCountyReportScoreSettings(): ScoreSettings {
   return {
-    ecological_share:
-      countyReportPdfV1CountiesFipsReportPdfGetParamsEcologicalShareDefault,
-    smooth_k: countyReportPdfV1CountiesFipsReportPdfGetParamsSmoothKDefault,
+    ecological_share: downloadCountyReportParamsEcologicalShareDefault,
+    smooth_k: downloadCountyReportParamsSmoothKDefault,
     missing_human_weakness:
-      countyReportPdfV1CountiesFipsReportPdfGetParamsMissingHumanWeaknessDefault,
+      downloadCountyReportParamsMissingHumanWeaknessDefault,
   };
 }
 
@@ -135,14 +134,8 @@ export async function downloadPdfReport(
   // binary response headers so the browser can honor the server filename.
   const path =
     geography.level === "county"
-      ? getCountyReportPdfV1CountiesFipsReportPdfGetUrl(
-          geography.identifier,
-          params
-        )
-      : getStateReportPdfV1StatesStateReportPdfGetUrl(
-          geography.identifier,
-          params
-        );
+      ? getDownloadCountyReportUrl(geography.identifier, params)
+      : getDownloadStateReportUrl(geography.identifier, params);
   let response: Response;
   try {
     response = await fetch(`${getPublicConfig().apiBaseUrl}${path}`, {

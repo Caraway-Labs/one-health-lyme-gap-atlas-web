@@ -8,18 +8,27 @@
 import type { CountyContextValueType } from './countyContextValueType';
 import type { ValueState } from './valueState';
 
+/**
+ * Describes the county context field that a population or rurality value came from.
+ */
 export interface CountyContext {
+  /** Version of the contract that defines this object. */
   contract_version: 'atlas-county-context-consumer/1';
-  /** Source product/classification vintage, not an annual date. */
+  /** Year of the source product or classification. It is not an annual date. */
   vintage_year: number;
+  /** Name of the field in the source product. */
   source_field: string;
+  /** Whether `value` is an integer or a decimal number. */
   value_type: CountyContextValueType;
   /**
-     * Authoritative category label; null for quantities.
+     * Official label of the category. `null` for quantities.
      * @nullable
      */
   category_label: string | null;
+  /** Plain-language definition of the field. */
   definition: string;
+  /** The `value_state` values this field can return. */
   allowed_value_states: ValueState[];
+  /** Version of the methodology metadata that describes this field. */
   metadata_methodology_version: string;
 }

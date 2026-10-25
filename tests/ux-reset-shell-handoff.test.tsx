@@ -31,18 +31,14 @@ vi.mock(import("next/navigation"), async (importOriginal) => ({
 }));
 
 vi.mock(import("@/generated/atlas"), () => ({
-  getProfileV1MeProfileGet: vi.fn<
-    typeof import("@/generated/atlas").getProfileV1MeProfileGet
-  >(
+  getProfile: vi.fn<typeof import("@/generated/atlas").getProfile>(
     async () =>
       ({
         data: { profile: null },
         status: 200,
       }) as never
   ),
-  metadataV1AtlasMetadataGet: vi.fn<
-    typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
-  >(
+  getAtlasMetadata: vi.fn<typeof import("@/generated/atlas").getAtlasMetadata>(
     async () =>
       ({
         data: {
@@ -62,9 +58,7 @@ vi.mock(import("@/generated/atlas"), () => ({
         status: 200,
       }) as never
   ),
-  scoresV1AtlasScoresGet: vi.fn<
-    typeof import("@/generated/atlas").scoresV1AtlasScoresGet
-  >(
+  getAtlasScores: vi.fn<typeof import("@/generated/atlas").getAtlasScores>(
     async () =>
       ({
         data: { counties: [] },

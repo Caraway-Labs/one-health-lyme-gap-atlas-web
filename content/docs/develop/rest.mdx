@@ -42,7 +42,7 @@ The client tabs below use the same persisted choice as the quickstart. Copy `met
 
 ## Rate limits
 
-`429` and `503` responses declare a `Retry-After` header. The header description is "Seconds before retry when supplied by the service." The illustrative `429` problem uses `code` `RATE_LIMITED`.
+`429` and `503` responses declare a `Retry-After` header. The header description is "Seconds to wait before you retry. Wait that long when the header is present." The illustrative `429` problem uses `code` `RATE_LIMITED`.
 
 The public OpenAPI document does not publish a numeric quota, a concurrency cap, or a fixed `Retry-After` range. When the header is present, wait that many seconds before retrying the same request. When you contact support, keep `request_id`.
 

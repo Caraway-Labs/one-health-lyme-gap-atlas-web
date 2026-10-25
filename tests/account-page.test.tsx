@@ -46,13 +46,11 @@ vi.mock(import("../src/features/ux-reset/workspace-navigation"), () => ({
   followWorkspaceHref,
 }));
 vi.mock(import("../src/generated/atlas"), () => ({
-  getProfileV1MeProfileGet: getProfile,
-  saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
-  createPrivacyRequestV1MePrivacyRequestsPost: vi.fn<() => Promise<never>>(),
-  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
-    vi.fn<() => Promise<never>>(),
-  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
-    vi.fn<() => Promise<never>>(),
+  getProfile,
+  updateProfile: vi.fn<() => Promise<never>>(),
+  createPrivacyRequest: vi.fn<() => Promise<never>>(),
+  confirmPrivacyRequest: vi.fn<() => Promise<never>>(),
+  downloadPrivacyExport: vi.fn<() => Promise<never>>(),
 }));
 
 import AccountPage from "../src/app/account/page";

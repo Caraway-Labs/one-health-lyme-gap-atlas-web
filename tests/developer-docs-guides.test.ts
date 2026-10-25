@@ -768,9 +768,11 @@ describe("developer guides follow the pinned public OpenAPI contract", () => {
       clientArtifactDisclaimer: description.includes(
         "Not an external developer contract"
       ),
-      ceiling: description.includes(
-        "The default pre-execution logical-result ceiling is 10,000, not truncation."
-      ),
+      ceiling: description
+        .replaceAll("\n", " ")
+        .includes(
+          "A query that selects more than 10,000 results is rejected with 400 `QUERY_TOO_BROAD`, not truncated."
+        ),
       guidesCeiling:
         developText.includes("10,000") &&
         developText.includes("not truncation"),

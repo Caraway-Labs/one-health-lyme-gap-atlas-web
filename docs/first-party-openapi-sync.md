@@ -17,9 +17,8 @@ Do not put credentials, Snowflake access, or query logic in the browser. Runtime
 
 - Repository: `Caraway-Labs/one-health-lyme-gap-atlas-api`
 - Branch: `main`
-- Last sync: `f485d5ef756ac7ae3cebf864535a8e1c0e417f9e` (2026-10-24). That commit is the merge of API pull request #346. Both pins are the files at that commit.
-- Previous first-party pin: `a84c82d3b2f1acaa32c81194388cbaa72e1fd374`, identical to `3897bb18cfdc7cc26892b08b6e74bc6cc347834c` (typed Ask Atlas outcomes on HTTP 200).
-- Previous public pin: `e88887877440c00de0e23301f0a3eac2353134d9`.
+- Last sync: `c410a889b2234dac377139e99b6d581fc31a6452` (2026-10-25). That commit is the API `main` SHA deployed to production by Quality and deploy run 40218184161. Both pins are the files at that commit.
+- Previous pins: `f485d5ef756ac7ae3cebf864535a8e1c0e417f9e` (2026-10-24).
 
 Record the exact API commit in the pull request that updates the pins. Update the "Last sync" line in this file in the same change.
 
@@ -38,27 +37,27 @@ Record the exact API commit in the pull request that updates the pins. Update th
 
 `npm run docs:api:drift` retrieves `https://api.onehealthatlas.org/openapi.json` and compares it with the manifest checksum. It does not rewrite the pin, the manifest, or the generated pages. A pin copied from an API commit that production does not yet serve fails that check until the live document matches. The weekly Public OpenAPI drift workflow is that maintainer signal. A drift failure is not a reason to revert a reviewed pin.
 
-## Geography identity at the last sync
+## Contract at this sync
 
-`GET /v1/geographies/{geography_type}/{geography_id}` (`geography_v1_geographies__geography_type___geography_id__get`), on both pins:
+Every operation ID is `verbNoun` camelCase. Public examples include `getAtlasMetadata`, `getAtlasMapValues`, `listObservations`, `checkCountyTier1Availability`, `downloadCountyReport`, and `checkGeographyAvailability`. The first-party chat operation is `askKnowledgeGraph`.
 
-- `200` is `anyOf` [`ResourceEnvelope_Geography_`, `GeographyUnavailable`]. While canonical identity delivery is unpublished, the body is `availability: "UNAVAILABLE"`, `reason: "CANONICAL_GEOGRAPHY_UNPUBLISHED"`, `data: null`, the echoed `geography` identity, and a non-empty `limitations` list. `Cache-Control: no-store`.
-- `503` is not a documented response. `422` is not a documented response.
-- `400`, `404`, `413`, `414`, and `429` are unchanged.
-- The `geographies` tag description is "Typed geography identity; canonical delivery pending (200 UNAVAILABLE)."
+Paths added since `f485d5ef`:
 
-`GeographyUnavailable` is a new component schema on both pins.
+- `GET /v1/atlas/map-values` (`getAtlasMapValues`) on both pins.
+- `GET /v1/intelligence/feed/{item_id}` (`getIntelligenceFeedEntry`) on the first-party pin only.
 
-## Other difference accepted with this sync
+The public document carries `x-codeSamples` on every public operation. The first-party pin does not.
 
-`GET /health/ready` exists only on the first-party pin. Its `200` schema is now `ReadinessResponse` (with `ReadinessDependencies`) instead of an inline object. That schema arrived in API #310 and is present in `f485d5ef`. The public document has no health routes, so this difference is not in `contracts/public-openapi.json`.
+Inline 200 schema titles added on the public document:
 
-API commits after `f485d5ef` are not in these pins. They include `GET /v1/atlas/map-values` (#363) and description-only OpenAPI edits (#364, #365, #366).
+- `GET /v1/observations`: `Response Listobservations`
+- `GET /v1/geographies/{geography_type}/{geography_id}`: `Response Getgeography`
 
-## Ask Atlas chat contract
+Component schemas added since the previous pin include `CountyMapValues`, `MapValuesCollection`, `FeedAbstract`, `FeedDescription`, `FeedEntryMeta`, `FeedEntryRead`, and `SourceCatalogMeta`. Descriptions and response examples were also refreshed with the API documentation work that landed before this commit.
 
-Already present in the previous first-party pin, and unchanged at this sync. `POST /v1/knowledge-graph/chat` (`knowledge_graph_chat_v1_knowledge_graph_chat_post`):
+`GET /v1/geographies/{geography_type}/{geography_id}` (`getGeography`), on both pins:
 
-- `200` describes the five typed `status` values (`answered`, `no_evidence`, `safety_refusal`, `evidence_unavailable`, `capacity_limited`) and declares a `Retry-After` header. `KnowledgeChatResponse` itself is unchanged.
-- `503` is not a documented response.
-- `422` and `429` are unchanged.
+- `200` is `anyOf` [`ResourceEnvelope_Geography_`, `GeographyUnavailable`], titled `Response Getgeography`.
+- Documented status codes are 200, 400, 404, 413, 414, and 429.
+
+`GET /health/ready` (`checkReadiness`) and `POST /v1/knowledge-graph/chat` (`askKnowledgeGraph`) stay on the first-party pin only. The chat operation documents 200, 422, and 429.

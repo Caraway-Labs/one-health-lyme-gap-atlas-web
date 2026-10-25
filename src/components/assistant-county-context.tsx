@@ -3,13 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 
+import { getAtlasMetadata, getAtlasScores } from "@/generated/atlas";
 import {
-  metadataV1AtlasMetadataGet,
-  scoresV1AtlasScoresGet,
-} from "@/generated/atlas";
-import {
-  MetadataV1AtlasMetadataGetResponse,
-  ScoresV1AtlasScoresGetResponse,
+  GetAtlasMetadataResponse,
+  GetAtlasScoresResponse,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import { parseAssistantCountyUrlContext } from "@/lib/assistant-context-handoff";
@@ -58,8 +55,8 @@ function ResolvedCountyContext({
     queryFn: async () =>
       validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
-        (await metadataV1AtlasMetadataGet()).data
+        GetAtlasMetadataResponse,
+        (await getAtlasMetadata()).data
       ),
     queryKey: ["assistant-county-context-metadata"],
   });
@@ -72,9 +69,9 @@ function ResolvedCountyContext({
     queryFn: async () =>
       validateApiResponse(
         "Atlas scores",
-        ScoresV1AtlasScoresGetResponse,
+        GetAtlasScoresResponse,
         (
-          await scoresV1AtlasScoresGet({
+          await getAtlasScores({
             dataset_version: datasetVersion!,
           })
         ).data

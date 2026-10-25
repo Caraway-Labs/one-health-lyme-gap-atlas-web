@@ -64,11 +64,9 @@ vi.mock(
   import("../src/generated/atlas"),
   () =>
     ({
-      createPrivacyRequestV1MePrivacyRequestsPost: createPrivacyRequest,
-      confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
-        confirmPrivacyRequest,
-      downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
-        downloadPrivacyExport,
+      createPrivacyRequest,
+      confirmPrivacyRequest,
+      downloadPrivacyExport,
     }) as unknown as Partial<typeof import("../src/generated/atlas")>
 );
 

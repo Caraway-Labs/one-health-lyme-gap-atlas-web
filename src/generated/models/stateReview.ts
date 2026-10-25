@@ -10,19 +10,40 @@ import type { DataGap } from './dataGap';
 import type { ReviewCoverage } from './reviewCoverage';
 import type { StateReviewResultState } from './stateReviewResultState';
 
+/**
+ * Counties in a state that merit a closer look, with gaps and coverage.
+ *
+ * A review is not a diagnosis and not a disease-risk estimate. An empty result does not
+ * show that no county needs attention.
+ */
 export interface StateReview {
+  /** Two-letter state or District of Columbia code. */
   requested_state: string;
+  /** Identifies the review methodology. */
   methodology_id: string;
+  /** Version of the review methodology. */
   methodology_version: string;
+  /** SHA-256 checksum of the review configuration. Use it to confirm which rules ran. */
   configuration_sha256: string;
+  /** Identifies the published data release the review read. */
   data_release_version: string;
+  /** When Atlas ran the review, with a UTC offset. It is not when the publishers last updated their data. */
   evaluated_at: string;
-  /** @nullable */
+  /**
+     * Observation context the request asked for. `null` when none was asked for.
+     * @nullable
+     */
   requested_observation_context: string | null;
+  /** Observation context the review used. */
   effective_observation_context: string;
+  /** Overall outcome. `candidates_found` lists counties to review. `insufficient_evidence` means the evidence could not be evaluated. `unsupported` means no review rule is approved. `none_stand_out` means no evaluated county stood out; it does not show that nothing needs attention. */
   result_state: StateReviewResultState;
+  /** Counties that merit a closer look. */
   review_candidates: Candidate[];
+  /** Counties Atlas could not evaluate, with the reason. */
   data_gaps: DataGap[];
+  /** How many counties were assessed. */
   coverage: ReviewCoverage;
+  /** Factual notes on what the review does not show. */
   limitations: string[];
 }

@@ -4,7 +4,7 @@ import type {
   GeographyUnavailable,
   ResourceEnvelopeGeography,
 } from "@/generated/models";
-import { GeographyV1GeographiesGeographyTypeGeographyIdGetResponse } from "@/generated/zod/atlas";
+import { GetGeographyResponse } from "@/generated/zod/atlas";
 
 import {
   INVESTIGATE_GEOGRAPHY_UNPUBLISHED_LIMITATION,
@@ -85,14 +85,8 @@ function presentGeographyIdentity(body: GeographyIdentityBody):
 
 describe("geography identity union", () => {
   it("accepts a GeographyUnavailable body and a published geography envelope", () => {
-    const unpublished =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse(
-        unpublishedBody
-      );
-    const published =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse(
-        publishedEnvelope
-      );
+    const unpublished = GetGeographyResponse.safeParse(unpublishedBody);
+    const published = GetGeographyResponse.safeParse(publishedEnvelope);
 
     expect({
       published: published.success ? published.data : null,
@@ -104,14 +98,8 @@ describe("geography identity union", () => {
   });
 
   it("presents an unpublished identity as not published yet", () => {
-    const unpublished =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse(
-        unpublishedBody
-      );
-    const published =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse(
-        publishedEnvelope
-      );
+    const unpublished = GetGeographyResponse.safeParse(unpublishedBody);
+    const published = GetGeographyResponse.safeParse(publishedEnvelope);
     if (!unpublished.success || !published.success) {
       throw new Error("Geography identity fixtures were rejected.");
     }
@@ -139,8 +127,7 @@ describe("geography identity union", () => {
 
   it("accepts the investigate mock's unpublished identity body", () => {
     const body = investigateGeographyUnavailableBody(COUNTY_FIPS);
-    const parsed =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse(body);
+    const parsed = GetGeographyResponse.safeParse(body);
 
     expect({
       data: body.data,
@@ -158,21 +145,18 @@ describe("geography identity union", () => {
   });
 
   it("rejects a body that mixes null data with a published geography", () => {
-    const missingAvailability =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse({
-        data: null,
-      });
-    const nullDataWithLabel =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse({
-        data: null,
-        geography: { geography_id: COUNTY_FIPS, geography_type: "county" },
-        label: PUBLISHED_LABEL,
-      });
-    const unpublishedWithoutLimitation =
-      GeographyV1GeographiesGeographyTypeGeographyIdGetResponse.safeParse({
-        ...unpublishedBody,
-        limitations: [],
-      });
+    const missingAvailability = GetGeographyResponse.safeParse({
+      data: null,
+    });
+    const nullDataWithLabel = GetGeographyResponse.safeParse({
+      data: null,
+      geography: { geography_id: COUNTY_FIPS, geography_type: "county" },
+      label: PUBLISHED_LABEL,
+    });
+    const unpublishedWithoutLimitation = GetGeographyResponse.safeParse({
+      ...unpublishedBody,
+      limitations: [],
+    });
 
     expect(missingAvailability.success).toBeFalsy();
     expect(nullDataWithLabel.success).toBeFalsy();

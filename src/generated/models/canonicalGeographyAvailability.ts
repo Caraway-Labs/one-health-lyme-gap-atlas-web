@@ -6,16 +6,21 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * The county exists, but its canonical geography data is not published yet.
+ */
 export interface CanonicalGeographyAvailability {
+  /** Always `UNAVAILABLE`: the county's geography data is not published. */
   availability: 'UNAVAILABLE';
+  /** Why the data is unavailable. The geography data has not been published. */
   reason: 'CANONICAL_GEOGRAPHY_UNPUBLISHED';
   /**
-     * No canonical geography resource or geometry is fabricated.
+     * Always `null`. The API returns no geography data or geometry.
      * @nullable
      */
   data: null;
   /**
-     * Governed county directory release used to confirm identity.
+     * Identifies the county directory release used to confirm the county.
      * @minLength 1
      */
   release_id: string;

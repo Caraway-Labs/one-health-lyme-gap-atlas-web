@@ -134,7 +134,7 @@ The same URL reads the current release. It is not a permanent snapshot. The save
 
 Goal: download one county PDF with the selector that matches the report you need. The route is `GET /v1/counties/{fips}/report.pdf`. `template` defaults to `county-v1`. Use a county FIPS in the lower 48 states or the District of Columbia. Checked for FIPS `11001`: HTTP `200`.
 
-A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim. Parameter tables stay in the [county report reference](/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get).
+A scoring PDF is a review-priority report. An evidence PDF repeats canonical observations, lineage, value states, and limitations. Neither report is a diagnosis, an individual risk estimate, or a causal claim. Parameter tables stay in the [county report reference](/docs/api-reference/counties#downloadCountyReport).
 
 <Tabs items={["county-v1 scoring", "county-v2 evidence"]}>
   <Tab value="county-v1 scoring">

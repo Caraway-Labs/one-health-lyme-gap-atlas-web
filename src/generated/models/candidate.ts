@@ -7,16 +7,30 @@
  */
 import type { PublicReviewEvidenceReference } from './publicReviewEvidenceReference';
 
+/**
+ * A county that merits a closer look. It is a prompt to review records, not a finding.
+ */
 export interface Candidate {
+  /** Five-digit FIPS code of the county, with leading zeros. */
   county_fips: string;
+  /** County name. */
   county_name: string;
+  /** Path of the county resource in this API. */
   county_url: string;
+  /** Codes that explain why the county is listed. */
   reason_codes: string[];
+  /** Plain-language explanation of why the county is listed. */
   reason_text: string;
+  /** Kinds of evidence the reason draws on, such as `county_vector_status`. */
   evidence_families: string[];
+  /** Source records that support the reason. */
   evidence_references: PublicReviewEvidenceReference[];
+  /** How complete the supporting evidence is. It is always `limited`. */
   completeness?: 'limited';
+  /** Factual notes on what the candidate does not show. Keep them with it. */
   limitations: string[];
+  /** What is known about how current and comparable the evidence is. */
   freshness_comparability: string;
+  /** A step a reviewer can take to check the evidence further. */
   suggested_next_check: string;
 }

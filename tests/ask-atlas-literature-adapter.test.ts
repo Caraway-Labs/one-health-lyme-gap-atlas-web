@@ -16,7 +16,7 @@ vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
   ...(await importOriginal()),
   askAtlasMixed: mixedRequest as never,
   askAtlasStructured: structuredRequest as never,
-  knowledgeGraphChatV1KnowledgeGraphChatPost: chatRequest as never,
+  askKnowledgeGraph: chatRequest as never,
 }));
 
 const literatureQuestion = {

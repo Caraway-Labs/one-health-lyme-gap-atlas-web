@@ -1,39 +1,47 @@
 ---
 title: "Atlas"
-description: "Existing release analytics and separate display geometry."
+description: "Get release metadata, scores, rankings, and map geometry."
 ---
 Generated from the public OpenAPI contract.
 
-Existing release analytics and separate display geometry.
+Get release metadata, scores, rankings, and map geometry.
 
-## Get county display geometry [#geometry_v1_atlas_geometry_get]
+## Get county map geometry [#getAtlasGeometry]
 
 `GET /v1/atlas/geometry`
 
-Operation ID: `geometry_v1_atlas_geometry_get`
+Operation ID: `getAtlasGeometry`
 
-[Parameters, responses, and schema](/docs/api-reference/atlas/geometry_v1_atlas_geometry_get).
+[Parameters, responses, and schema](/docs/api-reference/atlas/getAtlasGeometry).
 
-## Get Atlas release metadata [#metadata_v1_atlas_metadata_get]
+## Get map values by county [#getAtlasMapValues]
+
+`GET /v1/atlas/map-values`
+
+Operation ID: `getAtlasMapValues`
+
+[Parameters, responses, and schema](/docs/api-reference/atlas/getAtlasMapValues).
+
+## Get release metadata [#getAtlasMetadata]
 
 `GET /v1/atlas/metadata`
 
-Operation ID: `metadata_v1_atlas_metadata_get`
+Operation ID: `getAtlasMetadata`
 
-[Parameters, responses, and schema](/docs/api-reference/atlas/metadata_v1_atlas_metadata_get).
+[Parameters, responses, and schema](/docs/api-reference/atlas/getAtlasMetadata).
 
-## Download filtered county rankings [#ranking_csv_v1_atlas_ranking_csv_get]
+## Download county rankings as CSV [#downloadAtlasRanking]
 
 `GET /v1/atlas/ranking.csv`
 
-Operation ID: `ranking_csv_v1_atlas_ranking_csv_get`
+Operation ID: `downloadAtlasRanking`
 
-[Parameters, responses, and schema](/docs/api-reference/atlas/ranking_csv_v1_atlas_ranking_csv_get).
+[Parameters, responses, and schema](/docs/api-reference/atlas/downloadAtlasRanking).
 
-## Get county gap scores [#scores_v1_atlas_scores_get]
+## Get county gap scores [#getAtlasScores]
 
 `GET /v1/atlas/scores`
 
-Operation ID: `scores_v1_atlas_scores_get`
+Operation ID: `getAtlasScores`
 
-[Parameters, responses, and schema](/docs/api-reference/atlas/scores_v1_atlas_scores_get).
+[Parameters, responses, and schema](/docs/api-reference/atlas/getAtlasScores).

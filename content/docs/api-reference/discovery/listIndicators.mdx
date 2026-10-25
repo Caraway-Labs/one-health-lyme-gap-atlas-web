@@ -1,0 +1,94 @@
+---
+title: List indicators
+description: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+      - content: GET /v1/indicators
+      - content: listIndicators
+      - content: List indicators
+      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+      - content: indicator_id query optional Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.
+      - content: Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.
+      - content: Indicator Id
+      - content: '"human_disease_burden"'
+      - content: page_size query optional Items per page; defaults to 100, configured maximum at most 500.
+      - content: Items per page; defaults to 100, configured maximum at most 500.
+      - content: Page Size
+      - content: '100'
+      - content: page_token query optional Opaque next_page_token; retain query filters and release.
+      - content: Opaque next_page_token; retain query filters and release.
+      - content: Page Token
+      - content: 200 Successful current-release resource. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=60, must-revalidate`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=60, must-revalidate"'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/CollectionEnvelope_Indicator_'
+      - content: Two indicators from the current release
+      - content: '{"data":[{"indicator_id":"climate_precipitation","label":"Descriptive county weather","definition":"Reviewed county weather context; no disease-risk interpretation.","measure_ids":["nclimgrid_prcp_county_day"],"semantic_version":"2.0.0","release_version":"governed-2026-10-15-january-climate-prod","domain":"climate","category":null,"limitations":["January 2025 descriptive county weather only."],"standards_mappings":null},{"indicator_id":"climate_temperature","label":"Descriptive county weather","definition":"Reviewed county weather context; no disease-risk interpretation.","measure_ids":["nclimgrid_tavg_county_day","nclimgrid_tmax_county_day","nclimgrid_tmin_county_day"],"semantic_version":"2.0.0","release_version":"governed-2026-10-15-january-climate-prod","domain":"climate","category":null,"limitations":["January 2025 descriptive county weather only."],"standards_mappings":null}],"meta":{"next_page_token":null,"response_at":"2026-10-25T02:44:54.271358Z"},"links":{"self":null}}'
+      - content: 400 The request is invalid or unsupported. The `code` is `INVALID_REQUEST` for a missing, malformed, or inconsistent parameter, `UNSUPPORTED_FILTER` for a parameter V1 does not accept, `UNSUPPORTED_STRATIFICATION` for a stratification (observation queries only), or `QUERY_TOO_BROAD` when a query selects more than the result limit. Read `detail` and `errors`, change the request, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Missing required parameter
+      - content: Shows `INVALID_REQUEST` when a required query parameter is absent.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":400,"detail":"One or more request values are invalid.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"missing","loc":["query","measure_id"],"msg":"Field required"}],"code":"INVALID_REQUEST"}'
+      - content: Query parameter V1 does not accept
+      - content: Shows `UNSUPPORTED_FILTER` when a request includes a parameter outside V1.
+      - content: '{"type":"https://onehealthatlas.org/problems/unsupported-filter","title":"Invalid public query","status":400,"detail":"This query filter is not supported in V1.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"UNSUPPORTED_FILTER"}'
+      - content: 404 The resource ID, or the selection you asked for, is not in the current release. The `code` is `RESOURCE_NOT_FOUND` and `detail` names what is missing. Check the ID against the list operation for that resource. Retrying the same request returns the same response.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Unknown resource ID
+      - content: Shows `RESOURCE_NOT_FOUND` for a selection that is not in the current release.
+      - content: '{"type":"https://onehealthatlas.org/problems/resource-not-found","title":"Invalid public query","status":404,"detail":"Measure has no published county observations.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RESOURCE_NOT_FOUND"}'
+      - content: 413 The request is a GET with a body. The `code` is `INVALID_REQUEST`. Send the request again without a body and put every value in the query string.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: GET request with a body
+      - content: Shows `INVALID_REQUEST` when a GET request carries a body.
+      - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"Payload too large","status":413,"detail":"GET request bodies are unsupported.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
+      - content: 414 The query string is longer than the API accepts. The `code` is `INVALID_REQUEST`. Send fewer or shorter parameter values, then retry.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Query string over the length limit
+      - content: Shows `INVALID_REQUEST` when the query string is too long.
+      - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"URI too long","status":414,"detail":"Query string is too long.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Request limit reached
+      - content: Shows `RATE_LIMITED`. The response also sets `Retry-After`.
+      - content: '{"type":"https://onehealthatlas.org/problems/rate-limited","title":"Too many requests","status":429,"detail":"Public request limit reached.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RATE_LIMITED"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/indicators","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/indicators","method":"get"}]} />
+    </>
+  );
+}

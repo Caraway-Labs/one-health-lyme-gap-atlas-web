@@ -6,7 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Links related to a list response.
+ */
 export interface CollectionLinks {
-  /** @nullable */
+  /**
+     * Link to this page of results. `null` when the API supplies none.
+     * @nullable
+     */
   self?: string | null;
 }

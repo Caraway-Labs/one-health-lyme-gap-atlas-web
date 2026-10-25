@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as atlasClient from "@/generated/atlas";
-import { getGeometryV1AtlasGeometryGetUrl } from "@/generated/atlas";
+import { getGetAtlasGeometryUrl } from "@/generated/atlas";
 import { ValueState } from "@/generated/models";
 import { Geography } from "@/generated/zod/geography.zod";
 import { GeographyIdentity } from "@/generated/zod/geographyIdentity.zod";
@@ -158,7 +158,7 @@ describe("county display versus analysis geography semantics", () => {
   });
 
   it("builds the governed display geometry URL in the generated client", () => {
-    expect(getGeometryV1AtlasGeometryGetUrl({ dataset_version: "alpha" })).toBe(
+    expect(getGetAtlasGeometryUrl({ dataset_version: "alpha" })).toBe(
       "/v1/atlas/geometry?dataset_version=alpha"
     );
   });
@@ -190,7 +190,7 @@ describe("county display versus analysis geography semantics", () => {
   });
 
   it("fetchCountyDisplayGeometry validates display payloads from the API adapter", async () => {
-    vi.spyOn(atlasClient, "geometryV1AtlasGeometryGet").mockResolvedValue({
+    vi.spyOn(atlasClient, "getAtlasGeometry").mockResolvedValue({
       data: displayFeatureCollection,
       status: 200,
       headers: new Headers(),

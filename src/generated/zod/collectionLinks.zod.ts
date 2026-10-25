@@ -8,8 +8,8 @@
 import * as zod from 'zod';
 
 export const CollectionLinks = zod.object({
-  "self": zod.string().nullish()
-})
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to a list response.')
 
 export type CollectionLinks = zod.input<typeof CollectionLinks>;
 export type CollectionLinksOutput = zod.output<typeof CollectionLinks>;

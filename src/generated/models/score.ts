@@ -6,48 +6,60 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * The Surveillance Gap Score and the signals it combines. Every value runs from 0 to 100. Atlas results are not a diagnosis.
+ */
 export interface Score {
   /**
+     * Overall Surveillance Gap Score. A higher value means a higher review priority.
      * @minimum 0
      * @maximum 100
      */
   score: number;
   /**
+     * How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.
      * @minimum 0
      * @maximum 100
      */
   human_weakness: number;
   /**
+     * Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.
      * @minimum 0
      * @maximum 100
      */
   ecological: number;
   /**
+     * Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.
      * @minimum 0
      * @maximum 100
      */
   community: number;
   /**
+     * Signal from the publisher's tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.
      * @minimum 0
      * @maximum 100
      */
   tick_signal: number;
   /**
+     * 100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.
      * @minimum 0
      * @maximum 100
      */
   pathogen_signal: number;
   /**
+     * Social Vulnerability Index percentile of the county, scaled to 0 to 100.
      * @minimum 0
      * @maximum 100
      */
   svi_signal: number;
   /**
+     * Percentile of the county's uninsured share among counties, scaled to 0 to 100.
      * @minimum 0
      * @maximum 100
      */
   access_signal: number;
   /**
+     * Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.
      * @minimum 0
      * @maximum 100
      */

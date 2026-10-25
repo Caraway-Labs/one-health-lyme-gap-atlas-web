@@ -22,8 +22,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    observationsV1ObservationsGet: vi.fn<
-      typeof import("@/generated/atlas").observationsV1ObservationsGet
+    listObservations: vi.fn<
+      typeof import("@/generated/atlas").listObservations
     >(async (params) => {
       observationCalls.push(params.measure_id);
       const rows =

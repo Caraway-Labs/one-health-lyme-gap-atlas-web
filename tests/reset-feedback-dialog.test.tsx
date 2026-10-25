@@ -52,7 +52,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    submitFeedbackV1FeedbackPost: submitFeedback as never,
+    submitFeedback: submitFeedback as never,
   };
 });
 

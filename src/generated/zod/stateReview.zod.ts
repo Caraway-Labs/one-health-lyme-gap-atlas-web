@@ -9,54 +9,54 @@ import * as zod from 'zod';
 
 export const stateReviewReviewCandidatesItemCompletenessDefault = `limited`;
 export const StateReview = zod.object({
-  "requested_state": zod.string(),
-  "methodology_id": zod.string(),
-  "methodology_version": zod.string(),
-  "configuration_sha256": zod.string(),
-  "data_release_version": zod.string(),
-  "evaluated_at": zod.iso.datetime({"offset":true}),
-  "requested_observation_context": zod.string().nullable(),
-  "effective_observation_context": zod.string(),
-  "result_state": zod.enum(['candidates_found', 'insufficient_evidence', 'unsupported', 'none_stand_out']),
+  "requested_state": zod.string().describe('Two-letter state or District of Columbia code.'),
+  "methodology_id": zod.string().describe('Identifies the review methodology.'),
+  "methodology_version": zod.string().describe('Version of the review methodology.'),
+  "configuration_sha256": zod.string().describe('SHA-256 checksum of the review configuration. Use it to confirm which rules ran.'),
+  "data_release_version": zod.string().describe('Identifies the published data release the review read.'),
+  "evaluated_at": zod.iso.datetime({"offset":true}).describe('When Atlas ran the review, with a UTC offset. It is not when the publishers last updated their data.'),
+  "requested_observation_context": zod.string().nullable().describe('Observation context the request asked for. `null` when none was asked for.'),
+  "effective_observation_context": zod.string().describe('Observation context the review used.'),
+  "result_state": zod.enum(['candidates_found', 'insufficient_evidence', 'unsupported', 'none_stand_out']).describe('Overall outcome. `candidates_found` lists counties to review. `insufficient_evidence` means the evidence could not be evaluated. `unsupported` means no review rule is approved. `none_stand_out` means no evaluated county stood out; it does not show that nothing needs attention.'),
   "review_candidates": zod.array(zod.object({
-  "county_fips": zod.string(),
-  "county_name": zod.string(),
-  "county_url": zod.string(),
-  "reason_codes": zod.array(zod.string()),
-  "reason_text": zod.string(),
-  "evidence_families": zod.array(zod.string()),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "county_name": zod.string().describe('County name.'),
+  "county_url": zod.string().describe('Path of the county resource in this API.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain why the county is listed.'),
+  "reason_text": zod.string().describe('Plain-language explanation of why the county is listed.'),
+  "evidence_families": zod.array(zod.string()).describe('Kinds of evidence the reason draws on, such as `county_vector_status`.'),
   "evidence_references": zod.array(zod.object({
-  "family": zod.string(),
-  "source_product": zod.string(),
-  "source_version": zod.string(),
-  "public_record_ref": zod.string(),
-  "county_fips": zod.string(),
-  "release_id": zod.string(),
-  "source_as_of": zod.string(),
-  "retrieved_at": zod.iso.datetime({"offset":true}),
-  "target": zod.string(),
-  "status": zod.string(),
-  "limitations": zod.array(zod.string())
-})),
-  "completeness": zod.literal("limited").default(stateReviewReviewCandidatesItemCompletenessDefault),
-  "limitations": zod.array(zod.string()),
-  "freshness_comparability": zod.string(),
-  "suggested_next_check": zod.string()
-})),
+  "family": zod.string().describe('Kind of evidence, such as `county_pathogen_status`.'),
+  "source_product": zod.string().describe('Source product the record comes from.'),
+  "source_version": zod.string().describe('Version of the source product.'),
+  "public_record_ref": zod.string().describe('Public reference to the source record, for finding it at the publisher.'),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "release_id": zod.string().describe('Identifies the published data release the record came from.'),
+  "source_as_of": zod.string().describe('Date the source says its data was current, for example `2025-12-31`.'),
+  "retrieved_at": zod.iso.datetime({"offset":true}).describe('When Atlas retrieved the record from the publisher, with a UTC offset.'),
+  "target": zod.string().describe('Organism or taxon the record is about, such as a tick species or a pathogen.'),
+  "status": zod.string().describe('Status the publisher reports, such as `Present`, `Reported`, or `No records`. `No records` does not establish absence.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what this record does not show.')
+}).describe('A source record that supports a review candidate.')).describe('Source records that support the reason.'),
+  "completeness": zod.literal("limited").default(stateReviewReviewCandidatesItemCompletenessDefault).describe('How complete the supporting evidence is. It is always `limited`.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the candidate does not show. Keep them with it.'),
+  "freshness_comparability": zod.string().describe('What is known about how current and comparable the evidence is.'),
+  "suggested_next_check": zod.string().describe('A step a reviewer can take to check the evidence further.')
+}).describe('A county that merits a closer look. It is a prompt to review records, not a finding.')).describe('Counties that merit a closer look.'),
   "data_gaps": zod.array(zod.object({
-  "county_fips": zod.string(),
-  "code": zod.string(),
-  "detail": zod.string()
-})),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "code": zod.string().describe('Stable code for the kind of gap, such as `OUT_OF_SCOPE`.'),
+  "detail": zod.string().describe('Plain-language explanation of the gap.')
+}).describe('A reason Atlas could not evaluate a county. A gap is not evidence of absence.')).describe('Counties Atlas could not evaluate, with the reason.'),
   "coverage": zod.object({
-  "assessed_counties": zod.int(),
-  "eligible_counties": zod.int(),
-  "abstained_counties": zod.int(),
-  "evaluated_counties": zod.int(),
-  "rule_coverage": zod.record(zod.string(), zod.string())
-}),
-  "limitations": zod.array(zod.string())
-})
+  "assessed_counties": zod.int().describe('Counties in the requested state that were checked.'),
+  "eligible_counties": zod.int().describe('Counties that met the rule\'s eligibility checks.'),
+  "abstained_counties": zod.int().describe('Counties where the evidence could not be safely evaluated.'),
+  "evaluated_counties": zod.int().describe('Counties that were fully evaluated.'),
+  "rule_coverage": zod.record(zod.string(), zod.string()).describe('Each review rule by name, marked `enabled` or `disabled`.')
+}).describe('How many counties were assessed.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the review does not show.')
+}).describe('Counties in a state that merit a closer look, with gaps and coverage.\n\nA review is not a diagnosis and not a disease-risk estimate. An empty result does not\nshow that no county needs attention.')
 
 export type StateReview = zod.input<typeof StateReview>;
 export type StateReviewOutput = zod.output<typeof StateReview>;

@@ -9,25 +9,25 @@ import * as zod from 'zod';
 
 export const atlasMetadataScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 export const AtlasMetadata = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(atlasMetadataScoringMethodologyVersionDefault),
-  "release_id": zod.string(),
-  "schema_version": zod.string(),
-  "generated_at": zod.iso.datetime({"offset":true}),
-  "loaded_at": zod.iso.datetime({"offset":true}),
-  "scope": zod.string(),
-  "bundle_sha256": zod.string(),
-  "score_defaults": zod.record(zod.string(), zod.unknown()),
-  "methodology_version": zod.string(),
-  "limitations": zod.string(),
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(atlasMetadataScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
+  "schema_version": zod.string().describe('Version of the release data layout.'),
+  "generated_at": zod.iso.datetime({"offset":true}).describe('When the release was built, with a UTC offset. It is not when the publishers last updated their data.'),
+  "loaded_at": zod.iso.datetime({"offset":true}).describe('When Atlas loaded the release for serving, with a UTC offset. It is not when the publishers last updated their data.'),
+  "scope": zod.string().describe('Geographic and time coverage of the release.'),
+  "bundle_sha256": zod.string().describe('SHA-256 checksum of the release contents. Use it to confirm you are looking at the same release.'),
+  "score_defaults": zod.record(zod.string(), zod.unknown()).describe('Default settings the score uses when a request supplies none.'),
+  "methodology_version": zod.string().describe('Version of the release methodology that the scores follow.'),
+  "limitations": zod.string().describe('What the release does not show. Read it before you use a score.'),
   "sources": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "vintage": zod.string(),
-  "url": zod.string(),
-  "note": zod.string()
-})),
-  "states": zod.array(zod.record(zod.string(), zod.string()))
-})
+  "key": zod.string().describe('Stable key of the source within this release.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "vintage": zod.string().describe('Reference year or period of the source dataset.'),
+  "url": zod.string().describe('Web address of the source.'),
+  "note": zod.string().describe('How Atlas uses the source and any limit on that use.')
+}).describe('A source dataset listed in the release metadata.')).describe('Source datasets used in the release.'),
+  "states": zod.array(zod.record(zod.string(), zod.string())).describe('States and the District of Columbia in the release. Each entry has a `code` and a `name`.')
+}).describe('Describes the published data release behind the scores and county records.')
 
 export type AtlasMetadata = zod.input<typeof AtlasMetadata>;
 export type AtlasMetadataOutput = zod.output<typeof AtlasMetadata>;

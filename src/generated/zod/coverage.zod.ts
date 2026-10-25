@@ -9,9 +9,9 @@ import * as zod from 'zod';
 
 export const Coverage = zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),

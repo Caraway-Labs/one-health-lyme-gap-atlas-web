@@ -1109,8 +1109,7 @@ function externalDocsLink(docs: ExternalDocsView): string {
   return `[${escapeInline(label)}](${docs.url})`;
 }
 
-const COUNTY_REPORT_OPERATION_ID =
-  "county_report_pdf_v1_counties__fips__report_pdf_get";
+const COUNTY_REPORT_OPERATION_ID = "downloadCountyReport";
 const COUNTY_REPORT_TEMPLATE_TABS = ["county-v1 scoring", "county-v2 evidence"];
 const COUNTY_REPORT_SCORE_PARAMETERS = [
   "ecological_share",
@@ -1252,11 +1251,11 @@ function joinProseList(items: readonly string[]): string {
 
 function assertCountyReportContract(operation: OperationView): void {
   const requiredSentences = [
-    "Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id",
-    "county-v1 and county-v3 reject observation selectors with 422",
-    "V2 responses use no-store",
-    "published briefs use public cache TTL 300 seconds with revalidation",
-    "Unknown templates return 422",
+    "`county-v2` requires it",
+    "`county-v1` and `county-v3` reject them with 422",
+    "`county-v2` responses must not be cached",
+    "Published briefs can be cached for 300 seconds with revalidation",
+    "The template is unknown",
   ];
   const missing = requiredSentences.filter(
     (sentence) => !operation.description.includes(sentence)
@@ -1344,6 +1343,10 @@ function countyReportProblem(
 
 function documentForOpenApiPages(document: JsonRecord): JsonRecord {
   const copy = structuredClone(document);
+  // x-tagGroups become OpenAPI 3.2 tag parents. Their names include
+  // parentheses, and those characters terminate Markdown links. Pages stay
+  // grouped by the operation tag.
+  delete copy["x-tagGroups"];
   const paths = copy.paths;
   if (!isRecord(paths)) return copy;
   for (const [route, pathItem] of Object.entries(paths)) {

@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Type of lag rule that applies.
+ */
 export type TemporalLagContextKind = typeof TemporalLagContextKind[keyof typeof TemporalLagContextKind];
 
 

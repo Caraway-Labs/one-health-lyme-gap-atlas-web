@@ -8,22 +8,22 @@
 import * as zod from 'zod';
 
 export const Source = zod.object({
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "label": zod.string(),
-  "publisher": zod.string().nullable(),
-  "lineage_source_id": zod.string(),
-  "dataset_id": zod.string(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_version": zod.string().nullish(),
-  "published_at": zod.iso.datetime({"offset":true}).nullish(),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
-})
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "publisher": zod.string().nullable().describe('Organization that publishes the data. `null` when none is recorded.'),
+  "lineage_source_id": zod.string().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset. It is not an annual value.'),
+  "source_version": zod.string().nullish().describe('Version label the publisher gives the dataset, when it has one.'),
+  "published_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `upstream_updated_at`. When the publisher published the data.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas last retrieved the data from the publisher. `null` when unavailable.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.')
+}).describe('The organization and dataset a value came from.')
 
 export type Source = zod.input<typeof Source>;
 export type SourceOutput = zod.output<typeof Source>;

@@ -38,9 +38,9 @@ import { publishedCountyRecordFromDetail } from "@/features/ux-reset/investigate
 import type { PublishedCountyRecord } from "@/features/ux-reset/investigate/published-county-hierarchy";
 import { evidenceFromCounty } from "@/features/ux-reset/review/suggested-follow-up-content";
 import type { SuggestedFollowUpEvidence } from "@/features/ux-reset/review/suggested-follow-up-content";
-import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
+import { getAtlasMetadata } from "@/generated/atlas";
 import type { AtlasMetadata, CountyDetail, Measure } from "@/generated/models";
-import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
+import { GetAtlasMetadataResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
@@ -214,7 +214,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
 
   const metadataQuery = useQuery({
     queryFn: async ({ signal }) => {
-      const response = await metadataV1AtlasMetadataGet(
+      const response = await getAtlasMetadata(
         urlState.dataset ? { dataset_version: urlState.dataset } : undefined,
         { signal }
       );
@@ -230,7 +230,7 @@ export function useInvestigateWorkspace(): InvestigateWorkspace {
       }
       const metadata = validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
+        GetAtlasMetadataResponse,
         response.data
       );
       if (urlState.dataset && metadata.release_id !== urlState.dataset) {

@@ -13,9 +13,9 @@ export const membershipProbabilityProbabilityMax = 1;
 
 
 export const MembershipProbability = zod.object({
-  "class_id": zod.string().min(1).describe('Version-scoped persisted class identity.'),
-  "probability": zod.number().min(membershipProbabilityProbabilityMin).max(membershipProbabilityProbabilityMax).describe('Latent-class membership on 0–1 scale; never disease risk.')
-})
+  "class_id": zod.string().min(1).describe('Identifies the class. It is specific to a model version.'),
+  "probability": zod.number().min(membershipProbabilityProbabilityMin).max(membershipProbabilityProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
+}).describe('The model\'s membership probability for one situation class.')
 
 export type MembershipProbability = zod.input<typeof MembershipProbability>;
 export type MembershipProbabilityOutput = zod.output<typeof MembershipProbability>;

@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Default settings the score uses when a request supplies none.
+ */
 export type AtlasMetadataScoreDefaults = { [key: string]: unknown };
