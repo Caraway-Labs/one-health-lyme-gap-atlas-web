@@ -1,4 +1,6 @@
-import { OfflineDisabled } from "@amplitude/analytics-core";
+import { LogLevel, OfflineDisabled } from "@amplitude/analytics-core";
+
+import { isSyntheticAmplitudeApiKey } from "@/lib/amplitude-deployment";
 
 type AmplitudeModule = {
   init: (apiKey: string, options: Record<string, unknown>) => unknown;
@@ -411,7 +413,9 @@ function clearReachableAmplitudeStorage(readStorage: () => Storage): void {
   }
 }
 
-export function getAmplitudeBrowserInitOptions(): Record<string, unknown> {
+export function getAmplitudeBrowserInitOptions(
+  apiKey?: string
+): Record<string, unknown> {
   return {
     autocapture: false,
     defaultTracking: false,
@@ -425,6 +429,10 @@ export function getAmplitudeBrowserInitOptions(): Record<string, unknown> {
       language: false,
       platform: false,
     },
+    // Ingestion rejects this key and the SDK reports that with console.error.
+    // Next.js dev turns that into the error overlay, whose portal intercepts
+    // pointer events. A real project key keeps the SDK's default log level.
+    ...(isSyntheticAmplitudeApiKey(apiKey) ? { logLevel: LogLevel.None } : {}),
   };
 }
 
@@ -443,7 +451,7 @@ export function createAtlasAnalytics(loadAmplitude: AmplitudeLoader) {
       if (amplitude) return true;
 
       amplitude = loaded;
-      amplitude.init(apiKey, getAmplitudeBrowserInitOptions());
+      amplitude.init(apiKey, getAmplitudeBrowserInitOptions(apiKey));
       amplitude.setOptOut(false);
       return true;
     },

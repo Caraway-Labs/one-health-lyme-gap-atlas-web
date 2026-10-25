@@ -33,6 +33,7 @@ import {
   FRONT_PORCH_WORKFLOW_ID,
   FRONT_PORCH_WORKSPACE_LABEL,
   frontPorchExploreHref,
+  frontPorchLinkPrefetch,
 } from "@/features/front-porch/front-porch-copy";
 import { FRONT_PORCH_RELEASE_DETAIL } from "@/features/front-porch/front-porch-example";
 import { FrontPorchScrolly } from "@/features/front-porch/front-porch-scrolly";
@@ -62,7 +63,11 @@ export function FrontPorchView({
           className="front-porch-hero"
         >
           <header className="front-porch-bar">
-            <Link className="front-porch-brand" href="/">
+            <Link
+              className="front-porch-brand"
+              href="/"
+              prefetch={frontPorchLinkPrefetch("/")}
+            >
               <span aria-hidden="true" className="front-porch-mark">
                 <span>✧</span>
               </span>
@@ -71,8 +76,14 @@ export function FrontPorchView({
             <nav aria-label="Primary" className="front-porch-navlinks">
               <a href={`#${FRONT_PORCH_HOW_ID}`}>How it works</a>
               <a href={`#${FRONT_PORCH_TRUST_ID}`}>Sources and limitations</a>
-              <Link href="/docs">Documentation</Link>
-              <Link className="front-porch-sign-in" href={exploreHref}>
+              <Link href="/docs" prefetch={frontPorchLinkPrefetch("/docs")}>
+                Documentation
+              </Link>
+              <Link
+                className="front-porch-sign-in"
+                href={exploreHref}
+                prefetch={frontPorchLinkPrefetch(exploreHref)}
+              >
                 {headerAccountLabel}
               </Link>
             </nav>
@@ -108,6 +119,7 @@ export function FrontPorchView({
                     className: "front-porch-cta front-porch-cta-secondary",
                   })}
                   href={exploreHref}
+                  prefetch={frontPorchLinkPrefetch(exploreHref)}
                 >
                   {FRONT_PORCH_EXPLORE_LABEL}
                 </Link>
@@ -221,6 +233,7 @@ export function FrontPorchView({
                   className: "front-porch-cta front-porch-cta-dark",
                 })}
                 href={exploreHref}
+                prefetch={frontPorchLinkPrefetch(exploreHref)}
               >
                 {FRONT_PORCH_WORKSPACE_LABEL}
                 <span aria-hidden="true" className="front-porch-cta-arrow">
@@ -261,7 +274,12 @@ export function FrontPorchView({
                 {FRONT_PORCH_TRUST_LINKS.map((link, index) => (
                   <span key={link.href}>
                     {index > 0 ? " · " : null}
-                    <Link href={link.href}>{link.label}</Link>
+                    <Link
+                      href={link.href}
+                      prefetch={frontPorchLinkPrefetch(link.href)}
+                    >
+                      {link.label}
+                    </Link>
                   </span>
                 ))}
               </p>
@@ -279,7 +297,12 @@ export function FrontPorchView({
               {FRONT_PORCH_TRUST_LINES.map((line) => (
                 <div className="front-porch-trust-line" key={line.label}>
                   <span>{line.label}</span>
-                  <Link href={line.href}>{line.detail}</Link>
+                  <Link
+                    href={line.href}
+                    prefetch={frontPorchLinkPrefetch(line.href)}
+                  >
+                    {line.detail}
+                  </Link>
                 </div>
               ))}
             </div>
@@ -305,6 +328,7 @@ export function FrontPorchView({
                   className: "front-porch-cta front-porch-cta-dark",
                 })}
                 href={exploreHref}
+                prefetch={frontPorchLinkPrefetch(exploreHref)}
               >
                 {FRONT_PORCH_WORKSPACE_LABEL}
                 <span aria-hidden="true" className="front-porch-cta-arrow">

@@ -269,6 +269,25 @@ FIPS string with leading zeros: five digits for counties, two for states.
 - `geography_type`
 - `geography_id`
 
+## GeographyUnavailable [#schema-geographyunavailable]
+
+Typed, successful answer that canonical geography identity is not published yet.
+
+Returned with HTTP 200 by the legacy identity route (ADR 0021). It carries no release
+because answering must stay instant and independent of the governed directory.
+
+No canonical geography resource or geometry is fabricated.
+
+The validated identity that was requested, echoed back.
+
+Publication and representation boundaries, not scientific absence.
+
+- `availability`
+- `reason`
+- `data`
+- `geography`
+- `limitations`
+
 ## CanonicalGeographyAvailability [#schema-canonicalgeographyavailability]
 
 No canonical geography resource or geometry is fabricated.
