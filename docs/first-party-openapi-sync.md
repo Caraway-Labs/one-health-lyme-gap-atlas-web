@@ -56,7 +56,7 @@ Inline 200 schema titles on this pin:
 
 `FeedEntry` and `FeedListEntry` on the first-party pin require `source_family_label`, the display label for `source_family`. The public pin has no intelligence feed.
 
-`GET /v1/intelligence/feed` (`listIntelligenceFeed`), first-party pin only, returns `FeedListEntry` rows. A row includes `abstract_preview`, `abstract_has_more`, `abstract_state`, `copyright_line`, `pubmed_url`, and `attribution`. It does not include the `abstract` object. The route orders entries with a publisher date newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version.
+`GET /v1/intelligence/feed` (`listIntelligenceFeed`), first-party pin only, returns `FeedListEntry` rows. A row includes `abstract_preview`, `abstract_has_more`, `abstract_state`, `copyright_line`, `pubmed_url`, and `attribution`. It does not include the `abstract` object. The route orders entries with a publisher date newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. A page token the server no longer accepts is HTTP 400 with detail `Invalid page_token.`
 
 `GET /v1/intelligence/feed/{item_id}` (`getIntelligenceFeedEntry`) returns `FeedEntry`. That entry keeps `abstract.text`, `abstract.state`, and `abstract.copyright_line`, and includes `pubmed_url`.
 

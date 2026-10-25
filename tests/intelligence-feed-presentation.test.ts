@@ -7,6 +7,7 @@ import {
   feedPublicationDate,
   feedPublisherHref,
   feedPublisherLabel,
+  feedCardSummary,
   feedRequestFailure,
 } from "@/features/ux-reset/feed/feed-presentation";
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
@@ -98,6 +99,28 @@ describe("intelligence feed presentation", () => {
     expect(feedPublisherHref("data:text/html,hi")).toBeNull();
     expect(feedPublisherHref("https://user:secret@example.org/a")).toBeNull();
     expect(FEED_EXTERNAL_LINK_TARGET).toBe("_blank");
+  });
+
+  it("renders abstract_preview unchanged, including a long preview", () => {
+    const preview = `${"Ixodes ".repeat(40)}scapularis`;
+    const entry = intelligenceFeedEntry("preview", {
+      abstractHasMore: true,
+      abstractPreview: preview,
+      abstractState: "present",
+      copyrightLine: "© 2026 Example",
+      description: { state: "not_provided", text: null },
+      organization: "National Library of Medicine",
+      sourceFamily: "pubmed",
+      sourceId: "pubmed-lyme",
+      trust: BriefingSourceReviewedTrustClassification.research_index,
+    });
+    expect(feedCardSummary(entry)).toStrictEqual({
+      copyrightLine: "© 2026 Example",
+      hasMore: true,
+      kind: "abstract",
+      text: preview,
+    });
+    expect(entry.source_family_label).toBe("Other");
   });
 
   it("treats HTTP 503 as unavailable and other failures as request errors", () => {

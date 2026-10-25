@@ -134,7 +134,43 @@ export const uiControlIds = [
   "feed_retry",
   "feed_clear_filters",
   "feed_remove_filter",
+  "feed_item_details_open",
+  "feed_item_read_more",
+  "feed_item_details_close",
+  "feed_item_details_retry",
+  "feed_item_pubmed_open",
+  "feed_ncbi_copyright_open",
 ] as const;
+
+export const entrySurfaces = [
+  "map",
+  "results_table",
+  "summary",
+  "footer",
+  "feed_card_details",
+  "feed_card_read_more",
+] as const;
+
+export type EntrySurface = (typeof entrySurfaces)[number];
+
+export const feedDetailEntrySurfaces = [
+  "feed_card_details",
+  "feed_card_read_more",
+] as const;
+
+export type FeedDetailEntrySurface = (typeof feedDetailEntrySurfaces)[number];
+
+export const feedSourceFamilies = [
+  "cdc_mmwr",
+  "cdc_eid",
+  "cdc_other",
+  "nih_niaid",
+  "pubmed",
+  "state_local",
+  "other",
+] as const;
+
+export type FeedSourceFamily = (typeof feedSourceFamilies)[number];
 
 export const feedbackTopics = [
   "data_issue",
@@ -303,6 +339,14 @@ type AnalyticsEvent =
   | {
       eventType: "atlas_feedback_outcome_viewed";
       properties: { outcome: FeedbackOutcome };
+    }
+  | {
+      eventType: "atlas_feed_item_detail_opened";
+      properties: {
+        route_id: "intelligence_feed";
+        entry_surface: FeedDetailEntrySurface;
+        source_family: FeedSourceFamily;
+      };
     };
 
 function canonicalAnalyticsPathname(pathname: string): string {
@@ -359,6 +403,7 @@ const analyticsEnumAllowlists = {
   clear_scope: ["single", "all"],
   content_surface: ["methods_navigation", "source_card", "data_dictionary"],
   control_id: uiControlIds,
+  entry_surface: entrySurfaces,
   export_scope: ["ranking"],
   feedback_topic: feedbackTopics,
   filter_dimension: ["state", "evidence", "feed_source", "feed_published"],
@@ -377,6 +422,7 @@ const analyticsEnumAllowlists = {
   outcome: feedbackOutcomes,
   route_id: routeIds,
   score_control: scoreControlIds,
+  source_family: feedSourceFamilies,
   selection_surface: geographySelectionSurfaces,
   summary_kind: ["county_briefing"],
 } as const;
@@ -506,6 +552,26 @@ export function trackUiInteraction(
       route_id: routeIdForPathname(pathname),
       control_id: controlId,
       action: "activated",
+    },
+  });
+}
+
+export function trackFeedItemDetailOpened(
+  entrySurface: FeedDetailEntrySurface,
+  sourceFamily: FeedSourceFamily
+): void {
+  if (!feedDetailEntrySurfaces.some((value) => value === entrySurface)) {
+    return;
+  }
+  if (!feedSourceFamilies.some((value) => value === sourceFamily)) {
+    return;
+  }
+  atlasAnalytics.track({
+    eventType: "atlas_feed_item_detail_opened",
+    properties: {
+      entry_surface: entrySurface,
+      route_id: "intelligence_feed",
+      source_family: sourceFamily,
     },
   });
 }
