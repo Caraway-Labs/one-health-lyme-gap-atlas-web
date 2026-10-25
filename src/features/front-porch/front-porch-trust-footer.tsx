@@ -2,7 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { PrivacyPreferences } from "@/components/privacy-preferences";
-import { FRONT_PORCH_FOOTER_LINKS } from "@/features/front-porch/front-porch-copy";
+import {
+  FRONT_PORCH_FOOTER_LINKS,
+  frontPorchLinkPrefetch,
+} from "@/features/front-porch/front-porch-copy";
 import { TrustFooterFrame } from "@/features/ux-reset/trust-footer-frame";
 
 type FrontPorchTrustFooterProps = {
@@ -22,7 +25,11 @@ export function FrontPorchTrustFooter({
   return (
     <TrustFooterFrame>
       {FRONT_PORCH_FOOTER_LINKS.map((item) => (
-        <Link href={item.href} key={item.href}>
+        <Link
+          href={item.href}
+          key={item.href}
+          prefetch={frontPorchLinkPrefetch(item.href)}
+        >
           {item.label}
         </Link>
       ))}
