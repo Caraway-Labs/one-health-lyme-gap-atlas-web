@@ -131,6 +131,27 @@ describe("explorer map values adapter", () => {
     });
   });
 
+  it("keeps a rurality code outside 1 through 9 missing", () => {
+    const collection = sampleCollection();
+    const county = collection.counties[0];
+    if (!county) {
+      throw new Error("Sample collection needs a county.");
+    }
+    county.rucc_2023 = 0;
+    const ready = explorerMapValuesLayerReady({
+      collection,
+      layerId: "rurality",
+      requestedFips: ["08001"],
+    });
+    expect(ready.rows.find((row) => row.fips === "08001")).toStrictEqual({
+      categoryLabel: null,
+      fips: "08001",
+      numeric: null,
+      raw: null,
+      valueState: ValueState.MISSING,
+    });
+  });
+
   it("excludes Alaska from painted rows and filters by state scope", () => {
     const national = explorerMapValuesLayerReady({
       collection: sampleCollection(),
