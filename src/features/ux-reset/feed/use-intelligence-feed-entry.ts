@@ -7,8 +7,6 @@ import type { FeedEntry } from "@/generated/models/feedEntry";
 import { FeedEntryRead } from "@/generated/zod/feedEntryRead.zod";
 import { validateApiResponse } from "@/lib/api-response-validation";
 
-import { retainSourceFamilyLabel } from "./feed-presentation";
-
 export function useIntelligenceFeedEntry(
   itemId: string | null,
   enabled: boolean
@@ -23,12 +21,9 @@ export function useIntelligenceFeedEntry(
         encodeURIComponent(itemId),
         { signal }
       );
-      return retainSourceFamilyLabel(
-        validateApiResponse(
-          "Intelligence feed item",
-          FeedEntryRead,
-          response.data
-        ),
+      return validateApiResponse(
+        "Intelligence feed item",
+        FeedEntryRead,
         response.data
       ).data;
     },

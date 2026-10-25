@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getMetadataV1AtlasMetadataGetUrl,
-  getScoresV1AtlasScoresGetUrl,
+  getGetAtlasMetadataUrl,
+  getGetAtlasScoresUrl,
 } from "../src/generated/atlas";
 
 describe("generated API client", () => {
   it("preserves dataset and scoring parameters", () => {
     expect(
-      getScoresV1AtlasScoresGetUrl({
+      getGetAtlasScoresUrl({
         dataset_version: "alpha-2026-08-06",
         ecological_share: 65,
         smooth_k: 50,
@@ -18,6 +18,6 @@ describe("generated API client", () => {
   });
 
   it("uses the versioned metadata route", () => {
-    expect(getMetadataV1AtlasMetadataGetUrl()).toBe("/v1/atlas/metadata");
+    expect(getGetAtlasMetadataUrl()).toBe("/v1/atlas/metadata");
   });
 });

@@ -5,6 +5,8 @@
  * Build artifact for existing first-party Web client and validator generation. Not an external developer contract or HTTP surface. Use the public openapi.json for external documentation.
  * OpenAPI spec version: 0.1.0
  */
+import type { FeedSourceDiagnostic } from './feedSourceDiagnostic';
+import type { FeedSourceOperationalState } from './feedSourceOperationalState';
 import type { FeedSourceReviewedTrustClassification } from './feedSourceReviewedTrustClassification';
 
 export interface FeedSource {
@@ -19,6 +21,23 @@ export interface FeedSource {
      */
   organization: string;
   reviewed_trust_classification: FeedSourceReviewedTrustClassification;
-  operational_state?: 'unavailable';
-  diagnostic?: 'SOURCE_HEALTH_NOT_PUBLISHED';
+  /** healthy, stale, or failing when the source-health projection has a row for this source. unavailable when it does not, or when that projection cannot be read. */
+  operational_state?: FeedSourceOperationalState;
+  /**
+     * SOURCE_HEALTH_NOT_PUBLISHED when operational_state is unavailable. Null when a health row supplies the operational state.
+     * @nullable
+     */
+  diagnostic?: FeedSourceDiagnostic;
+  /**
+     * UTC completion time from the source-health projection. Null when unavailable or absent on that row.
+     * @nullable
+     * @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?Z$
+     */
+  last_completed_at?: string | null;
+  /**
+     * Allowlisted error code from the source-health projection. Free text and run identifiers are omitted.
+     * @nullable
+     * @pattern ^(?:INTELLIGENCE_[A-Z0-9_]{3,80}|FEED_[A-Z0-9_]{1,64}|MALFORMED_FEED|UNCLASSIFIED_[A-Za-z][A-Za-z0-9]{0,80})$
+     */
+  last_error_code?: string | null;
 }

@@ -31,7 +31,7 @@ All **production** Atlas HTTP traffic still uses **legacy application** endpoint
 
 ### Web #285 status (generated client — done)
 
-[Web #285](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/285) merged on `main` as PR #327 (`ab7565f4`). The pinned OpenAPI now includes canonical `GET /v1/indicators`, `/v1/measures`, `/v1/observations`, `/v1/sources`, `/v1/methodologies/{id}`, and `/v1/geographies/{geography_type}/{geography_id}` (and detail/list variants). Orval emits typed callers (for example `indicatorsV1IndicatorsGet`, `observationsV1ObservationsGet`) and Zod schemas under `src/generated/`.
+[Web #285](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/285) merged on `main` as PR #327 (`ab7565f4`). The pinned OpenAPI now includes canonical `GET /v1/indicators`, `/v1/measures`, `/v1/observations`, `/v1/sources`, `/v1/methodologies/{id}`, and `/v1/geographies/{geography_type}/{geography_id}` (and detail/list variants). Orval emits typed callers (for example `listIndicators`, `listObservations`) and Zod schemas under `src/generated/`.
 
 **Inventory implication:** migration is no longer blocked on client generation. The remaining work is **consumer cutover** (Web #286+) with parity evidence—not new endpoints in this repo.
 
@@ -89,8 +89,8 @@ Each row is one **HTTP method + path** consumer contract. Orval operation names 
 
 | Current endpoint | Consumer | Response contract | Auth / cache | Canonical replacement | Classification | Migration risk | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /health/live` | None in production browser | `LiveHealthLiveGet200` | N/A | None (ops) | **retain** (no Web consumer) | None | None |
-| `GET /health/ready` | None in production browser | `ReadyHealthReadyGet200` | N/A | None (ops) | **retain** (no Web consumer) | None | None |
+| `GET /health/live` | None in production browser | `CheckLiveness200` | N/A | None (ops) | **retain** (no Web consumer) | None | None |
+| `GET /health/ready` | None in production browser | `CheckReadiness200` | N/A | None (ops) | **retain** (no Web consumer) | None | None |
 
 Generated Orval hooks exist but are unused; no migration work until a Web surface depends on them.
 
@@ -98,22 +98,22 @@ Generated Orval hooks exist but are unused; no migration work until a Web surfac
 
 | Current endpoint | Consumer | Response contract | Auth / cache | Canonical replacement | Classification | Migration risk | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /v1/me/profile` | [`src/app/account/page.tsx`](../src/app/account/page.tsx) — `getProfileV1MeProfileGet` | `UserProfileResponse` | Bearer when Supabase session present; imperative load in `useEffect` | None — stays authenticated private API ([API #52](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/issues/52)) | **private** | Low (out of epic scope) | [`tests/account-page.test.tsx`](../tests/account-page.test.tsx) |
-| `PUT /v1/me/profile` | Same — `saveProfileV1MeProfilePut` | `UserProfileResponse` | Bearer required for meaningful save | None | **private** | Low | Mocked in account-page tests |
+| `GET /v1/me/profile` | [`src/app/account/page.tsx`](../src/app/account/page.tsx) — `getProfile` | `UserProfileResponse` | Bearer when Supabase session present; imperative load in `useEffect` | None — stays authenticated private API ([API #52](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-api/issues/52)) | **private** | Low (out of epic scope) | [`tests/account-page.test.tsx`](../tests/account-page.test.tsx) |
+| `PUT /v1/me/profile` | Same — `updateProfile` | `UserProfileResponse` | Bearer required for meaningful save | None | **private** | Low | Mocked in account-page tests |
 | `POST /v1/me/privacy-requests` | [`src/components/account-data-rights.tsx`](../src/components/account-data-rights.tsx) | `PrivacyRequestCreated` | Bearer; no-store semantics on API | None | **private** | Low | [`tests/account-data-rights.test.tsx`](../tests/account-data-rights.test.tsx) |
 | `POST /v1/me/privacy-requests/{id}/confirm` | Same | `PrivacyRequestStatus` | Bearer | None | **private** | Low | account-data-rights tests |
 | `GET /v1/me/privacy-requests/{id}` | **No production consumer** (generated only) | `PrivacyRequestStatus` | Bearer | None | **private** | None | None |
-| `GET /v1/me/privacy-requests/{id}/export` | account-data-rights — `downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet` | JSON export (client triggers download) | Bearer | None | **private** | Low | account-data-rights tests |
+| `GET /v1/me/privacy-requests/{id}/export` | account-data-rights — `downloadPrivacyExport` | JSON export (client triggers download) | Bearer | None | **private** | Low | account-data-rights tests |
 
 ### Public atlas application data (`/v1/atlas/*`, counties)
 
 | Current endpoint | Consumer(s) | Response contract used | Auth / cache expectations | Canonical replacement (API #51/#52) | Classification | Migration risk | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /v1/atlas/metadata` | `/`, `/geographic_explorer`, `/investigate`, variants, `/assistant` county context — `metadataV1AtlasMetadataGet`; UI: `AtlasFilters`, `MethodsSection` | `AtlasMetadata` (release id, sources, limitations, methodology labels) | Anonymous; TanStack keys `["metadata"]`, `["explorer-metadata", …]`, `["assistant-county-context-metadata"]`; Zod `MetadataV1AtlasMetadataGetResponse` | **Runtime cutover:** compose from `GET /v1/indicators`, `/v1/measures`, `/v1/sources`, `/v1/methodologies/{methodology_id}` (+ release/version semantics). **Generated callers exist** (Web #285); bundle/adaptor shape for UI parity still **unresolved** (Web #286). | **migrate** | **Medium** — provenance/freshness copy must remain equivalent | E2E atlas + geographic-explorer; [`tests/generated-client.test.ts`](../tests/generated-client.test.ts), [`tests/api-mutator.test.ts`](../tests/api-mutator.test.ts) |
-| `GET /v1/atlas/geometry` | Home, Investigation Workspace, Geographic Explorer (maps/scatter) — `geometryV1AtlasGeometryGet` | GeoJSON `FeatureCollection` (typed in app) | Anonymous; `staleTime: Infinity` on home/experiment; explorer validates structure manually | **None for identity** — retain display geometry endpoint per API #52 / #85 (geography resource ≠ map geometry) | **retain** | Low if left on current route; **Medium** if CRS/bounds drift vs map | E2E atlas + geographic-explorer |
-| `GET /v1/atlas/scores` | Same routes + `/assistant` county context — `scoresV1AtlasScoresGet` | `ScoreCollection` / `CountyScoreSummary[]` with `ScoreSettings` query params | Anonymous; keys include release + scoring triple; Zod + completeness checks (explorer); `placeholderData` on home/experiment | **`GET /v1/observations`** for constituent measures **plus** composition into priority/ranking semantics. Composite Atlas score is **not** a single observation; measure ID mapping **unresolved** (API/data). **Generated** `observationsV1ObservationsGet` available; no UI consumer. | **migrate** | **High** — ranking, color, priority pills, URL scoring params | E2E both specs; generated-client URL test |
-| `GET /v1/counties/{fips}` | `/`, `/investigate`, variants — `countyV1CountiesFipsGet` | `CountyDetail` (evidence panels, action plan, profile) | Anonymous; enabled when FIPS selected; Zod `CountyV1CountiesFipsGetResponse` | **`GET /v1/observations`** (multi-measure) + **`GET /v1/geographies/county/{fips}`** + linked sources/methodologies. Investigation Workspace is the highest-visibility consumer ([`/investigate`](../src/app/investigate/page.tsx)). | **migrate** | **High** — mixed evidence, environmental context, missingness | E2E atlas |
-| `GET /v1/atlas/ranking.csv` | Home CSV link — `getRankingCsvV1AtlasRankingCsvGetUrl` + anchor href | CSV file (not JSON) | Anonymous; full navigation download; scoring + filter query params from URL state | **Unresolved.** API #52 separates bulk download from interactive queries. No canonical CSV equivalent; may **retain** as action/export or gain a future release-download API. | **unresolved** | Medium — export parity, filename, column order | E2E atlas (download) |
+| `GET /v1/atlas/metadata` | `/`, `/geographic_explorer`, `/investigate`, variants, `/assistant` county context — `getAtlasMetadata`; UI: `AtlasFilters`, `MethodsSection` | `AtlasMetadata` (release id, sources, limitations, methodology labels) | Anonymous; TanStack keys `["metadata"]`, `["explorer-metadata", …]`, `["assistant-county-context-metadata"]`; Zod `GetAtlasMetadataResponse` | **Runtime cutover:** compose from `GET /v1/indicators`, `/v1/measures`, `/v1/sources`, `/v1/methodologies/{methodology_id}` (+ release/version semantics). **Generated callers exist** (Web #285); bundle/adaptor shape for UI parity still **unresolved** (Web #286). | **migrate** | **Medium** — provenance/freshness copy must remain equivalent | E2E atlas + geographic-explorer; [`tests/generated-client.test.ts`](../tests/generated-client.test.ts), [`tests/api-mutator.test.ts`](../tests/api-mutator.test.ts) |
+| `GET /v1/atlas/geometry` | Home, Investigation Workspace, Geographic Explorer (maps/scatter) — `getAtlasGeometry` | GeoJSON `FeatureCollection` (typed in app) | Anonymous; `staleTime: Infinity` on home/experiment; explorer validates structure manually | **None for identity** — retain display geometry endpoint per API #52 / #85 (geography resource ≠ map geometry) | **retain** | Low if left on current route; **Medium** if CRS/bounds drift vs map | E2E atlas + geographic-explorer |
+| `GET /v1/atlas/scores` | Same routes + `/assistant` county context — `getAtlasScores` | `ScoreCollection` / `CountyScoreSummary[]` with `ScoreSettings` query params | Anonymous; keys include release + scoring triple; Zod + completeness checks (explorer); `placeholderData` on home/experiment | **`GET /v1/observations`** for constituent measures **plus** composition into priority/ranking semantics. Composite Atlas score is **not** a single observation; measure ID mapping **unresolved** (API/data). **Generated** `listObservations` available; no UI consumer. | **migrate** | **High** — ranking, color, priority pills, URL scoring params | E2E both specs; generated-client URL test |
+| `GET /v1/counties/{fips}` | `/`, `/investigate`, variants — `getCounty` | `CountyDetail` (evidence panels, action plan, profile) | Anonymous; enabled when FIPS selected; Zod `GetCountyResponse` | **`GET /v1/observations`** (multi-measure) + **`GET /v1/geographies/county/{fips}`** + linked sources/methodologies. Investigation Workspace is the highest-visibility consumer ([`/investigate`](../src/app/investigate/page.tsx)). | **migrate** | **High** — mixed evidence, environmental context, missingness | E2E atlas |
+| `GET /v1/atlas/ranking.csv` | Home CSV link — `getDownloadAtlasRankingUrl` + anchor href | CSV file (not JSON) | Anonymous; full navigation download; scoring + filter query params from URL state | **Unresolved.** API #52 separates bulk download from interactive queries. No canonical CSV equivalent; may **retain** as action/export or gain a future release-download API. | **unresolved** | Medium — export parity, filename, column order | E2E atlas (download) |
 
 ### Action-oriented exports
 
@@ -144,15 +144,15 @@ These paths are **in scope for epic #283** as migration **targets**. They are cl
 
 | Canonical endpoint | Generated caller (examples) | Production browser consumer | Auth / cache | Replaces (legacy) | Classification | Migration risk | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `GET /v1/indicators` | `indicatorsV1IndicatorsGet` | None | Anonymous; public cache policy on API | Part of `/v1/atlas/metadata` decomposition | **migrate** (target) | Medium when wired to UI | [`tests/canonical-api-client.test.ts`](../tests/canonical-api-client.test.ts) |
-| `GET /v1/indicators/{indicator_id}` | `indicatorV1IndicatorsIndicatorIdGet` | None | Anonymous | Metadata / indicator detail | **migrate** (target) | Medium | canonical-api-client tests |
-| `GET /v1/measures` | `measuresV1MeasuresGet` | None | Anonymous | Metadata / measure catalog | **migrate** (target) | Medium | canonical-api-client tests |
-| `GET /v1/measures/{measure_id}` | `measureV1MeasuresMeasureIdGet` | None | Anonymous | Metadata | **migrate** (target) | Medium | canonical-api-client tests |
-| `GET /v1/sources` | `sourcesV1SourcesGet` | None | Anonymous | `AtlasMetadata.sources` / provenance | **migrate** (target) | Medium — provenance copy parity | canonical-api-client tests |
-| `GET /v1/sources/{source_id}` | `sourceV1SourcesSourceIdGet` | None | Anonymous | Source cards in `MethodsSection` | **migrate** (target) | Medium | canonical-api-client tests |
-| `GET /v1/methodologies/{methodology_id}` | `methodologyV1MethodologiesMethodologyIdGet` | None | Anonymous | Methods / release methodology labels | **migrate** (target) | Medium | canonical-api-client tests |
-| `GET /v1/geographies/{geography_type}/{geography_id}` | `geographyV1GeographiesGeographyTypeGeographyIdGet` | None | Anonymous | County identity leg of `CountyDetail` (not map geometry) | **migrate** (target) | Medium | canonical-api-client tests |
-| `GET /v1/observations` | `observationsV1ObservationsGet` | None | Anonymous; bounded query + pagination on API | `/v1/atlas/scores`, `/v1/counties/{fips}` (partial) | **migrate** (target) | **High** when used for scores/county UI | canonical-api-client tests (value states, provenance) |
+| `GET /v1/indicators` | `listIndicators` | None | Anonymous; public cache policy on API | Part of `/v1/atlas/metadata` decomposition | **migrate** (target) | Medium when wired to UI | [`tests/canonical-api-client.test.ts`](../tests/canonical-api-client.test.ts) |
+| `GET /v1/indicators/{indicator_id}` | `getIndicator` | None | Anonymous | Metadata / indicator detail | **migrate** (target) | Medium | canonical-api-client tests |
+| `GET /v1/measures` | `listMeasures` | None | Anonymous | Metadata / measure catalog | **migrate** (target) | Medium | canonical-api-client tests |
+| `GET /v1/measures/{measure_id}` | `getMeasure` | None | Anonymous | Metadata | **migrate** (target) | Medium | canonical-api-client tests |
+| `GET /v1/sources` | `listSources` | None | Anonymous | `AtlasMetadata.sources` / provenance | **migrate** (target) | Medium — provenance copy parity | canonical-api-client tests |
+| `GET /v1/sources/{source_id}` | `getSource` | None | Anonymous | Source cards in `MethodsSection` | **migrate** (target) | Medium | canonical-api-client tests |
+| `GET /v1/methodologies/{methodology_id}` | `getMethodology` | None | Anonymous | Methods / release methodology labels | **migrate** (target) | Medium | canonical-api-client tests |
+| `GET /v1/geographies/{geography_type}/{geography_id}` | `getGeography` | None | Anonymous | County identity leg of `CountyDetail` (not map geometry) | **migrate** (target) | Medium | canonical-api-client tests |
+| `GET /v1/observations` | `listObservations` | None | Anonymous; bounded query + pagination on API | `/v1/atlas/scores`, `/v1/counties/{fips}` (partial) | **migrate** (target) | **High** when used for scores/county UI | canonical-api-client tests (value states, provenance) |
 
 ---
 
@@ -160,8 +160,8 @@ These paths are **in scope for epic #283** as migration **targets**. They are cl
 
 | Access pattern | Used in production? | Notes |
 | --- | --- | --- |
-| Orval legacy functions (`metadataV1AtlasMetadataGet`, …) | **Yes** — all **current** product data loads | Wrapped by `apiMutator` except PDF/CSV |
-| Orval canonical functions (`indicatorsV1IndicatorsGet`, …) | **No** in UI | Available after Web #285; use in Web #286+ cutover |
+| Orval legacy functions (`getAtlasMetadata`, …) | **Yes** — all **current** product data loads | Wrapped by `apiMutator` except PDF/CSV |
+| Orval canonical functions (`listIndicators`, …) | **No** in UI | Available after Web #285; use in Web #286+ cutover |
 | Orval generated React Query hooks | **No** | Safe to ignore until a consumer adopts them |
 | Manual `fetch` | **Yes** — PDF + ranking CSV | Intentional bypass |
 | TanStack Query | **Yes** | Custom query keys per route |
@@ -183,7 +183,7 @@ These paths are **in scope for epic #283** as migration **targets**. They are cl
 
 ## Recommended first migration workflow (low risk / high value)
 
-**Primary recommendation (runtime cutover, post–Web #285):** switch **`GET /v1/atlas/metadata` consumers** to canonical **metadata discovery** calls (`indicatorsV1IndicatorsGet`, `measuresV1MeasuresGet`, `sourcesV1SourcesGet`, `methodologyV1MethodologiesMethodologyIdGet`, etc.) behind a thin adaptor that preserves provenance/freshness UX.
+**Primary recommendation (runtime cutover, post–Web #285):** switch **`GET /v1/atlas/metadata` consumers** to canonical **metadata discovery** calls (`listIndicators`, `listMeasures`, `listSources`, `getMethodology`, etc.) behind a thin adaptor that preserves provenance/freshness UX.
 
 **Provenance surfaces in scope:** [`MethodsSection`](../src/components/methods-section.tsx), [`AtlasFilters`](../src/components/atlas-filters.tsx), [`AtlasDataStamp`](../src/components/atlas-data-stamp.tsx). County-level provenance from **`CountyDetail`** stays in wave 2.
 

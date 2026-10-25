@@ -12,7 +12,7 @@ import type { FeedAbstractState } from './feedAbstractState';
  */
 export interface FeedAbstract {
   /**
-     * Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.
+     * Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete. An abstract longer than 6000 characters is withheld.
      * @maxLength 6000
      * @nullable
      * @pattern ^[^<>\x00-\x1f\x7f]*$

@@ -11,9 +11,9 @@ import {
   isTier1ResponseCoherent,
   TIER1_INCOHERENT_REASON,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
-import { countyTier1SurveillancePriorityGet } from "@/generated/atlas";
+import { getCountyTier1Priority } from "@/generated/atlas";
 import type { Tier1CountyPriority } from "@/generated/models";
-import { CountyTier1SurveillancePriorityGetResponse } from "@/generated/zod/atlas";
+import { GetCountyTier1PriorityResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   ApiResponseValidationError,
@@ -68,7 +68,7 @@ export function tier1SurveillancePriorityQueryOptions(
     }: {
       signal: AbortSignal;
     }): Promise<Tier1CountyPriority> => {
-      const response = await countyTier1SurveillancePriorityGet(fips, {
+      const response = await getCountyTier1Priority(fips, {
         signal,
       });
       if (response.status !== 200) {
@@ -83,7 +83,7 @@ export function tier1SurveillancePriorityQueryOptions(
       try {
         parsed = validateApiResponse(
           "Tier 1 surveillance priority",
-          CountyTier1SurveillancePriorityGetResponse,
+          GetCountyTier1PriorityResponse,
           response.data
         );
       } catch (error) {

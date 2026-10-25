@@ -16,19 +16,16 @@ import {
   type ExplorerMapObservationReady,
   type ExplorerObservationSpec,
 } from "@/features/ux-reset/review/explorer-map-observation";
-import {
-  getObservationsV1ObservationsGetUrl,
-  observationsV1ObservationsGet,
-} from "@/generated/atlas";
+import { getListObservationsUrl, listObservations } from "@/generated/atlas";
 import type {
   CountyContextObservation,
   Observation,
-  ObservationsV1ObservationsGetParams,
+  ListObservationsParams,
 } from "@/generated/models";
 import {
-  ObservationsV1ObservationsGetResponse,
-  observationsV1ObservationsGetQueryGeographyIdMax,
-  observationsV1ObservationsGetQueryPageSizeMax,
+  ListObservationsResponse,
+  listObservationsQueryGeographyIdMax,
+  listObservationsQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 
@@ -38,12 +35,12 @@ function pageParams(input: {
   fips: readonly string[];
   pageToken?: string | null;
   spec: ExplorerObservationSpec;
-}): ObservationsV1ObservationsGetParams {
-  const params: ObservationsV1ObservationsGetParams = {
+}): ListObservationsParams {
+  const params: ListObservationsParams = {
     geography_id: [...input.fips],
     geography_type: "county",
     measure_id: input.spec.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeMax,
+    page_size: listObservationsQueryPageSizeMax,
   };
   if (input.spec.context) {
     params.vintage_year = input.spec.vintageYear;
@@ -62,11 +59,11 @@ function batchFits(input: {
 }): boolean {
   if (
     input.fips.length === 0 ||
-    input.fips.length > observationsV1ObservationsGetQueryGeographyIdMax
+    input.fips.length > listObservationsQueryGeographyIdMax
   ) {
     return false;
   }
-  const url = getObservationsV1ObservationsGetUrl(
+  const url = getListObservationsUrl(
     pageParams({
       fips: input.fips,
       pageToken: maximumObservationPageToken(),
@@ -155,13 +152,13 @@ async function fetchPages(input: {
     });
     let pageToken: string | null = null;
     for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
-      const response = await observationsV1ObservationsGet(
+      const response = await listObservations(
         pageParams({ fips: batch, pageToken, spec: input.spec }),
         { signal: input.signal }
       );
       const parsed = validateApiResponse(
         "Observations",
-        ObservationsV1ObservationsGetResponse,
+        ListObservationsResponse,
         response.data
       );
       selection.note({

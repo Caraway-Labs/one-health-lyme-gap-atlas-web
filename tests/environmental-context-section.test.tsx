@@ -10,9 +10,9 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EnvironmentalContextSection } from "@/features/ux-reset/review/environmental-context-section";
-import type { ObservationsV1ObservationsGetParams } from "@/generated/models";
+import type { ListObservationsParams } from "@/generated/models";
 import { ValueState } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -24,7 +24,7 @@ import {
 } from "./fixtures/environmental-context";
 
 const observationsGet = vi.hoisted(() =>
-  vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>()
+  vi.fn<typeof import("@/generated/atlas").listObservations>()
 );
 
 vi.mock(import("@/generated/atlas"), async () => {
@@ -34,7 +34,7 @@ vi.mock(import("@/generated/atlas"), async () => {
     );
   return {
     ...actual,
-    observationsV1ObservationsGet: observationsGet,
+    listObservations: observationsGet,
   };
 });
 
@@ -52,9 +52,7 @@ function isSampleMeasure(value: string): value is SampleMeasureId {
 }
 
 function parsedEnvelope(rows: ReturnType<typeof environmentalObservation>[]) {
-  return ObservationsV1ObservationsGetResponse.parse(
-    environmentalEnvelope(rows)
-  );
+  return ListObservationsResponse.parse(environmentalEnvelope(rows));
 }
 
 function sectionElement(props: {
@@ -110,7 +108,7 @@ describe("environmental context section", () => {
 
   it("shows the four January measures for the selected county", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         const measureId = params.measure_id;
         if (!isSampleMeasure(measureId)) {
           return {
@@ -177,10 +175,7 @@ describe("environmental context section", () => {
   it("drops the previous county while the next county is still loading", async () => {
     const pending = new Map<string, () => void>();
     observationsGet.mockImplementation(
-      async (
-        params: ObservationsV1ObservationsGetParams,
-        init?: RequestInit
-      ) => {
+      async (params: ListObservationsParams, init?: RequestInit) => {
         const fips = params.geography_id[0] ?? "";
         const measureId = params.measure_id;
         const gate = Promise.withResolvers<boolean>();
@@ -253,7 +248,7 @@ describe("environmental context section", () => {
 
   it("clears the previous day when the date changes", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         const measureId = params.measure_id;
         if (!isSampleMeasure(measureId) || params.start_date === "2025-01-18") {
           return {
@@ -285,7 +280,7 @@ describe("environmental context section", () => {
 
   it("keeps a failed measure distinct from a loaded zero", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         if (params.measure_id === "nclimgrid_tmin_county_day") {
           throw new AtlasApiError(
             "Environmental context could not be loaded.",
@@ -324,7 +319,7 @@ describe("environmental context section", () => {
 
   it("explains an unsupported day without requesting it", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         const measureId = params.measure_id;
         if (!isSampleMeasure(measureId)) {
           return {
@@ -361,7 +356,7 @@ describe("environmental context section", () => {
 
   it("shows out-of-coverage metadata separately from precipitation zero", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         const measureId = params.measure_id;
         if (!isSampleMeasure(measureId)) {
           return {
@@ -404,7 +399,7 @@ describe("environmental context section", () => {
 
   it("keeps governed limitations in provenance and hides the short caveat", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         const measureId = params.measure_id;
         if (!isSampleMeasure(measureId)) {
           return {

@@ -15,7 +15,7 @@ import { fetchExploreCountyDirectory } from "@/features/ux-reset/explore/load-ex
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import { reviewHumanFloorEvidence } from "@/features/ux-reset/review/review-published-county-preview";
-import { CountyV1CountiesFipsGetResponse } from "@/generated/zod/atlas";
+import { GetCountyResponse } from "@/generated/zod/atlas";
 
 import identities from "./fixtures/review-al-published-identities.json";
 import autauga from "./fixtures/review-al-v11-01001.json";
@@ -120,7 +120,7 @@ describe("Published Review county exploration", () => {
     vi.mocked(fetchExploreCountyDirectory).mockResolvedValue(identities);
     vi.mocked(loadInvestigateCountyRecord).mockImplementation(
       async ({ fips }) =>
-        CountyV1CountiesFipsGetResponse.parse(
+        GetCountyResponse.parse(
           [autauga, baldwin, barbour].find((entry) => entry.fips === fips)
         )
     );
@@ -247,7 +247,7 @@ describe("Published Review county exploration", () => {
     expect(screen.getByTestId("review-rationale")).toBeInTheDocument();
     for (const detail of [autauga, barbour]) {
       const evidence = reviewHumanFloorEvidence(
-        CountyV1CountiesFipsGetResponse.parse(detail)
+        GetCountyResponse.parse(detail)
       );
       expect(evidence.displayValue).toBe("Unavailable");
       expect(evidence.valueNote).toContain("not converted to zero");
@@ -325,7 +325,7 @@ describe("Published Review county exploration", () => {
     },
   ])("keeps human status $status and floor $floor conservative", (entry) => {
     const model = reviewHumanFloorEvidence({
-      ...CountyV1CountiesFipsGetResponse.parse(baldwin),
+      ...GetCountyResponse.parse(baldwin),
       scoring_methodology_version: "surveillance-gap-score-v1.1" as const,
       human_status: entry.status,
       case_count_floor_2023: entry.floor,

@@ -7,7 +7,7 @@ import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-i
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
 
 const observationsGet = vi.hoisted(() =>
-  vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>()
+  vi.fn<typeof import("@/generated/atlas").listObservations>()
 );
 const workspace = vi.hoisted(() => ({
   current: null as InvestigateWorkspace | null,
@@ -20,7 +20,7 @@ vi.mock(import("@/generated/atlas"), async () => {
     );
   return {
     ...actual,
-    observationsV1ObservationsGet: observationsGet,
+    listObservations: observationsGet,
   };
 });
 

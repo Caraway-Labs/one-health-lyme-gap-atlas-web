@@ -55,7 +55,7 @@ test("annotates provenance citation, null semantics, and field names", async ({
 
   await page.getByRole("button", { name: /value_state/u }).click();
   await expect(
-    page.getByText("MISSING/SUPPRESSED/UNAVAILABLE require null")
+    page.getByText("Never treat a `null` value as zero")
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "ValueState" })).toHaveAttribute(
     "href",

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  CountyV1CountiesFipsGetResponse,
-  KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
-  MetadataV1AtlasMetadataGetResponse,
-  ScoresV1AtlasScoresGetResponse,
+  GetCountyResponse,
+  AskKnowledgeGraphResponse,
+  GetAtlasMetadataResponse,
+  GetAtlasScoresResponse,
 } from "../src/generated/zod/atlas";
 import {
   ApiResponseValidationError,
@@ -113,7 +113,7 @@ describe("API response validation", () => {
     expect(
       validateApiResponse(
         "Evidence chat response",
-        KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
+        AskKnowledgeGraphResponse,
         chatResponse
       )
     ).toMatchObject(chatResponse);
@@ -123,50 +123,40 @@ describe("API response validation", () => {
     expect(
       validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
+        GetAtlasMetadataResponse,
         atlasMetadata
       )
     ).toMatchObject({ release_id: "alpha-2026-08-06" });
     expect(
       validateApiResponse(
         "Atlas scores",
-        ScoresV1AtlasScoresGetResponse,
+        GetAtlasScoresResponse,
         scoreCollection
       )
     ).toMatchObject({ release_id: "alpha-2026-08-06" });
     expect(
-      validateApiResponse(
-        "County detail",
-        CountyV1CountiesFipsGetResponse,
-        countyDetail
-      )
+      validateApiResponse("County detail", GetCountyResponse, countyDetail)
     ).toMatchObject({ fips: "08001" });
   });
 
   it("rejects malformed payloads with a controlled application error", () => {
     expect(() =>
-      validateApiResponse(
-        "Evidence chat response",
-        KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
-        { ...chatResponse, status: "unverified" }
-      )
+      validateApiResponse("Evidence chat response", AskKnowledgeGraphResponse, {
+        ...chatResponse,
+        status: "unverified",
+      })
     ).toThrow(ApiResponseValidationError);
     expect(() =>
-      validateApiResponse(
-        "Evidence chat response",
-        KnowledgeGraphChatV1KnowledgeGraphChatPostResponse,
-        { ...chatResponse, status: "unverified" }
-      )
+      validateApiResponse("Evidence chat response", AskKnowledgeGraphResponse, {
+        ...chatResponse,
+        status: "unverified",
+      })
     ).toThrow("Evidence chat response could not be verified.");
     expect(() =>
-      validateApiResponse(
-        "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
-        {
-          ...atlasMetadata,
-          release_id: 42,
-        }
-      )
+      validateApiResponse("Atlas metadata", GetAtlasMetadataResponse, {
+        ...atlasMetadata,
+        release_id: 42,
+      })
     ).toThrow("Atlas metadata could not be verified.");
   });
 });

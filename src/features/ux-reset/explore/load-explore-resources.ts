@@ -19,25 +19,25 @@ import {
 } from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
 import {
-  getObservationsV1ObservationsGetUrl,
-  measuresV1MeasuresGet,
-  observationsV1ObservationsGet,
-  scoresV1AtlasScoresGet,
+  getListObservationsUrl,
+  listMeasures,
+  listObservations,
+  getAtlasScores,
 } from "@/generated/atlas";
 import type {
   CollectionMeta,
   Measure,
-  MeasuresV1MeasuresGetParams,
+  ListMeasuresParams,
   Observation,
-  ObservationsV1ObservationsGetParams,
+  ListObservationsParams,
 } from "@/generated/models";
 import {
-  MeasuresV1MeasuresGetResponse,
-  ObservationsV1ObservationsGetResponse,
-  ScoresV1AtlasScoresGetResponse,
-  measuresV1MeasuresGetQueryPageSizeMax,
-  observationsV1ObservationsGetQueryGeographyIdMax,
-  observationsV1ObservationsGetQueryPageSizeMax,
+  ListMeasuresResponse,
+  ListObservationsResponse,
+  GetAtlasScoresResponse,
+  listMeasuresQueryPageSizeMax,
+  listObservationsQueryGeographyIdMax,
+  listObservationsQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -139,10 +139,10 @@ export function maximumObservationPageToken(): string {
 export function exploreMeasuresPageParams(input: {
   geographySemantics: string;
   pageToken?: string | null;
-}): MeasuresV1MeasuresGetParams {
-  const params: MeasuresV1MeasuresGetParams = {
+}): ListMeasuresParams {
+  const params: ListMeasuresParams = {
     geography_type: input.geographySemantics,
-    page_size: measuresV1MeasuresGetQueryPageSizeMax,
+    page_size: listMeasuresQueryPageSizeMax,
   };
   if (input.pageToken) {
     params.page_token = input.pageToken;
@@ -155,12 +155,12 @@ export function exploreObservationPageParams(input: {
   measureId: string;
   pageToken?: string | null;
   timeBound: ExploreTimeBound;
-}): ObservationsV1ObservationsGetParams {
-  const params: ObservationsV1ObservationsGetParams = {
+}): ListObservationsParams {
+  const params: ListObservationsParams = {
     geography_id: [...input.fips],
     geography_type: "county",
     measure_id: input.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeMax,
+    page_size: listObservationsQueryPageSizeMax,
   };
   switch (input.timeBound.kind) {
     case "year": {
@@ -184,9 +184,9 @@ export function exploreObservationPageParams(input: {
 }
 
 export function observationQueryByteLength(
-  params: ObservationsV1ObservationsGetParams
+  params: ListObservationsParams
 ): number {
-  const url = getObservationsV1ObservationsGetUrl(params);
+  const url = getListObservationsUrl(params);
   const query = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
   return new TextEncoder().encode(query).length;
 }
@@ -198,7 +198,7 @@ function observationBatchFits(input: {
 }): boolean {
   if (
     input.fips.length === 0 ||
-    input.fips.length > observationsV1ObservationsGetQueryGeographyIdMax
+    input.fips.length > listObservationsQueryGeographyIdMax
   ) {
     return false;
   }
@@ -268,7 +268,7 @@ async function fetchMeasuresForSemantic(
   let pageToken: string | null = null;
 
   for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
-    const response = await measuresV1MeasuresGet(
+    const response = await listMeasures(
       exploreMeasuresPageParams({
         geographySemantics,
         pageToken,
@@ -286,7 +286,7 @@ async function fetchMeasuresForSemantic(
     }
     const parsed = validateApiResponse(
       "Measures",
-      MeasuresV1MeasuresGetResponse,
+      ListMeasuresResponse,
       response.data
     );
     for (const measure of parsed.data) {
@@ -336,7 +336,7 @@ export async function fetchExploreCountyDirectory(
   releaseId: string,
   signal: AbortSignal
 ): Promise<ExploreCountyIdentity[]> {
-  const response = await scoresV1AtlasScoresGet(
+  const response = await getAtlasScores(
     { dataset_version: releaseId },
     { signal }
   );
@@ -350,7 +350,7 @@ export async function fetchExploreCountyDirectory(
   }
   const parsed = validateApiResponse(
     "Atlas scores",
-    ScoresV1AtlasScoresGetResponse,
+    GetAtlasScoresResponse,
     response.data
   );
   if (parsed.release_id !== releaseId) {
@@ -372,7 +372,7 @@ async function fetchObservationPage(input: {
   nextToken: string | null;
   observations: Observation[];
 }> {
-  const response = await observationsV1ObservationsGet(
+  const response = await listObservations(
     exploreObservationPageParams({
       fips: input.fips,
       measureId: input.measureId,
@@ -391,7 +391,7 @@ async function fetchObservationPage(input: {
   }
   const parsed = validateApiResponse(
     "Observations",
-    ObservationsV1ObservationsGetResponse,
+    ListObservationsResponse,
     response.data
   );
   return {

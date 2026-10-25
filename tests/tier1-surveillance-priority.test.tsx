@@ -30,19 +30,16 @@ import {
 } from "./fixtures/tier1-surveillance-priority";
 
 const { tier1Get } = vi.hoisted(() => ({
-  tier1Get:
-    vi.fn<
-      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
-    >(),
+  tier1Get: vi.fn<typeof import("@/generated/atlas").getCountyTier1Priority>(),
 }));
 
 vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    countyTier1SurveillancePriorityGet: (
+    getCountyTier1Priority: (
       ...args: Parameters<
-        typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+        typeof import("@/generated/atlas").getCountyTier1Priority
       >
     ) => tier1Get(...args),
   };

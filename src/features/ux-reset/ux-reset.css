@@ -500,19 +500,11 @@
   white-space: pre-wrap;
 }
 
-.ux-reset-feed-clamp-2,
-.ux-reset-feed-clamp-3 {
+.ux-reset-feed-clamp-2 {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-}
-
-.ux-reset-feed-clamp-2 {
   -webkit-line-clamp: 2;
-}
-
-.ux-reset-feed-clamp-3 {
-  -webkit-line-clamp: 3;
 }
 
 .ux-reset-feed-tag-row {

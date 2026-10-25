@@ -72,11 +72,12 @@ describe("developer documentation guides", () => {
   it("lists the MVP guide order in the developers folder", () => {
     const folderNavigation = JSON.parse(
       fs.readFileSync(path.join(developRoot, "meta.json"), "utf-8")
-    ) as { title?: string; pages?: string[] };
+    ) as { pages?: string[]; root?: boolean; title?: string };
     const rootNavigation = JSON.parse(
       fs.readFileSync(path.join(docsRoot, "meta.json"), "utf-8")
     ) as { pages?: string[] };
 
+    expect(folderNavigation.root).toBeTruthy();
     expect(folderNavigation.title).toBe("Developers");
     expect(folderNavigation.pages).toStrictEqual([...developPages]);
     expect(rootNavigation.pages).toContain("develop");
@@ -500,7 +501,7 @@ function documentedValueStates(resources: string): string[] {
 }
 
 function errorTableProblems(rest: string, spec: JsonRecord): string[] {
-  const section = rest.split("## Errors")[1]?.split("\n## ")[0] ?? "";
+  const section = rest.split("## Handle errors")[1]?.split("\n## ")[0] ?? "";
   const rows: { code: string; status: string }[] = [];
   for (const match of section.matchAll(
     /^\| (?<status>\d{3}) \| (?<code>[^|\n]+) \|/gm
@@ -767,9 +768,11 @@ describe("developer guides follow the pinned public OpenAPI contract", () => {
       clientArtifactDisclaimer: description.includes(
         "Not an external developer contract"
       ),
-      ceiling: description.includes(
-        "The default pre-execution logical-result ceiling is 10,000, not truncation."
-      ),
+      ceiling: description
+        .replaceAll("\n", " ")
+        .includes(
+          "A query that selects more than 10,000 results is rejected with 400 `QUERY_TOO_BROAD`, not truncated."
+        ),
       guidesCeiling:
         developText.includes("10,000") &&
         developText.includes("not truncation"),

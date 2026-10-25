@@ -12,17 +12,17 @@ import * as zod from 'zod';
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
  * @summary List indicators
  */
-export const indicatorsV1IndicatorsGetQueryPageSizeMax = 500;
+export const listIndicatorsQueryPageSizeMax = 500;
 
 
 
-export const IndicatorsV1IndicatorsGetQueryParams = zod.object({
+export const ListIndicatorsQueryParams = zod.object({
   "indicator_id": zod.string().nullish().describe('Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.'),
-  "page_size": zod.int().min(1).max(indicatorsV1IndicatorsGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_size": zod.int().min(1).max(listIndicatorsQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
-export const IndicatorsV1IndicatorsGetResponse = zod.object({
+export const ListIndicatorsResponse = zod.object({
   "data": zod.array(zod.object({
   "indicator_id": zod.string().describe('Stable identifier of the indicator. Use it with `\/v1\/indicators\/{indicator_id}`.'),
   "label": zod.string().describe('Short display name of the indicator.'),
@@ -59,11 +59,11 @@ export const IndicatorsV1IndicatorsGetResponse = zod.object({
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get an indicator
  */
-export const IndicatorV1IndicatorsIndicatorIdGetParams = zod.object({
+export const GetIndicatorParams = zod.object({
   "indicator_id": zod.string().describe('Exact indicator ID from the indicator list. An unknown ID returns 404.')
 })
 
-export const IndicatorV1IndicatorsIndicatorIdGetResponse = zod.object({
+export const GetIndicatorResponse = zod.object({
   "data": zod.object({
   "indicator_id": zod.string().describe('Stable identifier of the indicator. Use it with `\/v1\/indicators\/{indicator_id}`.'),
   "label": zod.string().describe('Short display name of the indicator.'),
@@ -89,19 +89,19 @@ export const IndicatorV1IndicatorsIndicatorIdGetResponse = zod.object({
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
  * @summary List measures
  */
-export const measuresV1MeasuresGetQueryPageSizeMax = 500;
+export const listMeasuresQueryPageSizeMax = 500;
 
 
 
-export const MeasuresV1MeasuresGetQueryParams = zod.object({
+export const ListMeasuresQueryParams = zod.object({
   "measure_id": zod.string().nullish().describe('Return only the measure with this exact ID. Omit it to list every measure. An ID that matches nothing returns an empty list.'),
   "indicator_id": zod.string().nullish().describe('Return only measures that belong to this indicator ID. Omit it to list every measure.'),
   "geography_type": zod.string().nullish().describe('Return only measures whose `geography_semantics` field equals this value exactly, for example `COUNTY_FIPS_5`. Omit it to list every measure.'),
-  "page_size": zod.int().min(1).max(measuresV1MeasuresGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_size": zod.int().min(1).max(listMeasuresQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
-export const MeasuresV1MeasuresGetResponse = zod.object({
+export const ListMeasuresResponse = zod.object({
   "data": zod.array(zod.object({
   "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
   "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
@@ -149,11 +149,11 @@ export const MeasuresV1MeasuresGetResponse = zod.object({
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a measure
  */
-export const MeasureV1MeasuresMeasureIdGetParams = zod.object({
+export const GetMeasureParams = zod.object({
   "measure_id": zod.string().describe('Exact measure ID from the measure list. An unknown ID returns 404.')
 })
 
-export const MeasureV1MeasuresMeasureIdGetResponse = zod.object({
+export const GetMeasureResponse = zod.object({
   "data": zod.object({
   "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
   "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
@@ -190,16 +190,16 @@ export const MeasureV1MeasuresMeasureIdGetResponse = zod.object({
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
  * @summary List sources
  */
-export const sourcesV1SourcesGetQueryPageSizeMax = 500;
+export const listSourcesQueryPageSizeMax = 500;
 
 
 
-export const SourcesV1SourcesGetQueryParams = zod.object({
-  "page_size": zod.int().min(1).max(sourcesV1SourcesGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+export const ListSourcesQueryParams = zod.object({
+  "page_size": zod.int().min(1).max(listSourcesQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
-export const SourcesV1SourcesGetResponse = zod.object({
+export const ListSourcesResponse = zod.object({
   "data": zod.array(zod.object({
   "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
   "label": zod.string().describe('Display name of the source.'),
@@ -235,11 +235,11 @@ export const SourcesV1SourcesGetResponse = zod.object({
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a source
  */
-export const SourceV1SourcesSourceIdGetParams = zod.object({
+export const GetSourceParams = zod.object({
   "source_id": zod.string().describe('Exact source ID, as given in a `source_id` field. An unknown ID returns 404.')
 })
 
-export const SourceV1SourcesSourceIdGetResponse = zod.object({
+export const GetSourceResponse = zod.object({
   "data": zod.object({
   "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
   "label": zod.string().describe('Display name of the source.'),
@@ -264,11 +264,11 @@ export const SourceV1SourcesSourceIdGetResponse = zod.object({
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a methodology
  */
-export const MethodologyV1MethodologiesMethodologyIdGetParams = zod.object({
+export const GetMethodologyParams = zod.object({
   "methodology_id": zod.string().describe('Exact methodology ID, as given in a `methodology_id` field. An unknown ID returns 404.')
 })
 
-export const MethodologyV1MethodologiesMethodologyIdGetResponse = zod.object({
+export const GetMethodologyResponse = zod.object({
   "data": zod.object({
   "methodology_id": zod.string().describe('Identifies the methodology. Use it with `\/v1\/methodologies\/{methodology_id}`.'),
   "measure_id": zod.string().describe('Identifier of the measure the methodology applies to.'),
@@ -285,7 +285,7 @@ export const MethodologyV1MethodologiesMethodologyIdGetResponse = zod.object({
  * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`.
  * @summary Get geography identity
  */
-export const GeographyV1GeographiesGeographyTypeGeographyIdGetParams = zod.object({
+export const GetGeographyParams = zod.object({
   "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'),
   "geography_id": zod.string().describe('FIPS code of the place, sent as a string with leading zeros kept: five digits for a county, two for a state. A code of the wrong length or with non-digits returns 400 `INVALID_REQUEST`. Connecticut counties use planning-region codes such as `09110`.')
 })
@@ -293,7 +293,7 @@ export const GeographyV1GeographiesGeographyTypeGeographyIdGetParams = zod.objec
 
 
 
-export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.union([zod.object({
+export const GetGeographyResponse = zod.union([zod.object({
   "data": zod.object({
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
@@ -333,7 +333,7 @@ export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.uni
  * The response must not be cached.
  * @summary Check county geography availability
  */
-export const CanonicalGeographyAvailabilityParams = zod.object({
+export const CheckGeographyAvailabilityParams = zod.object({
   "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'),
   "geography_id": zod.string().describe('FIPS code of the place, sent as a string with leading zeros kept: five digits for a county, two for a state. A code of the wrong length or with non-digits returns 400 `INVALID_REQUEST`. Connecticut counties use planning-region codes such as `09110`.')
 })
@@ -342,7 +342,7 @@ export const CanonicalGeographyAvailabilityParams = zod.object({
 
 
 
-export const CanonicalGeographyAvailabilityResponse = zod.object({
+export const CheckGeographyAvailabilityResponse = zod.object({
   "availability": zod.literal("UNAVAILABLE").describe('Always `UNAVAILABLE`: the county\'s geography data is not published.'),
   "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED").describe('Why the data is unavailable. The geography data has not been published.'),
   "data": zod.null().describe('Always `null`. The API returns no geography data or geometry.'),
@@ -392,28 +392,28 @@ export const CanonicalGeographyAvailabilityResponse = zod.object({
  * @summary Query county observations
  */
 
-export const observationsV1ObservationsGetQueryGeographyIdMax = 500;
+export const listObservationsQueryGeographyIdMax = 500;
 
-export const observationsV1ObservationsGetQueryVintageYearMin = 1900;
-export const observationsV1ObservationsGetQueryVintageYearMax = 2100;
+export const listObservationsQueryVintageYearMin = 1900;
+export const listObservationsQueryVintageYearMax = 2100;
 
-export const observationsV1ObservationsGetQueryYearMin = 1900;
-export const observationsV1ObservationsGetQueryYearMax = 2100;
+export const listObservationsQueryYearMin = 1900;
+export const listObservationsQueryYearMax = 2100;
 
-export const observationsV1ObservationsGetQueryPageSizeMax = 500;
+export const listObservationsQueryPageSizeMax = 500;
 
 
 
-export const ObservationsV1ObservationsGetQueryParams = zod.object({
+export const ListObservationsQueryParams = zod.object({
   "measure_id": zod.string().min(1).describe('Exact discovery measure ID.'),
   "geography_type": zod.enum(['county', 'state']).describe('Kind of place. Only `county` is supported; `state` returns 400 `UNSUPPORTED_FILTER`.'),
-  "geography_id": zod.array(zod.string()).min(1).max(observationsV1ObservationsGetQueryGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
-  "vintage_year": zod.int().min(observationsV1ObservationsGetQueryVintageYearMin).max(observationsV1ObservationsGetQueryVintageYearMax).nullish().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
-  "year": zod.int().min(observationsV1ObservationsGetQueryYearMin).max(observationsV1ObservationsGetQueryYearMax).nullish().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
+  "geography_id": zod.array(zod.string()).min(1).max(listObservationsQueryGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
+  "vintage_year": zod.int().min(listObservationsQueryVintageYearMin).max(listObservationsQueryVintageYearMax).nullish().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
+  "year": zod.int().min(listObservationsQueryYearMin).max(listObservationsQueryYearMax).nullish().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
   "start_date": zod.iso.date().nullish().describe('Inclusive period start; requires end_date and excludes year.'),
   "end_date": zod.iso.date().nullish().describe('Inclusive period end; requires start_date and excludes year.'),
   "stratification": zod.array(zod.string()).nullish().describe('Current release has no strata; unsupported selections fail explicitly.'),
-  "page_size": zod.int().min(1).max(observationsV1ObservationsGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_size": zod.int().min(1).max(listObservationsQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
@@ -425,7 +425,7 @@ export const ObservationsV1ObservationsGetQueryParams = zod.object({
 
 
 
-export const ObservationsV1ObservationsGetResponse = zod.union([zod.object({
+export const ListObservationsResponse = zod.union([zod.object({
   "data": zod.array(zod.object({
   "metadata_revision_id": zod.string().nullish().describe('Identifies the reviewed metadata revision that describes this observation. `null` when none applies.'),
   "observation_id": zod.string().describe('Stable identifier of the observation. It also serves as the provenance reference.'),
@@ -1008,7 +1008,7 @@ export const ListIntelligenceItemsResponse = zod.object({
 
 
 /**
- * First-party read only. Each source_id appears once, with its highest registry_version. Source catalog covers represented item sources, not the private registry or all active sources. Health is explicitly unavailable until DATA publishes it. No freshness thresholds are inferred. page_size 1–500, state-bound tokens, no-store. No ingestion.
+ * First-party read only. Each source_id appears once, with its highest registry_version. The catalog lists sources represented by published items, not the private registry or every registered source. operational_state is healthy, stale, or failing from PRESENTATION.INTELLIGENCE_SOURCE_HEALTH_V1, and unavailable with diagnostic SOURCE_HEALTH_NOT_PUBLISHED when that source has no health row or the health projection cannot be read. last_completed_at and last_error_code come from that projection. Run identifiers and free text are omitted. The health read is cached for 5 minutes. page_size is 1–500 with state-bound tokens. The response must not be cached. No ingestion.
  * @summary Read source identities represented by published intelligence
  */
 export const listIntelligenceSourcesQueryPageSizeDefault = 100;
@@ -1031,9 +1031,11 @@ export const listIntelligenceSourcesResponseDataItemOrganizationMax = 1000;
 export const listIntelligenceSourcesResponseDataItemOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const listIntelligenceSourcesResponseDataItemOperationalStateDefault = `unavailable`;
 export const listIntelligenceSourcesResponseDataItemDiagnosticDefault = `SOURCE_HEALTH_NOT_PUBLISHED`;
+export const listIntelligenceSourcesResponseDataItemLastCompletedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const listIntelligenceSourcesResponseDataItemLastErrorCodeRegExp = new RegExp('^(?:INTELLIGENCE_[A-Z0-9_]{3,80}|FEED_[A-Z0-9_]{1,64}|MALFORMED_FEED|UNCLASSIFIED_[A-Za-z][A-Za-z0-9]{0,80})$');
 export const listIntelligenceSourcesResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const listIntelligenceSourcesResponseMetaSourceHealthAvailableDefault = false;
-export const listIntelligenceSourcesResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
+export const listIntelligenceSourcesResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Operational state is healthy, stale, or failing when the source-health projection has a row for that source. Otherwise it is unavailable with diagnostic SOURCE_HEALTH_NOT_PUBLISHED. Fetch timestamps are not operational health.`];
 export const listIntelligenceSourcesResponseSourceCatalogCompleteDefault = false;
 
 export const ListIntelligenceSourcesResponse = zod.object({
@@ -1042,13 +1044,15 @@ export const ListIntelligenceSourcesResponse = zod.object({
   "registry_version": zod.int().min(1),
   "organization": zod.string().min(1).max(listIntelligenceSourcesResponseDataItemOrganizationMax).regex(listIntelligenceSourcesResponseDataItemOrganizationRegExp),
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other']),
-  "operational_state": zod.literal("unavailable").default(listIntelligenceSourcesResponseDataItemOperationalStateDefault),
-  "diagnostic": zod.literal("SOURCE_HEALTH_NOT_PUBLISHED").default(listIntelligenceSourcesResponseDataItemDiagnosticDefault)
+  "operational_state": zod.enum(['healthy', 'stale', 'failing', 'unavailable']).default(listIntelligenceSourcesResponseDataItemOperationalStateDefault).describe('healthy, stale, or failing when the source-health projection has a row for this source. unavailable when it does not, or when that projection cannot be read.'),
+  "diagnostic": zod.union([zod.literal('SOURCE_HEALTH_NOT_PUBLISHED'),zod.literal(null)]).nullish().default(listIntelligenceSourcesResponseDataItemDiagnosticDefault).describe('SOURCE_HEALTH_NOT_PUBLISHED when operational_state is unavailable. Null when a health row supplies the operational state.'),
+  "last_completed_at": zod.string().regex(listIntelligenceSourcesResponseDataItemLastCompletedAtRegExp).nullish().describe('UTC completion time from the source-health projection. Null when unavailable or absent on that row.'),
+  "last_error_code": zod.string().regex(listIntelligenceSourcesResponseDataItemLastErrorCodeRegExp).nullish().describe('Allowlisted error code from the source-health projection. Free text and run identifiers are omitted.')
 })),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(listIntelligenceSourcesResponseMetaProjectionVersionDefault),
-  "source_health_available": zod.literal(false).default(listIntelligenceSourcesResponseMetaSourceHealthAvailableDefault),
+  "source_health_available": zod.boolean().default(listIntelligenceSourcesResponseMetaSourceHealthAvailableDefault).describe('True when this response applied a source-health snapshot. False when that snapshot could not be read; every source is then unavailable.'),
   "limitations": zod.array(zod.string()).default(listIntelligenceSourcesResponseMetaLimitationsDefault)
 }),
   "source_catalog_complete": zod.literal(false).default(listIntelligenceSourcesResponseSourceCatalogCompleteDefault)
@@ -1056,7 +1060,7 @@ export const ListIntelligenceSourcesResponse = zod.object({
 
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. Each list entry includes abstract_preview, abstract_has_more, abstract_state, copyright_line, pubmed_url, and attribution. abstract_preview is at most 1000 characters, cut at a word boundary, and is null when abstract_state is not present. The list does not include the full abstract text. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination. The response must not be cached. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeedQuerySourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
@@ -1105,18 +1109,14 @@ export const listIntelligenceFeedResponseDataItemSourceOrganizationMax = 1000;
 
 
 export const listIntelligenceFeedResponseDataItemSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const listIntelligenceFeedResponseDataItemSourceFamilyLabelMax = 200;
+
+
+export const listIntelligenceFeedResponseDataItemSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseDataItemDescriptionTextMax = 4096;
 
 
 export const listIntelligenceFeedResponseDataItemDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const listIntelligenceFeedResponseDataItemAbstractOneTextMax = 6000;
-
-
-export const listIntelligenceFeedResponseDataItemAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineMax = 1000;
-
-
-export const listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseDataItemTagsItemMax = 200;
 
 
@@ -1130,10 +1130,22 @@ export const listIntelligenceFeedResponseDataItemAuthorsItemRegExp = new RegExp(
 export const listIntelligenceFeedResponseDataItemAuthorsMax = 20;
 
 export const listIntelligenceFeedResponseDataItemPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const listIntelligenceFeedResponseDataItemPubmedUrlMax = 80;
+
+
+export const listIntelligenceFeedResponseDataItemPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseDataItemAttributionMax = 200;
 
 
 export const listIntelligenceFeedResponseDataItemAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemAbstractPreviewMax = 1000;
+
+
+export const listIntelligenceFeedResponseDataItemAbstractPreviewRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemCopyrightLineMax = 1000;
+
+
+export const listIntelligenceFeedResponseDataItemCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const listIntelligenceFeedResponseMetaSourceHealthAvailableDefault = false;
 export const listIntelligenceFeedResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
@@ -1165,20 +1177,21 @@ export const ListIntelligenceFeedResponse = zod.object({
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
 }),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(listIntelligenceFeedResponseDataItemSourceFamilyLabelMax).regex(listIntelligenceFeedResponseDataItemSourceFamilyLabelRegExp).describe('Display label for source_family.'),
   "description": zod.object({
   "text": zod.string().max(listIntelligenceFeedResponseDataItemDescriptionTextMax).regex(listIntelligenceFeedResponseDataItemDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
 }).describe('Publisher summary for this entry.'),
-  "abstract": zod.union([zod.object({
-  "text": zod.string().max(listIntelligenceFeedResponseDataItemAbstractOneTextMax).regex(listIntelligenceFeedResponseDataItemAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.'),
-  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
-  "copyright_line": zod.string().max(listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineMax).regex(listIntelligenceFeedResponseDataItemAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
-}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed.'),
   "tags": zod.array(zod.string().max(listIntelligenceFeedResponseDataItemTagsItemMax).regex(listIntelligenceFeedResponseDataItemTagsItemRegExp)).max(listIntelligenceFeedResponseDataItemTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
   "authors": zod.array(zod.string().max(listIntelligenceFeedResponseDataItemAuthorsItemMax).regex(listIntelligenceFeedResponseDataItemAuthorsItemRegExp)).max(listIntelligenceFeedResponseDataItemAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
   "pmid": zod.string().regex(listIntelligenceFeedResponseDataItemPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
-  "attribution": zod.string().max(listIntelligenceFeedResponseDataItemAttributionMax).regex(listIntelligenceFeedResponseDataItemAttributionRegExp).describe('Credit line shown with the entry.')
-}).describe('One source-attributed publication in the intelligence feed.')),
+  "pubmed_url": zod.string().max(listIntelligenceFeedResponseDataItemPubmedUrlMax).regex(listIntelligenceFeedResponseDataItemPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(listIntelligenceFeedResponseDataItemAttributionMax).regex(listIntelligenceFeedResponseDataItemAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract_preview": zod.string().max(listIntelligenceFeedResponseDataItemAbstractPreviewMax).regex(listIntelligenceFeedResponseDataItemAbstractPreviewRegExp).nullable().describe('Plain-text preview of a present PubMed abstract, cut at a word boundary. At most 1000 characters. The whole abstract when it is shorter. An empty string when the abstract is present and no complete word fits. Null when abstract_state is not present. No ellipsis is added.'),
+  "abstract_has_more": zod.boolean().describe('True when abstract_preview omits part of a present abstract. False when the preview is the whole abstract, or when abstract_state is not present.'),
+  "abstract_state": zod.union([zod.literal('present'),zod.literal('empty'),zod.literal('not_provided'),zod.literal('withheld'),zod.literal('suppressed'),zod.literal(null)]).nullable().describe('present: the abstract text is non-empty. empty: the abstract element is blank. not_provided: the PubMed record has no abstract. withheld: the abstract is not shown. suppressed: the abstract is not shown. Null when the entry is not PubMed, matching a null abstract on the by-id route.'),
+  "copyright_line": zod.string().max(listIntelligenceFeedResponseDataItemCopyrightLineMax).regex(listIntelligenceFeedResponseDataItemCopyrightLineRegExp).nullable().describe('Copyright line from the record, verbatim. Present only when abstract_state is present and the record has one; otherwise null.')
+}).describe('One feed list row. The full abstract text is omitted.')),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(listIntelligenceFeedResponseMetaProjectionVersionDefault),
@@ -1189,7 +1202,7 @@ export const ListIntelligenceFeedResponse = zod.object({
 
 
 /**
- * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. The entry uses the same fields as the feed list. Cache-Control is no-store. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
+ * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. The entry includes the full abstract as abstract.text, abstract.state, and abstract.copyright_line, plus pubmed_url and attribution. The response must not be cached. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
  * @summary Read one source-attributed publication
  */
 export const getIntelligenceFeedEntryPathItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
@@ -1229,18 +1242,14 @@ export const getIntelligenceFeedEntryResponseDataSourceOrganizationMax = 1000;
 
 
 export const getIntelligenceFeedEntryResponseDataSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const getIntelligenceFeedEntryResponseDataSourceFamilyLabelMax = 200;
+
+
+export const getIntelligenceFeedEntryResponseDataSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseDataDescriptionTextMax = 4096;
 
 
 export const getIntelligenceFeedEntryResponseDataDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const getIntelligenceFeedEntryResponseDataAbstractOneTextMax = 6000;
-
-
-export const getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
-export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax = 1000;
-
-
-export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseDataTagsItemMax = 200;
 
 
@@ -1254,10 +1263,22 @@ export const getIntelligenceFeedEntryResponseDataAuthorsItemRegExp = new RegExp(
 export const getIntelligenceFeedEntryResponseDataAuthorsMax = 20;
 
 export const getIntelligenceFeedEntryResponseDataPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const getIntelligenceFeedEntryResponseDataPubmedUrlMax = 80;
+
+
+export const getIntelligenceFeedEntryResponseDataPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseDataAttributionMax = 200;
 
 
 export const getIntelligenceFeedEntryResponseDataAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAbstractOneTextMax = 6000;
+
+
+export const getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const getIntelligenceFeedEntryResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 
 export const GetIntelligenceFeedEntryResponse = zod.object({
@@ -1287,20 +1308,22 @@ export const GetIntelligenceFeedEntryResponse = zod.object({
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
 }),
   "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(getIntelligenceFeedEntryResponseDataSourceFamilyLabelMax).regex(getIntelligenceFeedEntryResponseDataSourceFamilyLabelRegExp).describe('Display label for source_family.'),
   "description": zod.object({
   "text": zod.string().max(getIntelligenceFeedEntryResponseDataDescriptionTextMax).regex(getIntelligenceFeedEntryResponseDataDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
   "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
 }).describe('Publisher summary for this entry.'),
-  "abstract": zod.union([zod.object({
-  "text": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneTextMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete.'),
-  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
-  "copyright_line": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
-}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed.'),
   "tags": zod.array(zod.string().max(getIntelligenceFeedEntryResponseDataTagsItemMax).regex(getIntelligenceFeedEntryResponseDataTagsItemRegExp)).max(getIntelligenceFeedEntryResponseDataTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
   "authors": zod.array(zod.string().max(getIntelligenceFeedEntryResponseDataAuthorsItemMax).regex(getIntelligenceFeedEntryResponseDataAuthorsItemRegExp)).max(getIntelligenceFeedEntryResponseDataAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
   "pmid": zod.string().regex(getIntelligenceFeedEntryResponseDataPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
-  "attribution": zod.string().max(getIntelligenceFeedEntryResponseDataAttributionMax).regex(getIntelligenceFeedEntryResponseDataAttributionRegExp).describe('Credit line shown with the entry.')
-}).describe('One source-attributed publication in the intelligence feed.'),
+  "pubmed_url": zod.string().max(getIntelligenceFeedEntryResponseDataPubmedUrlMax).regex(getIntelligenceFeedEntryResponseDataPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(getIntelligenceFeedEntryResponseDataAttributionMax).regex(getIntelligenceFeedEntryResponseDataAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract": zod.union([zod.object({
+  "text": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneTextMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete. An abstract longer than 6000 characters is withheld.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
+  "copyright_line": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
+}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. The text is the complete abstract.')
+}).describe('One source-attributed publication, including the full PubMed abstract.'),
   "meta": zod.object({
   "projection_version": zod.literal("intelligence-feed-read-v2").default(getIntelligenceFeedEntryResponseMetaProjectionVersionDefault)
 }).optional().describe('Projection identity for one feed entry.')
@@ -1310,16 +1333,16 @@ export const GetIntelligenceFeedEntryResponse = zod.object({
 /**
  * @summary Live
  */
-export const LiveHealthLiveGetResponse = zod.record(zod.string(), zod.string())
+export const CheckLivenessResponse = zod.record(zod.string(), zod.string())
 
 
 /**
  * @summary Ready
  */
-export const readyHealthReadyGetResponseStatusDefault = `ready`;
+export const checkReadinessResponseStatusDefault = `ready`;
 
-export const ReadyHealthReadyGetResponse = zod.object({
-  "status": zod.literal("ready").default(readyHealthReadyGetResponseStatusDefault),
+export const CheckReadinessResponse = zod.object({
+  "status": zod.literal("ready").default(checkReadinessResponseStatusDefault),
   "dependencies": zod.object({
   "snowflake": zod.enum(['ok', 'degraded'])
 })
@@ -1329,24 +1352,24 @@ export const ReadyHealthReadyGetResponse = zod.object({
 /**
  * @summary Get Profile
  */
-export const GetProfileV1MeProfileGetHeader = zod.object({
+export const GetProfileHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const getProfileV1MeProfileGetResponseProfileOneStateCodeMax = 2;
+export const getProfileResponseProfileOneStateCodeMax = 2;
 
-export const getProfileV1MeProfileGetResponseProfileOneOrganizationMax = 120;
+export const getProfileResponseProfileOneOrganizationMax = 120;
 
-export const getProfileV1MeProfileGetResponseProfileOneJobTitleMax = 120;
+export const getProfileResponseProfileOneJobTitleMax = 120;
 
 
 
-export const GetProfileV1MeProfileGetResponse = zod.object({
+export const GetProfileResponse = zod.object({
   "profile": zod.union([zod.object({
   "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
-  "state_code": zod.string().max(getProfileV1MeProfileGetResponseProfileOneStateCodeMax).nullish(),
-  "organization": zod.string().max(getProfileV1MeProfileGetResponseProfileOneOrganizationMax).nullish(),
-  "job_title": zod.string().max(getProfileV1MeProfileGetResponseProfileOneJobTitleMax).nullish(),
+  "state_code": zod.string().max(getProfileResponseProfileOneStateCodeMax).nullish(),
+  "organization": zod.string().max(getProfileResponseProfileOneOrganizationMax).nullish(),
+  "job_title": zod.string().max(getProfileResponseProfileOneJobTitleMax).nullish(),
   "starting_view_version": zod.union([zod.literal(1),zod.literal(null)]).nullish().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
@@ -1355,40 +1378,40 @@ export const GetProfileV1MeProfileGetResponse = zod.object({
 /**
  * @summary Save Profile
  */
-export const SaveProfileV1MeProfilePutHeader = zod.object({
+export const UpdateProfileHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const saveProfileV1MeProfilePutBodyStateCodeMax = 2;
+export const updateProfileBodyStateCodeMax = 2;
 
-export const saveProfileV1MeProfilePutBodyOrganizationMax = 120;
+export const updateProfileBodyOrganizationMax = 120;
 
-export const saveProfileV1MeProfilePutBodyJobTitleMax = 120;
+export const updateProfileBodyJobTitleMax = 120;
 
 
 
-export const SaveProfileV1MeProfilePutBody = zod.object({
+export const UpdateProfileBody = zod.object({
   "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
-  "state_code": zod.string().max(saveProfileV1MeProfilePutBodyStateCodeMax).nullish(),
-  "organization": zod.string().max(saveProfileV1MeProfilePutBodyOrganizationMax).nullish(),
-  "job_title": zod.string().max(saveProfileV1MeProfilePutBodyJobTitleMax).nullish(),
+  "state_code": zod.string().max(updateProfileBodyStateCodeMax).nullish(),
+  "organization": zod.string().max(updateProfileBodyOrganizationMax).nullish(),
+  "job_title": zod.string().max(updateProfileBodyJobTitleMax).nullish(),
   "complete_starting_view": zod.literal(true).optional().describe('Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version.')
 })
 
-export const saveProfileV1MeProfilePutResponseProfileOneStateCodeMax = 2;
+export const updateProfileResponseProfileOneStateCodeMax = 2;
 
-export const saveProfileV1MeProfilePutResponseProfileOneOrganizationMax = 120;
+export const updateProfileResponseProfileOneOrganizationMax = 120;
 
-export const saveProfileV1MeProfilePutResponseProfileOneJobTitleMax = 120;
+export const updateProfileResponseProfileOneJobTitleMax = 120;
 
 
 
-export const SaveProfileV1MeProfilePutResponse = zod.object({
+export const UpdateProfileResponse = zod.object({
   "profile": zod.union([zod.object({
   "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
-  "state_code": zod.string().max(saveProfileV1MeProfilePutResponseProfileOneStateCodeMax).nullish(),
-  "organization": zod.string().max(saveProfileV1MeProfilePutResponseProfileOneOrganizationMax).nullish(),
-  "job_title": zod.string().max(saveProfileV1MeProfilePutResponseProfileOneJobTitleMax).nullish(),
+  "state_code": zod.string().max(updateProfileResponseProfileOneStateCodeMax).nullish(),
+  "organization": zod.string().max(updateProfileResponseProfileOneOrganizationMax).nullish(),
+  "job_title": zod.string().max(updateProfileResponseProfileOneJobTitleMax).nullish(),
   "starting_view_version": zod.union([zod.literal(1),zod.literal(null)]).nullish().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
@@ -1397,23 +1420,23 @@ export const SaveProfileV1MeProfilePutResponse = zod.object({
 /**
  * @summary Create Privacy Request
  */
-export const CreatePrivacyRequestV1MePrivacyRequestsPostHeader = zod.object({
+export const CreatePrivacyRequestHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const CreatePrivacyRequestV1MePrivacyRequestsPostBody = zod.object({
+export const CreatePrivacyRequestBody = zod.object({
   "action": zod.enum(['export', 'deletion'])
 })
 
-export const createPrivacyRequestV1MePrivacyRequestsPostResponseDownloadAvailableDefault = false;
+export const createPrivacyRequestResponseDownloadAvailableDefault = false;
 
-export const CreatePrivacyRequestV1MePrivacyRequestsPostResponse = zod.object({
+export const CreatePrivacyRequestResponse = zod.object({
   "request_id": zod.string(),
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
   "completed_at": zod.iso.datetime({"offset":true}).nullish(),
-  "download_available": zod.boolean().default(createPrivacyRequestV1MePrivacyRequestsPostResponseDownloadAvailableDefault),
+  "download_available": zod.boolean().default(createPrivacyRequestResponseDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
@@ -1428,32 +1451,32 @@ export const CreatePrivacyRequestV1MePrivacyRequestsPostResponse = zod.object({
 /**
  * @summary Confirm Privacy Request
  */
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostParams = zod.object({
+export const ConfirmPrivacyRequestParams = zod.object({
   "request_id": zod.uuid()
 })
 
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostHeader = zod.object({
+export const ConfirmPrivacyRequestHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMin = 16;
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMax = 128;
+export const confirmPrivacyRequestBodyNonceMin = 16;
+export const confirmPrivacyRequestBodyNonceMax = 128;
 
 
 
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBody = zod.object({
-  "nonce": zod.string().min(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMin).max(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMax)
+export const ConfirmPrivacyRequestBody = zod.object({
+  "nonce": zod.string().min(confirmPrivacyRequestBodyNonceMin).max(confirmPrivacyRequestBodyNonceMax)
 })
 
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseDownloadAvailableDefault = false;
+export const confirmPrivacyRequestResponseDownloadAvailableDefault = false;
 
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse = zod.object({
+export const ConfirmPrivacyRequestResponse = zod.object({
   "request_id": zod.string(),
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
   "completed_at": zod.iso.datetime({"offset":true}).nullish(),
-  "download_available": zod.boolean().default(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseDownloadAvailableDefault),
+  "download_available": zod.boolean().default(confirmPrivacyRequestResponseDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
@@ -1467,23 +1490,23 @@ export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostRespons
 /**
  * @summary Get Privacy Request
  */
-export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetParams = zod.object({
+export const GetPrivacyRequestParams = zod.object({
   "request_id": zod.uuid()
 })
 
-export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetHeader = zod.object({
+export const GetPrivacyRequestHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseDownloadAvailableDefault = false;
+export const getPrivacyRequestResponseDownloadAvailableDefault = false;
 
-export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = zod.object({
+export const GetPrivacyRequestResponse = zod.object({
   "request_id": zod.string(),
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
   "completed_at": zod.iso.datetime({"offset":true}).nullish(),
-  "download_available": zod.boolean().default(getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseDownloadAvailableDefault),
+  "download_available": zod.boolean().default(getPrivacyRequestResponseDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
@@ -1497,40 +1520,40 @@ export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = zod.obje
 /**
  * @summary Download Privacy Export
  */
-export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetParams = zod.object({
+export const DownloadPrivacyExportParams = zod.object({
   "request_id": zod.uuid()
 })
 
-export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetHeader = zod.object({
+export const DownloadPrivacyExportHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse = zod.unknown()
+export const DownloadPrivacyExportResponse = zod.unknown()
 
 
 /**
  * Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
  * @summary Review a state's county evidence
  */
-export const stateReviewV1StatesStateReviewGetPathStateRegExp = new RegExp('^[A-Z]{2}$');
+export const getStateReviewPathStateRegExp = new RegExp('^[A-Z]{2}$');
 
 
-export const StateReviewV1StatesStateReviewGetParams = zod.object({
-  "state": zod.string().regex(stateReviewV1StatesStateReviewGetPathStateRegExp).describe('Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.')
+export const GetStateReviewParams = zod.object({
+  "state": zod.string().regex(getStateReviewPathStateRegExp).describe('Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.')
 })
 
-export const stateReviewV1StatesStateReviewGetQueryObservationContextMax = 80;
+export const getStateReviewQueryObservationContextMax = 80;
 
 
 
-export const StateReviewV1StatesStateReviewGetQueryParams = zod.object({
-  "observation_context": zod.string().max(stateReviewV1StatesStateReviewGetQueryObservationContextMax).nullish().describe('Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.'),
+export const GetStateReviewQueryParams = zod.object({
+  "observation_context": zod.string().max(getStateReviewQueryObservationContextMax).nullish().describe('Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.'),
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const stateReviewV1StatesStateReviewGetResponseReviewCandidatesItemCompletenessDefault = `limited`;
+export const getStateReviewResponseReviewCandidatesItemCompletenessDefault = `limited`;
 
-export const StateReviewV1StatesStateReviewGetResponse = zod.object({
+export const GetStateReviewResponse = zod.object({
   "requested_state": zod.string().describe('Two-letter state or District of Columbia code.'),
   "methodology_id": zod.string().describe('Identifies the review methodology.'),
   "methodology_version": zod.string().describe('Version of the review methodology.'),
@@ -1560,7 +1583,7 @@ export const StateReviewV1StatesStateReviewGetResponse = zod.object({
   "status": zod.string().describe('Status the publisher reports, such as `Present`, `Reported`, or `No records`. `No records` does not establish absence.'),
   "limitations": zod.array(zod.string()).describe('Factual notes on what this record does not show.')
 }).describe('A source record that supports a review candidate.')).describe('Source records that support the reason.'),
-  "completeness": zod.literal("limited").default(stateReviewV1StatesStateReviewGetResponseReviewCandidatesItemCompletenessDefault).describe('How complete the supporting evidence is. It is always `limited`.'),
+  "completeness": zod.literal("limited").default(getStateReviewResponseReviewCandidatesItemCompletenessDefault).describe('How complete the supporting evidence is. It is always `limited`.'),
   "limitations": zod.array(zod.string()).describe('Factual notes on what the candidate does not show. Keep them with it.'),
   "freshness_comparability": zod.string().describe('What is known about how current and comparable the evidence is.'),
   "suggested_next_check": zod.string().describe('A step a reviewer can take to check the evidence further.')
@@ -1585,14 +1608,14 @@ export const StateReviewV1StatesStateReviewGetResponse = zod.object({
  * Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
  * @summary Get release metadata
  */
-export const MetadataV1AtlasMetadataGetQueryParams = zod.object({
+export const GetAtlasMetadataQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const metadataV1AtlasMetadataGetResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getAtlasMetadataResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 
-export const MetadataV1AtlasMetadataGetResponse = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(metadataV1AtlasMetadataGetResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+export const GetAtlasMetadataResponse = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getAtlasMetadataResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
   "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
   "schema_version": zod.string().describe('Version of the release data layout.'),
   "generated_at": zod.iso.datetime({"offset":true}).describe('When the release was built, with a UTC offset. It is not when the publishers last updated their data.'),
@@ -1617,11 +1640,11 @@ export const MetadataV1AtlasMetadataGetResponse = zod.object({
  * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
  * @summary Get county map geometry
  */
-export const GeometryV1AtlasGeometryGetQueryParams = zod.object({
+export const GetAtlasGeometryQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const GeometryV1AtlasGeometryGetResponse = zod.looseObject({
+export const GetAtlasGeometryResponse = zod.looseObject({
 
 })
 
@@ -1630,71 +1653,71 @@ export const GeometryV1AtlasGeometryGetResponse = zod.looseObject({
  * Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
  * @summary Get county gap scores
  */
-export const scoresV1AtlasScoresGetQueryEcologicalShareDefault = 65;
-export const scoresV1AtlasScoresGetQueryEcologicalShareMin = 40;
-export const scoresV1AtlasScoresGetQueryEcologicalShareMax = 85;
-export const scoresV1AtlasScoresGetQueryEcologicalShareMultipleOf = 5;
+export const getAtlasScoresQueryEcologicalShareDefault = 65;
+export const getAtlasScoresQueryEcologicalShareMin = 40;
+export const getAtlasScoresQueryEcologicalShareMax = 85;
+export const getAtlasScoresQueryEcologicalShareMultipleOf = 5;
 
-export const scoresV1AtlasScoresGetQuerySmoothKDefault = 50;
-export const scoresV1AtlasScoresGetQuerySmoothKMin = 5;
-export const scoresV1AtlasScoresGetQuerySmoothKMax = 200;
+export const getAtlasScoresQuerySmoothKDefault = 50;
+export const getAtlasScoresQuerySmoothKMin = 5;
+export const getAtlasScoresQuerySmoothKMax = 200;
 
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessDefault = 75;
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessMin = 40;
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessMax = 90;
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const getAtlasScoresQueryMissingHumanWeaknessDefault = 75;
+export const getAtlasScoresQueryMissingHumanWeaknessMin = 40;
+export const getAtlasScoresQueryMissingHumanWeaknessMax = 90;
+export const getAtlasScoresQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const ScoresV1AtlasScoresGetQueryParams = zod.object({
+export const GetAtlasScoresQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
-  "ecological_share": zod.int().min(scoresV1AtlasScoresGetQueryEcologicalShareMin).max(scoresV1AtlasScoresGetQueryEcologicalShareMax).multipleOf(scoresV1AtlasScoresGetQueryEcologicalShareMultipleOf).default(scoresV1AtlasScoresGetQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "smooth_k": zod.int().min(scoresV1AtlasScoresGetQuerySmoothKMin).max(scoresV1AtlasScoresGetQuerySmoothKMax).default(scoresV1AtlasScoresGetQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "missing_human_weakness": zod.int().min(scoresV1AtlasScoresGetQueryMissingHumanWeaknessMin).max(scoresV1AtlasScoresGetQueryMissingHumanWeaknessMax).multipleOf(scoresV1AtlasScoresGetQueryMissingHumanWeaknessMultipleOf).default(scoresV1AtlasScoresGetQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "ecological_share": zod.int().min(getAtlasScoresQueryEcologicalShareMin).max(getAtlasScoresQueryEcologicalShareMax).multipleOf(getAtlasScoresQueryEcologicalShareMultipleOf).default(getAtlasScoresQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(getAtlasScoresQuerySmoothKMin).max(getAtlasScoresQuerySmoothKMax).default(getAtlasScoresQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(getAtlasScoresQueryMissingHumanWeaknessMin).max(getAtlasScoresQueryMissingHumanWeaknessMax).multipleOf(getAtlasScoresQueryMissingHumanWeaknessMultipleOf).default(getAtlasScoresQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
   "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const scoresV1AtlasScoresGetResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
-export const scoresV1AtlasScoresGetResponseCountiesItemIncidenceFloor2023Min = 0;
+export const getAtlasScoresResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getAtlasScoresResponseCountiesItemScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getAtlasScoresResponseCountiesItemIncidenceFloor2023Min = 0;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreScoreMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreScoreMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreHumanWeaknessMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreHumanWeaknessMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreEcologicalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreEcologicalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreCommunityMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreCommunityMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreTickSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreTickSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScorePathogenSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScorePathogenSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreSviSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreSviSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreAccessSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreAccessSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreRuralSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreRuralSignalMax = 100;
 
 
 
-export const ScoresV1AtlasScoresGetResponse = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(scoresV1AtlasScoresGetResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+export const GetAtlasScoresResponse = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getAtlasScoresResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
   "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
   "methodology_version": zod.string().describe('Version of the release methodology that the scores follow.'),
   "settings": zod.record(zod.string(), zod.int()).describe('Score settings used for this response, such as `ecological_share`, `smooth_k`, and `missing_human_weakness`.'),
   "counties": zod.array(zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(scoresV1AtlasScoresGetResponseCountiesItemScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
-  "incidence_floor_2023": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getAtlasScoresResponseCountiesItemScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "incidence_floor_2023": zod.number().min(getAtlasScoresResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
   "svi_percentile": zod.number().nullish().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
   "uninsured_percentile": zod.number().nullish().describe('Percentile of the county\'s uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
   "rucc_2023": zod.int().nullish().describe('2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.'),
@@ -1708,15 +1731,15 @@ export const ScoresV1AtlasScoresGetResponse = zod.object({
   "burgdorferi_status": zod.string().describe('Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
   "evidence_completeness": zod.int().describe('Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality.'),
   "score": zod.object({
-  "score": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
-  "human_weakness": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
-  "ecological": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
-  "community": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
-  "tick_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
-  "pathogen_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
-  "svi_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
-  "access_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
-  "rural_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
+  "score": zod.number().min(getAtlasScoresResponseCountiesItemScoreScoreMin).max(getAtlasScoresResponseCountiesItemScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
+  "human_weakness": zod.number().min(getAtlasScoresResponseCountiesItemScoreHumanWeaknessMin).max(getAtlasScoresResponseCountiesItemScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
+  "ecological": zod.number().min(getAtlasScoresResponseCountiesItemScoreEcologicalMin).max(getAtlasScoresResponseCountiesItemScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
+  "community": zod.number().min(getAtlasScoresResponseCountiesItemScoreCommunityMin).max(getAtlasScoresResponseCountiesItemScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
+  "tick_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreTickSignalMin).max(getAtlasScoresResponseCountiesItemScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
+  "pathogen_signal": zod.number().min(getAtlasScoresResponseCountiesItemScorePathogenSignalMin).max(getAtlasScoresResponseCountiesItemScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
+  "svi_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreSviSignalMin).max(getAtlasScoresResponseCountiesItemScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
+  "access_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreAccessSignalMin).max(getAtlasScoresResponseCountiesItemScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
+  "rural_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreRuralSignalMin).max(getAtlasScoresResponseCountiesItemScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
 }).describe('The score and the signals it combines.'),
   "priority": zod.string().describe('Review-priority label for the score band. A lower label is not a safety finding.'),
   "color": zod.string().describe('Hex color for the score band, for use in a map or legend.')
@@ -1728,20 +1751,20 @@ export const ScoresV1AtlasScoresGetResponse = zod.object({
  * Published incidence floor, social vulnerability percentile, uninsured percent, and rural-urban continuum code for every county in the current snapshot. Optional dataset_version selects an existing release. Public cache TTL 300 seconds with informational ETag; no conditional 304.
  * @summary Get map values by county
  */
-export const MapValuesV1AtlasMapValuesGetQueryParams = zod.object({
+export const GetAtlasMapValuesQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const mapValuesV1AtlasMapValuesGetResponseCountiesItemFipsRegExp = new RegExp('^\\d{5}$');
-export const mapValuesV1AtlasMapValuesGetResponseCountiesItemIncidenceFloor2023Min = 0;
+export const getAtlasMapValuesResponseCountiesItemFipsRegExp = new RegExp('^\\d{5}$');
+export const getAtlasMapValuesResponseCountiesItemIncidenceFloor2023Min = 0;
 
 
 
-export const MapValuesV1AtlasMapValuesGetResponse = zod.object({
+export const GetAtlasMapValuesResponse = zod.object({
   "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
   "counties": zod.array(zod.object({
-  "fips": zod.string().regex(mapValuesV1AtlasMapValuesGetResponseCountiesItemFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
-  "incidence_floor_2023": zod.number().min(mapValuesV1AtlasMapValuesGetResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
+  "fips": zod.string().regex(getAtlasMapValuesResponseCountiesItemFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
+  "incidence_floor_2023": zod.number().min(getAtlasMapValuesResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
   "svi_percentile": zod.number().nullish().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
   "uninsured_percent": zod.number().nullish().describe('Share of the county population without health insurance, as a percent. `null` when none is published.'),
   "rucc_2023": zod.int().nullish().describe('2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.')
@@ -1753,69 +1776,69 @@ export const MapValuesV1AtlasMapValuesGetResponse = zod.object({
  * Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
  * @summary Get county detail and provenance
  */
-export const countyV1CountiesFipsGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const getCountyPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyV1CountiesFipsGetParams = zod.object({
-  "fips": zod.string().regex(countyV1CountiesFipsGetPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
+export const GetCountyParams = zod.object({
+  "fips": zod.string().regex(getCountyPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countyV1CountiesFipsGetQueryEcologicalShareDefault = 65;
-export const countyV1CountiesFipsGetQueryEcologicalShareMin = 40;
-export const countyV1CountiesFipsGetQueryEcologicalShareMax = 85;
-export const countyV1CountiesFipsGetQueryEcologicalShareMultipleOf = 5;
+export const getCountyQueryEcologicalShareDefault = 65;
+export const getCountyQueryEcologicalShareMin = 40;
+export const getCountyQueryEcologicalShareMax = 85;
+export const getCountyQueryEcologicalShareMultipleOf = 5;
 
-export const countyV1CountiesFipsGetQuerySmoothKDefault = 50;
-export const countyV1CountiesFipsGetQuerySmoothKMin = 5;
-export const countyV1CountiesFipsGetQuerySmoothKMax = 200;
+export const getCountyQuerySmoothKDefault = 50;
+export const getCountyQuerySmoothKMin = 5;
+export const getCountyQuerySmoothKMax = 200;
 
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessDefault = 75;
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessMin = 40;
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessMax = 90;
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const getCountyQueryMissingHumanWeaknessDefault = 75;
+export const getCountyQueryMissingHumanWeaknessMin = 40;
+export const getCountyQueryMissingHumanWeaknessMax = 90;
+export const getCountyQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const CountyV1CountiesFipsGetQueryParams = zod.object({
+export const GetCountyQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
-  "ecological_share": zod.int().min(countyV1CountiesFipsGetQueryEcologicalShareMin).max(countyV1CountiesFipsGetQueryEcologicalShareMax).multipleOf(countyV1CountiesFipsGetQueryEcologicalShareMultipleOf).default(countyV1CountiesFipsGetQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "smooth_k": zod.int().min(countyV1CountiesFipsGetQuerySmoothKMin).max(countyV1CountiesFipsGetQuerySmoothKMax).default(countyV1CountiesFipsGetQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "missing_human_weakness": zod.int().min(countyV1CountiesFipsGetQueryMissingHumanWeaknessMin).max(countyV1CountiesFipsGetQueryMissingHumanWeaknessMax).multipleOf(countyV1CountiesFipsGetQueryMissingHumanWeaknessMultipleOf).default(countyV1CountiesFipsGetQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "ecological_share": zod.int().min(getCountyQueryEcologicalShareMin).max(getCountyQueryEcologicalShareMax).multipleOf(getCountyQueryEcologicalShareMultipleOf).default(getCountyQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(getCountyQuerySmoothKMin).max(getCountyQuerySmoothKMax).default(getCountyQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(getCountyQueryMissingHumanWeaknessMin).max(getCountyQueryMissingHumanWeaknessMax).multipleOf(getCountyQueryMissingHumanWeaknessMultipleOf).default(getCountyQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
   "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const countyV1CountiesFipsGetResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
-export const countyV1CountiesFipsGetResponseScoreScoreMin = 0;
-export const countyV1CountiesFipsGetResponseScoreScoreMax = 100;
+export const getCountyResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getCountyResponseScoreScoreMin = 0;
+export const getCountyResponseScoreScoreMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreHumanWeaknessMin = 0;
-export const countyV1CountiesFipsGetResponseScoreHumanWeaknessMax = 100;
+export const getCountyResponseScoreHumanWeaknessMin = 0;
+export const getCountyResponseScoreHumanWeaknessMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreEcologicalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreEcologicalMax = 100;
+export const getCountyResponseScoreEcologicalMin = 0;
+export const getCountyResponseScoreEcologicalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreCommunityMin = 0;
-export const countyV1CountiesFipsGetResponseScoreCommunityMax = 100;
+export const getCountyResponseScoreCommunityMin = 0;
+export const getCountyResponseScoreCommunityMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreTickSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreTickSignalMax = 100;
+export const getCountyResponseScoreTickSignalMin = 0;
+export const getCountyResponseScoreTickSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScorePathogenSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScorePathogenSignalMax = 100;
+export const getCountyResponseScorePathogenSignalMin = 0;
+export const getCountyResponseScorePathogenSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreSviSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreSviSignalMax = 100;
+export const getCountyResponseScoreSviSignalMin = 0;
+export const getCountyResponseScoreSviSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreAccessSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreAccessSignalMax = 100;
+export const getCountyResponseScoreAccessSignalMin = 0;
+export const getCountyResponseScoreAccessSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreRuralSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreRuralSignalMax = 100;
+export const getCountyResponseScoreRuralSignalMin = 0;
+export const getCountyResponseScoreRuralSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseReleaseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getCountyResponseReleaseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 
-export const CountyV1CountiesFipsGetResponse = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyV1CountiesFipsGetResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+export const GetCountyResponse = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getCountyResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
   "incidence_floor_2023": zod.number().nullable().describe('Published 2023 minimum reported incidence per 100,000 people. `null` is not zero.'),
   "svi_percentile": zod.number().nullable().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
   "uninsured_percentile": zod.number().nullable().describe('Percentile of the county\'s uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
@@ -1830,15 +1853,15 @@ export const CountyV1CountiesFipsGetResponse = zod.object({
   "burgdorferi_status": zod.string().describe('Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
   "evidence_completeness": zod.int().describe('Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality.'),
   "score": zod.object({
-  "score": zod.number().min(countyV1CountiesFipsGetResponseScoreScoreMin).max(countyV1CountiesFipsGetResponseScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
-  "human_weakness": zod.number().min(countyV1CountiesFipsGetResponseScoreHumanWeaknessMin).max(countyV1CountiesFipsGetResponseScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
-  "ecological": zod.number().min(countyV1CountiesFipsGetResponseScoreEcologicalMin).max(countyV1CountiesFipsGetResponseScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
-  "community": zod.number().min(countyV1CountiesFipsGetResponseScoreCommunityMin).max(countyV1CountiesFipsGetResponseScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
-  "tick_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreTickSignalMin).max(countyV1CountiesFipsGetResponseScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
-  "pathogen_signal": zod.number().min(countyV1CountiesFipsGetResponseScorePathogenSignalMin).max(countyV1CountiesFipsGetResponseScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
-  "svi_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreSviSignalMin).max(countyV1CountiesFipsGetResponseScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
-  "access_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreAccessSignalMin).max(countyV1CountiesFipsGetResponseScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
-  "rural_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreRuralSignalMin).max(countyV1CountiesFipsGetResponseScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
+  "score": zod.number().min(getCountyResponseScoreScoreMin).max(getCountyResponseScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
+  "human_weakness": zod.number().min(getCountyResponseScoreHumanWeaknessMin).max(getCountyResponseScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
+  "ecological": zod.number().min(getCountyResponseScoreEcologicalMin).max(getCountyResponseScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
+  "community": zod.number().min(getCountyResponseScoreCommunityMin).max(getCountyResponseScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
+  "tick_signal": zod.number().min(getCountyResponseScoreTickSignalMin).max(getCountyResponseScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
+  "pathogen_signal": zod.number().min(getCountyResponseScorePathogenSignalMin).max(getCountyResponseScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
+  "svi_signal": zod.number().min(getCountyResponseScoreSviSignalMin).max(getCountyResponseScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
+  "access_signal": zod.number().min(getCountyResponseScoreAccessSignalMin).max(getCountyResponseScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
+  "rural_signal": zod.number().min(getCountyResponseScoreRuralSignalMin).max(getCountyResponseScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
 }).describe('The score and the signals it combines.'),
   "priority": zod.string().describe('Review-priority label for the score band. A lower label is not a safety finding.'),
   "color": zod.string().describe('Hex color for the score band, for use in a map or legend.'),
@@ -1849,7 +1872,7 @@ export const CountyV1CountiesFipsGetResponse = zod.object({
   "pacificus_status": zod.string().nullable().describe('Publisher status for the tick Ixodes pacificus. `null` when none is published.'),
   "uninsured_percent": zod.number().nullable().describe('Share of the county population without health insurance, as a percent. `null` when none is published.'),
   "release": zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyV1CountiesFipsGetResponseReleaseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getCountyResponseReleaseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
   "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
   "schema_version": zod.string().describe('Version of the release data layout.'),
   "generated_at": zod.iso.datetime({"offset":true}).describe('When the release was built, with a UTC offset. It is not when the publishers last updated their data.'),
@@ -1890,37 +1913,35 @@ export const CountyV1CountiesFipsGetResponse = zod.object({
  * | `503` | A dependency failed, stored data is malformed, or the release changed during the request. Retry later. |
  * @summary Get county surveillance situations
  */
-export const countySurveillanceSituationsGetPathFipsRegExp = new RegExp('^[0-9]{5}$');
+export const getCountySurveillanceSituationsPathFipsRegExp = new RegExp('^[0-9]{5}$');
 
 
-export const CountySurveillanceSituationsGetParams = zod.object({
-  "fips": zod.string().regex(countySurveillanceSituationsGetPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
+export const GetCountySurveillanceSituationsParams = zod.object({
+  "fips": zod.string().regex(getCountySurveillanceSituationsPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countySurveillanceSituationsGetResponseCountyFipsRegExp = new RegExp('^[0-9]{5}$');
+export const getCountySurveillanceSituationsResponseCountyFipsRegExp = new RegExp('^[0-9]{5}$');
 
-export const countySurveillanceSituationsGetResponseBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
-
-
+export const getCountySurveillanceSituationsResponseBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
 
 
 
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMin = 0;
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMax = 1;
-
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMin = 4;
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMax = 4;
 
 
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMin = 0;
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMax = 1;
+
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMin = 4;
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMax = 4;
 
 
-export const countySurveillanceSituationsGetResponseFourStateDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-export const countySurveillanceSituationsGetResponseFourStateDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-
-export const countySurveillanceSituationsGetResponseFourStateDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
 
+export const getCountySurveillanceSituationsResponseFourStateDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const getCountySurveillanceSituationsResponseFourStateDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+export const getCountySurveillanceSituationsResponseFourStateDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
 
 
@@ -1928,28 +1949,30 @@ export const countySurveillanceSituationsGetResponseFourStateDataOneInputBundleS
 
 
 
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMin = 0;
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMax = 1;
-
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMin = 4;
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMax = 4;
 
 
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMin = 0;
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMax = 1;
 
-
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMin = 4;
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMax = 4;
 
 
 
 
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
-export const CountySurveillanceSituationsGetResponse = zod.object({
-  "county_fips": zod.string().regex(countySurveillanceSituationsGetResponseCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+
+
+
+export const GetCountySurveillanceSituationsResponse = zod.object({
+  "county_fips": zod.string().regex(getCountySurveillanceSituationsResponseCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
   "release_id": zod.string().min(1).describe('Identifies the current data release.'),
-  "bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseBundleSha256RegExp).describe('SHA-256 checksum of the current data release.'),
+  "bundle_sha256": zod.string().regex(getCountySurveillanceSituationsResponseBundleSha256RegExp).describe('SHA-256 checksum of the current data release.'),
   "four_state": zod.object({
   "model_id": zod.string().describe('Identifies the situation model.'),
   "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a published classification exists. `UNAVAILABLE` is not a finding about the county.'),
@@ -1966,15 +1989,15 @@ export const CountySurveillanceSituationsGetResponse = zod.object({
   "class_description": zod.string().min(1).describe('Explanation of the class, exactly as reviewed.'),
   "probabilities": zod.array(zod.object({
   "class_id": zod.string().min(1).describe('Identifies the class. It is specific to a model version.'),
-  "probability": zod.number().min(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMin).max(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
-}).describe('The model\'s membership probability for one situation class.')).min(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMin).max(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMax).describe('Membership probability for each of the four classes.'),
+  "probability": zod.number().min(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMin).max(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
+}).describe('The model\'s membership probability for one situation class.')).min(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMin).max(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMax).describe('Membership probability for each of the four classes.'),
   "limitations": zod.array(zod.string()).min(1).describe('Readings of the class that are not supported. They list what not to conclude, not outcomes.'),
   "batch_id": zod.string().min(1).describe('Identifies the batch of results.'),
   "batch_version": zod.string().min(1).describe('Version of the batch.'),
-  "county_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
-  "dictionary_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
+  "county_sha256": zod.string().regex(getCountySurveillanceSituationsResponseFourStateDataOneCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
+  "dictionary_sha256": zod.string().regex(getCountySurveillanceSituationsResponseFourStateDataOneDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
   "input_release_id": zod.string().min(1).describe('Identifies the data release the model read.'),
-  "input_bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
+  "input_bundle_sha256": zod.string().regex(getCountySurveillanceSituationsResponseFourStateDataOneInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
   "fit_git_sha": zod.string().min(1).describe('Commit of the code that fitted the model, for reproducibility.'),
   "feature_contract": zod.record(zod.string(), zod.unknown()).describe('The input features and settings the model used.'),
   "model_provenance": zod.record(zod.string(), zod.unknown()).describe('Records of how the model was fitted and reviewed.'),
@@ -2002,15 +2025,15 @@ export const CountySurveillanceSituationsGetResponse = zod.object({
   "class_description": zod.string().min(1).describe('Explanation of the class, exactly as reviewed.'),
   "probabilities": zod.array(zod.object({
   "class_id": zod.string().min(1).describe('Identifies the class. It is specific to a model version.'),
-  "probability": zod.number().min(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMin).max(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
-}).describe('The model\'s membership probability for one situation class.')).min(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMin).max(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMax).describe('Membership probability for each of the four classes.'),
+  "probability": zod.number().min(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMin).max(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
+}).describe('The model\'s membership probability for one situation class.')).min(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMin).max(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMax).describe('Membership probability for each of the four classes.'),
   "limitations": zod.array(zod.string()).min(1).describe('Readings of the class that are not supported. They list what not to conclude, not outcomes.'),
   "batch_id": zod.string().min(1).describe('Identifies the batch of results.'),
   "batch_version": zod.string().min(1).describe('Version of the batch.'),
-  "county_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
-  "dictionary_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
+  "county_sha256": zod.string().regex(getCountySurveillanceSituationsResponseTickPathogenDataOneCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
+  "dictionary_sha256": zod.string().regex(getCountySurveillanceSituationsResponseTickPathogenDataOneDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
   "input_release_id": zod.string().min(1).describe('Identifies the data release the model read.'),
-  "input_bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
+  "input_bundle_sha256": zod.string().regex(getCountySurveillanceSituationsResponseTickPathogenDataOneInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
   "fit_git_sha": zod.string().min(1).describe('Commit of the code that fitted the model, for reproducibility.'),
   "feature_contract": zod.record(zod.string(), zod.unknown()).describe('The input features and settings the model used.'),
   "model_provenance": zod.record(zod.string(), zod.unknown()).describe('Records of how the model was fitted and reviewed.'),
@@ -2043,16 +2066,16 @@ export const CountySurveillanceSituationsGetResponse = zod.object({
  * | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
  * @summary Get county surveillance review priority
  */
-export const countyTier1SurveillancePriorityGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const getCountyTier1PriorityPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyTier1SurveillancePriorityGetParams = zod.object({
-  "fips": zod.string().regex(countyTier1SurveillancePriorityGetPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
+export const GetCountyTier1PriorityParams = zod.object({
+  "fips": zod.string().regex(getCountyTier1PriorityPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countyTier1SurveillancePriorityGetResponseCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const countyTier1SurveillancePriorityGetResponsePriorityPercentileMin = 0;
-export const countyTier1SurveillancePriorityGetResponsePriorityPercentileMax = 100;
+export const getCountyTier1PriorityResponseCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const getCountyTier1PriorityResponsePriorityPercentileMin = 0;
+export const getCountyTier1PriorityResponsePriorityPercentileMax = 100;
 
 
 
@@ -2061,15 +2084,15 @@ export const countyTier1SurveillancePriorityGetResponsePriorityPercentileMax = 1
 
 
 
-export const countyTier1SurveillancePriorityGetResponseReasonsMax = 3;
+export const getCountyTier1PriorityResponseReasonsMax = 3;
 
 
 
 
-export const CountyTier1SurveillancePriorityGetResponse = zod.object({
-  "county_fips": zod.string().regex(countyTier1SurveillancePriorityGetResponseCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
+export const GetCountyTier1PriorityResponse = zod.object({
+  "county_fips": zod.string().regex(getCountyTier1PriorityResponseCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
   "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
-  "priority_percentile": zod.number().min(countyTier1SurveillancePriorityGetResponsePriorityPercentileMin).max(countyTier1SurveillancePriorityGetResponsePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
+  "priority_percentile": zod.number().min(getCountyTier1PriorityResponsePriorityPercentileMin).max(getCountyTier1PriorityResponsePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
   "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
@@ -2081,7 +2104,7 @@ export const CountyTier1SurveillancePriorityGetResponse = zod.object({
   "reasons": zod.array(zod.object({
   "code": zod.string().min(1).describe('Stable code for the reason.'),
   "text": zod.string().min(1).describe('Plain-language statement of the reason.')
-}).describe('One reason a county received its review priority.')).max(countyTier1SurveillancePriorityGetResponseReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
+}).describe('One reason a county received its review priority.')).max(getCountyTier1PriorityResponseReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
   "limitation_ref": zod.string().min(1).describe('Reference to the document that lists what this result does not show.')
 }).describe('Model-assisted surveillance review priority for one county.\n\nThe priority helps decide where to look first. It is not a measure of disease or clinical\nrisk, and it is not a diagnosis.')
 
@@ -2104,17 +2127,17 @@ export const CountyTier1SurveillancePriorityGetResponse = zod.object({
  * | `503` | A dependency failed or stored data is malformed. Retry later. |
  * @summary Check surveillance priority availability
  */
-export const countyTier1SurveillancePriorityAvailabilityGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const checkCountyTier1AvailabilityPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyTier1SurveillancePriorityAvailabilityGetParams = zod.object({
-  "fips": zod.string().regex(countyTier1SurveillancePriorityAvailabilityGetPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
+export const CheckCountyTier1AvailabilityParams = zod.object({
+  "fips": zod.string().regex(checkCountyTier1AvailabilityPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
 
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOneCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMin = 0;
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMax = 100;
+export const checkCountyTier1AvailabilityResponseDataOneCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMin = 0;
+export const checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMax = 100;
 
 
 
@@ -2123,19 +2146,19 @@ export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriori
 
 
 
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOneReasonsMax = 3;
+export const checkCountyTier1AvailabilityResponseDataOneReasonsMax = 3;
 
 
 
 
-export const CountyTier1SurveillancePriorityAvailabilityGetResponse = zod.object({
+export const CheckCountyTier1AvailabilityResponse = zod.object({
   "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a published Tier 1 result exists for this county.'),
   "geography_release_id": zod.string().min(1).describe('Identifies the geography release used to confirm the county exists.'),
   "reason": zod.union([zod.literal('NO_PUBLISHED_MODEL'),zod.literal(null)]).nullable().describe('Why no result is published. `NO_PUBLISHED_MODEL` means no model result is published for the county. `null` when a result is available.'),
   "data": zod.union([zod.object({
-  "county_fips": zod.string().regex(countyTier1SurveillancePriorityAvailabilityGetResponseDataOneCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
+  "county_fips": zod.string().regex(checkCountyTier1AvailabilityResponseDataOneCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
   "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
-  "priority_percentile": zod.number().min(countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMin).max(countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
+  "priority_percentile": zod.number().min(checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMin).max(checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
   "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
@@ -2147,7 +2170,7 @@ export const CountyTier1SurveillancePriorityAvailabilityGetResponse = zod.object
   "reasons": zod.array(zod.object({
   "code": zod.string().min(1).describe('Stable code for the reason.'),
   "text": zod.string().min(1).describe('Plain-language statement of the reason.')
-}).describe('One reason a county received its review priority.')).max(countyTier1SurveillancePriorityAvailabilityGetResponseDataOneReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
+}).describe('One reason a county received its review priority.')).max(checkCountyTier1AvailabilityResponseDataOneReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
   "limitation_ref": zod.string().min(1).describe('Reference to the document that lists what this result does not show.')
 }).describe('Model-assisted surveillance review priority for one county.\n\nThe priority helps decide where to look first. It is not a measure of disease or clinical\nrisk, and it is not a diagnosis.'),zod.null()]).describe('The published Tier 1 result, or `null` when none is published.')
 }).describe('Whether a Tier 1 result is published for a county, with the result when it is.\n\n`UNAVAILABLE` means no result is published. It is not a finding about the county.')
@@ -2181,198 +2204,198 @@ export const CountyTier1SurveillancePriorityAvailabilityGetResponse = zod.object
  * | `503` | `county-v2` provenance is missing or mismatched, or the renderer failed or timed out. Retry later. |
  * @summary Download a county report
  */
-export const countyReportPdfV1CountiesFipsReportPdfGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const downloadCountyReportPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyReportPdfV1CountiesFipsReportPdfGetParams = zod.object({
-  "fips": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
+export const DownloadCountyReportParams = zod.object({
+  "fips": zod.string().regex(downloadCountyReportPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMeasureIdMax = 20;
+export const downloadCountyReportQueryMeasureIdMax = 20;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateDefault = `county-v3`;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareDefault = 65;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMin = 40;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMax = 85;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMultipleOf = 5;
+export const downloadCountyReportQueryTemplateDefault = `county-v3`;
+export const downloadCountyReportQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
+export const downloadCountyReportQueryEcologicalShareDefault = 65;
+export const downloadCountyReportQueryEcologicalShareMin = 40;
+export const downloadCountyReportQueryEcologicalShareMax = 85;
+export const downloadCountyReportQueryEcologicalShareMultipleOf = 5;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKDefault = 50;
-export const countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMin = 5;
-export const countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMax = 200;
+export const downloadCountyReportQuerySmoothKDefault = 50;
+export const downloadCountyReportQuerySmoothKMin = 5;
+export const downloadCountyReportQuerySmoothKMax = 200;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessDefault = 75;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMin = 40;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMax = 90;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const downloadCountyReportQueryMissingHumanWeaknessDefault = 75;
+export const downloadCountyReportQueryMissingHumanWeaknessMin = 40;
+export const downloadCountyReportQueryMissingHumanWeaknessMax = 90;
+export const downloadCountyReportQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const CountyReportPdfV1CountiesFipsReportPdfGetQueryParams = zod.object({
+export const DownloadCountyReportQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
   "period_start": zod.iso.date().nullish().describe('Exact inclusive observation start for county-v2.'),
   "period_end": zod.iso.date().nullish().describe('Exact inclusive observation end for county-v2.'),
-  "measure_id": zod.array(zod.string()).max(countyReportPdfV1CountiesFipsReportPdfGetQueryMeasureIdMax).nullish().describe('1–20 measure IDs; repeated or comma-separated for county-v2.'),
-  "template": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateRegExp).default(countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateDefault).describe('County report template. Accepted values are `county-v3` (default; the two-page County Data Brief, which ignores score settings), `county-v1`, and `county-v2` (requires `dataset_version`, `period_start`, `period_end`, and `measure_id`). A well-formed value that is not accepted returns 422.'),
-  "ecological_share": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "smooth_k": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMin).max(countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMax).default(countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "missing_human_weakness": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "measure_id": zod.array(zod.string()).max(downloadCountyReportQueryMeasureIdMax).nullish().describe('1–20 measure IDs; repeated or comma-separated for county-v2.'),
+  "template": zod.string().regex(downloadCountyReportQueryTemplateRegExp).default(downloadCountyReportQueryTemplateDefault).describe('County report template. Accepted values are `county-v3` (default; the two-page County Data Brief, which ignores score settings), `county-v1`, and `county-v2` (requires `dataset_version`, `period_start`, `period_end`, and `measure_id`). A well-formed value that is not accepted returns 422.'),
+  "ecological_share": zod.int().min(downloadCountyReportQueryEcologicalShareMin).max(downloadCountyReportQueryEcologicalShareMax).multipleOf(downloadCountyReportQueryEcologicalShareMultipleOf).default(downloadCountyReportQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(downloadCountyReportQuerySmoothKMin).max(downloadCountyReportQuerySmoothKMax).default(downloadCountyReportQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(downloadCountyReportQueryMissingHumanWeaknessMin).max(downloadCountyReportQueryMissingHumanWeaknessMax).multipleOf(downloadCountyReportQueryMissingHumanWeaknessMultipleOf).default(downloadCountyReportQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
   "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const CountyReportPdfV1CountiesFipsReportPdfGetResponse = zod.unknown()
+export const DownloadCountyReportResponse = zod.unknown()
 
 
 /**
  * PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
  * @summary Download a state report
  */
-export const stateReportPdfV1StatesStateReportPdfGetPathStateRegExp = new RegExp('^[A-Z]{2}$');
+export const downloadStateReportPathStateRegExp = new RegExp('^[A-Z]{2}$');
 
 
-export const StateReportPdfV1StatesStateReportPdfGetParams = zod.object({
-  "state": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetPathStateRegExp).describe('Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.')
+export const DownloadStateReportParams = zod.object({
+  "state": zod.string().regex(downloadStateReportPathStateRegExp).describe('Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.')
 })
 
-export const stateReportPdfV1StatesStateReportPdfGetQueryTemplateDefault = `state-v1`;
-export const stateReportPdfV1StatesStateReportPdfGetQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareDefault = 65;
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMin = 40;
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMax = 85;
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMultipleOf = 5;
+export const downloadStateReportQueryTemplateDefault = `state-v1`;
+export const downloadStateReportQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
+export const downloadStateReportQueryEcologicalShareDefault = 65;
+export const downloadStateReportQueryEcologicalShareMin = 40;
+export const downloadStateReportQueryEcologicalShareMax = 85;
+export const downloadStateReportQueryEcologicalShareMultipleOf = 5;
 
-export const stateReportPdfV1StatesStateReportPdfGetQuerySmoothKDefault = 50;
-export const stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMin = 5;
-export const stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMax = 200;
+export const downloadStateReportQuerySmoothKDefault = 50;
+export const downloadStateReportQuerySmoothKMin = 5;
+export const downloadStateReportQuerySmoothKMax = 200;
 
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessDefault = 75;
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMin = 40;
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMax = 90;
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const downloadStateReportQueryMissingHumanWeaknessDefault = 75;
+export const downloadStateReportQueryMissingHumanWeaknessMin = 40;
+export const downloadStateReportQueryMissingHumanWeaknessMax = 90;
+export const downloadStateReportQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const StateReportPdfV1StatesStateReportPdfGetQueryParams = zod.object({
+export const DownloadStateReportQueryParams = zod.object({
   "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
-  "template": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetQueryTemplateRegExp).default(stateReportPdfV1StatesStateReportPdfGetQueryTemplateDefault).describe('State report template. The only accepted value is `state-v1`, which is also the default. Any other value returns 422.'),
-  "ecological_share": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMin).max(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "smooth_k": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMin).max(stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMax).default(stateReportPdfV1StatesStateReportPdfGetQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "missing_human_weakness": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMin).max(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "template": zod.string().regex(downloadStateReportQueryTemplateRegExp).default(downloadStateReportQueryTemplateDefault).describe('State report template. The only accepted value is `state-v1`, which is also the default. Any other value returns 422.'),
+  "ecological_share": zod.int().min(downloadStateReportQueryEcologicalShareMin).max(downloadStateReportQueryEcologicalShareMax).multipleOf(downloadStateReportQueryEcologicalShareMultipleOf).default(downloadStateReportQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(downloadStateReportQuerySmoothKMin).max(downloadStateReportQuerySmoothKMax).default(downloadStateReportQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(downloadStateReportQueryMissingHumanWeaknessMin).max(downloadStateReportQueryMissingHumanWeaknessMax).multipleOf(downloadStateReportQueryMissingHumanWeaknessMultipleOf).default(downloadStateReportQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
   "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const StateReportPdfV1StatesStateReportPdfGetResponse = zod.unknown()
+export const DownloadStateReportResponse = zod.unknown()
 
 
 /**
  * Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.
  * @summary Download county rankings as CSV
  */
-export const rankingCsvV1AtlasRankingCsvGetQueryStateDefault = `ALL`;
-export const rankingCsvV1AtlasRankingCsvGetQueryStateRegExp = new RegExp('^(ALL|[A-Z]{2})$');
-export const rankingCsvV1AtlasRankingCsvGetQueryQDefault = ``;
-export const rankingCsvV1AtlasRankingCsvGetQueryQMax = 100;
+export const downloadAtlasRankingQueryStateDefault = `ALL`;
+export const downloadAtlasRankingQueryStateRegExp = new RegExp('^(ALL|[A-Z]{2})$');
+export const downloadAtlasRankingQueryQDefault = ``;
+export const downloadAtlasRankingQueryQMax = 100;
 
-export const rankingCsvV1AtlasRankingCsvGetQueryEvidenceDefault = `all`;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareDefault = 65;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMin = 40;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMax = 85;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMultipleOf = 5;
+export const downloadAtlasRankingQueryEvidenceDefault = `all`;
+export const downloadAtlasRankingQueryEcologicalShareDefault = 65;
+export const downloadAtlasRankingQueryEcologicalShareMin = 40;
+export const downloadAtlasRankingQueryEcologicalShareMax = 85;
+export const downloadAtlasRankingQueryEcologicalShareMultipleOf = 5;
 
-export const rankingCsvV1AtlasRankingCsvGetQuerySmoothKDefault = 50;
-export const rankingCsvV1AtlasRankingCsvGetQuerySmoothKMin = 5;
-export const rankingCsvV1AtlasRankingCsvGetQuerySmoothKMax = 200;
+export const downloadAtlasRankingQuerySmoothKDefault = 50;
+export const downloadAtlasRankingQuerySmoothKMin = 5;
+export const downloadAtlasRankingQuerySmoothKMax = 200;
 
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessDefault = 75;
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMin = 40;
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMax = 90;
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const downloadAtlasRankingQueryMissingHumanWeaknessDefault = 75;
+export const downloadAtlasRankingQueryMissingHumanWeaknessMin = 40;
+export const downloadAtlasRankingQueryMissingHumanWeaknessMax = 90;
+export const downloadAtlasRankingQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const RankingCsvV1AtlasRankingCsvGetQueryParams = zod.object({
-  "state": zod.string().regex(rankingCsvV1AtlasRankingCsvGetQueryStateRegExp).default(rankingCsvV1AtlasRankingCsvGetQueryStateDefault).describe('Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.'),
-  "q": zod.string().max(rankingCsvV1AtlasRankingCsvGetQueryQMax).default(rankingCsvV1AtlasRankingCsvGetQueryQDefault).describe('Filter rows by text. Matching ignores case and keeps rows where the county name, state code, or county FIPS code contains the text. Use up to 100 characters; a longer value returns 422. The default is empty, which keeps every row.'),
-  "evidence": zod.enum(['all', 'ecological', 'human', 'complete']).default(rankingCsvV1AtlasRankingCsvGetQueryEvidenceDefault).describe('Limit rows by available evidence. `all` keeps every county. `ecological` keeps counties with a tick or pathogen signal. `human` keeps counties with a published human case count. `complete` keeps counties whose `evidence_completeness` is 5 or more. The default is `all`. Any other value returns 422.'),
-  "ecological_share": zod.int().min(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMin).max(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMax).multipleOf(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMultipleOf).default(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "smooth_k": zod.int().min(rankingCsvV1AtlasRankingCsvGetQuerySmoothKMin).max(rankingCsvV1AtlasRankingCsvGetQuerySmoothKMax).default(rankingCsvV1AtlasRankingCsvGetQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
-  "missing_human_weakness": zod.int().min(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMin).max(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMax).multipleOf(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMultipleOf).default(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+export const DownloadAtlasRankingQueryParams = zod.object({
+  "state": zod.string().regex(downloadAtlasRankingQueryStateRegExp).default(downloadAtlasRankingQueryStateDefault).describe('Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.'),
+  "q": zod.string().max(downloadAtlasRankingQueryQMax).default(downloadAtlasRankingQueryQDefault).describe('Filter rows by text. Matching ignores case and keeps rows where the county name, state code, or county FIPS code contains the text. Use up to 100 characters; a longer value returns 422. The default is empty, which keeps every row.'),
+  "evidence": zod.enum(['all', 'ecological', 'human', 'complete']).default(downloadAtlasRankingQueryEvidenceDefault).describe('Limit rows by available evidence. `all` keeps every county. `ecological` keeps counties with a tick or pathogen signal. `human` keeps counties with a published human case count. `complete` keeps counties whose `evidence_completeness` is 5 or more. The default is `all`. Any other value returns 422.'),
+  "ecological_share": zod.int().min(downloadAtlasRankingQueryEcologicalShareMin).max(downloadAtlasRankingQueryEcologicalShareMax).multipleOf(downloadAtlasRankingQueryEcologicalShareMultipleOf).default(downloadAtlasRankingQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(downloadAtlasRankingQuerySmoothKMin).max(downloadAtlasRankingQuerySmoothKMax).default(downloadAtlasRankingQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(downloadAtlasRankingQueryMissingHumanWeaknessMin).max(downloadAtlasRankingQueryMissingHumanWeaknessMax).multipleOf(downloadAtlasRankingQueryMissingHumanWeaknessMultipleOf).default(downloadAtlasRankingQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
   "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const RankingCsvV1AtlasRankingCsvGetResponse = zod.unknown()
+export const DownloadAtlasRankingResponse = zod.unknown()
 
 
 /**
  * @summary Submit Feedback
  */
-export const SubmitFeedbackV1FeedbackPostHeader = zod.object({
+export const SubmitFeedbackHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const submitFeedbackV1FeedbackPostBodyMessageMin = 10;
-export const submitFeedbackV1FeedbackPostBodyMessageMax = 2000;
+export const submitFeedbackBodyMessageMin = 10;
+export const submitFeedbackBodyMessageMax = 2000;
 
-export const submitFeedbackV1FeedbackPostBodyContactEmailMax = 254;
+export const submitFeedbackBodyContactEmailMax = 254;
 
-export const submitFeedbackV1FeedbackPostBodyContextOneCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const submitFeedbackV1FeedbackPostBodyContextOneCompareCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const submitFeedbackV1FeedbackPostBodyContextOneSelectedCountyFipsMax = 5;
+export const submitFeedbackBodyContextOneCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const submitFeedbackBodyContextOneCompareCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const submitFeedbackBodyContextOneSelectedCountyFipsMax = 5;
 
-export const submitFeedbackV1FeedbackPostBodyContextOneDatasetMax = 64;
-
-
-export const submitFeedbackV1FeedbackPostBodyContextOneDatasetRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
-export const submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMin = 40;
-export const submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMax = 85;
-export const submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMultipleOf = 5;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMin = 5;
-export const submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMax = 25;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneSmoothKMin = 5;
-export const submitFeedbackV1FeedbackPostBodyContextOneSmoothKMax = 200;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMin = 40;
-export const submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMax = 90;
-export const submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMultipleOf = 5;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneSourceIdsMax = 8;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneEvidenceItemIdsMax = 8;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneItemIdsMax = 8;
-
-export const submitFeedbackV1FeedbackPostBodyAppVersionRegExp = new RegExp('^atlas-web/[A-Za-z0-9._-]{1,32}$');
+export const submitFeedbackBodyContextOneDatasetMax = 64;
 
 
-export const SubmitFeedbackV1FeedbackPostBody = zod.object({
+export const submitFeedbackBodyContextOneDatasetRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
+export const submitFeedbackBodyContextOneEcologicalShareMin = 40;
+export const submitFeedbackBodyContextOneEcologicalShareMax = 85;
+export const submitFeedbackBodyContextOneEcologicalShareMultipleOf = 5;
+
+export const submitFeedbackBodyContextOneLowIncidenceBreakpointMin = 5;
+export const submitFeedbackBodyContextOneLowIncidenceBreakpointMax = 25;
+
+export const submitFeedbackBodyContextOneSmoothKMin = 5;
+export const submitFeedbackBodyContextOneSmoothKMax = 200;
+
+export const submitFeedbackBodyContextOneMissingHumanWeaknessMin = 40;
+export const submitFeedbackBodyContextOneMissingHumanWeaknessMax = 90;
+export const submitFeedbackBodyContextOneMissingHumanWeaknessMultipleOf = 5;
+
+export const submitFeedbackBodyContextOneSourceIdsMax = 8;
+
+export const submitFeedbackBodyContextOneEvidenceItemIdsMax = 8;
+
+export const submitFeedbackBodyContextOneItemIdsMax = 8;
+
+export const submitFeedbackBodyAppVersionRegExp = new RegExp('^atlas-web/[A-Za-z0-9._-]{1,32}$');
+
+
+export const SubmitFeedbackBody = zod.object({
   "submission_token": zod.uuid(),
   "category": zod.enum(['data_issue', 'usability', 'bug', 'feature_idea', 'general']),
-  "message": zod.string().min(submitFeedbackV1FeedbackPostBodyMessageMin).max(submitFeedbackV1FeedbackPostBodyMessageMax),
-  "contact_email": zod.string().max(submitFeedbackV1FeedbackPostBodyContactEmailMax).nullish(),
+  "message": zod.string().min(submitFeedbackBodyMessageMin).max(submitFeedbackBodyMessageMax),
+  "contact_email": zod.string().max(submitFeedbackBodyContactEmailMax).nullish(),
   "route_id": zod.enum(['overview', 'geographic_explorer', 'evidence_library', 'assistant', 'account', 'privacy', 'ai_ethics']),
   "context": zod.union([zod.object({
   "state": zod.string().nullish(),
-  "county_fips": zod.string().regex(submitFeedbackV1FeedbackPostBodyContextOneCountyFipsRegExp).nullish(),
-  "compare_county_fips": zod.string().regex(submitFeedbackV1FeedbackPostBodyContextOneCompareCountyFipsRegExp).nullish(),
-  "selected_county_fips": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneSelectedCountyFipsMax).nullish(),
-  "dataset": zod.string().max(submitFeedbackV1FeedbackPostBodyContextOneDatasetMax).regex(submitFeedbackV1FeedbackPostBodyContextOneDatasetRegExp).nullish(),
+  "county_fips": zod.string().regex(submitFeedbackBodyContextOneCountyFipsRegExp).nullish(),
+  "compare_county_fips": zod.string().regex(submitFeedbackBodyContextOneCompareCountyFipsRegExp).nullish(),
+  "selected_county_fips": zod.array(zod.string()).max(submitFeedbackBodyContextOneSelectedCountyFipsMax).nullish(),
+  "dataset": zod.string().max(submitFeedbackBodyContextOneDatasetMax).regex(submitFeedbackBodyContextOneDatasetRegExp).nullish(),
   "evidence_view": zod.union([zod.literal('all'),zod.literal('ecological'),zod.literal('human'),zod.literal('complete'),zod.literal(null)]).nullish(),
   "explorer_view": zod.union([zod.literal('tiles'),zod.literal('multiples'),zod.literal('matrix'),zod.literal('ranking'),zod.literal('maps'),zod.literal('scatter'),zod.literal('compare'),zod.literal('trends'),zod.literal(null)]).nullish(),
   "explorer_metric": zod.union([zod.literal('score'),zod.literal('completeness'),zod.literal(null)]).nullish(),
-  "ecological_share": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMin).max(submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMax).multipleOf(submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMultipleOf).nullish(),
-  "low_incidence_breakpoint": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMin).max(submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMax).nullish(),
-  "smooth_k": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneSmoothKMin).max(submitFeedbackV1FeedbackPostBodyContextOneSmoothKMax).nullish(),
-  "missing_human_weakness": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMin).max(submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMax).multipleOf(submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMultipleOf).nullish(),
-  "source_ids": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneSourceIdsMax).nullish(),
-  "evidence_item_ids": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneEvidenceItemIdsMax).nullish(),
-  "item_ids": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneItemIdsMax).nullish()
+  "ecological_share": zod.int().min(submitFeedbackBodyContextOneEcologicalShareMin).max(submitFeedbackBodyContextOneEcologicalShareMax).multipleOf(submitFeedbackBodyContextOneEcologicalShareMultipleOf).nullish(),
+  "low_incidence_breakpoint": zod.int().min(submitFeedbackBodyContextOneLowIncidenceBreakpointMin).max(submitFeedbackBodyContextOneLowIncidenceBreakpointMax).nullish(),
+  "smooth_k": zod.int().min(submitFeedbackBodyContextOneSmoothKMin).max(submitFeedbackBodyContextOneSmoothKMax).nullish(),
+  "missing_human_weakness": zod.int().min(submitFeedbackBodyContextOneMissingHumanWeaknessMin).max(submitFeedbackBodyContextOneMissingHumanWeaknessMax).multipleOf(submitFeedbackBodyContextOneMissingHumanWeaknessMultipleOf).nullish(),
+  "source_ids": zod.array(zod.string()).max(submitFeedbackBodyContextOneSourceIdsMax).nullish(),
+  "evidence_item_ids": zod.array(zod.string()).max(submitFeedbackBodyContextOneEvidenceItemIdsMax).nullish(),
+  "item_ids": zod.array(zod.string()).max(submitFeedbackBodyContextOneItemIdsMax).nullish()
 }).describe('Closed geography and view context for a feedback submission.'),zod.null()]).optional(),
-  "app_version": zod.string().regex(submitFeedbackV1FeedbackPostBodyAppVersionRegExp)
+  "app_version": zod.string().regex(submitFeedbackBodyAppVersionRegExp)
 })
 
-export const SubmitFeedbackV1FeedbackPostResponse = zod.object({
+export const SubmitFeedbackResponse = zod.object({
   "feedback_id": zod.uuid(),
   "received_at": zod.iso.datetime({"offset":true}),
   "replayed": zod.boolean()
@@ -3168,35 +3191,35 @@ export const AskAtlasMixedResponse = zod.object({
 /**
  * @summary Knowledge Graph Chat
  */
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax = 1000;
+export const askKnowledgeGraphBodyMessageMax = 1000;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdMax = 100;
+export const askKnowledgeGraphBodyConversationIdMax = 100;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenMax = 200;
+export const askKnowledgeGraphBodyConversationTokenMax = 200;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryItemContentMax = 5000;
+export const askKnowledgeGraphBodyHistoryItemContentMax = 5000;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryMax = 12;
+export const askKnowledgeGraphBodyHistoryMax = 12;
 
 
 
-export const KnowledgeGraphChatV1KnowledgeGraphChatPostBody = zod.object({
-  "message": zod.string().min(1).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax),
-  "conversation_id": zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdMax).nullish(),
-  "conversation_token": zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenMax).nullish(),
+export const AskKnowledgeGraphBody = zod.object({
+  "message": zod.string().min(1).max(askKnowledgeGraphBodyMessageMax),
+  "conversation_id": zod.string().max(askKnowledgeGraphBodyConversationIdMax).nullish(),
+  "conversation_token": zod.string().max(askKnowledgeGraphBodyConversationTokenMax).nullish(),
   "history": zod.array(zod.object({
   "role": zod.enum(['user', 'assistant']),
-  "content": zod.string().min(1).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryItemContentMax)
-})).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryMax).optional()
+  "content": zod.string().min(1).max(askKnowledgeGraphBodyHistoryItemContentMax)
+})).max(askKnowledgeGraphBodyHistoryMax).optional()
 })
 
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemPmidRegExp = new RegExp('^\\d{1,10}$');
+export const askKnowledgeGraphResponseCitationsItemPmidRegExp = new RegExp('^\\d{1,10}$');
 
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemSourceLabelDefault = `PubMed / PMC Open Access`;
+export const askKnowledgeGraphResponseCitationsItemSourceLabelDefault = `PubMed / PMC Open Access`;
 
-export const KnowledgeGraphChatV1KnowledgeGraphChatPostResponse = zod.object({
+export const AskKnowledgeGraphResponse = zod.object({
   "request_id": zod.string(),
   "conversation_id": zod.string(),
   "conversation_token": zod.string().nullish(),
@@ -3214,12 +3237,12 @@ export const KnowledgeGraphChatV1KnowledgeGraphChatPostResponse = zod.object({
 })).optional(),
   "citations": zod.array(zod.object({
   "citation_id": zod.string(),
-  "pmid": zod.string().regex(knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemPmidRegExp),
+  "pmid": zod.string().regex(askKnowledgeGraphResponseCitationsItemPmidRegExp),
   "title": zod.string(),
   "pubmed_url": zod.string(),
   "claim_ids": zod.array(zod.string()).min(1),
   "passage_ids": zod.array(zod.string()).min(1),
-  "source_label": zod.string().default(knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemSourceLabelDefault),
+  "source_label": zod.string().default(askKnowledgeGraphResponseCitationsItemSourceLabelDefault),
   "pmcid": zod.string().nullish(),
   "corpus_unit_ids": zod.array(zod.string()).nullish(),
   "section_labels": zod.array(zod.string()).nullish(),

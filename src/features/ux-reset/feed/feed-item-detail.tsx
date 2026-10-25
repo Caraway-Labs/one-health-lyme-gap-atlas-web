@@ -26,10 +26,8 @@ import {
   feedPanelAbstract,
   feedPanelDescription,
   feedPublicationDate,
-  feedPubMedHref,
   feedPublisherHref,
   feedPublisherLabel,
-  feedSourceFamilyLabel,
 } from "./feed-presentation";
 
 export type FeedDetailView =
@@ -75,10 +73,9 @@ function FeedExternalAnchor({
 function FeedDetailReady({ entry }: { entry: FeedEntry }) {
   const title = feedItemTitle(entry);
   const href = feedPublisherHref(entry.canonical_url);
-  const familyLabel = feedSourceFamilyLabel(entry);
   const description = feedPanelDescription(entry);
   const abstract = feedPanelAbstract(entry);
-  const pubmedHref = feedPubMedHref(entry.pmid);
+  const pubmedHref = feedPublisherHref(entry.pubmed_url);
   const showPubMedNotices = entry.source_family === "pubmed";
   return (
     <>
@@ -95,14 +92,14 @@ function FeedDetailReady({ entry }: { entry: FeedEntry }) {
         <DialogDescription className="ux-reset-feed-attribution">
           {entry.attribution}
         </DialogDescription>
-        {familyLabel === null ? null : (
-          <dl className="ux-reset-feed-meta">
-            <div>
-              <dt>Source family</dt>
-              <dd data-testid="feed-source-family">{familyLabel}</dd>
-            </div>
-          </dl>
-        )}
+        <dl className="ux-reset-feed-meta">
+          <div>
+            <dt>Source family</dt>
+            <dd data-testid="feed-source-family">
+              {entry.source_family_label}
+            </dd>
+          </div>
+        </dl>
       </DialogHeader>
       <dl className="ux-reset-feed-meta">
         <div>

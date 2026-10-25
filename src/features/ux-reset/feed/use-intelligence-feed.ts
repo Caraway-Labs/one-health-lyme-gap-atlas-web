@@ -24,7 +24,6 @@ import {
   withFeedPageToken,
   type FeedFilterState,
 } from "./feed-filters";
-import { retainSourceFamilyLabel } from "./feed-presentation";
 
 type IntelligenceFeedQueryKey = ReturnType<
   typeof getListIntelligenceFeedQueryKey
@@ -40,10 +39,7 @@ async function readFeedPage(
     pageToken
   );
   const response = await listIntelligenceFeed(params, { signal });
-  return retainSourceFamilyLabel(
-    validateApiResponse("Intelligence feed", MetadataFeed, response.data),
-    response.data
-  );
+  return validateApiResponse("Intelligence feed", MetadataFeed, response.data);
 }
 
 /** Drop a cached multi-page result so the next view of these filters starts at page one. */

@@ -35,10 +35,7 @@ import {
   workspaceShellCheckCurrent,
   workspaceSignOutPending,
 } from "@/features/ux-reset/workspace-sign-out";
-import {
-  getProfileV1MeProfileGet,
-  saveProfileV1MeProfilePut,
-} from "@/generated/atlas";
+import { getProfile, updateProfile } from "@/generated/atlas";
 import type {
   UserProfileWrite,
   UserProfileWriteRole,
@@ -179,7 +176,7 @@ export default function AccountPage() {
         noteWorkspaceDocumentUser(session.data.user.id);
         setSignedIn(true);
         setLoadingProfile(true);
-        const result = await getProfileV1MeProfileGet();
+        const result = await getProfile();
         if (result.status === 200 && result.data.profile)
           setForm(result.data.profile);
       } catch {
@@ -241,7 +238,7 @@ export default function AccountPage() {
     setSaving(true);
     setNotice(null);
     try {
-      const result = await saveProfileV1MeProfilePut({
+      const result = await updateProfile({
         role: form.role ?? null,
         state_code: form.state_code || null,
         organization: form.organization?.trim() || null,

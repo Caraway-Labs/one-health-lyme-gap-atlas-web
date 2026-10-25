@@ -5,7 +5,7 @@ import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import type { FeedEntry } from "@/generated/models/feedEntry";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
 import {
   analyticsControlAttributes,
   type FeedDetailEntrySurface,
@@ -21,10 +21,9 @@ import {
   feedPublicationDate,
   feedPublisherHref,
   feedPublisherLabel,
-  feedSourceFamilyLabel,
 } from "./feed-presentation";
 
-function FeedPublicationDateText({ entry }: { entry: FeedEntry }) {
+function FeedPublicationDateText({ entry }: { entry: FeedListEntry }) {
   const date = feedPublicationDate(entry);
   if (date.kind === "present") {
     return <time dateTime={date.iso}>{date.text}</time>;
@@ -62,13 +61,12 @@ export function FeedItemCard({
   itemCaveats,
   onOpen,
 }: {
-  entry: FeedEntry;
+  entry: FeedListEntry;
   itemCaveats: readonly string[];
-  onOpen: (entry: FeedEntry, surface: FeedDetailEntrySurface) => void;
+  onOpen: (entry: FeedListEntry, surface: FeedDetailEntrySurface) => void;
 }) {
   const title = feedItemTitle(entry);
   const href = feedPublisherHref(entry.canonical_url);
-  const familyLabel = feedSourceFamilyLabel(entry);
   const summary = feedCardSummary(entry);
   const authorLine = feedCardAuthorLine(entry.authors);
   const tags = feedCardTags(entry.tags);
@@ -84,12 +82,12 @@ export function FeedItemCard({
               <dt>Publisher</dt>
               <dd>{feedPublisherLabel(entry)}</dd>
             </div>
-            {familyLabel === null ? null : (
-              <div>
-                <dt>Source family</dt>
-                <dd data-testid="feed-source-family">{familyLabel}</dd>
-              </div>
-            )}
+            <div>
+              <dt>Source family</dt>
+              <dd data-testid="feed-source-family">
+                {entry.source_family_label}
+              </dd>
+            </div>
             <div>
               <dt>Publication date</dt>
               <dd>
@@ -116,7 +114,7 @@ export function FeedItemCard({
           {summary.kind === "abstract" ? (
             <div>
               <p
-                className="ux-reset-feed-summary-text ux-reset-feed-clamp-3"
+                className="ux-reset-feed-summary-text"
                 data-testid="feed-abstract"
               >
                 {summary.text}
@@ -129,15 +127,17 @@ export function FeedItemCard({
                   {summary.copyrightLine}
                 </p>
               )}
-              <Button
-                onClick={() => {
-                  onOpen(entry, "feed_card_read_more");
-                }}
-                type="button"
-                variant="outline"
-              >
-                Read more
-              </Button>
+              {summary.hasMore ? (
+                <Button
+                  onClick={() => {
+                    onOpen(entry, "feed_card_read_more");
+                  }}
+                  type="button"
+                  variant="outline"
+                >
+                  Read more
+                </Button>
+              ) : null}
             </div>
           ) : null}
           {authorLine ? (

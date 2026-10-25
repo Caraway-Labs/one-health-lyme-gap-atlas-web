@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { submitFeedbackV1FeedbackPost } from "@/generated/atlas";
+import { submitFeedback } from "@/generated/atlas";
 import {
   FeedbackSubmissionRequestCategory,
   type FeedbackSubmissionRequestCategory as FeedbackCategory,
@@ -281,7 +281,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const result = await submitFeedbackV1FeedbackPost(body);
+      const result = await submitFeedback(body);
       if (result.status !== 200) {
         throw new AtlasApiError(
           "Feedback submission failed.",

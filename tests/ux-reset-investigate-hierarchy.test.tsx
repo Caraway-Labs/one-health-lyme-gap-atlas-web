@@ -1035,7 +1035,7 @@ type RejectedMethodologyVersion = {
 /**
  * The county contract requires methodology_version to be a string.
  * Empty and whitespace-only strings validate and stay unset. Null and
- * omission fail CountyV1CountiesFipsGetResponse before row mapping.
+ * omission fail GetCountyResponse before row mapping.
  */
 const METHODOLOGY_VERSION_CASES = [
   {

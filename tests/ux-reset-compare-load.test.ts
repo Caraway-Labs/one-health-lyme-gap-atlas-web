@@ -19,7 +19,7 @@ import {
 } from "@/features/ux-reset/compare/load-compare-evidence";
 import { loadCompareCountyProfiles } from "@/features/ux-reset/compare/load-compare-profile";
 import type { Measure } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 
 import {
   COMPARE_CANOPY_MEASURE_ID,
@@ -120,7 +120,7 @@ describe("compare evidence loading through the generated client", () => {
       if (measureId === "bad-shape") {
         return jsonResponse({ data: observationsForRequest(url) });
       }
-      const envelope = ObservationsV1ObservationsGetResponse.parse({
+      const envelope = ListObservationsResponse.parse({
         data: observationsForRequest(url),
         links: { self: "/v1/observations" },
         meta: {},
@@ -165,7 +165,7 @@ describe("compare evidence loading through the generated client", () => {
     vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       requests.push(`${url.pathname}?${url.searchParams.toString()}`);
-      const envelope = ObservationsV1ObservationsGetResponse.parse({
+      const envelope = ListObservationsResponse.parse({
         data: observationsForRequest(url),
         links: { self: "/v1/observations" },
         meta: {},
@@ -209,7 +209,7 @@ describe("compare evidence loading through the generated client", () => {
     vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       requests.push(`${url.pathname}?${url.searchParams.toString()}`);
-      const envelope = ObservationsV1ObservationsGetResponse.parse({
+      const envelope = ListObservationsResponse.parse({
         data: observationsForRequest(url),
         links: { self: "/v1/observations" },
         meta: {},
@@ -269,7 +269,7 @@ describe("compare evidence loading through the generated client", () => {
           ? observationsForRequest(url)
           : compareObservationsFor({ fips, measureId });
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data,
           links: { self: "/v1/observations" },
           meta: {},
@@ -350,7 +350,7 @@ describe("compare evidence loading through the generated client", () => {
         return jsonResponse({ detail: "unavailable" }, 503);
       }
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data: observationsForRequest(url),
           links: { self: "/v1/observations" },
           meta: {},
@@ -398,7 +398,7 @@ describe("compare evidence loading through the generated client", () => {
         );
       }
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data: observationsForRequest(url),
           links: { self: "/v1/observations" },
           meta: {},
@@ -448,7 +448,7 @@ describe("compare evidence loading through the generated client", () => {
         return jsonResponse({ detail: "unavailable" }, 503);
       }
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data: compareObservationsFor({
             fips: url.searchParams.getAll("geography_id"),
             measureId,
@@ -533,7 +533,7 @@ describe("compare evidence loading through the generated client", () => {
         phase.value === "known-empty"
       ) {
         return jsonResponse(
-          ObservationsV1ObservationsGetResponse.parse({
+          ListObservationsResponse.parse({
             data: [],
             links: { self: "/v1/observations" },
             meta: {
@@ -548,7 +548,7 @@ describe("compare evidence loading through the generated client", () => {
         );
       }
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data: compareObservationsFor({
             fips: url.searchParams.getAll("geography_id"),
             measureId,
@@ -743,7 +743,7 @@ describe("compare evidence loading through the generated client", () => {
       const start = url.searchParams.get("start_date");
       requests.push(year ? `year:${year}` : `day:${start ?? ""}`);
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data: [],
           links: { self: "/v1/observations" },
           meta: {},
@@ -795,7 +795,7 @@ describe("compare evidence loading through the generated client", () => {
       requests.push(year ? `year:${year}` : `day:${start ?? ""}`);
       if (year === "2023") {
         return jsonResponse(
-          ObservationsV1ObservationsGetResponse.parse({
+          ListObservationsResponse.parse({
             data: compareObservationsFor({
               fips: url.searchParams.getAll("geography_id"),
               measureId: "unbound-gap",
@@ -1056,7 +1056,7 @@ describe("compare evidence loading through the generated client", () => {
       const url = new URL(String(input));
       requests.push(url.searchParams.get("measure_id") ?? "");
       return jsonResponse(
-        ObservationsV1ObservationsGetResponse.parse({
+        ListObservationsResponse.parse({
           data: compareObservationsFor({
             fips: url.searchParams.getAll("geography_id"),
             measureId: url.searchParams.get("measure_id") ?? "",

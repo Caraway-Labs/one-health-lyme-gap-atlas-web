@@ -17,17 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  metadataV1AtlasMetadataGet,
-  scoresV1AtlasScoresGet,
-} from "@/generated/atlas";
+import { getAtlasMetadata, getAtlasScores } from "@/generated/atlas";
 import {
   FeedbackSubmissionRequestCategory,
   type CountyScoreSummary,
 } from "@/generated/models";
 import {
-  MetadataV1AtlasMetadataGetResponse,
-  ScoresV1AtlasScoresGetResponse,
+  GetAtlasMetadataResponse,
+  GetAtlasScoresResponse,
 } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
@@ -79,9 +76,9 @@ export function GeographicExplorer() {
     queryFn: async ({ signal }) =>
       validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
+        GetAtlasMetadataResponse,
         (
-          await metadataV1AtlasMetadataGet(
+          await getAtlasMetadata(
             { dataset_version: state.dataset ?? undefined },
             { signal }
           )
@@ -95,9 +92,9 @@ export function GeographicExplorer() {
     queryFn: async ({ signal }) => {
       const data = validateApiResponse(
         "Atlas scores",
-        ScoresV1AtlasScoresGetResponse,
+        GetAtlasScoresResponse,
         (
-          await scoresV1AtlasScoresGet(
+          await getAtlasScores(
             { dataset_version: releaseId, ...settings },
             { signal }
           )

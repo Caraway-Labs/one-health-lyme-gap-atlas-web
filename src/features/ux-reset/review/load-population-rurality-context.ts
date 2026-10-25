@@ -7,11 +7,11 @@ import {
   PopulationRuralityContractError,
   type PopulationRuralityMeasureId,
 } from "@/features/ux-reset/review/population-rurality-context";
-import { observationsV1ObservationsGet } from "@/generated/atlas";
+import { listObservations } from "@/generated/atlas";
 import type { CountyContextObservation } from "@/generated/models";
 import {
-  ObservationsV1ObservationsGetResponse,
-  observationsV1ObservationsGetQueryPageSizeMax,
+  ListObservationsResponse,
+  listObservationsQueryPageSizeMax,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
@@ -68,12 +68,12 @@ export async function fetchPopulationRuralityMeasure(input: {
       );
     }
     try {
-      const response = await observationsV1ObservationsGet(
+      const response = await listObservations(
         {
           geography_id: [input.fips],
           geography_type: "county",
           measure_id: input.measureId,
-          page_size: observationsV1ObservationsGetQueryPageSizeMax,
+          page_size: listObservationsQueryPageSizeMax,
           ...(pageToken ? { page_token: pageToken } : {}),
           vintage_year: input.vintageYear,
         },
@@ -89,7 +89,7 @@ export async function fetchPopulationRuralityMeasure(input: {
       }
       const parsed = validateApiResponse(
         "Population and rurality observations",
-        ObservationsV1ObservationsGetResponse,
+        ListObservationsResponse,
         response.data
       );
       selection.note({

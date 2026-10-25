@@ -1,5 +1,7 @@
+import type { FeedDescription } from "@/generated/models/feedDescription";
 import type { FeedEntry } from "@/generated/models/feedEntry";
-import type { FeedEntryPublicationDateState } from "@/generated/models/feedEntryPublicationDateState";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
+import type { FeedListEntryPublicationDateState } from "@/generated/models/feedListEntryPublicationDateState";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   formatUtcCalendarDate,
@@ -12,8 +14,26 @@ export const FEED_EXTERNAL_LINK_TARGET = "_blank";
 
 const UNTITLED_ITEM = "Untitled item";
 
+type FeedDatedEntry = {
+  publication_date_state: FeedListEntryPublicationDateState;
+  published_at: string | null;
+  publisher: string | null;
+  source: { organization: string };
+  title: string | null;
+};
+
+type FeedLimitedEntry = {
+  limitations: readonly string[];
+};
+
+type FeedDescribedEntry = {
+  authors: readonly string[];
+  description: FeedDescription;
+  source_family: string;
+};
+
 const MISSING_PUBLICATION_DATE: Record<
-  Exclude<FeedEntryPublicationDateState, "present">,
+  Exclude<FeedListEntryPublicationDateState, "present">,
   string
 > = {
   invalid: "Publication date not available",
@@ -27,13 +47,13 @@ export type FeedPublicationDate =
 
 export type FeedRequestFailure = "error" | "unavailable";
 
-export function feedItemTitle(entry: FeedEntry): string {
+export function feedItemTitle(entry: FeedDatedEntry): string {
   const title = entry.title?.trim() ?? "";
   return title.length > 0 ? title : UNTITLED_ITEM;
 }
 
 /** Publisher text from the contract, then the governed source organization. */
-export function feedPublisherLabel(entry: FeedEntry): string {
+export function feedPublisherLabel(entry: FeedDatedEntry): string {
   const publisher = entry.publisher?.trim() ?? "";
   if (publisher.length > 0) {
     return publisher;
@@ -45,7 +65,9 @@ export function feedPublisherLabel(entry: FeedEntry): string {
  * Show a publication date only when the contract says it is present and the
  * timestamp parses. Fetch time is not a substitute.
  */
-export function feedPublicationDate(entry: FeedEntry): FeedPublicationDate {
+export function feedPublicationDate(
+  entry: FeedDatedEntry
+): FeedPublicationDate {
   if (entry.publication_date_state === "present") {
     const parsed = parseAtlasDateTime(entry.published_at);
     if (parsed) {
@@ -105,12 +127,6 @@ export function feedRequestFailure(error: unknown): FeedRequestFailure {
   return "error";
 }
 
-/**
- * Display string returned by the API on each feed entry. The generated client
- * does not include this property until that contract is regenerated.
- */
-const SOURCE_FAMILY_LABEL_FIELD = "source_family_label";
-
 export const FEED_CARD_AUTHOR_LIMIT = 3;
 export const FEED_CARD_TAG_LIMIT = 3;
 export const FEED_NCBI_COPYRIGHT_HREF =
@@ -124,65 +140,6 @@ export const FEED_FOOTER_PUBLIC_DOMAIN =
   "CDC and NIH content is public domain unless noted. PubMed abstracts remain subject to their publishers' copyright; see each abstract's notice.";
 export const FEED_FOOTER_NON_ENDORSEMENT =
   "Use does not imply endorsement by CDC, HHS, NIH or the U.S. Government.";
-
-const PMID_PATTERN = /^[1-9][0-9]{0,9}$/;
-
-/** The API display string, unchanged. Null when the payload has no string. */
-export function feedSourceFamilyLabel(entry: object): string | null {
-  if (!(SOURCE_FAMILY_LABEL_FIELD in entry)) {
-    return null;
-  }
-  const label = (entry as Record<string, unknown>)[SOURCE_FAMILY_LABEL_FIELD];
-  return typeof label === "string" ? label : null;
-}
-
-function withSourceFamilyLabel<T extends object>(parsed: T, raw: unknown): T {
-  if (raw === null || typeof raw !== "object") {
-    return parsed;
-  }
-  const label = feedSourceFamilyLabel(raw);
-  if (label === null) {
-    return parsed;
-  }
-  return { ...parsed, [SOURCE_FAMILY_LABEL_FIELD]: label };
-}
-
-/**
- * Keep `source_family_label` after response validation. The generated schema
- * drops properties it does not know yet.
- */
-export function retainSourceFamilyLabel<T>(parsed: T, raw: unknown): T {
-  if (
-    parsed === null ||
-    typeof parsed !== "object" ||
-    raw === null ||
-    typeof raw !== "object" ||
-    !("data" in parsed) ||
-    !("data" in raw)
-  ) {
-    return parsed;
-  }
-  const parsedData = parsed.data;
-  const rawData = raw.data;
-  if (Array.isArray(parsedData) && Array.isArray(rawData)) {
-    return {
-      ...parsed,
-      data: parsedData.map((item, index) =>
-        item !== null && typeof item === "object"
-          ? withSourceFamilyLabel(item, rawData[index])
-          : item
-      ),
-    };
-  }
-  if (
-    parsedData !== null &&
-    typeof parsedData === "object" &&
-    !Array.isArray(parsedData)
-  ) {
-    return { ...parsed, data: withSourceFamilyLabel(parsedData, rawData) };
-  }
-  return parsed;
-}
 
 export type FeedItemLookupFailure = "missing" | "unavailable";
 
@@ -201,7 +158,9 @@ export function feedItemLookupFailure(error: unknown): FeedItemLookupFailure {
  * Strings present on every rendered entry, in the first entry's order.
  * An empty list has none. A single entry shares all of its caveats.
  */
-export function sharedFeedCaveats(entries: readonly FeedEntry[]): string[] {
+export function sharedFeedCaveats(
+  entries: readonly FeedLimitedEntry[]
+): string[] {
   const first = entries[0];
   if (!first) {
     return [];
@@ -225,32 +184,32 @@ export function sharedFeedCaveats(entries: readonly FeedEntry[]): string[] {
 
 /** Entry limitations that are not shared by every rendered entry, in API order. */
 export function itemFeedCaveats(
-  entry: FeedEntry,
+  entry: FeedLimitedEntry,
   shared: readonly string[]
 ): string[] {
   const sharedText = new Set(shared);
   return entry.limitations.filter((text) => !sharedText.has(text));
 }
 
-export function feedPubMedHref(pmid: string | null): string | null {
-  if (pmid === null || !PMID_PATTERN.test(pmid)) {
-    return null;
-  }
-  return `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
-}
-
 /** Visible "Authors" label for an EID description when the authors array is empty. */
-export function feedDescriptionUsesAuthorsLabel(entry: FeedEntry): boolean {
+export function feedDescriptionUsesAuthorsLabel(
+  entry: FeedDescribedEntry
+): boolean {
   return entry.source_family === "cdc_eid" && entry.authors.length === 0;
 }
 
 export type FeedCardSummary =
   | { authorsLabel: boolean; kind: "description"; text: string }
-  | { copyrightLine: string | null; kind: "abstract"; text: string }
+  | {
+      copyrightLine: string | null;
+      hasMore: boolean;
+      kind: "abstract";
+      text: string;
+    }
   | { kind: "none" };
 
-/** Description wins when both are present. Anything else leaves the card blank. */
-export function feedCardSummary(entry: FeedEntry): FeedCardSummary {
+/** Description wins when both are present. The preview string is not shortened. */
+export function feedCardSummary(entry: FeedListEntry): FeedCardSummary {
   if (
     entry.description.state === "present" &&
     entry.description.text !== null
@@ -261,11 +220,12 @@ export function feedCardSummary(entry: FeedEntry): FeedCardSummary {
       text: entry.description.text,
     };
   }
-  if (entry.abstract?.state === "present" && entry.abstract.text !== null) {
+  if (entry.abstract_state === "present" && entry.abstract_preview !== null) {
     return {
-      copyrightLine: entry.abstract.copyright_line,
+      copyrightLine: entry.copyright_line,
+      hasMore: entry.abstract_has_more,
       kind: "abstract",
-      text: entry.abstract.text,
+      text: entry.abstract_preview,
     };
   }
   return { kind: "none" };

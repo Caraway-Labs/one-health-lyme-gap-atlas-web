@@ -16,9 +16,9 @@ import {
   environmentalDateSupport,
   type EnvironmentalContextMeasureId,
 } from "@/features/ux-reset/review/environmental-context";
-import { observationsV1ObservationsGet } from "@/generated/atlas";
+import { listObservations } from "@/generated/atlas";
 import type { Observation } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   ApiResponseValidationError,
@@ -69,7 +69,7 @@ export async function fetchEnvironmentalMeasure(input: {
         "AbortError"
       );
     }
-    const response = await observationsV1ObservationsGet(
+    const response = await listObservations(
       exploreObservationPageParams({
         fips: [input.fips],
         measureId: input.measureId,
@@ -92,7 +92,7 @@ export async function fetchEnvironmentalMeasure(input: {
     }
     const parsed = validateApiResponse(
       "Environmental observations",
-      ObservationsV1ObservationsGetResponse,
+      ListObservationsResponse,
       response.data
     );
     selection.note({

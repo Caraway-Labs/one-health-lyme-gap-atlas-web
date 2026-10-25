@@ -15,9 +15,11 @@ export const feedSourcesDataItemOrganizationMax = 1000;
 export const feedSourcesDataItemOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const feedSourcesDataItemOperationalStateDefault = `unavailable`;
 export const feedSourcesDataItemDiagnosticDefault = `SOURCE_HEALTH_NOT_PUBLISHED`;
+export const feedSourcesDataItemLastCompletedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const feedSourcesDataItemLastErrorCodeRegExp = new RegExp('^(?:INTELLIGENCE_[A-Z0-9_]{3,80}|FEED_[A-Z0-9_]{1,64}|MALFORMED_FEED|UNCLASSIFIED_[A-Za-z][A-Za-z0-9]{0,80})$');
 export const feedSourcesMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const feedSourcesMetaSourceHealthAvailableDefault = false;
-export const feedSourcesMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
+export const feedSourcesMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Operational state is healthy, stale, or failing when the source-health projection has a row for that source. Otherwise it is unavailable with diagnostic SOURCE_HEALTH_NOT_PUBLISHED. Fetch timestamps are not operational health.`];
 export const feedSourcesSourceCatalogCompleteDefault = false;
 export const FeedSources = zod.object({
   "data": zod.array(zod.object({
@@ -25,13 +27,15 @@ export const FeedSources = zod.object({
   "registry_version": zod.int().min(1),
   "organization": zod.string().min(1).max(feedSourcesDataItemOrganizationMax).regex(feedSourcesDataItemOrganizationRegExp),
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other']),
-  "operational_state": zod.literal("unavailable").default(feedSourcesDataItemOperationalStateDefault),
-  "diagnostic": zod.literal("SOURCE_HEALTH_NOT_PUBLISHED").default(feedSourcesDataItemDiagnosticDefault)
+  "operational_state": zod.enum(['healthy', 'stale', 'failing', 'unavailable']).default(feedSourcesDataItemOperationalStateDefault).describe('healthy, stale, or failing when the source-health projection has a row for this source. unavailable when it does not, or when that projection cannot be read.'),
+  "diagnostic": zod.union([zod.literal('SOURCE_HEALTH_NOT_PUBLISHED'),zod.literal(null)]).nullish().default(feedSourcesDataItemDiagnosticDefault).describe('SOURCE_HEALTH_NOT_PUBLISHED when operational_state is unavailable. Null when a health row supplies the operational state.'),
+  "last_completed_at": zod.string().regex(feedSourcesDataItemLastCompletedAtRegExp).nullish().describe('UTC completion time from the source-health projection. Null when unavailable or absent on that row.'),
+  "last_error_code": zod.string().regex(feedSourcesDataItemLastErrorCodeRegExp).nullish().describe('Allowlisted error code from the source-health projection. Free text and run identifiers are omitted.')
 })),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(feedSourcesMetaProjectionVersionDefault),
-  "source_health_available": zod.literal(false).default(feedSourcesMetaSourceHealthAvailableDefault),
+  "source_health_available": zod.boolean().default(feedSourcesMetaSourceHealthAvailableDefault).describe('True when this response applied a source-health snapshot. False when that snapshot could not be read; every source is then unavailable.'),
   "limitations": zod.array(zod.string()).default(feedSourcesMetaLimitationsDefault)
 }),
   "source_catalog_complete": zod.literal(false).default(feedSourcesSourceCatalogCompleteDefault)

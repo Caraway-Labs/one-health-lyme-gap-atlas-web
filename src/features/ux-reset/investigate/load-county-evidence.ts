@@ -23,27 +23,23 @@ import {
   type KnownEmptyObservationSelection,
 } from "@/features/ux-reset/observations/selection-availability";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
-import {
-  countyV1CountiesFipsGet,
-  indicatorsV1IndicatorsGet,
-  observationsV1ObservationsGet,
-} from "@/generated/atlas";
+import { getCounty, listIndicators, listObservations } from "@/generated/atlas";
 import type {
   CountyDetail,
   Indicator,
   Measure,
   Observation,
-  ObservationsV1ObservationsGetParams,
+  ListObservationsParams,
 } from "@/generated/models";
 import {
-  CountyV1CountiesFipsGetResponse,
-  IndicatorsV1IndicatorsGetResponse,
-  ObservationsV1ObservationsGetResponse,
-  indicatorsV1IndicatorsGetQueryPageSizeMax,
-  observationsV1ObservationsGetQueryGeographyIdMax,
-  observationsV1ObservationsGetQueryPageSizeMax,
-  observationsV1ObservationsGetQueryYearMax,
-  observationsV1ObservationsGetQueryYearMin,
+  GetCountyResponse,
+  ListIndicatorsResponse,
+  ListObservationsResponse,
+  listIndicatorsQueryPageSizeMax,
+  listObservationsQueryGeographyIdMax,
+  listObservationsQueryPageSizeMax,
+  listObservationsQueryYearMax,
+  listObservationsQueryYearMin,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -151,7 +147,7 @@ export function shouldRetryInvestigateRequest(
 }
 
 function hasCompleteDateRange(
-  params: Pick<ObservationsV1ObservationsGetParams, "end_date" | "start_date">
+  params: Pick<ListObservationsParams, "end_date" | "start_date">
 ): boolean {
   const start = params.start_date ?? null;
   const end = params.end_date ?? null;
@@ -168,7 +164,7 @@ function hasCompleteDateRange(
  * Covers the rules Investigate sends. It is not a full copy of every API check.
  */
 export function investigateObservationRequestRejection(
-  params: ObservationsV1ObservationsGetParams
+  params: ListObservationsParams
 ): 400 | 414 | null {
   const measureId = params.measure_id.trim();
   const geographyIds = params.geography_id;
@@ -177,8 +173,8 @@ export function investigateObservationRequestRejection(
     hasYear &&
     params.year !== null &&
     params.year !== undefined &&
-    params.year >= observationsV1ObservationsGetQueryYearMin &&
-    params.year <= observationsV1ObservationsGetQueryYearMax;
+    params.year >= listObservationsQueryYearMin &&
+    params.year <= listObservationsQueryYearMax;
   const hasRange = hasCompleteDateRange(params);
   const partialRange = Boolean(params.start_date) !== Boolean(params.end_date);
   const stratification = params.stratification ?? null;
@@ -195,7 +191,7 @@ export function investigateObservationRequestRejection(
     measureId.length === 0 ||
     params.geography_type !== "county" ||
     geographyIds.length === 0 ||
-    geographyIds.length > observationsV1ObservationsGetQueryGeographyIdMax ||
+    geographyIds.length > listObservationsQueryGeographyIdMax ||
     geographyIds.some((fips) => !isCountyFips(fips)) ||
     duplicateGeographyId ||
     partialRange ||
@@ -221,12 +217,12 @@ export function buildInvestigateObservationParams(input: {
   measureId: string;
   pageToken?: string | null;
   timeBound: ExploreTimeBound;
-}): ObservationsV1ObservationsGetParams {
-  const params: ObservationsV1ObservationsGetParams = {
+}): ListObservationsParams {
+  const params: ListObservationsParams = {
     geography_id: [input.fips],
     geography_type: "county",
     measure_id: input.measureId,
-    page_size: observationsV1ObservationsGetQueryPageSizeMax,
+    page_size: listObservationsQueryPageSizeMax,
   };
   switch (input.timeBound.kind) {
     case "year": {
@@ -347,13 +343,13 @@ export async function fetchInvestigateIndicators(
   const seenTokens = new Set<string>();
   let pageToken: string | null = null;
   for (let page = 0; page < MAX_COLLECTION_PAGES; page += 1) {
-    const response = await indicatorsV1IndicatorsGet(
+    const response = await listIndicators(
       pageToken
         ? {
-            page_size: indicatorsV1IndicatorsGetQueryPageSizeMax,
+            page_size: listIndicatorsQueryPageSizeMax,
             page_token: pageToken,
           }
-        : { page_size: indicatorsV1IndicatorsGetQueryPageSizeMax },
+        : { page_size: listIndicatorsQueryPageSizeMax },
       { signal }
     );
     if (response.status !== 200) {
@@ -366,7 +362,7 @@ export async function fetchInvestigateIndicators(
     }
     const parsed = validateApiResponse(
       "Indicators",
-      IndicatorsV1IndicatorsGetResponse,
+      ListIndicatorsResponse,
       response.data
     );
     indicators.push(...parsed.data);
@@ -458,7 +454,7 @@ async function fetchMeasureObservations(input: {
     );
     const parsed = validateApiResponse(
       "Observations",
-      ObservationsV1ObservationsGetResponse,
+      ListObservationsResponse,
       response.data
     );
     selection.note({
@@ -501,13 +497,13 @@ async function fetchMeasureObservations(input: {
 }
 
 async function readObservationPage(
-  params: ObservationsV1ObservationsGetParams,
+  params: ListObservationsParams,
   scope: ObservationCooldownScope,
   signal: AbortSignal
 ) {
   for (let attempt = 1; attempt <= TRANSIENT_ATTEMPT_LIMIT; attempt += 1) {
     try {
-      const response = await observationsV1ObservationsGet(params, { signal });
+      const response = await listObservations(params, { signal });
       if (response.status === 200) {
         forgetObservationCooldown(scope);
         return response;
@@ -726,9 +722,9 @@ export async function loadInvestigateCountyRecord(input: {
   releaseId: string;
   signal: AbortSignal;
 }): Promise<CountyDetail | null> {
-  let response: Awaited<ReturnType<typeof countyV1CountiesFipsGet>>;
+  let response: Awaited<ReturnType<typeof getCounty>>;
   try {
-    response = await countyV1CountiesFipsGet(
+    response = await getCounty(
       input.fips,
       { dataset_version: input.releaseId },
       { signal: input.signal }
@@ -754,7 +750,7 @@ export async function loadInvestigateCountyRecord(input: {
   }
   const detail = validateApiResponse(
     "County detail",
-    CountyV1CountiesFipsGetResponse,
+    GetCountyResponse,
     response.data
   );
   if (detail.fips !== input.fips) {

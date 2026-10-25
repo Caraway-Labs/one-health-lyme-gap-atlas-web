@@ -3,12 +3,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { resetRouteById } from "@/features/ux-reset/paths";
-import type { FeedEntry } from "@/generated/models/feedEntry";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
 import {
   analyticsControlAttributes,
   trackFeedFilterApplied,
@@ -58,7 +58,10 @@ const EMPTY_BODY =
 const FILTERED_EMPTY_TITLE = "No items match these filters";
 const FILTERED_EMPTY_BODY = "Try another source or a wider date range.";
 const DATE_WINDOW_EMPTY_TITLE = "No items in this date window";
-const DATE_WINDOW_EMPTY_BODY = `${FEED_PUBLISHED_LABELS[DEFAULT_FEED_PUBLISHED]} has no matching items. All dates includes older items and items without a publication date.`;
+
+function dateWindowEmptyBody(published: FeedPublishedPreset): string {
+  return `${FEED_PUBLISHED_LABELS[published]} has no matching items. All dates includes older items and items without a publication date.`;
+}
 const TOO_BROAD_TITLE = "Too many items to show at once";
 const TOO_BROAD_BODY = "Choose a source or a shorter date range.";
 
@@ -114,7 +117,6 @@ export function IntelligenceFeedExperience() {
   const route = resetRouteById("feed");
   const queryClient = useQueryClient();
   const filterBarRef = useRef<HTMLDivElement>(null);
-  const [pinnedRevisionId, setPinnedRevisionId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [urlState, setUrlState] = useQueryStates(feedSearchParams, {
     history: "push",
@@ -174,16 +176,12 @@ export function IntelligenceFeedExperience() {
       : null;
   const sharedCaveats = sharedFeedCaveats(items);
   const itemId = urlState.item;
-  const loadedMatches =
-    itemId === null ? [] : items.filter((entry) => entry.item_id === itemId);
-  const pageEntry =
-    loadedMatches.find((entry) => entry.revision_id === pinnedRevisionId) ??
-    loadedMatches[0] ??
-    null;
-  const itemLookup = useIntelligenceFeedEntry(itemId, pageEntry === null);
+  const itemLookup = useIntelligenceFeedEntry(itemId, itemId !== null);
 
-  const openDetail = (entry: FeedEntry, surface: FeedDetailEntrySurface) => {
-    setPinnedRevisionId(entry.revision_id);
+  const openDetail = (
+    entry: FeedListEntry,
+    surface: FeedDetailEntrySurface
+  ) => {
     trackFeedItemDetailOpened(surface, entry.source_family);
     void setUrlState(
       { item: entry.item_id },
@@ -199,9 +197,7 @@ export function IntelligenceFeedExperience() {
   };
 
   let detailView: FeedDetailView = { status: "loading" };
-  if (pageEntry) {
-    detailView = { entry: pageEntry, status: "ready" };
-  } else if (itemLookup.isError && !itemLookup.isFetching) {
+  if (itemLookup.isError && !itemLookup.isFetching) {
     detailView = {
       status: feedItemLookupFailure(itemLookup.error),
     };
@@ -327,14 +323,15 @@ export function IntelligenceFeedExperience() {
       </>
     );
   } else if (items.length === 0) {
-    const defaultWindowOnly = activeFeedFilterCount(filters) === 0;
+    const dateWindowOnly =
+      filters.sourceId === null && filters.published !== "all";
     state = "filtered-empty";
     body = (
       <>
         <FeedLimitations limitations={limitations} />
         <AtlasStatusMessage
           action={
-            defaultWindowOnly ? (
+            dateWindowOnly ? (
               <Button
                 {...analyticsControlAttributes("feed_clear_filters")}
                 className="ux-reset-feed-clear"
@@ -359,12 +356,14 @@ export function IntelligenceFeedExperience() {
             )
           }
           title={
-            defaultWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
+            dateWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
           }
           titleAs="h2"
           tone="empty"
         >
-          {defaultWindowOnly ? DATE_WINDOW_EMPTY_BODY : FILTERED_EMPTY_BODY}
+          {dateWindowOnly
+            ? dateWindowEmptyBody(filters.published)
+            : FILTERED_EMPTY_BODY}
         </AtlasStatusMessage>
       </>
     );

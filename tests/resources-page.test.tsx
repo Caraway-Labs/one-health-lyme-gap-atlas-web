@@ -160,6 +160,16 @@ describe("Resources page", () => {
     ).toBeNull();
   });
 
+  it("uses the shared topic card heading class on CDC resource cards", () => {
+    render(<ResourcesPage />);
+
+    for (const topic of CDC_RESOURCE_TOPICS) {
+      expect(
+        screen.getByRole("heading", { level: 3, name: topic.title })
+      ).toHaveClass("resources-topic-card-heading");
+    }
+  });
+
   it("places the official CDC logo beside the guidance heading", () => {
     render(<ResourcesPage />);
     const heading = screen.getByRole("heading", {

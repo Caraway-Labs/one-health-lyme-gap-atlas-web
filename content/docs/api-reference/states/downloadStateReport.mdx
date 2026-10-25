@@ -1,0 +1,107 @@
+---
+title: Download a state report
+description: PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+      - content: GET /v1/states/{state}/report.pdf
+      - content: downloadStateReport
+      - content: Download a state report
+      - content: PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+      - content: state path required Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
+      - content: Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
+      - content: State
+      - content: '"CO"'
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: template query optional State report template. The only accepted value is `state-v1`, which is also the default. Any other value returns 422.
+      - content: State report template. The only accepted value is `state-v1`, which is also the default. Any other value returns 422.
+      - content: Template
+      - content: '"state-v1"'
+      - content: ecological_share query optional Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Ecological Share
+      - content: '65'
+      - content: 'smooth_k query optional Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: 'Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: Smooth K
+      - content: '50'
+      - content: missing_human_weakness query optional Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Missing Human Weakness
+      - content: '75'
+      - content: low_incidence_breakpoint query optional Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: low_incidence_breakpoint deprecated
+      - content: Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: Low Incidence Breakpoint
+      - content: 200 PDF attachment.
+      - content: 'Content-Type Media type of the body: `application/pdf`.'
+      - content: '"application/pdf"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=300, must-revalidate`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=300, must-revalidate"'
+      - content: ETag Opaque validator for this representation. Send it as `If-None-Match` to get an empty 304 when nothing changed. Send the value back exactly as you received it.
+      - content: Content-Disposition Marks the body as a download and suggests the file name.
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/pdf
+      - content: PDF report (first bytes only)
+      - content: 'Response headers: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="lyme-gap-atlas-co-governed-2026-10-15-january-climate-prod.pdf"`, a weak `ETag`, and `Cache-Control: public, max-age=300, must-revalidate`. The body is a binary PDF; only its first bytes are shown.'
+      - content: '"%PDF-1.7"'
+      - content: 304 Not modified. Your `If-None-Match` value matches the current `ETag`. The response has no body.
+      - content: ETag The matching validator.
+      - content: Cache-Control The same cache rule as the `200` response.
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"State or dataset release not found","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 413 The report is larger than the API can render. Request a shorter period or fewer measures, then retry.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Error response
+      - content: Shows the body the API returns for this status.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"The report exceeds configured resource limits.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The report renderer is busy or timed out. Wait the number of seconds in `Retry-After`, then retry. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Error response
+      - content: Shows the body the API returns for this status.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"Report rendering timed out. Please try again later.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/report.pdf","method":"get"}]} />
+    </>
+  );
+}

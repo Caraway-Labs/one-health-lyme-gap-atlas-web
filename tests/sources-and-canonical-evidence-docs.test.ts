@@ -176,7 +176,7 @@ describe("sources and canonical evidence documentation", () => {
 
     expect(missingLinks).toStrictEqual([]);
     expect(readDoc("develop/provenance.mdx")).toContain(
-      "Source identity survives normalization"
+      "Keep source identity after normalization"
     );
     expect(readDoc("evidence-and-uncertainty.mdx")).toContain(
       "Missing, suppressed, unavailable, and uncertain inputs stay visible"
