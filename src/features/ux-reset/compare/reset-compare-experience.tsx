@@ -10,12 +10,12 @@ import { usePublishAskAtlasInheritedContext } from "@/features/ux-reset/ask-atla
 import { inheritedContextFromCompare } from "@/features/ux-reset/ask-atlas/inherited-context";
 import { resetAskAtlasWorkspaceHref } from "@/features/ux-reset/ask-atlas/workspace-href";
 import { CompareAlignedSheet } from "@/features/ux-reset/compare/compare-aligned-sheet";
-
-import "@/features/ux-reset/compare/compare-aligned.css";
 import {
   CompareCountyPicker,
   type ReviewCategoryBadge,
 } from "@/features/ux-reset/compare/compare-county-picker";
+
+import "@/features/ux-reset/compare/compare-aligned.css";
 import {
   compareReviewCategoryTone,
   publishedReviewPriority,
@@ -66,6 +66,7 @@ import { PageIntroduction } from "@/features/ux-reset/page-introduction";
 import { PAGE_INTRODUCTION_COPY } from "@/features/ux-reset/page-introduction-copy";
 import { RESET_COMPARE_PATH } from "@/features/ux-reset/routes";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 function profileSourceEntries(
   profile: CompareProfileAlignment
@@ -467,6 +468,7 @@ function CompareExperienceInner() {
             <p className="compare-select-title">Select counties</p>
             <div className="compare-select-tools">
               <Button
+                {...analyticsControlAttributes("compare_swap")}
                 aria-label="Swap first and second county"
                 data-testid="compare-swap"
                 disabled={pair.length !== 2}
@@ -479,6 +481,7 @@ function CompareExperienceInner() {
               </Button>
               {hasSelection ? (
                 <Button
+                  {...analyticsControlAttributes("compare_clear_pair")}
                   aria-label="Clear both counties"
                   size="sm"
                   type="button"

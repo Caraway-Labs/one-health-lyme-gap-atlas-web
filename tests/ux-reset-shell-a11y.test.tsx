@@ -119,6 +119,35 @@ describe("UX Reset shell accessibility", () => {
     });
   });
 
+  it("tags professional workspace navigation with stable control ids", () => {
+    render(
+      <ResetProfessionalShell>
+        <p>Workspace page</p>
+      </ResetProfessionalShell>
+    );
+
+    const navigation = screen.getByRole("navigation", {
+      name: "Professional workspace",
+    });
+    const controlId = (selector: string, root: ParentNode = navigation) =>
+      root.querySelector<HTMLElement>(selector)?.dataset.atlasAnalyticsControl;
+    expect({
+      askAtlas: controlId('a[aria-label="Ask Atlas"]'),
+      brand: controlId(".ux-reset-pro-brand", document),
+      compare: controlId('a[aria-label="Compare"]'),
+      explorer: controlId('a[aria-label="Atlas Explorer"]'),
+      feed: controlId('a[aria-label="Research & News"]'),
+      settings: controlId('a[aria-label="Settings"]'),
+    }).toStrictEqual({
+      askAtlas: "nav_ask_atlas",
+      brand: "nav_brand",
+      compare: "nav_compare",
+      explorer: "nav_atlas_explorer",
+      feed: "nav_feed",
+      settings: "nav_settings",
+    });
+  });
+
   it("keeps accessible names on collapsed sidebar links", () => {
     render(
       <ResetProfessionalShell>

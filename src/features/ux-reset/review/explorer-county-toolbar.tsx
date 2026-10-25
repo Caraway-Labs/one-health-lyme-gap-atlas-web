@@ -241,6 +241,7 @@ export function ExplorerCountyToolbar({
           />
           {displayValue.length > 0 ? (
             <Button
+              {...analyticsControlAttributes("explorer_county_clear")}
               aria-label="Clear county"
               className="absolute top-1/2 right-0.5 -translate-y-1/2"
               data-testid="explorer-county-clear"
@@ -266,6 +267,7 @@ export function ExplorerCountyToolbar({
                   const selected = county.fips === activeOption?.fips;
                   return (
                     <button
+                      {...analyticsControlAttributes("explorer_county_select")}
                       aria-selected={selected}
                       className="ux-reset-county-combobox-option"
                       data-active={selected ? "true" : "false"}

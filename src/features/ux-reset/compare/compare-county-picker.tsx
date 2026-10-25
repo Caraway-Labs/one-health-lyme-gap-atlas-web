@@ -32,6 +32,7 @@ import {
   filterCompareCountyOptions,
 } from "@/features/ux-reset/compare/compare-county-search";
 import type { CompareCountyOption } from "@/features/ux-reset/compare/use-compare-workspace";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { cn } from "@/lib/utils";
 
 export type ReviewCategoryBadge =
@@ -190,9 +191,18 @@ export function CompareCountyPicker({
             <SelectValue>{stateName}</SelectValue>
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false} className="max-h-72">
-            <SelectItem value={COMPARE_ALL_STATES}>All states</SelectItem>
+            <SelectItem
+              {...analyticsControlAttributes("compare_state_filter")}
+              value={COMPARE_ALL_STATES}
+            >
+              All states
+            </SelectItem>
             {states.map((state) => (
-              <SelectItem key={state.code} value={state.code}>
+              <SelectItem
+                {...analyticsControlAttributes("compare_state_filter")}
+                key={state.code}
+                value={state.code}
+              >
                 {state.name}
               </SelectItem>
             ))}
@@ -240,6 +250,7 @@ export function CompareCountyPicker({
             <ComboboxList>
               {(option: CompareCountyOption) => (
                 <ComboboxItem
+                  {...analyticsControlAttributes("compare_county_select")}
                   disabled={option.disabled}
                   key={option.fips}
                   value={option}
@@ -275,6 +286,7 @@ export function CompareCountyPicker({
           {onClear ? (
             <div className="ux-reset-compare-slot-actions">
               <Button
+                {...analyticsControlAttributes("compare_county_clear")}
                 aria-label={clearLabel}
                 size="icon-xs"
                 type="button"

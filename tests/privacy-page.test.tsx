@@ -97,25 +97,39 @@ describe("public privacy page", () => {
 
   it("states the 30-day conversation retention and the analytics boundaries", () => {
     render(<PrivacyPage />);
+    const text = document.querySelector("main")?.textContent ?? "";
 
-    expect(
-      screen.getByText(
-        /The Atlas service stores questions and answers for 30 days after a conversation's most recent message/
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        /Analytics run on public Atlas pages, Account, and sign-in. They never run in the signed-in professional workspace/
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        /If your browser sends a Do Not Track signal, Atlas keeps optional analytics off/
-      )
-    ).toBeTruthy();
-    expect(
-      screen.getAllByText(/from Account or professional Settings/).length
-    ).toBeGreaterThan(0);
+    expect({
+      accountSettings:
+        screen.getAllByText(/from Account or professional Settings/).length > 0,
+      coverage:
+        /Optional analytics are on by default on public Atlas pages, Account, sign-in, and the signed-in professional workspace/.test(
+          text
+        ),
+      doNotTrack:
+        /If your browser sends a Do Not Track signal, Atlas keeps optional analytics off/.test(
+          text
+        ),
+      optOut:
+        /at the bottom of any public page, or from the signed-in workspace footer, to turn them off or allow them again/.test(
+          text
+        ),
+      retention:
+        /The Atlas service stores questions and answers for 30 days after a conversation's most recent message/.test(
+          text
+        ),
+      retiredOptIn: /only if you turn analytics on/i.test(text),
+      retiredWorkspace:
+        /never run in the signed-in professional workspace/i.test(text),
+    }).toStrictEqual({
+      accountSettings: true,
+      coverage: true,
+      doNotTrack: true,
+      optOut: true,
+      retention: true,
+      retiredOptIn: false,
+      retiredWorkspace: false,
+    });
   });
 
   it("keeps analytics off the professional workspace route set", () => {
@@ -156,14 +170,14 @@ describe("public privacy page", () => {
       "Feedback",
       "Feedback",
       "Feedback",
-      "Version 1.0.1",
+      "Version 1.1.0",
     ]);
     expect(
       document
         .querySelector("[aria-label='Privacy policy version']")
         ?.textContent?.replaceAll(/\s+/g, " ")
         .trim()
-    ).toBe("Version 1.0.1 · Last updated October 22, 2026");
+    ).toBe("Version 1.1.0 · Last updated October 25, 2026");
   });
 
   it("does not publish the retired privacy summary", () => {

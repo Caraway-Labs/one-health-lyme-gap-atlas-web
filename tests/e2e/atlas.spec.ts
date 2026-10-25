@@ -501,7 +501,7 @@ test("publishes an accessible, clear privacy summary", async ({
   ).toBeVisible();
   await expect(
     page.getByText(
-      /Only if you turn analytics on, Atlas sends basic usage events/
+      /Optional analytics are on by default on public Atlas pages, Account, sign-in, and the signed-in professional workspace/
     )
   ).toBeVisible();
   await expect(

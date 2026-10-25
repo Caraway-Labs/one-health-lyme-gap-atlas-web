@@ -13,6 +13,7 @@ import {
 } from "@/features/ux-reset/profile/default-jurisdiction-contract";
 import { useSavedProfile } from "@/features/ux-reset/profile/use-saved-profile";
 import { useSettingsStateOptions } from "@/features/ux-reset/settings/use-settings-state-options";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { reviewScopeLabel } from "@/lib/atlas-state-geography";
 
 function confirmedCopy(
@@ -110,6 +111,7 @@ export function DefaultJurisdictionReadout() {
         </p>
         {profileQuery.isError ? (
           <Button
+            {...analyticsControlAttributes("settings_profile_retry")}
             type="button"
             variant="outline"
             onClick={() => {

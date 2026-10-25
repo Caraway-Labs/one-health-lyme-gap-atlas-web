@@ -4,6 +4,7 @@ import { FileDown } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import {
   atlasBriefFilename,
   downloadPdfReport,
@@ -153,6 +154,7 @@ export function CompareDownloadPdfsButton({
   return (
     <>
       <Button
+        {...analyticsControlAttributes("compare_pdf_export")}
         aria-busy={busy}
         data-state={ready ? phase : "disabled"}
         data-testid="compare-download-pdfs"

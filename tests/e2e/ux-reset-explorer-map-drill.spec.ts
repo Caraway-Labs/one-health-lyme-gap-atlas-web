@@ -251,6 +251,79 @@ async function projectedCountyPoint(
   return point;
 }
 
+/**
+ * The loading overlay stays hidden for 450ms, then covers the canvas until
+ * counties are drawn. A zero count before that delay is not a clickable map.
+ */
+async function renderedCountyPoint(
+  page: Page,
+  longitude: number,
+  latitude: number
+) {
+  const hit: { point: { x: number; y: number } | null } = { point: null };
+  await expect
+    .poll(
+      async () => {
+        if ((await page.getByTestId("explorer-map-loading").count()) > 0) {
+          hit.point = null;
+          return false;
+        }
+        const projected = await page.evaluate(
+          ({ latitude: lat, longitude: lng }) => {
+            const element = document.querySelector(".maplibre-atlas");
+            if (!(element instanceof HTMLElement)) {
+              return null;
+            }
+            const map = Reflect.get(element, "atlasCountyMap") as
+              | {
+                  project: (coordinates: [number, number]) => {
+                    x: number;
+                    y: number;
+                  };
+                  queryRenderedFeatures: (
+                    point: [number, number],
+                    options: { layers: string[] }
+                  ) => Array<{ properties?: { fips?: unknown } }>;
+                }
+              | undefined;
+            if (!map) {
+              return null;
+            }
+            const local = map.project([lng, lat]);
+            if (!Number.isFinite(local.x) || !Number.isFinite(local.y)) {
+              return null;
+            }
+            const features = map.queryRenderedFeatures([local.x, local.y], {
+              layers: ["counties-fill"],
+            });
+            const fips = features[0]?.properties?.fips;
+            if (typeof fips !== "string") {
+              return null;
+            }
+            const rect = element.getBoundingClientRect();
+            return { x: rect.left + local.x, y: rect.top + local.y };
+          },
+          { latitude, longitude }
+        );
+        if (
+          !projected ||
+          (await page.getByTestId("explorer-map-loading").count()) > 0
+        ) {
+          hit.point = null;
+          return false;
+        }
+        hit.point = projected;
+        return true;
+      },
+      { timeout: 15_000 }
+    )
+    .toBe(true);
+  if (!hit.point) {
+    throw new Error("expected the county to be drawn on the map");
+  }
+  return hit.point;
+}
+
 async function settledCamera(
   page: Page,
   stage: CameraReading["stage"],
@@ -293,6 +366,9 @@ async function clickCounty(page: Page, longitude: number, latitude: number) {
     });
     point = await projectedCountyPoint(page, longitude, latitude);
   }
+  // Zoom can settle while the loading overlay still covers the canvas.
+  await expect(page.getByTestId("explorer-map-loading")).toHaveCount(0);
+  point = await projectedCountyPoint(page, longitude, latitude);
   await page.mouse.click(point.x, point.y);
 }
 
@@ -783,7 +859,7 @@ test.describe("Explorer two-stage map drill", () => {
     await expect(page.getByTestId("explorer-fit-national")).toBeVisible();
     const map = page.locator(".maplibre-atlas");
     await expect(map).toHaveAttribute("data-double-click-zoom", "false");
-    const point = await projectedCountyPoint(page, -115.7, 43.3);
+    const point = await renderedCountyPoint(page, -115.7, 43.3);
     await page.mouse.dblclick(point.x, point.y);
     await expect(page).toHaveURL(/focus=ID/);
     await expect(page).not.toHaveURL(/county=/);

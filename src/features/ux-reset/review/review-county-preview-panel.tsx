@@ -16,6 +16,7 @@ import { ViewFullCountyEvidence } from "@/features/ux-reset/review/view-full-cou
 import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { CountySummarySurveillance } from "@/features/ux-reset/surveillance-intelligence/county-summary-surveillance";
 import type { Tier1ActiveRelease } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { cn } from "@/lib/utils";
 
 type ReviewCountyPreviewPanelProps = {
@@ -146,6 +147,7 @@ export function ReviewCountyPreviewPanel({
           stateCode={preview.stateCode}
         />
         <Link
+          {...analyticsControlAttributes("explorer_view_county_evidence")}
           className={cn(
             buttonVariants({ variant: "secondary" }),
             "ux-reset-review-open"
@@ -161,6 +163,7 @@ export function ReviewCountyPreviewPanel({
           County evidence
         </Link>
         <Link
+          {...analyticsControlAttributes("explorer_compare")}
           ref={openRef}
           className={cn(
             buttonVariants({ variant: "secondary" }),
@@ -177,6 +180,7 @@ export function ReviewCountyPreviewPanel({
           Compare this county
         </Link>
         <Link
+          {...analyticsControlAttributes("explorer_ask_atlas")}
           className={cn(
             buttonVariants({ variant: "secondary" }),
             "ux-reset-review-open"

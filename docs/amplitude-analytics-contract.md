@@ -85,7 +85,7 @@ Every event includes the following common context. A property omitted from this 
 | `schema_version` | operational | Literal `atlas-analytics/v1` |
 | `release_version` | operational | Build release identifier; no branch, commit author, or host name |
 | `methodology_version` | public Atlas provenance | Published methodology version |
-| `route_id` | public product context | Closed enum of supported route IDs, not a URL |
+| `route_id` | public product context | Closed enum in the route table below, not a URL |
 | `geography_level` | public Atlas context | `national`, `state`, or `county` |
 | `state_fips` | public Atlas context | Valid two-digit state FIPS only; absent when not selected |
 | `county_fips` | public Atlas context | Valid five-digit county FIPS only; absent when not selected |
@@ -96,6 +96,75 @@ Every event includes the following common context. A property omitted from this 
 `control_id`, `action`, `filter_dimension`, `filter_value`, `score_control`, `score_value`, `feedback_topic`, `account_flow`, `content_surface`, `selection_surface`, `summary_kind`, `export_scope`, `clear_scope`, `change_source`, and `page_bucket` are each closed, versioned enums in the typed analytics boundary. A value that is not in that allowlist causes the event to be dropped. Every JSX control attribute is created through its typed helper, so an unapproved literal cannot compile. `atlas_ui_interaction` is the complete control catalogue: every meaningful button, link, menu, selector, map/list action, and committed scenario adjustment must have a stable `control_id` before it ships. It never records labels, raw DOM selectors, hover, scroll, pointer movement, keystrokes, or text input. `active_filter_count` is an integer from 0 through 10; `page_bucket` is `1`, `2-5`, `6-10`, or `11+`.
 
 Intelligence Feed filters use the existing `atlas_filter_applied` and `atlas_filter_cleared` events with `route_id` `intelligence_feed` (`/app/feed`). They do not add event names. `filter_dimension` adds `feed_source` and `feed_published`. `filter_value` for `feed_source` is `all` or `source_selected` (never a source id or organization name). `filter_value` for `feed_published` is `7d`, `30d`, `90d`, or `all`. `clear_scope` is `single` (one chip removed) or `all` (Clear filters). Both events include `active_filter_count` after the change. Home state and evidence filters keep their existing `filter_dimension` and `filter_value` values. The source-catalog retry button emits `atlas_ui_interaction` with `control_id` `feed_sources_retry` and `action` `activated`. It does not send a source id or organization name.
+
+### Route identifiers
+
+`routeIdForPathname` is the only classifier. A query string, fragment, or trailing slash does not change the id and is never sent. A value outside this table is dropped locally and is not sent to Amplitude.
+
+| `route_id` | Path | Notes |
+| --- | --- | --- |
+| `front_porch` | `/` | Public Front Porch |
+| `atlas_home` | `/overview`, and any unmatched analytical path | Legacy Overview. Canonical UX Reset paths are not this id |
+| `privacy` | `/privacy` |  |
+| `knowledge_graph` | `/knowledge-graph` |  |
+| `atlas_variant` | `/variant_*` | Retired URLs. Kept distinct from `atlas_home` |
+| `account` | `/account` |  |
+| `assistant` | `/assistant` and nested paths | Public literature workspace. Not Ask Atlas |
+| `geographic_explorer` | `/geographic_explorer` |  |
+| `ai_ethics` | `/ai-ethics` |  |
+| `atlas_explorer` | `/explore` and nested paths | Canonical Atlas Explorer |
+| `compare` | `/compare` and nested paths | Canonical Compare |
+| `ask_atlas` | `/askatlas` and nested paths | Canonical Ask Atlas |
+| `intelligence_feed` | `/app/feed` and nested paths | Canonical Feed |
+| `settings` | `/app/settings` and nested paths | Canonical Settings. Consent, privacy-settings, and data-rights controls on this page are not analytics events |
+| `resources` | `/resources` and nested paths |  |
+| `data_provenance` | `/data-provenance` and nested paths |  |
+| `documentation` | `/docs` and nested paths | Classifies the path only. ADR 0020 still keeps the documentation site free of the analytics client |
+
+Redirect aliases such as `/app/review`, `/app/compare`, `/app/assistant`, `/investigate`, and `/app` stay on `atlas_home` until the browser is on the canonical path above.
+
+### Professional workspace controls
+
+These `control_id` values extend the existing catalogue for Explorer, Compare, Ask Atlas, Settings, Feed, and the professional shell. `action` remains `activated`. Ask Atlas conversation controls keep the existing `evidence_chat_*` ids; `route_id` `ask_atlas` distinguishes that workspace from the public assistant. County PDF export reuses `pdf_export`. An unknown `control_id` still drops the event locally.
+
+| `control_id` | Control |
+| --- | --- |
+| `nav_brand` | Professional shell wordmark |
+| `nav_atlas_explorer` | Sidebar Atlas Explorer |
+| `nav_compare` | Sidebar Compare |
+| `nav_ask_atlas` | Sidebar Ask Atlas |
+| `nav_feed` | Sidebar Research & News |
+| `nav_resources` | Sidebar Resources |
+| `nav_settings` | Sidebar Settings |
+| `nav_data_provenance` | Sidebar Data Provenance |
+| `nav_docs` | Sidebar Docs |
+| `workspace_sign_in` | Shell sign-in |
+| `workspace_sign_out` | Shell or Settings sign-out. Not a data-rights event |
+| `explorer_county_select` | Explorer county option |
+| `explorer_county_clear` | Explorer clear county |
+| `explorer_map_layer` | Explorer map layer choice |
+| `explorer_us_view` | Explorer US view |
+| `explorer_fit_map` | Explorer fit map |
+| `explorer_view_county_evidence` | Open county evidence |
+| `explorer_view_follow_up` | View county follow-up |
+| `explorer_compare` | Open Compare for the selected county |
+| `explorer_ask_atlas` | Open Ask Atlas from Explorer |
+| `explorer_back_to_map` | Back to map |
+| `explorer_retry_evidence` | Retry county evidence |
+| `explorer_retry_directory` | Retry county list |
+| `compare_state_filter` | Compare state filter choice |
+| `compare_county_select` | Compare county choice |
+| `compare_county_clear` | Clear one compare county |
+| `compare_swap` | Swap the compare pair |
+| `compare_clear_pair` | Clear both compare counties |
+| `compare_edit_counties` | Change counties from the pinned pair |
+| `compare_pdf_export` | Download the compare county PDFs |
+| `settings_save_starting_view` | Save starting view |
+| `settings_profile_retry` | Retry the saved starting-view read |
+| `feed_item_open` | Open a feed item at its publisher. The event does not include the URL, title, or publisher |
+| `feed_retry` | Retry the feed request |
+| `feed_clear_filters` | Clear feed filters or show all dates |
+| `feed_remove_filter` | Remove one feed filter chip |
 
 The following are prohibited in event names, properties, user properties, groups, IDs, URLs, logs, and Amplitude Data: free text; raw search terms; feedback or chat content; email, name, phone, address, account ID, authentication/session token, IP address, cookie value, device ID, user agent, referrer, marketing parameter, exact timestamp supplied by the app, health information, diagnosis, treatment, accessibility preference, or arbitrary error message.
 
