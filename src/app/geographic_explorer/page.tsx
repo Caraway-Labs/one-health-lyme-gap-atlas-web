@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import "maplibre-gl/dist/maplibre-gl.css";
 import { GeographicExplorer } from "@/features/geographic-explorer/explorer";
 import { pageMetadataForRoute } from "@/lib/navigation";
 

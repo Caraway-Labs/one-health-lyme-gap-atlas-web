@@ -339,6 +339,18 @@ export function frontPorchExploreHref(signedIn: boolean): string {
   return signInHrefForReturnPath(ATLAS_EXPLORER_PATH);
 }
 
+/**
+ * Next.js prefetches a link's route CSS with `rel="preload"`. Stylesheets that
+ * belong only to the destination stay unused on `/`, and Chrome warns.
+ * Documentation shares the root stylesheet, so those links can still prefetch.
+ */
+export function frontPorchLinkPrefetch(href: string): false | undefined {
+  if (href === "/" || href.startsWith("/docs")) {
+    return undefined;
+  }
+  return false;
+}
+
 const FRONT_PORCH_UNRELATED_COUNTY_PATTERN = /buncombe|37021|alaska|hawaii/i;
 
 export function frontPorchExploreHrefSelectsCounty(href: string): boolean {

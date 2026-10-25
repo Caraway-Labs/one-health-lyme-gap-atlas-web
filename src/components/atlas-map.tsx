@@ -7,6 +7,8 @@ import type {
   Map as MapLibreMap,
 } from "maplibre-gl";
 import { Map as MapLibre, NavigationControl, setWorkerUrl } from "maplibre-gl";
+
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
   useEffect,
   useImperativeHandle,
