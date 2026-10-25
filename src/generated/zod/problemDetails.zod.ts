@@ -10,15 +10,15 @@ import * as zod from 'zod';
 export const problemDetailsCodeDefault = null;
 export const problemDetailsErrorsDefault = null;
 export const ProblemDetails = zod.object({
-  "type": zod.string(),
-  "title": zod.string(),
-  "status": zod.int(),
-  "detail": zod.string(),
-  "instance": zod.string(),
-  "request_id": zod.string(),
-  "code": zod.string().nullish().default(problemDetailsCodeDefault),
-  "errors": zod.array(zod.record(zod.string(), zod.unknown())).nullish().default(problemDetailsErrorsDefault)
-}).describe('RFC 9457 error. Stable codes are included when the response contract defines one.')
+  "type": zod.string().describe('URI that names the kind of problem, such as `...\/problems\/validation`. Branch on `code` when it is present.'),
+  "title": zod.string().describe('Short summary of the kind of problem. Read `detail` for this occurrence.'),
+  "status": zod.int().describe('HTTP status code of the response, repeated in the body.'),
+  "detail": zod.string().describe('Explanation of this occurrence of the problem, in English. Show it to a developer; do not match on its wording.'),
+  "instance": zod.string().describe('Path of the request that failed, for example `\/v1\/observations`.'),
+  "request_id": zod.string().describe('Identifies this request. Include it when you contact support. It matches the `X-Request-ID` response header.'),
+  "code": zod.string().nullish().default(problemDetailsCodeDefault).describe('Stable machine-readable error code: `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, `QUERY_TOO_BROAD`, `RESOURCE_NOT_FOUND`, `RATE_LIMITED`, or `SERVICE_UNAVAILABLE`. Branch on this field. It is absent on some errors, such as HTTP 422 validation errors.'),
+  "errors": zod.array(zod.record(zod.string(), zod.unknown())).nullish().default(problemDetailsErrorsDefault).describe('One entry for each invalid input when a request fails validation. Each entry has `loc` (where the value was sent), `msg`, and `type`. `null` or absent when the error is not about specific inputs.')
+}).describe('RFC 9457 error body (`application\/problem+json`). Some errors add a stable `code`.')
 
 export type ProblemDetails = zod.input<typeof ProblemDetails>;
 export type ProblemDetailsOutput = zod.output<typeof ProblemDetails>;

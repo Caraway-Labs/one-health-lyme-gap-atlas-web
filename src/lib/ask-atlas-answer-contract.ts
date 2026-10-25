@@ -1,6 +1,6 @@
 import type { KnowledgeChatResponse } from "@/generated/models";
 import type { KnowledgeCitation } from "@/generated/models/knowledgeCitation";
-import { KnowledgeGraphChatV1KnowledgeGraphChatPostResponse } from "@/generated/zod/atlas";
+import { AskKnowledgeGraphResponse } from "@/generated/zod/atlas";
 
 /**
  * Literature chat is the shipped Ask Atlas response.
@@ -446,8 +446,7 @@ export function acceptAskAtlasPayload(raw: unknown): AskAtlasPayloadResult {
   if (unsupported) {
     return { ok: false, reason: unsupported };
   }
-  const parsed =
-    KnowledgeGraphChatV1KnowledgeGraphChatPostResponse.safeParse(raw);
+  const parsed = AskKnowledgeGraphResponse.safeParse(raw);
   if (!parsed.success) {
     return { ok: false, reason: "not_chat_response" };
   }

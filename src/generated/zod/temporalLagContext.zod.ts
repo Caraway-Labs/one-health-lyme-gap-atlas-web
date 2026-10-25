@@ -8,12 +8,12 @@
 import * as zod from 'zod';
 
 export const TemporalLagContext = zod.object({
-  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
-  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
-  "offset_days": zod.int(),
-  "window_days": zod.int().nullish(),
-  "season_id": zod.string().nullish()
-})
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']).describe('Type of lag rule that applies.'),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']).describe('Edge of the target window that the lag is measured from.'),
+  "offset_days": zod.int().describe('Number of days between the anchor and the window.'),
+  "window_days": zod.int().nullish().describe('Length of a rolling window in days. `null` for other kinds.'),
+  "season_id": zod.string().nullish().describe('Identifies the season for a seasonal lag. `null` otherwise.')
+}).describe('How far an observation window sits before its target window.')
 
 export type TemporalLagContext = zod.input<typeof TemporalLagContext>;
 export type TemporalLagContextOutput = zod.output<typeof TemporalLagContext>;

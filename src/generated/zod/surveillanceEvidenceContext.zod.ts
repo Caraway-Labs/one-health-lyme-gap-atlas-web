@@ -11,18 +11,18 @@ import * as zod from 'zod';
 
 
 export const SurveillanceEvidenceContext = zod.object({
-  "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
-  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
-  "reason_codes": zod.array(zod.string()).min(1),
-  "evidence_tier": zod.literal("GOVERNED_MAPPING"),
-  "observation_key": zod.string(),
-  "revision_id": zod.string(),
-  "value_state": zod.string(),
-  "source_rule_id": zod.string(),
-  "limitations": zod.array(zod.string()).min(1),
-  "evidence_revision_id": zod.string()
-}).describe('Data-projector evidence, never an API classification.')
+  "contract_version": zod.literal("atlas-surveillance-evidence-v3").describe('Version of the contract that defines this object.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher\'s original value stays in the observation `value`.'),
+  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']).describe('Evidence state for the county. None of these values proves absence.'),
+  "reason_codes": zod.array(zod.string()).min(1).describe('Codes that explain why the state applies.'),
+  "evidence_tier": zod.literal("GOVERNED_MAPPING").describe('How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping.'),
+  "observation_key": zod.string().describe('Identifies the observation this state describes.'),
+  "revision_id": zod.string().describe('Identifies the revision of the evidence record.'),
+  "value_state": zod.string().describe('The `value_state` of the observation this state describes.'),
+  "source_rule_id": zod.string().describe('Identifies the rule that mapped the source value.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "evidence_revision_id": zod.string().describe('Identifies the revision of the evidence set.')
+}).describe('Evidence state for a county as supplied with the data. Atlas adds no classification.')
 
 export type SurveillanceEvidenceContext = zod.input<typeof SurveillanceEvidenceContext>;
 export type SurveillanceEvidenceContextOutput = zod.output<typeof SurveillanceEvidenceContext>;

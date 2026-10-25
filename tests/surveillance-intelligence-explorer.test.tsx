@@ -39,16 +39,13 @@ const { evidenceWorkspace, scoresGet, situationsGet, tier1Get } = vi.hoisted(
     evidenceWorkspace: {
       current: null as InvestigateWorkspace | null,
     },
-    scoresGet:
-      vi.fn<typeof import("@/generated/atlas").scoresV1AtlasScoresGet>(),
+    scoresGet: vi.fn<typeof import("@/generated/atlas").getAtlasScores>(),
     situationsGet:
       vi.fn<
-        typeof import("@/generated/atlas").countySurveillanceSituationsGet
+        typeof import("@/generated/atlas").getCountySurveillanceSituations
       >(),
     tier1Get:
-      vi.fn<
-        typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
-      >(),
+      vi.fn<typeof import("@/generated/atlas").getCountyTier1Priority>(),
   })
 );
 
@@ -68,13 +65,12 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    countySurveillanceSituationsGet: (
+    getCountySurveillanceSituations: (
       ...args: Parameters<typeof situationsGet>
     ) => situationsGet(...args),
-    countyTier1SurveillancePriorityGet: (
-      ...args: Parameters<typeof tier1Get>
-    ) => tier1Get(...args),
-    scoresV1AtlasScoresGet: (...args: Parameters<typeof scoresGet>) =>
+    getCountyTier1Priority: (...args: Parameters<typeof tier1Get>) =>
+      tier1Get(...args),
+    getAtlasScores: (...args: Parameters<typeof scoresGet>) =>
       scoresGet(...args),
   };
 });
@@ -183,7 +179,7 @@ function situationsResponse(
 ) {
   return ok(situationsBody(fips, four, tick, releaseId)) as Awaited<
     ReturnType<
-      typeof import("@/generated/atlas").countySurveillanceSituationsGet
+      typeof import("@/generated/atlas").getCountySurveillanceSituations
     >
   >;
 }

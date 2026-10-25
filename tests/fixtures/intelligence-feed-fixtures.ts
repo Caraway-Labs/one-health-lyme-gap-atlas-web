@@ -1,6 +1,7 @@
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
 import type { FeedEntry } from "@/generated/models/feedEntry";
 import type { FeedEntryPublicationDateState } from "@/generated/models/feedEntryPublicationDateState";
+import type { FeedEntrySourceFamily } from "@/generated/models/feedEntrySourceFamily";
 import type { FeedSource } from "@/generated/models/feedSource";
 import type { FeedSources } from "@/generated/models/feedSources";
 import type { MetadataFeed } from "@/generated/models/metadataFeed";
@@ -69,7 +70,24 @@ export function intelligenceFeedEntry(
     },
     title:
       item.title === undefined ? `${item.organization} update` : item.title,
+    source_family: sourceFamilyFor(item.sourceId),
+    source_family_label: item.publisher ?? item.organization,
+    description: { text: null, state: "not_provided" },
+    abstract: null,
+    tags: [],
+    authors: [],
+    pmid: null,
+    attribution: item.publisher ?? item.organization,
   };
+}
+
+function sourceFamilyFor(sourceId: string): FeedEntrySourceFamily {
+  if (sourceId.includes("pubmed")) return "pubmed";
+  if (sourceId.includes("cdc")) return "cdc_other";
+  if (sourceId.includes("nysdoh") || sourceId.includes("state")) {
+    return "state_local";
+  }
+  return "other";
 }
 
 export const mixedIntelligenceFeedItems: FeedEntry[] = [

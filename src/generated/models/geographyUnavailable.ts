@@ -8,20 +8,22 @@
 import type { GeographyIdentity } from './geographyIdentity';
 
 /**
- * Typed, successful answer that canonical geography identity is not published yet.
+ * HTTP 200 answer that canonical geography data is not published yet.
  *
- * Returned with HTTP 200 by the legacy identity route (ADR 0021). It carries no release
- * because answering must stay instant and independent of the governed directory.
+ * The API checks the shape of the requested identity only. It does not confirm that the place
+ * exists. Use the availability route for a county to confirm that.
  */
 export interface GeographyUnavailable {
+  /** Always `UNAVAILABLE`: the geography data is not published. */
   availability: 'UNAVAILABLE';
+  /** Why the data is unavailable. The geography data has not been published. */
   reason: 'CANONICAL_GEOGRAPHY_UNPUBLISHED';
   /**
-     * No canonical geography resource or geometry is fabricated.
+     * Always `null`. The API returns no geography data or geometry.
      * @nullable
      */
   data: null;
-  /** The validated identity that was requested, echoed back. */
+  /** The identity you requested, returned unchanged after a format check. */
   geography: GeographyIdentity;
   /**
      * Publication and representation boundaries, not scientific absence.

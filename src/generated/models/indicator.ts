@@ -7,25 +7,43 @@
  */
 import type { StandardsMapping } from './standardsMapping';
 
+/**
+ * A public-health concept that groups related measures.
+ */
 export interface Indicator {
+  /** Stable identifier of the indicator. Use it with `/v1/indicators/{indicator_id}`. */
   indicator_id: string;
+  /** Short display name of the indicator. */
   label: string;
-  /** @nullable */
+  /**
+     * Plain-language definition of the indicator. `null` when none is published.
+     * @nullable
+     */
   definition: string | null;
+  /** Identifiers of the measures that belong to this indicator, in sorted order. */
   measure_ids: string[];
-  /** Governed semantic contract version, separate from HTTP V1 and application version. */
+  /** Version of the data contract the value follows. It is separate from the API version and the application version. */
   semantic_version: string;
   /**
-     * Governed current-release relationship version.
+     * Identifies the published data release this record belongs to.
      * @nullable
      */
   release_version?: string | null;
-  /** @nullable */
+  /**
+     * Broad subject area the indicator belongs to, such as `climate`. `null` when none is published.
+     * @nullable
+     */
   domain?: string | null;
-  /** @nullable */
+  /**
+     * Finer grouping inside the domain. `null` when none is published.
+     * @nullable
+     */
   category?: string | null;
-  /** Governed interpretation limitations; preserve alongside values and versions. */
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations?: string[];
-  /** @nullable */
+  /**
+     * Optional reviewed links to external standards. `null` when none exist. A mapping does not mean Atlas exchanges data with that standard.
+     * @nullable
+     */
   standards_mappings?: StandardsMapping[] | null;
 }

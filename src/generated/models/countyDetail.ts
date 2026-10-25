@@ -8,39 +8,86 @@
 import type { AtlasMetadata } from './atlasMetadata';
 import type { Score } from './score';
 
+/**
+ * A county's score plus the release facts behind it.
+ */
 export interface CountyDetail {
+  /** Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. */
   scoring_methodology_version?: 'surveillance-gap-score-v1.1';
-  /** @nullable */
+  /**
+     * Published 2023 minimum reported incidence per 100,000 people. `null` is not zero.
+     * @nullable
+     */
   incidence_floor_2023: number | null;
-  /** @nullable */
+  /**
+     * Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.
+     * @nullable
+     */
   svi_percentile: number | null;
-  /** @nullable */
+  /**
+     * Percentile of the county's uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero.
+     * @nullable
+     */
   uninsured_percentile: number | null;
-  /** @nullable */
+  /**
+     * 2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.
+     * @nullable
+     */
   rucc_2023: number | null;
+  /** Five-digit county FIPS code, with leading zeros. */
   fips: string;
+  /** County name. */
   county: string;
+  /** Two-letter state or District of Columbia code. */
   state: string;
+  /** Full state name. */
   state_name: string;
+  /** Whether the county is inside the contiguous area the tick data covers. */
   in_contiguous_tick_scope: boolean;
+  /** State of the human-case data for the county. `published_count_floor` means a published case-count floor exists. `no_county_linked_record` means no record is linked to the county; it is neither null nor zero. */
   human_status: string;
+  /** Tick evidence status the publisher reports: `Established`, `Reported`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence. */
   tick_status: string;
+  /** Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence. */
   burgdorferi_status: string;
+  /** Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality. */
   evidence_completeness: number;
+  /** The score and the signals it combines. */
   score: Score;
+  /** Review-priority label for the score band. A lower label is not a safety finding. */
   priority: string;
+  /** Hex color for the score band, for use in a map or legend. */
   color: string;
-  /** @nullable */
+  /**
+     * County population. `null` when none is published.
+     * @nullable
+     */
   population: number | null;
-  /** @nullable */
+  /**
+     * Published 2023 minimum count of reported human cases. A floor is a minimum, not a complete count. `null` is not zero.
+     * @nullable
+     */
   case_count_floor_2023: number | null;
-  /** @nullable */
+  /**
+     * 2023 state-level records the publisher did not assign to a county. The count belongs to the state, not this county. `null` when none is published.
+     * @nullable
+     */
   state_unallocated_records_2023: number | null;
-  /** @nullable */
+  /**
+     * Publisher status for the tick Ixodes scapularis. `null` when none is published.
+     * @nullable
+     */
   scapularis_status: string | null;
-  /** @nullable */
+  /**
+     * Publisher status for the tick Ixodes pacificus. `null` when none is published.
+     * @nullable
+     */
   pacificus_status: string | null;
-  /** @nullable */
+  /**
+     * Share of the county population without health insurance, as a percent. `null` when none is published.
+     * @nullable
+     */
   uninsured_percent: number | null;
+  /** The data release this record came from. */
   release: AtlasMetadata;
 }

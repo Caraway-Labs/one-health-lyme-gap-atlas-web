@@ -6,11 +6,21 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Optional reviewed link from a public-health concept to an external standard.
+ */
 export interface StandardsMapping {
+  /** Name of the external standard, such as `LOINC`. */
   standard: string;
+  /** Version of the external standard that the mapping targets. */
   version: string;
+  /** Code or element in the external standard. */
   target: string;
+  /** How the Atlas concept relates to the target, such as `exact` or `broader`. */
   relationship: string;
-  /** @nullable */
+  /**
+     * Reference to the reviewed mapping record. `null` when none.
+     * @nullable
+     */
   mapping_reference?: string | null;
 }

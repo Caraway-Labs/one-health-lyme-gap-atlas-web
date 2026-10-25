@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Records of how the model was fitted and reviewed.
+ */
 export type SituationClassificationModelProvenance = { [key: string]: unknown };

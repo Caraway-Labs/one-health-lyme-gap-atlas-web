@@ -1,9 +1,9 @@
 {
   "pages": [
     "index",
-    "methodology_v1_methodologies__methodology_id__get",
-    "sources_v1_sources_get",
-    "source_v1_sources__source_id__get"
+    "getMethodology",
+    "listSources",
+    "getSource"
   ],
   "title": "Provenance"
 }

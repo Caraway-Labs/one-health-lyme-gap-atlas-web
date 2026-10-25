@@ -6,7 +6,7 @@ import {
   scoreCounty,
 } from "../src/features/ux-reset/review/explorer-scenario-score";
 import type { CountyScoreSummary } from "../src/generated/models";
-import { ScoresV1AtlasScoresGetResponse } from "../src/generated/zod/atlas";
+import { GetAtlasScoresResponse } from "../src/generated/zod/atlas";
 import { validateApiResponse } from "../src/lib/api-response-validation";
 import fixtures from "./fixtures/gap-score-v11-parity.json";
 
@@ -75,7 +75,7 @@ describe("Surveillance Gap Score v1.1 Python/TypeScript/research parity", () => 
 
   it("never accepts a legacy or missing scoring method as v1.1", () => {
     expect(() =>
-      validateApiResponse("Atlas scores", ScoresV1AtlasScoresGetResponse, {
+      validateApiResponse("Atlas scores", GetAtlasScoresResponse, {
         counties: [],
         settings: {},
         methodology_version: "semantic-2.0.0",

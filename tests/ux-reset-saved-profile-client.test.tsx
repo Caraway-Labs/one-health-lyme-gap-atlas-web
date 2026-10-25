@@ -12,8 +12,8 @@ const { getProfile, saveProfile } = vi.hoisted(() => ({
 }));
 
 vi.mock(import("@/generated/atlas"), () => ({
-  getProfileV1MeProfileGet: getProfile,
-  saveProfileV1MeProfilePut: saveProfile,
+  getProfile,
+  updateProfile: saveProfile,
 }));
 
 import { savedProfileFromUserProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";

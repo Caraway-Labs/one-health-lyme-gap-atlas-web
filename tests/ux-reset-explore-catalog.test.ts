@@ -8,10 +8,7 @@ import {
   fetchExploreMeasures,
   loadExploreSelection,
 } from "@/features/ux-reset/explore/load-explore-resources";
-import {
-  measuresV1MeasuresGet,
-  observationsV1ObservationsGet,
-} from "@/generated/atlas";
+import { listMeasures, listObservations } from "@/generated/atlas";
 import type { Measure } from "@/generated/models";
 
 import {
@@ -23,15 +20,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    measuresV1MeasuresGet:
-      vi.fn<typeof import("@/generated/atlas").measuresV1MeasuresGet>(),
-    observationsV1ObservationsGet:
-      vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>(),
+    listMeasures: vi.fn<typeof import("@/generated/atlas").listMeasures>(),
+    listObservations:
+      vi.fn<typeof import("@/generated/atlas").listObservations>(),
   };
 });
 
-const measuresGet = vi.mocked(measuresV1MeasuresGet);
-const observationsGet = vi.mocked(observationsV1ObservationsGet);
+const measuresGet = vi.mocked(listMeasures);
+const observationsGet = vi.mocked(listObservations);
 
 function envelope(
   data: readonly Measure[],

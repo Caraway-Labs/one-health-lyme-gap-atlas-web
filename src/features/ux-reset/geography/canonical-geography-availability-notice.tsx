@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-  canonicalGeographyAvailabilityRetryDelay,
+  checkGeographyAvailabilityRetryDelay,
   canonicalGeographyViewFromError,
   fetchCanonicalGeographyAvailability,
   shouldRetryCanonicalGeographyAvailability,
@@ -37,7 +37,7 @@ export function useCanonicalGeographyAvailability(
         configuredRetry
       ),
     retryDelay: (failureCount, error) =>
-      canonicalGeographyAvailabilityRetryDelay(
+      checkGeographyAvailabilityRetryDelay(
         failureCount,
         error,
         configuredRetryDelay

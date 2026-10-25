@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Whether a published classification exists. `UNAVAILABLE` is not a finding about the county.
+ */
 export type SituationVariantAvailability = typeof SituationVariantAvailability[keyof typeof SituationVariantAvailability];
 
 

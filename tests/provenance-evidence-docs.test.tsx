@@ -173,7 +173,7 @@ describe("annotated provenance documentation", () => {
     render(<ValueStateNullTable />);
     fireEvent.click(screen.getByRole("button", { name: /value_state/u }));
     expect(
-      screen.getByText(/MISSING\/SUPPRESSED\/UNAVAILABLE require null/u)
+      screen.getByText(/Never treat a `null` value as zero/u)
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "ValueState" })).toHaveAttribute(
       "href",

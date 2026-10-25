@@ -17,7 +17,7 @@ import {
   EnvironmentalContextCoverageStatus,
   ValueState,
 } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 
 import {
   ENVIRONMENTAL_RELEASE_ID,
@@ -28,7 +28,7 @@ import {
 } from "./fixtures/environmental-context";
 
 const observationsGet = vi.hoisted(() =>
-  vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>()
+  vi.fn<typeof import("@/generated/atlas").listObservations>()
 );
 
 vi.mock(import("@/generated/atlas"), async () => {
@@ -38,7 +38,7 @@ vi.mock(import("@/generated/atlas"), async () => {
     );
   return {
     ...actual,
-    observationsV1ObservationsGet: observationsGet,
+    listObservations: observationsGet,
   };
 });
 
@@ -232,7 +232,7 @@ describe("environmental context presentation", () => {
 
 describe("environmental context loading", () => {
   it("validates a live DAY response and presents its quantity", () => {
-    const precipitation = ObservationsV1ObservationsGetResponse.parse(
+    const precipitation = ListObservationsResponse.parse(
       JSON.parse(
         readFileSync(
           "tests/fixtures/live-nclimgrid-prcp-48277-2025-01-17.json",
@@ -240,7 +240,7 @@ describe("environmental context loading", () => {
         )
       )
     );
-    const minimum = ObservationsV1ObservationsGetResponse.parse(
+    const minimum = ListObservationsResponse.parse(
       JSON.parse(
         readFileSync(
           "tests/fixtures/live-nclimgrid-tmin-48277-2025-01-17.json",
@@ -278,7 +278,7 @@ describe("environmental context loading", () => {
 
   it("requests one county and accepts the governed envelope", async () => {
     observationsGet.mockResolvedValue({
-      data: ObservationsV1ObservationsGetResponse.parse(
+      data: ListObservationsResponse.parse(
         environmentalEnvelope([
           environmentalObservation({ measureId: "nclimgrid_prcp_county_day" }),
         ])
@@ -308,9 +308,7 @@ describe("environmental context loading", () => {
 
   it("treats an empty January day as absence and refuses another release", async () => {
     observationsGet.mockResolvedValueOnce({
-      data: ObservationsV1ObservationsGetResponse.parse(
-        environmentalEnvelope([])
-      ),
+      data: ListObservationsResponse.parse(environmentalEnvelope([])),
       headers: new Headers(),
       status: 200,
     });
@@ -324,7 +322,7 @@ describe("environmental context loading", () => {
     expect(absent).toStrictEqual({ kind: "absent" });
 
     observationsGet.mockResolvedValueOnce({
-      data: ObservationsV1ObservationsGetResponse.parse(
+      data: ListObservationsResponse.parse(
         environmentalEnvelope([
           environmentalObservation({
             fips: "08001",
@@ -366,7 +364,7 @@ describe("environmental context loading", () => {
       measureId: "nclimgrid_prcp_county_day",
     });
     observationsGet.mockResolvedValue({
-      data: ObservationsV1ObservationsGetResponse.parse(
+      data: ListObservationsResponse.parse(
         environmentalEnvelope([
           first,
           {

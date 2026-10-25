@@ -8,12 +8,12 @@
 import * as zod from 'zod';
 
 export const SourceMetadata = zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "vintage": zod.string(),
-  "url": zod.string(),
-  "note": zod.string()
-})
+  "key": zod.string().describe('Stable key of the source within this release.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "vintage": zod.string().describe('Reference year or period of the source dataset.'),
+  "url": zod.string().describe('Web address of the source.'),
+  "note": zod.string().describe('How Atlas uses the source and any limit on that use.')
+}).describe('A source dataset listed in the release metadata.')
 
 export type SourceMetadata = zod.input<typeof SourceMetadata>;
 export type SourceMetadataOutput = zod.output<typeof SourceMetadata>;

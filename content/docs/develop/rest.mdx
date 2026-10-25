@@ -40,7 +40,7 @@ Do not invent a token.
 
 ## Honor rate limits
 
-`429` and `503` declare `Retry-After` ("Seconds before retry when supplied by the service."). The illustrative `429` uses `RATE_LIMITED`. No numeric quota, concurrency cap, or fixed range is published. Wait the stated seconds, then retry. Keep `request_id`.
+`429` and `503` declare `Retry-After` ("Seconds to wait before you retry. Wait that long when the header is present."). The illustrative `429` uses `RATE_LIMITED`. No numeric quota, concurrency cap, or fixed range is published. Wait the stated seconds, then retry. Keep `request_id`.
 
 ## Handle errors
 

@@ -144,121 +144,128 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    geographyV1GeographiesGeographyTypeGeographyIdGet: vi.fn<
-      typeof import("@/generated/atlas").geographyV1GeographiesGeographyTypeGeographyIdGet
-    >(async (_type, geographyId) => {
-      if (!/^\d{5}$/.test(geographyId)) {
-        return {
-          data: {
-            code: null,
-            detail: "invalid geography",
-            instance: "/v1/geographies/county/invalid",
-            request_id: "investigate-geography-fixture",
-            status: 400,
-            title: "Bad Request",
-            type: "about:blank",
-          },
-          headers: new Headers(),
-          status: 400,
-        };
-      }
-      const geography = investigateGeographyFixture(geographyId);
-      if (!geography) {
-        return {
-          data: {
-            code: null,
-            detail: "not found",
-            instance: `/v1/geographies/county/${geographyId}`,
-            request_id: "investigate-geography-fixture",
-            status: 404,
-            title: "Not Found",
-            type: "about:blank",
-          },
-          headers: new Headers(),
-          status: 404,
-        };
-      }
-      // Live 200 is GeographyUnavailable. The identity control keeps the
-      // future ResourceEnvelope arm type-checked, including a swapped county.
-      if (controls.geographyStatus === "identity" && geographyId === "08001") {
-        return {
-          data: investigateGeographyEnvelope({
-            ...geography,
-            geography: {
-              geography_id: "08013",
-              geography_type: "county",
+    getGeography: vi.fn<typeof import("@/generated/atlas").getGeography>(
+      async (_type, geographyId) => {
+        if (!/^\d{5}$/.test(geographyId)) {
+          return {
+            data: {
+              code: null,
+              detail: "invalid geography",
+              instance: "/v1/geographies/county/invalid",
+              request_id: "investigate-geography-fixture",
+              status: 400,
+              title: "Bad Request",
+              type: "about:blank",
             },
-            label: "Boulder County",
-          }),
+            headers: new Headers(),
+            status: 400,
+          };
+        }
+        const geography = investigateGeographyFixture(geographyId);
+        if (!geography) {
+          return {
+            data: {
+              code: null,
+              detail: "not found",
+              instance: `/v1/geographies/county/${geographyId}`,
+              request_id: "investigate-geography-fixture",
+              status: 404,
+              title: "Not Found",
+              type: "about:blank",
+            },
+            headers: new Headers(),
+            status: 404,
+          };
+        }
+        // Live 200 is GeographyUnavailable. The identity control keeps the
+        // future ResourceEnvelope arm type-checked, including a swapped county.
+        if (
+          controls.geographyStatus === "identity" &&
+          geographyId === "08001"
+        ) {
+          return {
+            data: investigateGeographyEnvelope({
+              ...geography,
+              geography: {
+                geography_id: "08013",
+                geography_type: "county",
+              },
+              label: "Boulder County",
+            }),
+            headers: new Headers(),
+            status: 200,
+          };
+        }
+        return {
+          data: investigateGeographyUnavailableBody(geographyId),
           headers: new Headers(),
           status: 200,
         };
       }
-      return {
-        data: investigateGeographyUnavailableBody(geographyId),
-        headers: new Headers(),
-        status: 200,
-      };
-    }),
-    indicatorsV1IndicatorsGet: vi.fn<
-      typeof import("@/generated/atlas").indicatorsV1IndicatorsGet
-    >(async (params) => {
-      if (controls.failIndicators) {
-        throw new AtlasApiError(
-          "indicators unavailable",
-          "/v1/indicators",
-          500,
-          null
-        );
-      }
-      if (params?.page_token === null) {
+    ),
+    listIndicators: vi.fn<typeof import("@/generated/atlas").listIndicators>(
+      async (params) => {
+        if (controls.failIndicators) {
+          throw new AtlasApiError(
+            "indicators unavailable",
+            "/v1/indicators",
+            500,
+            null
+          );
+        }
+        if (params?.page_token === null) {
+          return {
+            data: { detail: "invalid indicators request" },
+            headers: new Headers(),
+            status: 400,
+          } as never;
+        }
         return {
-          data: { detail: "invalid indicators request" },
+          data: {
+            data: investigateIndicatorsFixture,
+            links: { self: "/v1/indicators" },
+            meta: {},
+          },
           headers: new Headers(),
-          status: 400,
+          status: 200,
         } as never;
       }
-      return {
-        data: {
-          data: investigateIndicatorsFixture,
-          links: { self: "/v1/indicators" },
-          meta: {},
-        },
-        headers: new Headers(),
-        status: 200,
-      } as never;
-    }),
-    measuresV1MeasuresGet: vi.fn<
-      typeof import("@/generated/atlas").measuresV1MeasuresGet
-    >(async (params) => {
-      if (controls.failCatalog) {
+    ),
+    listMeasures: vi.fn<typeof import("@/generated/atlas").listMeasures>(
+      async (params) => {
+        if (controls.failCatalog) {
+          return {
+            data: { detail: "measures unavailable" },
+            headers: new Headers(),
+            status: 500,
+          } as never;
+        }
+        if (
+          params?.page_token === null ||
+          params?.geography_type === "county"
+        ) {
+          return {
+            data: { detail: "invalid catalog request" },
+            headers: new Headers(),
+            status: 400,
+          } as never;
+        }
         return {
-          data: { detail: "measures unavailable" },
+          data: {
+            data: investigateMeasuresFixture.filter(
+              (measure) =>
+                measure.geography_semantics === params?.geography_type
+            ),
+            links: { self: "/v1/measures" },
+            meta: {},
+          },
           headers: new Headers(),
-          status: 500,
+          status: 200,
         } as never;
       }
-      if (params?.page_token === null || params?.geography_type === "county") {
-        return {
-          data: { detail: "invalid catalog request" },
-          headers: new Headers(),
-          status: 400,
-        } as never;
-      }
-      return {
-        data: {
-          data: investigateMeasuresFixture.filter(
-            (measure) => measure.geography_semantics === params?.geography_type
-          ),
-          links: { self: "/v1/measures" },
-          meta: {},
-        },
-        headers: new Headers(),
-        status: 200,
-      } as never;
-    }),
-    metadataV1AtlasMetadataGet: vi.fn<
-      typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
+    ),
+    getAtlasMetadata: vi.fn<
+      typeof import("@/generated/atlas").getAtlasMetadata
     >(async () => {
       if (controls.holdMetadata) {
         await metadataGate.promise;
@@ -280,8 +287,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    observationsV1ObservationsGet: vi.fn<
-      typeof import("@/generated/atlas").observationsV1ObservationsGet
+    listObservations: vi.fn<
+      typeof import("@/generated/atlas").listObservations
     >(async (params) => {
       observationRequests.push(JSON.stringify(params));
       const hasYear = typeof params.year === "number";
@@ -337,9 +344,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    scoresV1AtlasScoresGet: vi.fn<
-      typeof import("@/generated/atlas").scoresV1AtlasScoresGet
-    >(
+    getAtlasScores: vi.fn<typeof import("@/generated/atlas").getAtlasScores>(
       async () =>
         ({
           data: {
@@ -351,8 +356,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 200,
         }) as never
     ),
-    countyTier1SurveillancePriorityGet: vi.fn<
-      typeof import("@/generated/atlas").countyTier1SurveillancePriorityGet
+    getCountyTier1Priority: vi.fn<
+      typeof import("@/generated/atlas").getCountyTier1Priority
     >(async (fips) => {
       const result = controls.tier1Result;
       if (!result) {
@@ -369,31 +374,31 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       };
     }),
-    countyV1CountiesFipsGet: vi.fn<
-      typeof import("@/generated/atlas").countyV1CountiesFipsGet
-    >(async (fips) => {
-      if (controls.failCountyRecord) {
-        throw new AtlasApiError(
-          "county refresh failed",
-          `/v1/counties/${fips}`,
-          500,
-          null
-        );
-      }
-      const detail = controls.countyDetail;
-      if (detail?.fips === fips) {
+    getCounty: vi.fn<typeof import("@/generated/atlas").getCounty>(
+      async (fips) => {
+        if (controls.failCountyRecord) {
+          throw new AtlasApiError(
+            "county refresh failed",
+            `/v1/counties/${fips}`,
+            500,
+            null
+          );
+        }
+        const detail = controls.countyDetail;
+        if (detail?.fips === fips) {
+          return {
+            data: detail,
+            headers: new Headers(),
+            status: 200,
+          } as never;
+        }
         return {
-          data: detail,
+          data: { detail: "not found" },
           headers: new Headers(),
-          status: 200,
+          status: 404,
         } as never;
       }
-      return {
-        data: { detail: "not found" },
-        headers: new Headers(),
-        status: 404,
-      } as never;
-    }),
+    ),
   };
 });
 
@@ -1069,11 +1074,8 @@ describe("County Investigate workspace", () => {
   });
 
   it("uses an explicit recovery state for malformed, unknown, and unsupported counties", async () => {
-    const { geographyV1GeographiesGeographyTypeGeographyIdGet } =
-      await import("@/generated/atlas");
-    const geography = vi.mocked(
-      geographyV1GeographiesGeographyTypeGeographyIdGet
-    );
+    const { getGeography } = await import("@/generated/atlas");
+    const geography = vi.mocked(getGeography);
     const geographyCallsBefore = geography.mock.calls.length;
     renderInvestigate("?county=12&scope=CO");
     await waitFor(() => {
@@ -1135,8 +1137,8 @@ describe("County Investigate workspace", () => {
   });
 
   it("shows a retry when the published county list fails", async () => {
-    const { scoresV1AtlasScoresGet } = await import("@/generated/atlas");
-    vi.mocked(scoresV1AtlasScoresGet).mockResolvedValueOnce({
+    const { getAtlasScores } = await import("@/generated/atlas");
+    vi.mocked(getAtlasScores).mockResolvedValueOnce({
       data: { detail: "unavailable" },
       headers: new Headers(),
       status: 503,

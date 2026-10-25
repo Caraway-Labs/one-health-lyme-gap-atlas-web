@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  getProfileV1MeProfileGet,
-  saveProfileV1MeProfilePut,
-} from "@/generated/atlas";
+import { getProfile, updateProfile } from "@/generated/atlas";
 import type { UserProfileWrite } from "@/generated/models";
 import { UserProfileResponse as UserProfileResponseSchema } from "@/generated/zod/userProfileResponse.zod";
 import { UserProfileWrite as UserProfileWriteSchema } from "@/generated/zod/userProfileWrite.zod";
@@ -204,11 +201,11 @@ export async function readSavedProfile(
     readIsStale(signal, accountKey, generationAtStart, startedDuringWrite);
   try {
     const result = bound.accessToken
-      ? await getProfileV1MeProfileGet({
+      ? await getProfile({
           ...(signal ? { signal } : {}),
           headers: { Authorization: `Bearer ${bound.accessToken}` },
         })
-      : await getProfileV1MeProfileGet(signal ? { signal } : undefined);
+      : await getProfile(signal ? { signal } : undefined);
     if (publishIsStale()) {
       throw new SavedProfileClientError("superseded");
     }
@@ -308,10 +305,10 @@ async function performProfileWrite(
   let echoChecked = false;
   try {
     const result = bound.accessToken
-      ? await saveProfileV1MeProfilePut(body, {
+      ? await updateProfile(body, {
           headers: { Authorization: `Bearer ${bound.accessToken}` },
         })
-      : await saveProfileV1MeProfilePut(body);
+      : await updateProfile(body);
     if (
       latestWriteSerial.get(accountKey) !== serial ||
       !(await identityMatches(identity))

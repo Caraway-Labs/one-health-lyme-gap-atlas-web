@@ -1,28 +1,28 @@
 ---
 title: "Counties"
-description: "Existing county details and versioned PDF reports."
+description: "Get county detail and download county PDF reports."
 ---
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 Generated from the public OpenAPI contract.
 
-Existing county details and versioned PDF reports.
+Get county detail and download county PDF reports.
 
-## Get county analytics and provenance [#county_v1_counties__fips__get]
+## Get county detail and provenance [#getCounty]
 
 `GET /v1/counties/{fips}`
 
-Operation ID: `county_v1_counties__fips__get`
+Operation ID: `getCounty`
 
-[Parameters, responses, and schema](/docs/api-reference/counties/county_v1_counties__fips__get).
+[Parameters, responses, and schema](/docs/api-reference/counties/getCounty).
 
-## Download a county report [#county_report_pdf_v1_counties__fips__report_pdf_get]
+## Download a county report [#downloadCountyReport]
 
 `GET /v1/counties/{fips}/report.pdf`
 
-Operation ID: `county_report_pdf_v1_counties__fips__report_pdf_get`
+Operation ID: `downloadCountyReport`
 
-[Parameters, responses, and schema](/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get).
+[Parameters, responses, and schema](/docs/api-reference/counties/downloadCountyReport).
 
 ### Template selection
 
@@ -101,26 +101,26 @@ The same checked requests are in the [workflow guides](https://onehealthatlas.or
   </Tab>
 </Tabs>
 
-## Get both persisted county surveillance-situation classifications [#county_surveillance_situations_get]
+## Get county surveillance situations [#getCountySurveillanceSituations]
 
 `GET /v1/counties/{fips}/surveillance-situations`
 
-Operation ID: `county_surveillance_situations_get`
+Operation ID: `getCountySurveillanceSituations`
 
-[Parameters, responses, and schema](/docs/api-reference/counties/county_surveillance_situations_get).
+[Parameters, responses, and schema](/docs/api-reference/counties/getCountySurveillanceSituations).
 
-## Get persisted Tier 1 model-assisted surveillance review priority [#county_tier1_surveillance_priority_get]
+## Get county surveillance review priority [#getCountyTier1Priority]
 
 `GET /v1/counties/{fips}/tier1-surveillance-priority`
 
-Operation ID: `county_tier1_surveillance_priority_get`
+Operation ID: `getCountyTier1Priority`
 
-[Parameters, responses, and schema](/docs/api-reference/counties/county_tier1_surveillance_priority_get).
+[Parameters, responses, and schema](/docs/api-reference/counties/getCountyTier1Priority).
 
-## Get Tier 1 result availability and persisted data [#county_tier1_surveillance_priority_availability_get]
+## Check surveillance priority availability [#checkCountyTier1Availability]
 
 `GET /v1/counties/{fips}/tier1-surveillance-priority/availability`
 
-Operation ID: `county_tier1_surveillance_priority_availability_get`
+Operation ID: `checkCountyTier1Availability`
 
-[Parameters, responses, and schema](/docs/api-reference/counties/county_tier1_surveillance_priority_availability_get).
+[Parameters, responses, and schema](/docs/api-reference/counties/checkCountyTier1Availability).

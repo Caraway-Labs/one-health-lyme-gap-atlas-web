@@ -5,11 +5,11 @@
  * Build artifact for existing first-party Web client and validator generation. Not an external developer contract or HTTP surface. Use the public openapi.json for external documentation.
  * OpenAPI spec version: 0.1.0
  */
-import type { FeedMeta } from './feedMeta';
 import type { FeedSource } from './feedSource';
+import type { SourceCatalogMeta } from './sourceCatalogMeta';
 
 export interface FeedSources {
   data: FeedSource[];
-  meta: FeedMeta;
+  meta: SourceCatalogMeta;
   source_catalog_complete?: false;
 }

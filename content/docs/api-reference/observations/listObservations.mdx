@@ -1,0 +1,205 @@
+---
+title: Query county observations
+description: "Query published county observations for one measure and up to 500 counties. ### What it returns Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations. ### Required parameters Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts. ### Time parameters by measure type | Measure type | Send | Wrong choice returns | | --- | --- | --- | | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. | | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. | | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. | | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. | | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. | ### Value states | Case | How to read it | | --- | --- | | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. | | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. | | Missing context | It does not establish absence or temporal comparability. | | Absent county context rows | They are unavailable evidence, never zero. | ### Empty versus unavailable results | Situation | Response | | --- | --- | | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. | | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. | | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. | ### Paging Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release. ### Caching An `UNAVAILABLE` collection must not be cached."
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: |-
+          Query published county observations for one measure and up to 500 counties.
+
+          ### What it returns
+          Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations.
+
+          ### Required parameters
+          Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts.
+
+          ### Time parameters by measure type
+          | Measure type | Send | Wrong choice returns |
+          | --- | --- | --- |
+          | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+          | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+          | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. |
+          | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+          | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+
+          ### Value states
+          | Case | How to read it |
+          | --- | --- |
+          | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. |
+          | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. |
+          | Missing context | It does not establish absence or temporal comparability. |
+          | Absent county context rows | They are unavailable evidence, never zero. |
+
+          ### Empty versus unavailable results
+          | Situation | Response |
+          | --- | --- |
+          | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. |
+          | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. |
+          | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. |
+
+          ### Paging
+          Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release.
+
+          ### Caching
+          An `UNAVAILABLE` collection must not be cached.
+      - content: GET /v1/observations
+      - content: listObservations
+      - content: Query county observations
+      - content: |-
+          Query published county observations for one measure and up to 500 counties.
+
+          ### What it returns
+          Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations.
+
+          ### Required parameters
+          Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts.
+
+          ### Time parameters by measure type
+          | Measure type | Send | Wrong choice returns |
+          | --- | --- | --- |
+          | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+          | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+          | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. |
+          | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+          | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+
+          ### Value states
+          | Case | How to read it |
+          | --- | --- |
+          | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. |
+          | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. |
+          | Missing context | It does not establish absence or temporal comparability. |
+          | Absent county context rows | They are unavailable evidence, never zero. |
+
+          ### Empty versus unavailable results
+          | Situation | Response |
+          | --- | --- |
+          | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. |
+          | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. |
+          | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. |
+
+          ### Paging
+          Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release.
+
+          ### Caching
+          An `UNAVAILABLE` collection must not be cached.
+      - content: measure_id query required Exact discovery measure ID.
+      - content: Exact discovery measure ID.
+      - content: Measure Id
+      - content: '"case_count_floor_2023"'
+      - content: geography_type query required Kind of place. Only `county` is supported; `state` returns 400 `UNSUPPORTED_FILTER`.
+      - content: '#/components/schemas/GeographyType'
+      - content: Kind of place. Only `county` is supported; `state` returns 400 `UNSUPPORTED_FILTER`.
+      - content: '"county"'
+      - content: geography_id query required Repeat for 1-500 county FIPS strings; preserve leading zeros.
+      - content: Repeat for 1-500 county FIPS strings; preserve leading zeros.
+      - content: Geography Id
+      - content: '["08001"]'
+      - content: 'vintage_year query optional Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.'
+      - content: 'Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters.'
+      - content: Vintage Year
+      - content: year query optional Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
+      - content: Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.
+      - content: Year
+      - content: '2023'
+      - content: start_date query optional Inclusive period start; requires end_date and excludes year.
+      - content: Inclusive period start; requires end_date and excludes year.
+      - content: Start Date
+      - content: '"2023-01-01"'
+      - content: end_date query optional Inclusive period end; requires start_date and excludes year.
+      - content: Inclusive period end; requires start_date and excludes year.
+      - content: End Date
+      - content: '"2023-12-31"'
+      - content: stratification query optional Current release has no strata; unsupported selections fail explicitly.
+      - content: Current release has no strata; unsupported selections fail explicitly.
+      - content: Stratification
+      - content: page_size query optional Items per page; defaults to 100, configured maximum at most 500.
+      - content: Items per page; defaults to 100, configured maximum at most 500.
+      - content: Page Size
+      - content: '100'
+      - content: page_token query optional Opaque next_page_token; retain query filters and release.
+      - content: Opaque next_page_token; retain query filters and release.
+      - content: Page Token
+      - content: 200 Bounded current-release observations. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: Cache-Control The API sets no `Cache-Control` header on an available result, so do not assume a cache lifetime. It sends `no-store` when `meta.availability` is `UNAVAILABLE`.
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: Observation collection response
+      - content: '#/components/schemas/CollectionEnvelope_CountyContextObservation_'
+      - content: '#/components/schemas/CollectionEnvelope_Observation_'
+      - content: 'An observed value: New York County (`36061`)'
+      - content: '{"data":[{"metadata_revision_id":null,"observation_id":"33793650b65062f83a847f9426481f94c4ee3810000d45e812e2fb0693429cd1","measure_id":"case_count_floor_2023","geography":{"geography_type":"county","geography_id":"36061"},"temporal_grain":"YEAR","value":1114,"value_state":"OBSERVED","unit":"cases","denominator":null,"strata":{},"source_id":"human","lineage_source_id":"cdc_lyme","dataset_id":"x5j9-wybp","methodology_id":"human_confirmed_probable_case_floor_v1","methodology":"x5j9 confirmed plus probable","release_methodology_version":"semantic-2.0.0","methodology_version":"semantic_county_assembly_v1","semantic_version":"2.0.0","release_id":"governed-2026-10-15-january-climate-prod","provenance_ref":"33793650b65062f83a847f9426481f94c4ee3810000d45e812e2fb0693429cd1","source_label":"CDC Lyme surveillance","source_vintage":"2023","source_url":"https://data.cdc.gov/resource/x5j9-wybp.json","source_published_at":null,"atlas_acquired_at":"2026-09-07T17:21:14.768948-07:00","atlas_processed_at":null,"limitations":["Published surveillance values are privacy-protected floors, not complete incidence estimates.","Privacy-protected floor.","This is a deterministic surveillance follow-up priority release, not a diagnosis, prediction, causal claim, exposure map, or individual risk estimate. Published human values are privacy-protected floors; no records is not absence. Human rows with explicitly unavailable state geography are retained in source provenance but are not allocated to county or state release values. Restricted pathogen source gaps are explicitly unknown source coverage. Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission."],"evidence":{"resource_type":"observation","resource_id":"33793650b65062f83a847f9426481f94c4ee3810000d45e812e2fb0693429cd1","source_id":"human","provenance_ref":"33793650b65062f83a847f9426481f94c4ee3810000d45e812e2fb0693429cd1","semantic_version":"2.0.0","methodology_version":"semantic_county_assembly_v1","release_id":"governed-2026-10-15-january-climate-prod","uri":null},"environmental_context":null,"surveillance_context":null,"period_start":"2023-01-01","period_end":"2023-12-31"}],"meta":{"next_page_token":null,"response_at":"2026-10-25T02:46:22.070184Z","availability":"AVAILABLE","release_id":"governed-2026-10-15-january-climate-prod","limitations":[]},"links":{"self":null}}'
+      - content: 'A missing value: Boulder County (`08001`) has no published value'
+      - content: '{"data":[{"metadata_revision_id":null,"observation_id":"43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273","measure_id":"case_count_floor_2023","geography":{"geography_type":"county","geography_id":"08001"},"temporal_grain":"YEAR","value":null,"value_state":"MISSING","unit":"cases","denominator":null,"strata":{},"source_id":"human","lineage_source_id":"cdc_lyme","dataset_id":"x5j9-wybp","methodology_id":"human_confirmed_probable_case_floor_v1","methodology":"x5j9 confirmed plus probable","release_methodology_version":"semantic-2.0.0","methodology_version":"semantic_county_assembly_v1","semantic_version":"2.0.0","release_id":"governed-2026-10-15-january-climate-prod","provenance_ref":"43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273","source_label":"CDC Lyme surveillance","source_vintage":"2023","source_url":"https://data.cdc.gov/resource/x5j9-wybp.json","source_published_at":null,"atlas_acquired_at":"2026-09-07T17:21:14.768948-07:00","atlas_processed_at":null,"limitations":["Published surveillance values are privacy-protected floors, not complete incidence estimates.","Privacy-protected floor.","This is a deterministic surveillance follow-up priority release, not a diagnosis, prediction, causal claim, exposure map, or individual risk estimate. Published human values are privacy-protected floors; no records is not absence. Human rows with explicitly unavailable state geography are retained in source provenance but are not allocated to county or state release values. Restricted pathogen source gaps are explicitly unknown source coverage. Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission."],"evidence":{"resource_type":"observation","resource_id":"43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273","source_id":"human","provenance_ref":"43c0ce4e82c89ba4d75ebca07f97e63d75fdf18a0dae9fed778aa22266c81273","semantic_version":"2.0.0","methodology_version":"semantic_county_assembly_v1","release_id":"governed-2026-10-15-january-climate-prod","uri":null},"environmental_context":null,"surveillance_context":null,"period_start":"2023-01-01","period_end":"2023-12-31"}],"meta":{"next_page_token":null,"response_at":"2026-10-25T02:46:30.691271Z","availability":"AVAILABLE","release_id":"governed-2026-10-15-january-climate-prod","limitations":[]},"links":{"self":null}}'
+      - content: An empty result with `meta.availability` set to `UNAVAILABLE`
+      - content: '{"data":[],"meta":{"next_page_token":null,"response_at":"2026-10-25T02:46:37.282561Z","availability":"UNAVAILABLE","reason":"NO_PUBLISHED_RESULTS","release_id":"governed-2026-10-15-january-climate-prod","limitations":["No published observations match this selection in the checked release. This does not establish biological absence, source coverage, or geography membership."]},"links":{"self":null}}'
+      - content: 400 The request is invalid or unsupported. The `code` is `INVALID_REQUEST` for a missing, malformed, or inconsistent parameter, `UNSUPPORTED_FILTER` for a parameter V1 does not accept, `UNSUPPORTED_STRATIFICATION` for a stratification (observation queries only), or `QUERY_TOO_BROAD` when a query selects more than the result limit. Read `detail` and `errors`, change the request, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Missing required parameter
+      - content: Shows `INVALID_REQUEST` when a required query parameter is absent.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":400,"detail":"One or more request values are invalid.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"missing","loc":["query","measure_id"],"msg":"Field required"}],"code":"INVALID_REQUEST"}'
+      - content: Query parameter V1 does not accept
+      - content: Shows `UNSUPPORTED_FILTER` when a request includes a parameter outside V1.
+      - content: '{"type":"https://onehealthatlas.org/problems/unsupported-filter","title":"Invalid public query","status":400,"detail":"This query filter is not supported in V1.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"UNSUPPORTED_FILTER"}'
+      - content: Stratification requested
+      - content: Shows `UNSUPPORTED_STRATIFICATION` when a query sets `stratification`.
+      - content: '{"type":"https://onehealthatlas.org/problems/unsupported-stratification","title":"Invalid public query","status":400,"detail":"This release has no governed strata.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"UNSUPPORTED_STRATIFICATION"}'
+      - content: Selection above the result limit
+      - content: Shows `QUERY_TOO_BROAD` when counties and period exceed the result limit.
+      - content: '{"type":"https://onehealthatlas.org/problems/query-too-broad","title":"Invalid public query","status":400,"detail":"Narrow measure, geography, time, or stratification selection.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"QUERY_TOO_BROAD"}'
+      - content: 404 The resource ID, or the selection you asked for, is not in the current release. The `code` is `RESOURCE_NOT_FOUND` and `detail` names what is missing. Check the ID against the list operation for that resource. Retrying the same request returns the same response.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Unknown resource ID
+      - content: Shows `RESOURCE_NOT_FOUND` for a selection that is not in the current release.
+      - content: '{"type":"https://onehealthatlas.org/problems/resource-not-found","title":"Invalid public query","status":404,"detail":"Measure has no published county observations.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RESOURCE_NOT_FOUND"}'
+      - content: 413 The request is a GET with a body. The `code` is `INVALID_REQUEST`. Send the request again without a body and put every value in the query string.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: GET request with a body
+      - content: Shows `INVALID_REQUEST` when a GET request carries a body.
+      - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"Payload too large","status":413,"detail":"GET request bodies are unsupported.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
+      - content: 414 The query string is longer than the API accepts. The `code` is `INVALID_REQUEST`. Send fewer or shorter parameter values, then retry.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Query string over the length limit
+      - content: Shows `INVALID_REQUEST` when the query string is too long.
+      - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"URI too long","status":414,"detail":"Query string is too long.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Request limit reached
+      - content: Shows `RATE_LIMITED`. The response also sets `Retry-After`.
+      - content: '{"type":"https://onehealthatlas.org/problems/rate-limited","title":"Too many requests","status":429,"detail":"Public request limit reached.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RATE_LIMITED"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/observations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/observations","method":"get"}]} />
+    </>
+  );
+}

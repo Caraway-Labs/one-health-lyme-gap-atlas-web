@@ -6,10 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * A source dataset listed in the release metadata.
+ */
 export interface SourceMetadata {
+  /** Stable key of the source within this release. */
   key: string;
+  /** Display name of the source. */
   label: string;
+  /** Reference year or period of the source dataset. */
   vintage: string;
+  /** Web address of the source. */
   url: string;
+  /** How Atlas uses the source and any limit on that use. */
   note: string;
 }

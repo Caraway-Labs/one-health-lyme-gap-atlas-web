@@ -14,91 +14,122 @@ import type { GeographyIdentity } from './geographyIdentity';
 import type { SurveillanceContext } from './surveillanceContext';
 import type { ValueState } from './valueState';
 
+/**
+ * A county population or rurality value, reported for a reference period or a vintage.
+ */
 export interface CountyContextObservation {
   /**
-     * Reviewed consumer-safe metadata revision; not private lineage.
+     * Identifies the reviewed metadata revision that describes this observation. `null` when none applies.
      * @nullable
      */
   metadata_revision_id?: string | null;
-  /** Stable observation identity and compact provenance reference. */
+  /** Stable identifier of the observation. It also serves as the provenance reference. */
   observation_id: string;
+  /** Identifier of the measure. See `/v1/measures/{measure_id}`. */
   measure_id: string;
+  /** The place the value describes. */
   geography: GeographyIdentity;
+  /** `PERIOD` for a dated reference period. `VINTAGE_YEAR` for a classification that has no dates. */
   temporal_grain: CountyContextObservationTemporalGrain;
   /**
-     * Integer population/category or exact nonzero decimal text; ZERO is integer 0.
+     * An integer for a population or category, or exact decimal text. `ZERO` is the integer 0. Read it with `value_state`.
      * @nullable
      */
   value: number | string | null;
-  /** OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC's No records. Neither establishes biological absence. */
+  /** How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero. */
   value_state: ValueState;
+  /** Unit of `value`, such as `count` or `mm`. */
   unit: string;
   /**
-     * Governed denominator; null means it is not supplied and must not be inferred.
+     * What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.
      * @nullable
      */
   denominator: string | null;
+  /** Breakdown the value applies to, such as an age group. Empty when the release has no strata. */
   strata?: CountyContextObservationStrata;
-  /** Public source resource key; distinct from lineage_source_id and dataset_id. */
+  /** Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. */
   source_id: string;
-  /** @nullable */
+  /**
+     * Identifies the source in Atlas lineage records. It differs from `source_id`.
+     * @nullable
+     */
   lineage_source_id?: string | null;
-  /** @nullable */
+  /**
+     * Identifies the publisher's dataset. It differs from `source_id`.
+     * @nullable
+     */
   dataset_id?: string | null;
   /**
-     * Exact governed methodology resource ID; null when not governed.
+     * Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies.
      * @nullable
      */
   methodology_id: string | null;
-  /** @nullable */
+  /**
+     * Short name of the method that produced the value.
+     * @nullable
+     */
   methodology?: string | null;
-  /** @nullable */
+  /**
+     * Version of the methodology as published in this release. `null` when none.
+     * @nullable
+     */
   release_methodology_version?: string | null;
-  /** Transformation version, distinct from methodology resource version. */
+  /** Version of the transformation applied to this observation. It is separate from the version of the methodology resource. */
   methodology_version: string;
-  /** Governed semantic contract version, separate from HTTP V1 and application version. */
+  /** Version of the data contract the value follows. It is separate from the API version and the application version. */
   semantic_version: string;
-  /** Governed release identity for reproducibility. */
+  /** Identifies the published data release the result came from. Results from different releases are not directly comparable. */
   release_id: string;
-  /** Structured observation provenance identity; not a literature citation. */
+  /** Identifies the provenance record for this observation. It is not a literature citation. */
   provenance_ref: string;
-  /** @nullable */
+  /**
+     * Display name of the source. `null` when none is published.
+     * @nullable
+     */
   source_label?: string | null;
-  /** @nullable */
+  /**
+     * Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value.
+     * @nullable
+     */
   source_vintage?: string | null;
-  /** @nullable */
+  /**
+     * Web address of the source. `null` when none is published.
+     * @nullable
+     */
   source_url?: string | null;
   /**
-     * Publisher timestamp when governed; null is not inferred freshness.
+     * When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.
      * @nullable
      */
   source_published_at?: string | null;
   /**
-     * Atlas acquisition time when governed; distinct from source publication and processing.
+     * When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.
      * @nullable
      */
   atlas_acquired_at?: string | null;
   /**
-     * Atlas processing time when governed; distinct from response time.
+     * When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.
      * @nullable
      */
   atlas_processed_at?: string | null;
-  /** Governed interpretation limitations; preserve alongside values and versions. */
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations: string[];
+  /** Compact pointer to the Atlas resource that backs this observation. */
   evidence: EvidenceReference;
-  /** Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number. */
+  /** Coverage details. Present only for environmental measures. Exact decimal quantities may be strings. */
   environmental_context?: EnvironmentalContext | null;
-  /** Only supplied through an admitted Data release/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal. */
+  /** Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag. */
   surveillance_context?: SurveillanceContext | null;
   /**
-     * ACS reference-period start; null for RUCC vintage.
+     * First date of the reference period. `null` for a classification vintage.
      * @nullable
      */
   period_start: string | null;
   /**
-     * ACS reference-period end; null for RUCC vintage.
+     * Last date of the reference period. `null` for a classification vintage.
      * @nullable
      */
   period_end: string | null;
+  /** Describes the field the value came from. */
   county_context: CountyContext;
 }

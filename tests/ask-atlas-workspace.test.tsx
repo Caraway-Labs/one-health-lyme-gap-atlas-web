@@ -30,7 +30,7 @@ const { chatRequest } = vi.hoisted(() => ({
 
 vi.mock(import("../src/generated/atlas"), async (importOriginal) => ({
   ...(await importOriginal()),
-  knowledgeGraphChatV1KnowledgeGraphChatPost: chatRequest as never,
+  askKnowledgeGraph: chatRequest as never,
 }));
 
 function stubMatchMedia(mobile: boolean) {

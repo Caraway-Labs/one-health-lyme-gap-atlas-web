@@ -7,7 +7,7 @@ const DOCS_ROUTES = [
   "/docs",
   "/docs/what-is-atlas",
   "/docs/api-reference",
-  "/docs/api-reference/counties/county_v1_counties__fips__get",
+  "/docs/api-reference/counties/getCounty",
 ] as const;
 
 const ANALYTICAL_ROUTES = ["/assistant", "/account"] as const;

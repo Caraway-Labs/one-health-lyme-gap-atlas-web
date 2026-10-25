@@ -12,58 +12,104 @@ import type { SituationClassificationHandoffApproval } from './situationClassifi
 import type { SituationClassificationModelProvenance } from './situationClassificationModelProvenance';
 import type { SituationClassificationSourceProvenance } from './situationClassificationSourceProvenance';
 
+/**
+ * The surveillance situation class assigned to a county, with how it was produced.
+ *
+ * A class describes the pattern of surveillance evidence. It is not a diagnosis and not an
+ * estimate of an individual's risk.
+ */
 export interface SituationClassification {
-  /** @minLength 1 */
+  /**
+     * Identifies the model that assigned the class.
+     * @minLength 1
+     */
   model_id: string;
-  /** @minLength 1 */
+  /**
+     * Version of the model.
+     * @minLength 1
+     */
   model_version: string;
-  /** @minLength 1 */
+  /**
+     * Identifies the assigned class.
+     * @minLength 1
+     */
   class_id: string;
   /**
-     * Reviewed persisted display label, verbatim.
+     * Display label of the class, exactly as reviewed.
      * @minLength 1
      */
   class_name: string;
   /**
-     * Reviewed persisted explanation, verbatim.
+     * Explanation of the class, exactly as reviewed.
      * @minLength 1
      */
   class_description: string;
   /**
+     * Membership probability for each of the four classes.
      * @minItems 4
      * @maxItems 4
      */
   probabilities: MembershipProbability[];
   /**
-     * Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.
+     * Readings of the class that are not supported. They list what not to conclude, not outcomes.
      * @minItems 1
      */
   limitations: string[];
-  /** @minLength 1 */
+  /**
+     * Identifies the batch of results.
+     * @minLength 1
+     */
   batch_id: string;
-  /** @minLength 1 */
+  /**
+     * Version of the batch.
+     * @minLength 1
+     */
   batch_version: string;
-  /** @pattern ^[0-9a-f]{64}$ */
+  /**
+     * SHA-256 checksum of this county's input record.
+     * @pattern ^[0-9a-f]{64}$
+     */
   county_sha256: string;
-  /** @pattern ^[0-9a-f]{64}$ */
+  /**
+     * SHA-256 checksum of the class dictionary the model used.
+     * @pattern ^[0-9a-f]{64}$
+     */
   dictionary_sha256: string;
-  /** @minLength 1 */
+  /**
+     * Identifies the data release the model read.
+     * @minLength 1
+     */
   input_release_id: string;
-  /** @pattern ^[0-9a-f]{64}$ */
+  /**
+     * SHA-256 checksum of the data release the model read.
+     * @pattern ^[0-9a-f]{64}$
+     */
   input_bundle_sha256: string;
-  /** @minLength 1 */
+  /**
+     * Commit of the code that fitted the model, for reproducibility.
+     * @minLength 1
+     */
   fit_git_sha: string;
-  /** Persisted feature/config contract. */
+  /** The input features and settings the model used. */
   feature_contract: SituationClassificationFeatureContract;
+  /** Records of how the model was fitted and reviewed. */
   model_provenance: SituationClassificationModelProvenance;
-  /** Persisted sources and source vintages. */
+  /** Sources and source vintages the model used. */
   source_provenance: SituationClassificationSourceProvenance;
+  /** Record of the review that approved the model output for use. */
   handoff_approval: SituationClassificationHandoffApproval;
+  /** Record of the approval to publish the batch. */
   data_publication_authorization: SituationClassificationDataPublicationAuthorization;
-  /** @minLength 1 */
+  /**
+     * Identifies the approval to publish the batch.
+     * @minLength 1
+     */
   data_authorization_id: string;
-  /** @minLength 1 */
+  /**
+     * Identifies the staging run that prepared the batch.
+     * @minLength 1
+     */
   staging_attempt: string;
-  /** Data activation time, not source vintage or request time. */
+  /** When the batch became active. It is not the source vintage or the request time. */
   activated_at: string;
 }

@@ -8,23 +8,23 @@
 import * as zod from 'zod';
 
 export const Indicator = zod.object({
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "measure_ids": zod.array(zod.string()),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "domain": zod.string().nullish(),
-  "category": zod.string().nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "indicator_id": zod.string().describe('Stable identifier of the indicator. Use it with `\/v1\/indicators\/{indicator_id}`.'),
+  "label": zod.string().describe('Short display name of the indicator.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the indicator. `null` when none is published.'),
+  "measure_ids": zod.array(zod.string()).describe('Identifiers of the measures that belong to this indicator, in sorted order.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "domain": zod.string().nullish().describe('Broad subject area the indicator belongs to, such as `climate`. `null` when none is published.'),
+  "category": zod.string().nullish().describe('Finer grouping inside the domain. `null` when none is published.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist. A mapping does not mean Atlas exchanges data with that standard.')
+}).describe('A public-health concept that groups related measures.')
 
 export type Indicator = zod.input<typeof Indicator>;
 export type IndicatorOutput = zod.output<typeof Indicator>;

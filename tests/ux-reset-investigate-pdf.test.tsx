@@ -13,7 +13,7 @@ import {
   type InvestigatePdfContext,
 } from "@/features/ux-reset/investigate/investigate-next-step";
 import { InvestigatePdfExport } from "@/features/ux-reset/investigate/investigate-pdf-export";
-import { getCountyReportPdfV1CountiesFipsReportPdfGetUrl } from "@/generated/atlas";
+import { getDownloadCountyReportUrl } from "@/generated/atlas";
 import type { Observation } from "@/generated/models";
 
 import {
@@ -22,17 +22,13 @@ import {
 } from "./fixtures/investigate-api-fixtures";
 
 const api = vi.hoisted(() => ({
-  observations:
-    vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>(),
-  report:
-    vi.fn<
-      typeof import("@/generated/atlas").countyReportPdfV1CountiesFipsReportPdfGet
-    >(),
+  observations: vi.fn<typeof import("@/generated/atlas").listObservations>(),
+  report: vi.fn<typeof import("@/generated/atlas").downloadCountyReport>(),
 }));
 vi.mock(import("@/generated/atlas"), async (original) => ({
   ...(await original<typeof import("@/generated/atlas")>()),
-  observationsV1ObservationsGet: api.observations,
-  countyReportPdfV1CountiesFipsReportPdfGet: api.report,
+  listObservations: api.observations,
+  downloadCountyReport: api.report,
 }));
 
 function context(): InvestigatePdfContext {
@@ -135,7 +131,7 @@ describe("Investigate canonical PDF", () => {
 
   it("serializes every selected measure using the generated contract", () => {
     const url = new URL(
-      getCountyReportPdfV1CountiesFipsReportPdfGetUrl("08001", {
+      getDownloadCountyReportUrl("08001", {
         template: "county-v2",
         measure_id: ["tick_survey", "cases"],
         period_start: "2023-01-01",

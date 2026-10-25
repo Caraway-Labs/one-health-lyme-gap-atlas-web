@@ -9,34 +9,34 @@ import * as zod from 'zod';
 
 export const CollectionEnvelopeSource = zod.object({
   "data": zod.array(zod.object({
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "label": zod.string(),
-  "publisher": zod.string().nullable(),
-  "lineage_source_id": zod.string(),
-  "dataset_id": zod.string(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_version": zod.string().nullish(),
-  "published_at": zod.iso.datetime({"offset":true}).nullish(),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
-})),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "publisher": zod.string().nullable().describe('Organization that publishes the data. `null` when none is recorded.'),
+  "lineage_source_id": zod.string().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset. It is not an annual value.'),
+  "source_version": zod.string().nullish().describe('Version label the publisher gives the dataset, when it has one.'),
+  "published_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `upstream_updated_at`. When the publisher published the data.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas last retrieved the data from the publisher. `null` when unavailable.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.')
+}).describe('The organization and dataset a value came from.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-})
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of sources, with paging details and links. Read `meta.next_page_token` to get the next page.')
 
 export type CollectionEnvelopeSource = zod.input<typeof CollectionEnvelopeSource>;
 export type CollectionEnvelopeSourceOutput = zod.output<typeof CollectionEnvelopeSource>;

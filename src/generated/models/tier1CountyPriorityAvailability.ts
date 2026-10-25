@@ -10,21 +10,23 @@ import type { Tier1CountyPriorityAvailabilityAvailability } from './tier1CountyP
 import type { Tier1CountyPriorityAvailabilityReason } from './tier1CountyPriorityAvailabilityReason';
 
 /**
- * Availability lookup that separates confirmed absence from request failure.
+ * Whether a Tier 1 result is published for a county, with the result when it is.
+ *
+ * `UNAVAILABLE` means no result is published. It is not a finding about the county.
  */
 export interface Tier1CountyPriorityAvailability {
-  /** Whether a persisted Tier 1 result exists for this supported current geography. */
+  /** Whether a published Tier 1 result exists for this county. */
   availability: Tier1CountyPriorityAvailabilityAvailability;
   /**
-     * Current governed geography release used to validate the requested FIPS.
+     * Identifies the geography release used to confirm the county exists.
      * @minLength 1
      */
   geography_release_id: string;
   /**
-     * Stable reason when no persisted result is published; null when data is available.
+     * Why no result is published. `NO_PUBLISHED_MODEL` means no model result is published for the county. `null` when a result is available.
      * @nullable
      */
   reason: Tier1CountyPriorityAvailabilityReason;
-  /** The exact persisted Tier 1 result, or null when none is published. */
+  /** The published Tier 1 result, or `null` when none is published. */
   data: Tier1CountyPriority | null;
 }

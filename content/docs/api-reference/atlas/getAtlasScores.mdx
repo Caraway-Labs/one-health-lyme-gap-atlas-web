@@ -1,0 +1,89 @@
+---
+title: Get county gap scores
+description: Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+      - content: GET /v1/atlas/scores
+      - content: getAtlasScores
+      - content: Get county gap scores
+      - content: Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: ecological_share query optional Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Ecological Share
+      - content: '65'
+      - content: 'smooth_k query optional Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: 'Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: Smooth K
+      - content: '50'
+      - content: missing_human_weakness query optional Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Missing Human Weakness
+      - content: '75'
+      - content: low_incidence_breakpoint query optional Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: low_incidence_breakpoint deprecated
+      - content: Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: Low Incidence Breakpoint
+      - content: 200 Successful response. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=300`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=300"'
+      - content: 'ETag Opaque validator for this representation. It is informational here: the operation does not answer `If-None-Match`.'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/ScoreCollection'
+      - content: Scores for the first two counties of the release
+      - content: '{"scoring_methodology_version":"surveillance-gap-score-v1.1","release_id":"governed-2026-10-15-january-climate-prod","methodology_version":"semantic-2.0.0","settings":{"ecological_share":65,"smooth_k":50,"missing_human_weakness":75},"counties":[{"scoring_methodology_version":"surveillance-gap-score-v1.1","incidence_floor_2023":0.15,"svi_percentile":0.8629,"uninsured_percentile":0.5504,"rucc_2023":1,"fips":"06037","county":"Los Angeles County","state":"CA","state_name":"California","in_contiguous_tick_scope":true,"human_status":"published_count_floor","tick_status":"Established","burgdorferi_status":"Present","evidence_completeness":100,"score":{"score":85.6,"human_weakness":99.7,"ecological":100,"community":59.7,"tick_signal":100,"pathogen_signal":100,"svi_signal":86.3,"access_signal":55,"rural_signal":0},"priority":"Priority 1 — Investigate","color":"#e9602b"},{"scoring_methodology_version":"surveillance-gap-score-v1.1","incidence_floor_2023":2.9,"svi_percentile":0.8132,"uninsured_percentile":0.8635,"rucc_2023":3,"fips":"18039","county":"Elkhart County","state":"IN","state_name":"Indiana","in_contiguous_tick_scope":true,"human_status":"published_count_floor","tick_status":"Established","burgdorferi_status":"Present","evidence_completeness":100,"score":{"score":85.1,"human_weakness":94.5,"ecological":100,"community":71.6,"tick_signal":100,"pathogen_signal":100,"svi_signal":81.3,"access_signal":86.4,"rural_signal":25},"priority":"Priority 1 — Investigate","color":"#e9602b"}]}'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"Dataset release not found","instance":"/v1/atlas/scores","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/atlas/scores","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/atlas/scores","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/atlas/scores","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/scores","method":"get"}]} />
+    </>
+  );
+}

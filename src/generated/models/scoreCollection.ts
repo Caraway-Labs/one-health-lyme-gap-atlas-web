@@ -8,10 +8,18 @@
 import type { CountyScoreSummary } from './countyScoreSummary';
 import type { ScoreCollectionSettings } from './scoreCollectionSettings';
 
+/**
+ * Surveillance Gap Scores for every county in the release, for one set of settings.
+ */
 export interface ScoreCollection {
+  /** Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. */
   scoring_methodology_version?: 'surveillance-gap-score-v1.1';
+  /** Identifies the published data release. Results from different releases are not directly comparable. */
   release_id: string;
+  /** Version of the release methodology that the scores follow. */
   methodology_version: string;
+  /** Score settings used for this response, such as `ecological_share`, `smooth_k`, and `missing_human_weakness`. */
   settings: ScoreCollectionSettings;
+  /** One entry for each county. */
   counties: CountyScoreSummary[];
 }

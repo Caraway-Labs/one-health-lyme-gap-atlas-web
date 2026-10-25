@@ -31,32 +31,32 @@ export const situationClassificationInputBundleSha256RegExp = new RegExp('^[0-9a
 
 
 export const SituationClassification = zod.object({
-  "model_id": zod.string().min(1),
-  "model_version": zod.string().min(1),
-  "class_id": zod.string().min(1),
-  "class_name": zod.string().min(1).describe('Reviewed persisted display label, verbatim.'),
-  "class_description": zod.string().min(1).describe('Reviewed persisted explanation, verbatim.'),
+  "model_id": zod.string().min(1).describe('Identifies the model that assigned the class.'),
+  "model_version": zod.string().min(1).describe('Version of the model.'),
+  "class_id": zod.string().min(1).describe('Identifies the assigned class.'),
+  "class_name": zod.string().min(1).describe('Display label of the class, exactly as reviewed.'),
+  "class_description": zod.string().min(1).describe('Explanation of the class, exactly as reviewed.'),
   "probabilities": zod.array(zod.object({
-  "class_id": zod.string().min(1).describe('Version-scoped persisted class identity.'),
-  "probability": zod.number().min(situationClassificationProbabilitiesItemProbabilityMin).max(situationClassificationProbabilitiesItemProbabilityMax).describe('Latent-class membership on 0–1 scale; never disease risk.')
-})).min(situationClassificationProbabilitiesMin).max(situationClassificationProbabilitiesMax),
-  "limitations": zod.array(zod.string()).min(1).describe('Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.'),
-  "batch_id": zod.string().min(1),
-  "batch_version": zod.string().min(1),
-  "county_sha256": zod.string().regex(situationClassificationCountySha256RegExp),
-  "dictionary_sha256": zod.string().regex(situationClassificationDictionarySha256RegExp),
-  "input_release_id": zod.string().min(1),
-  "input_bundle_sha256": zod.string().regex(situationClassificationInputBundleSha256RegExp),
-  "fit_git_sha": zod.string().min(1),
-  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('Persisted feature\/config contract.'),
-  "model_provenance": zod.record(zod.string(), zod.unknown()),
-  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Persisted sources and source vintages.'),
-  "handoff_approval": zod.record(zod.string(), zod.unknown()),
-  "data_publication_authorization": zod.record(zod.string(), zod.unknown()),
-  "data_authorization_id": zod.string().min(1),
-  "staging_attempt": zod.string().min(1),
-  "activated_at": zod.iso.datetime({"offset":true}).describe('Data activation time, not source vintage or request time.')
-})
+  "class_id": zod.string().min(1).describe('Identifies the class. It is specific to a model version.'),
+  "probability": zod.number().min(situationClassificationProbabilitiesItemProbabilityMin).max(situationClassificationProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
+}).describe('The model\'s membership probability for one situation class.')).min(situationClassificationProbabilitiesMin).max(situationClassificationProbabilitiesMax).describe('Membership probability for each of the four classes.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Readings of the class that are not supported. They list what not to conclude, not outcomes.'),
+  "batch_id": zod.string().min(1).describe('Identifies the batch of results.'),
+  "batch_version": zod.string().min(1).describe('Version of the batch.'),
+  "county_sha256": zod.string().regex(situationClassificationCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
+  "dictionary_sha256": zod.string().regex(situationClassificationDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
+  "input_release_id": zod.string().min(1).describe('Identifies the data release the model read.'),
+  "input_bundle_sha256": zod.string().regex(situationClassificationInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
+  "fit_git_sha": zod.string().min(1).describe('Commit of the code that fitted the model, for reproducibility.'),
+  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('The input features and settings the model used.'),
+  "model_provenance": zod.record(zod.string(), zod.unknown()).describe('Records of how the model was fitted and reviewed.'),
+  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Sources and source vintages the model used.'),
+  "handoff_approval": zod.record(zod.string(), zod.unknown()).describe('Record of the review that approved the model output for use.'),
+  "data_publication_authorization": zod.record(zod.string(), zod.unknown()).describe('Record of the approval to publish the batch.'),
+  "data_authorization_id": zod.string().min(1).describe('Identifies the approval to publish the batch.'),
+  "staging_attempt": zod.string().min(1).describe('Identifies the staging run that prepared the batch.'),
+  "activated_at": zod.iso.datetime({"offset":true}).describe('When the batch became active. It is not the source vintage or the request time.')
+}).describe('The surveillance situation class assigned to a county, with how it was produced.\n\nA class describes the pattern of surveillance evidence. It is not a diagnosis and not an\nestimate of an individual\'s risk.')
 
 export type SituationClassification = zod.input<typeof SituationClassification>;
 export type SituationClassificationOutput = zod.output<typeof SituationClassification>;

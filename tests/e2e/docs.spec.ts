@@ -63,13 +63,13 @@ const docsPages = [
     heading: "Observations",
   },
   {
-    path: "/docs/api-reference/observations/observations_v1_observations_get",
+    path: "/docs/api-reference/observations/listObservations",
     heading: "Query county observations",
     operation: true,
   },
   {
-    path: "/docs/api-reference/geographies/canonicalGeographyAvailability",
-    heading: "Check canonical county geography publication availability",
+    path: "/docs/api-reference/geographies/checkGeographyAvailability",
+    heading: "Check county geography availability",
     operation: true,
   },
   {
@@ -94,12 +94,16 @@ function generatedApiReferencePages(): {
 }[] {
   const root = path.join("content", "docs", "api-reference");
   const pages: { heading: string; operation: true; path: string }[] = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const directory = path.join(root, entry.name);
-    for (const file of readdirSync(directory)) {
-      if (!file.endsWith(".mdx") || file === "index.mdx") continue;
-      const source = readFileSync(path.join(directory, file), "utf8");
+  const visit = (directory: string, slug: string) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      const entrySlug = `${slug}/${entry.name}`;
+      if (entry.isDirectory()) {
+        visit(entryPath, entrySlug);
+        continue;
+      }
+      if (!entry.name.endsWith(".mdx") || entry.name === "index.mdx") continue;
+      const source = readFileSync(entryPath, "utf8");
       const title = /^title:\s*(?<title>.+)$/m.exec(source)?.groups?.title;
       if (!title) continue;
       const parsed: unknown =
@@ -110,10 +114,11 @@ function generatedApiReferencePages(): {
       pages.push({
         heading: parsed,
         operation: true,
-        path: `/docs/api-reference/${entry.name}/${file.slice(0, -".mdx".length)}`,
+        path: `/docs/api-reference${entrySlug.slice(0, -".mdx".length)}`,
       });
     }
-  }
+  };
+  visit(root, "");
   pages.sort((left, right) => left.path.localeCompare(right.path));
   return pages;
 }
@@ -361,7 +366,7 @@ async function expectOperationControlNames(page: Page, route: string) {
     "aria-label",
     "Code sample language"
   );
-  if (!route.endsWith("/observations_v1_observations_get")) return;
+  if (!route.endsWith("/listObservations")) return;
 
   const schemaVariant = page.getByRole("combobox", { name: "Schema variant" });
   const responseExample = page.getByRole("combobox", {
@@ -398,7 +403,9 @@ async function expectVisibleRetryAfterHeader(page: Page) {
   ).toBeVisible();
   await expect(headers.getByText("string", { exact: true })).toBeVisible();
   await expect(
-    headers.getByText("Seconds before retry when supplied by the service.")
+    headers.getByText(
+      "Seconds to wait before you retry. Wait that long when the header is present."
+    )
   ).toBeVisible();
 }
 
@@ -432,13 +439,13 @@ test("renders the generated observations reference with version, source, and raw
     })
   ).toBeVisible();
   await expect(
-    page.getByText("observations_v1_observations_get", { exact: true })
+    page.getByText("listObservations", { exact: true })
   ).toBeVisible();
   await page
     .getByRole("link", { name: "Parameters, responses, and schema" })
     .click();
   await expect(page).toHaveURL(
-    /\/docs\/api-reference\/observations\/observations_v1_observations_get$/
+    /\/docs\/api-reference\/observations\/listObservations$/
   );
   await expect(
     page.getByRole("heading", { name: "Query Parameters" })
@@ -450,12 +457,12 @@ test("renders the generated observations reference with version, source, and raw
   expect(parameterSearch.ok()).toBeTruthy();
   const parameterHits = await parameterSearch.text();
   expect(parameterHits).toContain(
-    "/docs/api-reference/observations/observations_v1_observations_get"
+    "/docs/api-reference/observations/listObservations"
   );
   await expect(
     page.getByRole("heading", { name: "Response Body" })
   ).toBeVisible();
-  await page.goto("/docs/api-reference/atlas/geometry_v1_atlas_geometry_get");
+  await page.goto("/docs/api-reference/atlas/getAtlasGeometry");
   const geometryDescription =
     "Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.";
   await expect(
@@ -468,9 +475,22 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByRole("heading", { name: "Response Body" })
   ).toBeVisible();
+  const successHeaders = page.getByRole("region", {
+    name: "Response Headers",
+  });
+  await expect(successHeaders).toHaveCount(1);
   await expect(
-    page.getByRole("region", { name: "Response Headers" })
-  ).toHaveCount(0);
+    successHeaders.getByRole("heading", { name: "Content-Type", exact: true })
+  ).toBeVisible();
+  await expect(
+    successHeaders.getByRole("heading", { name: "Cache-Control", exact: true })
+  ).toBeVisible();
+  await expect(
+    successHeaders.getByRole("heading", { name: "ETag", exact: true })
+  ).toBeVisible();
+  await expect(
+    successHeaders.getByRole("heading", { name: "X-Request-ID", exact: true })
+  ).toBeVisible();
   await page.getByRole("tab", { name: "429", exact: true }).click();
   await expectVisibleRetryAfterHeader(page);
   await page.getByRole("tab", { name: "503", exact: true }).click();

@@ -95,14 +95,12 @@ vi.mock(import("@/lib/supabase/client"), () => ({
 }));
 
 vi.mock(import("@/generated/atlas"), () => ({
-  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
-    vi.fn<() => Promise<never>>(),
-  createPrivacyRequestV1MePrivacyRequestsPost: vi.fn<() => Promise<never>>(),
-  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
-    vi.fn<() => Promise<never>>(),
-  getProfileV1MeProfileGet: vi.fn<() => Promise<never>>(),
-  metadataV1AtlasMetadataGet: vi.fn<() => Promise<never>>(),
-  saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
+  confirmPrivacyRequest: vi.fn<() => Promise<never>>(),
+  createPrivacyRequest: vi.fn<() => Promise<never>>(),
+  downloadPrivacyExport: vi.fn<() => Promise<never>>(),
+  getProfile: vi.fn<() => Promise<never>>(),
+  getAtlasMetadata: vi.fn<() => Promise<never>>(),
+  updateProfile: vi.fn<() => Promise<never>>(),
 }));
 
 import type { SavedProfile } from "@/features/ux-reset/profile/default-jurisdiction-contract";
@@ -113,11 +111,7 @@ import {
 import { savedProfileQueryKey } from "@/features/ux-reset/profile/use-saved-profile";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
 import { resetWorkspaceSignOutStateForTests } from "@/features/ux-reset/workspace-sign-out";
-import {
-  getProfileV1MeProfileGet,
-  metadataV1AtlasMetadataGet,
-  saveProfileV1MeProfilePut,
-} from "@/generated/atlas";
+import { getProfile, getAtlasMetadata, updateProfile } from "@/generated/atlas";
 
 function asResponse<T>(value: T): never {
   return value as never;
@@ -189,12 +183,12 @@ describe("saved profile account isolation", () => {
     auth.push.mockReset();
     auth.sessionRead = null;
     auth.signOut.mockReset();
-    vi.mocked(getProfileV1MeProfileGet).mockReset();
-    vi.mocked(saveProfileV1MeProfilePut).mockReset();
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+    vi.mocked(getProfile).mockReset();
+    vi.mocked(updateProfile).mockReset();
+    vi.mocked(getAtlasMetadata).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
-    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    vi.mocked(getProfile).mockImplementation(
       asResponse(async () => ({
         data: {
           profile: profileFor(auth.session?.user.id ?? "user-b"),
@@ -229,7 +223,7 @@ describe("saved profile account isolation", () => {
 
   it("drops a late account A read after switching to account B", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    vi.mocked(getProfile).mockImplementation(
       asResponse(async () => {
         const userId = auth.session?.user.id;
         if (userId === "user-a") {
@@ -247,7 +241,7 @@ describe("saved profile account isolation", () => {
     );
     renderSettings();
     await vi.waitFor(() =>
-      expect(getProfileV1MeProfileGet).toHaveBeenCalledWith(
+      expect(getProfile).toHaveBeenCalledWith(
         expect.objectContaining({ signal: expect.any(AbortSignal) })
       )
     );
@@ -268,7 +262,7 @@ describe("saved profile account isolation", () => {
       ((await screen.findByDisplayValue("Other")) as HTMLInputElement).value
     ).toBe("Other");
     expect(screen.queryByDisplayValue("SECRET")).toBeNull();
-    vi.mocked(saveProfileV1MeProfilePut).mockResolvedValue(
+    vi.mocked(updateProfile).mockResolvedValue(
       asResponse({
         data: { profile: profileFor("user-b") },
         status: 200,
@@ -276,7 +270,7 @@ describe("saved profile account isolation", () => {
     );
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     await waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledWith(
+      expect(updateProfile).toHaveBeenCalledWith(
         expect.objectContaining({
           job_title: "Director",
           organization: "Other",
@@ -291,7 +285,7 @@ describe("saved profile account isolation", () => {
 
   it("discards an in-flight save from account A after switching to B", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(async () => {
         await gate.promise;
         return { data: { profile: profileFor("user-a") }, status: 200 };
@@ -301,9 +295,7 @@ describe("saved profile account isolation", () => {
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "SECRET" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     switchSession("user-b");
     gate.resolve(true);
     expect(
@@ -315,7 +307,7 @@ describe("saved profile account isolation", () => {
 
   it("applies the newer save when an older one is still in flight across remount", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(
         async (body: {
           organization?: string | null;
@@ -344,21 +336,17 @@ describe("saved profile account isolation", () => {
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "Older" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     first.unmount();
     renderSettings(client);
     const nextOrganization = await screen.findByTestId("settings-organization");
     fireEvent.change(nextOrganization, { target: { value: "Newer" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     await Promise.resolve();
-    expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce();
+    expect(updateProfile).toHaveBeenCalledOnce();
     gate.resolve(true);
-    await waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledTimes(2)
-    );
-    expect(saveProfileV1MeProfilePut).toHaveBeenLastCalledWith(
+    await waitFor(() => expect(updateProfile).toHaveBeenCalledTimes(2));
+    expect(updateProfile).toHaveBeenLastCalledWith(
       expect.objectContaining({ organization: "Newer", state_code: "CO" }),
       {
         headers: { Authorization: "Bearer token-user-a" },
@@ -370,7 +358,7 @@ describe("saved profile account isolation", () => {
   });
 
   it("keeps a confirmed save when a refetch identity check finishes later", async () => {
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue(
+    vi.mocked(getProfile).mockResolvedValue(
       asResponse({
         data: {
           profile: { ...profileFor("user-a"), organization: "Original" },
@@ -383,7 +371,7 @@ describe("saved profile account isolation", () => {
       ((await screen.findByTestId("settings-organization")) as HTMLInputElement)
         .value
     ).toBe("Original");
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(async (body: { organization?: string | null }) => ({
         data: {
           profile: {
@@ -400,7 +388,7 @@ describe("saved profile account isolation", () => {
     });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     await vi.waitFor(() => expect(auth.pausedLookups).toBe(1));
-    expect(saveProfileV1MeProfilePut).not.toHaveBeenCalled();
+    expect(updateProfile).not.toHaveBeenCalled();
     const readSnapshot = pauseNextSessionLookup();
     const refetch = client.refetchQueries({
       queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
@@ -443,7 +431,7 @@ describe("saved profile account isolation", () => {
 
   it("does not expire account B when account A's save returns 401", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(async () => {
         await gate.promise;
         throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
@@ -453,9 +441,7 @@ describe("saved profile account isolation", () => {
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "SECRET" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     switchSession("user-b");
     expect(
       ((await screen.findByDisplayValue("Other")) as HTMLInputElement).value
@@ -471,7 +457,7 @@ describe("saved profile account isolation", () => {
 
   it("returns superseded when A's 401 arrives after the session is B", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(async () => {
         await gate.promise;
         throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
@@ -486,9 +472,7 @@ describe("saved profile account isolation", () => {
       },
       { kind: "user", userId: "user-a" }
     );
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     switchSession("user-b");
     gate.resolve(true);
     await expect(writing).resolves.toStrictEqual({ status: "superseded" });
@@ -496,7 +480,7 @@ describe("saved profile account isolation", () => {
 
   it("loads account B while account A's save is still in flight", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(async () => {
         await gate.promise;
         return { data: { profile: profileFor("user-a") }, status: 200 };
@@ -506,15 +490,13 @@ describe("saved profile account isolation", () => {
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "SECRET" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     switchSession("user-b");
     expect(
       ((await screen.findByDisplayValue("Other")) as HTMLInputElement).value
     ).toBe("Other");
     expect(screen.queryByTestId("settings-session-expired")).toBeNull();
-    expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce();
+    expect(updateProfile).toHaveBeenCalledOnce();
     gate.resolve(true);
     await waitFor(() =>
       expect(
@@ -530,7 +512,7 @@ describe("saved profile account isolation", () => {
         .value
     ).toBe("CDPHE");
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    vi.mocked(getProfile).mockImplementation(
       asResponse(async () => {
         await gate.promise;
         return {
@@ -550,7 +532,7 @@ describe("saved profile account isolation", () => {
       queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
     });
     await vi.waitFor(() =>
-      expect(getProfileV1MeProfileGet).toHaveBeenNthCalledWith(
+      expect(getProfile).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
           headers: { Authorization: "Bearer token-user-a" },
@@ -585,7 +567,7 @@ describe("saved profile account isolation", () => {
         .value
     ).toBe("CDPHE");
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(getProfileV1MeProfileGet).mockImplementationOnce(
+    vi.mocked(getProfile).mockImplementationOnce(
       asResponse(async () => {
         await gate.promise;
         throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
@@ -594,9 +576,7 @@ describe("saved profile account isolation", () => {
     const refetch = client.refetchQueries({
       queryKey: savedProfileQueryKey({ kind: "user", userId: "user-a" }),
     });
-    await vi.waitFor(() =>
-      expect(getProfileV1MeProfileGet).toHaveBeenCalledTimes(2)
-    );
+    await vi.waitFor(() => expect(getProfile).toHaveBeenCalledTimes(2));
     refreshAccessToken("token-user-a-refreshed");
     await act(async () => {
       gate.resolve(true);
@@ -606,7 +586,7 @@ describe("saved profile account isolation", () => {
         // The stale token's 401 is discarded.
       }
     });
-    vi.mocked(getProfileV1MeProfileGet).mockResolvedValue(
+    vi.mocked(getProfile).mockResolvedValue(
       asResponse({
         data: {
           profile: { ...profileFor("user-a"), organization: "Refreshed" },
@@ -629,7 +609,7 @@ describe("saved profile account isolation", () => {
 
   it("recovers from a token refresh during a successful save and allows another save", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementationOnce(
+    vi.mocked(updateProfile).mockImplementationOnce(
       asResponse(async () => {
         await gate.promise;
         return {
@@ -644,9 +624,7 @@ describe("saved profile account isolation", () => {
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "SECRET" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     expect(screen.getByTestId("settings-save-profile").textContent).toBe(
       "Saving…"
     );
@@ -668,7 +646,7 @@ describe("saved profile account isolation", () => {
         organization: "SECRET",
       })
     );
-    vi.mocked(saveProfileV1MeProfilePut).mockResolvedValueOnce(
+    vi.mocked(updateProfile).mockResolvedValueOnce(
       asResponse({
         data: {
           profile: { ...profileFor("user-a"), organization: "SECRET" },
@@ -678,7 +656,7 @@ describe("saved profile account isolation", () => {
     );
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     await waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenLastCalledWith(
+      expect(updateProfile).toHaveBeenLastCalledWith(
         expect.objectContaining({ organization: "SECRET", state_code: "CO" }),
         { headers: { Authorization: "Bearer token-user-a-refreshed" } }
       )
@@ -696,7 +674,7 @@ describe("saved profile account isolation", () => {
 
   it("recovers from a token refresh during a 401 save and allows another save", async () => {
     const gate = Promise.withResolvers<boolean>();
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementationOnce(
+    vi.mocked(updateProfile).mockImplementationOnce(
       asResponse(async () => {
         await gate.promise;
         throw new AtlasApiError("expired", "/v1/me/profile", 401, null);
@@ -706,9 +684,7 @@ describe("saved profile account isolation", () => {
     const organization = await screen.findByTestId("settings-organization");
     fireEvent.change(organization, { target: { value: "SECRET" } });
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
-    await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledOnce()
-    );
+    await vi.waitFor(() => expect(updateProfile).toHaveBeenCalledOnce());
     expect(screen.getByTestId("settings-save-profile").textContent).toBe(
       "Saving…"
     );
@@ -727,7 +703,7 @@ describe("saved profile account isolation", () => {
         organization: "SECRET",
       })
     );
-    vi.mocked(saveProfileV1MeProfilePut).mockResolvedValueOnce(
+    vi.mocked(updateProfile).mockResolvedValueOnce(
       asResponse({
         data: {
           profile: { ...profileFor("user-a"), organization: "SECRET" },
@@ -738,7 +714,7 @@ describe("saved profile account isolation", () => {
     fireEvent.submit(screen.getByTestId("settings-profile-form"));
     await waitFor(() =>
       expect({
-        calls: vi.mocked(saveProfileV1MeProfilePut).mock.calls.length,
+        calls: vi.mocked(updateProfile).mock.calls.length,
         notice: screen.getByTestId("settings-save-notice").textContent,
         organization: (
           screen.getByTestId("settings-organization") as HTMLInputElement
@@ -754,7 +730,7 @@ describe("saved profile account isolation", () => {
   it("clears the editor when an expired session returns 401", async () => {
     const { client } = renderSettings();
     await screen.findByDisplayValue("CDPHE");
-    vi.mocked(getProfileV1MeProfileGet).mockRejectedValue(
+    vi.mocked(getProfile).mockRejectedValue(
       new AtlasApiError("expired", "/v1/me/profile", 401, null)
     );
     await client.refetchQueries();

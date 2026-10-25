@@ -7,6 +7,7 @@
  */
 
 /**
+ * Why no classification is published: `NOT_PUBLISHED`, `DEACTIVATED`, `UNAPPROVED_BATCH`, `INCOMPATIBLE_RELEASE`, or `MISSING_ASSIGNMENT`. `null` when `availability` is `AVAILABLE`.
  * @nullable
  */
 export type SituationVariantUnavailableReason = typeof SituationVariantUnavailableReason[keyof typeof SituationVariantUnavailableReason] | null;

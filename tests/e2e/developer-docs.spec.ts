@@ -230,9 +230,7 @@ test("switches county report template tabs and records the selector", async ({
     )
   ).toEqual([]);
 
-  await page.goto(
-    "/docs/api-reference/counties#county_report_pdf_v1_counties__fips__report_pdf_get"
-  );
+  await page.goto("/docs/api-reference/counties#downloadCountyReport");
   await expectTemplatePanel(
     page,
     scoringTabLabel,

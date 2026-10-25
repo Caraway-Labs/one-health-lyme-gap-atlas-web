@@ -5,9 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { populationRuralityMeasureIds } from "@/features/ux-reset/review/population-rurality-context";
 import { PopulationRuralityContextSection } from "@/features/ux-reset/review/population-rurality-context-section";
-import type { ObservationsV1ObservationsGetParams } from "@/generated/models";
+import type { ListObservationsParams } from "@/generated/models";
 import { ValueState } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 import {
@@ -19,7 +19,7 @@ import {
 } from "./fixtures/population-rurality-context";
 
 const observationsGet = vi.hoisted(() =>
-  vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>()
+  vi.fn<typeof import("@/generated/atlas").listObservations>()
 );
 
 vi.mock(import("@/generated/atlas"), async () => {
@@ -29,7 +29,7 @@ vi.mock(import("@/generated/atlas"), async () => {
     );
   return {
     ...actual,
-    observationsV1ObservationsGet: observationsGet,
+    listObservations: observationsGet,
   };
 });
 
@@ -42,9 +42,7 @@ function isFixtureMeasure(
 function parsedEnvelope(
   rows: ReturnType<typeof populationRuralityObservation>[]
 ) {
-  return ObservationsV1ObservationsGetResponse.parse(
-    populationRuralityEnvelope(rows)
-  );
+  return ListObservationsResponse.parse(populationRuralityEnvelope(rows));
 }
 
 function renderSection(
@@ -98,7 +96,7 @@ describe("population and rurality section", () => {
 
   it("shows the five shipped measures for the selected county", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         const measureId = params.measure_id;
         if (!isFixtureMeasure(measureId)) {
           return {
@@ -165,10 +163,7 @@ describe("population and rurality section", () => {
   it("drops the previous county while the next county is still loading", async () => {
     const pending = new Map<string, () => void>();
     observationsGet.mockImplementation(
-      async (
-        params: ObservationsV1ObservationsGetParams,
-        init?: RequestInit
-      ) => {
+      async (params: ListObservationsParams, init?: RequestInit) => {
         const fips = params.geography_id[0] ?? "";
         const measureId = params.measure_id;
         const gate = Promise.withResolvers<boolean>();
@@ -238,7 +233,7 @@ describe("population and rurality section", () => {
 
   it("keeps a failed measure distinct from a loaded zero", async () => {
     observationsGet.mockImplementation(
-      async (params: ObservationsV1ObservationsGetParams) => {
+      async (params: ListObservationsParams) => {
         if (params.measure_id === "svi_percentile_2022") {
           throw new AtlasApiError(
             "Population and rurality context could not be loaded.",

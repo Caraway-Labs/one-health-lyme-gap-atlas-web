@@ -1,7 +1,7 @@
 # UX Reset profile and default jurisdiction
 
 **Stories:** [#427](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/427) (Settings), reused by [#436](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/436) and [#437](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/437)  
-**Owning API:** `GET /v1/me/profile` (`get_profile_v1_me_profile_get`) and `PUT /v1/me/profile` (`save_profile_v1_me_profile_put`)  
+**Owning API:** `GET /v1/me/profile` (`getProfile`) and `PUT /v1/me/profile` (`updateProfile`)  
 **Generated schemas:** `UserProfileResponse`, `UserProfile`, `UserProfileWrite` in `contracts/openapi.json` (do not hand-edit `src/generated/`)
 
 ## What this contract is

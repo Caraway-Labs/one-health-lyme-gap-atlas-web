@@ -7,7 +7,7 @@
  */
 import * as zod from 'zod';
 
-export const GeographyType = zod.enum(['county', 'state'])
+export const GeographyType = zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')
 
 export type GeographyType = zod.input<typeof GeographyType>;
 export type GeographyTypeOutput = zod.output<typeof GeographyType>;
