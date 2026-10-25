@@ -1,6 +1,6 @@
 ---
 title: Download county rankings as CSV
-description: Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.
+description: Download county rankings as CSV
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/atlas/ranking.csv
       - content: downloadAtlasRanking
       - content: Download county rankings as CSV
-      - content: Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.
       - content: state query optional Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.
       - content: Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.
       - content: State
@@ -94,7 +93,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/ranking.csv","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/ranking.csv","method":"get"}]} showDescription />
     </>
   );
 }

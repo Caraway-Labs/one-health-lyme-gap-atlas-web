@@ -1,6 +1,6 @@
 ---
 title: Download a state report
-description: PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+description: Download a state report
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/states/{state}/report.pdf
       - content: downloadStateReport
       - content: Download a state report
-      - content: PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
       - content: state path required Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
       - content: Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
       - content: State
@@ -101,7 +100,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/report.pdf","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/report.pdf","method":"get"}]} showDescription />
     </>
   );
 }

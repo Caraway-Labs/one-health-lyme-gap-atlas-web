@@ -1,6 +1,6 @@
 ---
 title: Get release metadata
-description: Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
+description: Get release metadata
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/atlas/metadata
       - content: getAtlasMetadata
       - content: Get release metadata
-      - content: Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
       - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Dataset Version
@@ -67,7 +66,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/metadata","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/metadata","method":"get"}]} showDescription />
     </>
   );
 }

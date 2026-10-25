@@ -1,6 +1,6 @@
 ---
 title: List indicators
-description: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+description: List indicators
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/indicators
       - content: listIndicators
       - content: List indicators
-      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
       - content: indicator_id query optional Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.
       - content: Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.
       - content: Indicator Id
@@ -88,7 +87,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/indicators","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/indicators","method":"get"}]} showDescription />
     </>
   );
 }

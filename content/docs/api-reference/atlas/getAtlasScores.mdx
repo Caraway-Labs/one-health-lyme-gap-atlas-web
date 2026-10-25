@@ -1,6 +1,6 @@
 ---
 title: Get county gap scores
-description: Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+description: Get county gap scores
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/atlas/scores
       - content: getAtlasScores
       - content: Get county gap scores
-      - content: Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
       - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Dataset Version
@@ -83,7 +82,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/scores","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/scores","method":"get"}]} showDescription />
     </>
   );
 }

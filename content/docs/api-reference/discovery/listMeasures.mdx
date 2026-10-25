@@ -1,6 +1,6 @@
 ---
 title: List measures
-description: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
+description: List measures
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/measures
       - content: listMeasures
       - content: List measures
-      - content: 'Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.'
       - content: measure_id query optional Return only the measure with this exact ID. Omit it to list every measure. An ID that matches nothing returns an empty list.
       - content: Return only the measure with this exact ID. Omit it to list every measure. An ID that matches nothing returns an empty list.
       - content: Measure Id
@@ -96,7 +95,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/measures","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/measures","method":"get"}]} showDescription />
     </>
   );
 }

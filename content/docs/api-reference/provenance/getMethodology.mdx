@@ -1,6 +1,6 @@
 ---
 title: Get a methodology
-description: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
+description: Get a methodology
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/methodologies/{methodology_id}
       - content: getMethodology
       - content: Get a methodology
-      - content: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
       - content: methodology_id path required Exact methodology ID, as given in a `methodology_id` field. An unknown ID returns 404.
       - content: Exact methodology ID, as given in a `methodology_id` field. An unknown ID returns 404.
       - content: Methodology Id
@@ -85,7 +84,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/methodologies/{methodology_id}","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/methodologies/{methodology_id}","method":"get"}]} showDescription />
     </>
   );
 }
