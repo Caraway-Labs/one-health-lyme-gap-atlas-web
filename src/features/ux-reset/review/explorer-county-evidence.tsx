@@ -34,6 +34,7 @@ import {
   hrefWithExplorerMode,
   type ExplorerCountyMode,
 } from "@/features/ux-reset/review/explorer-mode";
+import { ExplorerOfficialResources } from "@/features/ux-reset/review/explorer-official-resources";
 import {
   ExplorerReviewPriority,
   ExplorerSuggestedFollowUpPanel,
@@ -46,6 +47,7 @@ import { ATLAS_EXPLORER_PATH } from "@/features/ux-reset/routes";
 import { ExplorerSurveillanceIntelligence } from "@/features/ux-reset/surveillance-intelligence/explorer-surveillance-intelligence";
 import { tier1ReleaseFromMetadata } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { StateReviewResultState } from "@/generated/models/stateReviewResultState";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import type { FollowUpReviewContext } from "@/lib/follow-up-workflows";
 import { cn } from "@/lib/utils";
 
@@ -370,6 +372,7 @@ export function ExplorerCountyEvidence({
     >
       <section aria-label="County summary" id={EXPLORER_SECTION_IDS.summary}>
         <Button
+          {...analyticsControlAttributes("explorer_back_to_map")}
           data-testid="explorer-back-to-map"
           type="button"
           variant="secondary"
@@ -414,6 +417,7 @@ export function ExplorerCountyEvidence({
         <div className="ux-reset-explorer-actions">
           {publishedCounty ? (
             <Link
+              {...analyticsControlAttributes("explorer_compare")}
               className={cn(buttonVariants({ variant: "secondary" }))}
               data-testid="explorer-compare"
               href={compareHref}
@@ -423,6 +427,7 @@ export function ExplorerCountyEvidence({
           ) : null}
           {workspace.requestedFips ? (
             <Link
+              {...analyticsControlAttributes("explorer_ask_atlas")}
               className={cn(buttonVariants({ variant: "secondary" }))}
               data-testid="explorer-ask-atlas"
               href={askHref}
@@ -516,6 +521,7 @@ export function ExplorerCountyEvidence({
           <AtlasStatusMessage tone="error">
             <p>{workspace.evidenceError}</p>
             <Button
+              {...analyticsControlAttributes("explorer_retry_evidence")}
               data-testid="explorer-retry-evidence"
               type="button"
               variant="secondary"
@@ -537,6 +543,7 @@ export function ExplorerCountyEvidence({
               </p>
               {workspace.recovery === "directory" ? (
                 <Button
+                  {...analyticsControlAttributes("explorer_retry_directory")}
                   data-testid="explorer-retry-directory"
                   type="button"
                   variant="secondary"
@@ -608,6 +615,7 @@ export function ExplorerCountyEvidence({
         reviewContext={followUpReviewContext(followUp, reviewResultState)}
         status={followUpStatus}
       />
+      <ExplorerOfficialResources stateCode={workspace.scope} />
 
       <section
         aria-label="Sources and methods"

@@ -1,6 +1,6 @@
 ---
 title: Get geography identity (delivery pending)
-description: Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.
+description: 'Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.'
 full: true
 _openapi:
   preload:
@@ -11,18 +11,20 @@ _openapi:
   structuredData:
     headings: []
     contents:
-      - content: Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.
+      - content: 'Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.'
       - content: GET /v1/geographies/{geography_type}/{geography_id}
       - content: geography_v1_geographies__geography_type___geography_id__get
       - content: Get geography identity (delivery pending)
-      - content: Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.
+      - content: 'Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.'
       - content: 'geography_type path required '
       - content: '#/components/schemas/GeographyType'
       - content: 'geography_id path required '
       - content: Geography Id
-      - content: 200 Successful current-release resource.
+      - content: 200 Typed answer. While canonical geography identity delivery is unpublished this is availability UNAVAILABLE with data null (HTTP 200, not 5xx, because the hosting edge replaces origin 5xx responses with an HTML 504).
       - content: application/json
+      - content: Response Geography V1 Geographies  Geography Type   Geography Id  Get
       - content: '#/components/schemas/ResourceEnvelope_Geography_'
+      - content: '#/components/schemas/GeographyUnavailable'
       - content: 400 INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, or QUERY_TOO_BROAD; application/problem+json
       - content: application/problem+json
       - content: '#/components/schemas/ProblemDetails'
@@ -49,12 +51,6 @@ _openapi:
       - content: '#/components/schemas/ProblemDetails'
       - content: Synthetic error example
       - content: '{"type":"https://onehealthatlas.org/problems/http-429","title":"Request failed","status":429,"detail":"Rate limited; Retry-After; application/problem+json","instance":"/v1/geographies/{geography_type}/{geography_id}","request_id":"example-request-id","code":"RATE_LIMITED"}'
-      - content: 503 Canonical data delivery is not yet available.
-      - content: Retry-After Seconds before retry when supplied by the service.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
-      - content: Synthetic error example
-      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Request failed","status":503,"detail":"Canonical data delivery is not yet available.","instance":"/v1/geographies/{geography_type}/{geography_id}","request_id":"example-request-id","code":"CANONICAL_DATA_UNAVAILABLE"}'
 ---
 
 import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";

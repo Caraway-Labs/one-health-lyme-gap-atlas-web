@@ -117,5 +117,21 @@ export function analyticsMayStart({
   consent: AnalyticsConsentState;
   doNotTrack: boolean;
 }): boolean {
-  return consent === "granted" && !doNotTrack;
+  if (doNotTrack) {
+    return false;
+  }
+  switch (consent) {
+    case "granted":
+    case "not-decided": {
+      return true;
+    }
+    case "denied":
+    case "storage-unavailable": {
+      return false;
+    }
+    default: {
+      const exhaustive: never = consent;
+      return exhaustive;
+    }
+  }
 }

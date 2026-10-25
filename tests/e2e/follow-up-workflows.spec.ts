@@ -128,6 +128,12 @@ test.describe("five-category suggested follow-up", () => {
     ]) {
       await expect(followUp.getByText(label, { exact: true })).toBeVisible();
     }
+    await expect(
+      followUp.getByText("Potential partners:").first()
+    ).toBeVisible();
+    await expect(followUp).not.toContainText(
+      "Questions, partner roles, and official resources"
+    );
     await expect(followUp.getByTestId("follow-up-interpretation")).toHaveText(
       "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted."
     );
@@ -137,6 +143,10 @@ test.describe("five-category suggested follow-up", () => {
     await expect(followUp).toContainText(
       "Check whether local records clarify missing or suppressed counts."
     );
+    await expect(followUp).toContainText(
+      "Alabama has 29 published 2023 human-surveillance records"
+    );
+    await expect(followUp).toContainText("are not Baldwin County cases");
     await expect(followUp.getByTestId("follow-up-questions")).toContainText(
       "Could travel, reporting practices, or suppressed counts explain the pattern?"
     );
@@ -167,15 +177,24 @@ test.describe("five-category suggested follow-up", () => {
     await expect(resources).not.toContainText("Official resources & guidance");
     await expect(resources).not.toContainText("Resources for follow-up");
     for (const topic of [
-      "Lyme disease surveillance",
-      "Tick and vector surveillance",
-      "Clinical testing and reporting",
+      "Human disease surveillance",
+      "Tick and pathogen surveillance",
+      "Clinical and laboratory testing",
+      "Prevention and outreach",
+      "Community context",
+      "Examples from state programs",
     ]) {
       await expect(
         resources.getByRole("heading", { name: topic })
       ).toBeVisible();
     }
-    await expect(resources.getByRole("link")).toHaveCount(6);
+    await expect(resources.getByRole("link")).toHaveCount(16);
+    await expect(resources).toContainText(
+      "Examples from other state programs. Follow your own state’s reporting requirements and procedures."
+    );
+    await expect(
+      resources.getByRole("link", { name: "View all resources →" })
+    ).toBeVisible();
     await expect(
       resources.getByRole("link", { name: /Lyme surveillance case definition/ })
     ).toHaveAttribute(
@@ -231,13 +250,8 @@ test.describe("five-category suggested follow-up", () => {
       path: "test-results/follow-up-available-1792.png",
     });
     await page.getByTestId("explorer-lower-workspace").screenshot({
-      path: "test-results/follow-up-desktop-1792.png",
+      path: "test-results/follow-up-panels-desktop.png",
     });
-    await page.setViewportSize({ height: 900, width: 800 });
-    await page.getByTestId("explorer-lower-workspace").screenshot({
-      path: "test-results/follow-up-stacked-targeted-800.png",
-    });
-    await page.setViewportSize({ height: 850, width: 1792 });
 
     await page.setViewportSize({ height: 900, width: 1440 });
     await followUp.screenshot({
@@ -267,12 +281,17 @@ test.describe("five-category suggested follow-up", () => {
     expect(narrow?.preview).toBeGreaterThan(0.28);
 
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01001`);
+    await expect(page.getByTestId("explorer-follow-up-response")).toHaveText(
+      "Verify with local information"
+    );
     await expect(followUp).toContainText(
       "A missing published count is not a finding of zero cases."
     );
     await expect(followUp).not.toContainText(
       "Compare the published minimum reported cases"
     );
+    await expect(followUp).toContainText("are not Autauga County cases");
+    await expect(followUp).not.toContainText("are not Baldwin County cases");
 
     await page.setViewportSize({ height: 850, width: 1792 });
     await page.goto(`/explore?scope=AL&dataset=${release}&county=01005`);
@@ -289,7 +308,13 @@ test.describe("five-category suggested follow-up", () => {
     await followUp.screenshot({
       path: "test-results/follow-up-unavailable-1792.png",
     });
-    await expect(resources.getByRole("link")).toHaveCount(6);
+    await expect(resources.getByRole("link")).toHaveCount(16);
+    await expect(followUp).toContainText(
+      "This is not a low or high review priority."
+    );
+    await expect(followUp.getByTestId("follow-up-interpretation")).toHaveText(
+      "No review level is assigned. This is not a measure of individual risk or proof that Lyme disease is undercounted."
+    );
 
     await page.setViewportSize({ height: 900, width: 800 });
     const stacked = await page.evaluate(() => {
@@ -316,8 +341,8 @@ test.describe("five-category suggested follow-up", () => {
       followFirst: true,
       similarWidth: true,
     });
-    await page
-      .getByTestId("explorer-lower-workspace")
-      .screenshot({ path: "test-results/follow-up-stacked-800.png" });
+    await page.getByTestId("explorer-lower-workspace").screenshot({
+      path: "test-results/follow-up-panels-mobile.png",
+    });
   });
 });

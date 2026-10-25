@@ -24,7 +24,9 @@ import {
   INVESTIGATE_STATE_STALE_LIMITATION,
   INVESTIGATE_TICK_LIMITATION,
   INVESTIGATE_TICK_MEASURE_ID,
+  investigateGeographyEnvelope,
   investigateGeographyFixture,
+  investigateGeographyUnavailableBody,
   investigateIndicatorsFixture,
   investigateMeasuresFixture,
   investigateMetadataFixture,
@@ -147,35 +149,56 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
     >(async (_type, geographyId) => {
       if (!/^\d{5}$/.test(geographyId)) {
         return {
-          data: { detail: "invalid geography" },
+          data: {
+            code: null,
+            detail: "invalid geography",
+            instance: "/v1/geographies/county/invalid",
+            request_id: "investigate-geography-fixture",
+            status: 400,
+            title: "Bad Request",
+            type: "about:blank",
+          },
           headers: new Headers(),
           status: 400,
-        } as never;
+        };
       }
       const geography = investigateGeographyFixture(geographyId);
       if (!geography) {
         return {
-          data: { detail: "not found" },
+          data: {
+            code: null,
+            detail: "not found",
+            instance: `/v1/geographies/county/${geographyId}`,
+            request_id: "investigate-geography-fixture",
+            status: 404,
+            title: "Not Found",
+            type: "about:blank",
+          },
           headers: new Headers(),
           status: 404,
-        } as never;
+        };
       }
-      const body =
-        controls.geographyStatus === "identity" && geographyId === "08001"
-          ? {
-              ...geography,
-              geography: {
-                geography_id: "08013",
-                geography_type: "county" as const,
-              },
-              label: "Boulder County",
-            }
-          : geography;
+      // Live 200 is GeographyUnavailable. The identity control keeps the
+      // future ResourceEnvelope arm type-checked, including a swapped county.
+      if (controls.geographyStatus === "identity" && geographyId === "08001") {
+        return {
+          data: investigateGeographyEnvelope({
+            ...geography,
+            geography: {
+              geography_id: "08013",
+              geography_type: "county",
+            },
+            label: "Boulder County",
+          }),
+          headers: new Headers(),
+          status: 200,
+        };
+      }
       return {
-        data: { data: body },
+        data: investigateGeographyUnavailableBody(geographyId),
         headers: new Headers(),
         status: 200,
-      } as never;
+      };
     }),
     indicatorsV1IndicatorsGet: vi.fn<
       typeof import("@/generated/atlas").indicatorsV1IndicatorsGet

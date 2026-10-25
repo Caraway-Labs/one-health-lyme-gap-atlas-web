@@ -34,6 +34,23 @@ describe(clientFailure, () => {
     });
   });
 
+  it("keeps a browser deadline on the same timeout copy as a gateway timeout", () => {
+    expect(
+      clientFailure(
+        new DOMException(
+          "The assistant did not answer before the request timed out.",
+          "TimeoutError"
+        )
+      )
+    ).toStrictEqual({
+      message:
+        "The assistant did not answer before the request timed out. This is not a finding that the Atlas corpus lacks relevant literature.",
+      retry: true,
+      state: "timeout",
+      title: "Request timed out.",
+    });
+  });
+
   it("keeps a gateway timeout distinct from a service error", () => {
     expect(
       clientFailure(

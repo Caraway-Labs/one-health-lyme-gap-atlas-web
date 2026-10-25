@@ -51,11 +51,21 @@ export function shouldReplaceOperationalTurn(
   );
 }
 
+/**
+ * Transport deadlines only. Typed outcomes, including outages, arrive on
+ * HTTP 200 and must not use the timeout copy. A browser TimeoutError is the
+ * client deadline, which waits past the server's own 28s limit.
+ */
 function isTimeoutError(error: unknown): boolean {
   if (error instanceof AtlasApiError) {
     return error.status === 408 || error.status === 504;
   }
-  return error instanceof Error && error.name === "TimeoutError";
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "TimeoutError"
+  );
 }
 
 export function clientFailure(error: unknown): ClientFailure {

@@ -44,11 +44,14 @@ describe(PrivacyPreferences, () => {
 
   it("allows, withdraws, and reloads the same browser preference from Settings", () => {
     const view = render(<PrivacyPreferences presentation="section" />);
+    expect(screen.getByRole("status").textContent).toBe(
+      "Optional analytics are on for this browser until you turn them off."
+    );
     const allow = screen.getByRole("button", {
       name: "Allow optional analytics",
     });
     const decline = screen.getByRole("button", {
-      name: "Keep optional analytics off",
+      name: "Turn off optional analytics",
     });
 
     fireEvent.click(allow);
@@ -82,11 +85,11 @@ describe(PrivacyPreferences, () => {
     fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
     expect(
       screen.getByText(
-        "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas uses product analytics only after you explicitly allow them."
+        "Product analytics are on by default on public Atlas pages and in the signed-in professional workspace. Turn them off here at any time. If your browser sends Do Not Track, Atlas keeps them off. Atlas works the same either way."
       )
     ).toBeTruthy();
     fireEvent.click(
-      screen.getByRole("button", { name: "Keep optional analytics off" })
+      screen.getByRole("button", { name: "Turn off optional analytics" })
     );
     expect(storedDecision()).toBe("denied");
     fireEvent.click(

@@ -282,7 +282,7 @@ export const MethodologyV1MethodologiesMethodologyIdGetResponse = zod.object({
 
 
 /**
- * Validated county/state FIPS identity; currently returns 503 CANONICAL_DATA_UNAVAILABLE. No geometry is returned.
+ * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.
  * @summary Get geography identity (delivery pending)
  */
 export const GeographyV1GeographiesGeographyTypeGeographyIdGetParams = zod.object({
@@ -290,7 +290,10 @@ export const GeographyV1GeographiesGeographyTypeGeographyIdGetParams = zod.objec
   "geography_id": zod.string()
 })
 
-export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.object({
+
+
+
+export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.union([zod.object({
   "data": zod.object({
   "geography": zod.object({
   "geography_type": zod.enum(['county', 'state']),
@@ -302,7 +305,16 @@ export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.obj
   "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
 }).describe('Stable FIPS join identity, independent of display or analysis polygons.'),zod.null()]).optional()
 }).describe('County\/state identity metadata; geometry is a separate display resource.')
-})
+}),zod.object({
+  "availability": zod.literal("UNAVAILABLE"),
+  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
+  "data": zod.null().describe('No canonical geography resource or geometry is fabricated.'),
+  "geography": zod.object({
+  "geography_type": zod.enum(['county', 'state']),
+  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
+}).describe('The validated identity that was requested, echoed back.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Publication and representation boundaries, not scientific absence.')
+}).describe('Typed, successful answer that canonical geography identity is not published yet.\n\nReturned with HTTP 200 by the legacy identity route (ADR 0021). It carries no release\nbecause answering must stay instant and independent of the governed directory.')])
 
 
 /**
@@ -1094,7 +1106,14 @@ export const LiveHealthLiveGetResponse = zod.record(zod.string(), zod.string())
 /**
  * @summary Ready
  */
-export const ReadyHealthReadyGetResponse = zod.record(zod.string(), zod.string())
+export const readyHealthReadyGetResponseStatusDefault = `ready`;
+
+export const ReadyHealthReadyGetResponse = zod.object({
+  "status": zod.literal("ready").default(readyHealthReadyGetResponseStatusDefault),
+  "dependencies": zod.object({
+  "snowflake": zod.enum(['ok', 'degraded'])
+})
+})
 
 
 /**

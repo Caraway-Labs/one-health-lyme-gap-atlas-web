@@ -1,13 +1,16 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ExplorerOfficialResources } from "@/features/ux-reset/review/explorer-official-resources";
 
 const TOPICS = [
-  "Lyme disease surveillance",
-  "Tick and vector surveillance",
-  "Clinical testing and reporting",
+  "Human disease surveillance",
+  "Tick and pathogen surveillance",
+  "Clinical and laboratory testing",
+  "Prevention and outreach",
+  "Community context",
+  "Examples from state programs",
 ] as const;
 
 describe("Explorer official resources card", () => {
@@ -15,89 +18,36 @@ describe("Explorer official resources card", () => {
     cleanup();
   });
 
-  it("shows one heading, the intro, and three topic groups", () => {
+  it("shows every resource group once, with publisher context", () => {
     render(<ExplorerOfficialResources />);
 
-    expect(
-      screen.getByRole("heading", { level: 3, name: "Official resources" })
-    ).toBeVisible();
-    expect(screen.getByText("Guidance to support your review.")).toBeVisible();
     expect(screen.queryByText(/official resources & guidance/i)).toBeNull();
     expect(screen.queryByText("Resources for follow-up")).toBeNull();
-    expect(
-      screen
+    const links = screen.getAllByRole("link");
+    expect({
+      groups: screen
         .getAllByRole("heading", { level: 4 })
-        .map((heading) => heading.textContent)
-    ).toStrictEqual([...TOPICS]);
-  });
-
-  it("keeps the five external destinations in the approved order", () => {
-    render(<ExplorerOfficialResources />);
-
-    expect(screen.getAllByRole("list")).toHaveLength(3);
-    expect(
-      screen.getAllByRole("link").map((link) => ({
-        hiddenIcon: link.querySelector("svg")?.getAttribute("aria-hidden"),
-        href: link.getAttribute("href"),
-        rel: link.getAttribute("rel"),
-        target: link.getAttribute("target"),
-        text: link.textContent,
-      }))
-    ).toStrictEqual([
-      {
-        hiddenIcon: "true",
-        href: "https://ndc.services.cdc.gov/case-definitions/lyme-disease-2022/",
-        rel: "noopener noreferrer",
-        target: "_blank",
-        text: "Lyme surveillance case definition",
-      },
-      {
-        hiddenIcon: "true",
-        href: "https://www.cdc.gov/ticks/data-research/facts-stats/geographic-distribution-of-tickborne-disease-cases.html",
-        rel: "noopener noreferrer",
-        target: "_blank",
-        text: "County case data and limitations",
-      },
-      {
-        hiddenIcon: "true",
-        href: "https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html",
-        rel: "noopener noreferrer",
-        target: "_blank",
-        text: "Tick and pathogen record definitions",
-      },
-      {
-        hiddenIcon: "true",
-        href: "https://www.cdc.gov/ticks/resources/TickSurveillance_Iscapularis-P.pdf",
-        rel: "noopener noreferrer",
-        target: "_blank",
-        text: "Blacklegged tick surveillance guidance",
-      },
-      {
-        hiddenIcon: "true",
-        href: "https://www.cdc.gov/lyme/hcp/diagnosis-testing/index.html",
-        rel: "noopener noreferrer",
-        target: "_blank",
-        text: "Clinical testing guidance",
-      },
-      {
-        hiddenIcon: undefined,
-        href: "/resources",
-        rel: null,
-        target: null,
-        text: "View all resources →",
-      },
-    ]);
-
-    const lyme = screen
-      .getByRole("heading", { name: "Lyme disease surveillance" })
-      .closest("section");
-    expect(lyme).toBeInstanceOf(HTMLElement);
-    expect(within(lyme as HTMLElement).getAllByRole("listitem")).toHaveLength(
-      2
-    );
-    expect(
-      screen.getAllByRole("link", { name: "View all resources →" })
-    ).toHaveLength(1);
+        .map((heading) => heading.textContent),
+      intro: screen.getByText("Guidance to support your review.").textContent,
+      links: links.length,
+      note: screen.getByText(/Follow your own state’s/).textContent,
+      title: screen.getByRole("heading", {
+        level: 3,
+        name: "Official resources",
+      }).textContent,
+      unique: new Set(links.map((link) => link.getAttribute("href"))).size,
+      viewAll: screen
+        .getByRole("link", { name: "View all resources →" })
+        .getAttribute("href"),
+    }).toStrictEqual({
+      groups: [...TOPICS],
+      intro: "Guidance to support your review.",
+      links: 16,
+      note: expect.stringContaining("Examples from other state programs"),
+      title: "Official resources",
+      unique: 16,
+      viewAll: "/resources",
+    });
   });
 
   it("carries a selected county state into the resources page once", () => {

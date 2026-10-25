@@ -302,12 +302,22 @@ export const GAP_REVIEW_SCORE_MENU_LABEL = "Gap review score";
  */
 export const LYME_DISEASE_INCIDENCE_MENU_LABEL = "Lyme disease incidence";
 
+/**
+ * Dropdown name for the pathogen-status layer. The shared layer label
+ * ("B. burgdorferi status"), legend, and `pathogen_status` id stay abbreviated.
+ */
+export const BORRELIA_BURGDORFERI_STATUS_MENU_LABEL =
+  "Borrelia burgdorferi status";
+
 export function explorerMapLayerMenuLabel(layer: ExplorerMapLayer): string {
   if (layer.id === "gap_score") {
     return GAP_REVIEW_SCORE_MENU_LABEL;
   }
   if (layer.id === "incidence_floor") {
     return LYME_DISEASE_INCIDENCE_MENU_LABEL;
+  }
+  if (layer.id === "pathogen_status") {
+    return BORRELIA_BURGDORFERI_STATUS_MENU_LABEL;
   }
   return layer.label;
 }

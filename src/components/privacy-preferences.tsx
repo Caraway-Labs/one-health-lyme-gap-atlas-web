@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 import {
   ANALYTICS_PREFERENCE_CHANGED_EVENT,
   notifyAnalyticsPreferenceChanged,
+  readEnforcedAnalyticsPreference,
 } from "@/components/analytics-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,13 +20,12 @@ import {
 import {
   ANALYTICS_PREFERENCE_KEY,
   honorsDoNotTrack,
-  readBrowserAnalyticsPreference,
   writeBrowserAnalyticsPreference,
   type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
 
 const ANALYTICS_PURPOSE =
-  "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas uses product analytics only after you explicitly allow them.";
+  "Product analytics are on by default on public Atlas pages and in the signed-in professional workspace. Turn them off here at any time. If your browser sends Do Not Track, Atlas keeps them off. Atlas works the same either way.";
 
 const STORAGE_LIMITATION =
   "This setting stores only your choice, its date, expiry, and a format version in this browser for up to six months. It does not create an analytics identifier or send an event.";
@@ -39,6 +39,7 @@ type PrivacyPreferencesProps = {
 const preferenceListeners = new Set<() => void>();
 // A failed write returns storage-unavailable while storage still has no record.
 // Cross-tab `storage` events and dialog open clear this before the snapshot is read.
+// A failed opt-out still stays off through readEnforcedAnalyticsPreference.
 let consentOverride: AnalyticsConsentState | null = null;
 
 function isAnalyticsPreferenceStorageEvent(event: StorageEvent): boolean {
@@ -81,7 +82,7 @@ function refreshStoredConsent(): void {
 }
 
 function storedConsentSnapshot(): AnalyticsConsentState {
-  return consentOverride ?? readBrowserAnalyticsPreference();
+  return consentOverride ?? readEnforcedAnalyticsPreference();
 }
 
 function doNotTrackSnapshot(): boolean {
@@ -106,7 +107,7 @@ function analyticsChoiceSummary(
       return "Atlas cannot save a preference in this browser, so optional analytics remain off.";
     }
     case "not-decided": {
-      return "Optional analytics are off until you make a choice.";
+      return "Optional analytics are on for this browser until you turn them off.";
     }
     default: {
       const exhaustive: never = consent;
@@ -116,22 +117,26 @@ function analyticsChoiceSummary(
 }
 
 function PrivacyChoiceActions({
+  className,
   doNotTrack,
   saveChoice,
 }: {
+  className?: string;
   doNotTrack: boolean;
   saveChoice: (decision: "granted" | "denied") => void;
 }) {
   return (
     <>
       <Button
+        className={className}
         onClick={() => saveChoice("denied")}
         type="button"
         variant="secondary"
       >
-        Keep optional analytics off
+        Turn off optional analytics
       </Button>
       <Button
+        className={className}
         disabled={doNotTrack}
         onClick={() => saveChoice("granted")}
         type="button"
@@ -174,9 +179,10 @@ export function PrivacyPreferences({
     if (decision === "granted" && honorsDoNotTrack(navigator)) {
       return;
     }
-    consentOverride = writeBrowserAnalyticsPreference(decision);
+    const written = writeBrowserAnalyticsPreference(decision);
+    consentOverride = written;
     publishPreferenceChange();
-    notifyAnalyticsPreferenceChanged();
+    notifyAnalyticsPreferenceChanged({ attempted: decision, written });
   };
 
   if (presentation === "section") {
@@ -191,8 +197,9 @@ export function PrivacyPreferences({
           Privacy settings
         </h2>
         <p className="type-body">
-          Optional analytics. This browser choice does not change the required
-          starting view or the optional profile fields.
+          This browser choice covers public Atlas pages and the signed-in
+          professional workspace. It does not change the required starting view
+          or the optional profile fields.
         </p>
         <p className="type-body">{ANALYTICS_PURPOSE}</p>
         <PrivacyChoiceCopy consent={storedConsent} doNotTrack={doNotTrack} />
@@ -222,17 +229,21 @@ export function PrivacyPreferences({
       <DialogTrigger render={<Button variant="link" className="footer-link" />}>
         Privacy settings
       </DialogTrigger>
-      <DialogContent aria-labelledby="privacy-settings-title">
+      <DialogContent
+        aria-labelledby="privacy-settings-title"
+        className="overflow-hidden sm:max-w-lg [&>*]:min-w-0"
+      >
         <DialogHeader>
-          <span className="eyebrow">Your choice</span>
+          <span className="eyebrow">This browser</span>
           <DialogTitle id="privacy-settings-title">
             Privacy settings
           </DialogTitle>
           <DialogDescription>{ANALYTICS_PURPOSE}</DialogDescription>
         </DialogHeader>
         <PrivacyChoiceCopy consent={storedConsent} doNotTrack={doNotTrack} />
-        <DialogFooter>
+        <DialogFooter className="sm:flex-col sm:justify-start">
           <PrivacyChoiceActions
+            className="w-full"
             doNotTrack={doNotTrack}
             saveChoice={saveChoice}
           />

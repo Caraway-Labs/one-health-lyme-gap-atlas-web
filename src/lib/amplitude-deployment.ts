@@ -9,6 +9,16 @@ export const AMPLITUDE_PROJECT_IDS = {
 
 export type AmplitudeProjectTarget = keyof typeof AMPLITUDE_PROJECT_IDS;
 
+/**
+ * Playwright's browser key. It is not an Amplitude project key. The client
+ * still initializes so default-on tests can observe the request.
+ */
+export const SYNTHETIC_AMPLITUDE_API_KEY = "00000000000000000000000000000000";
+
+export function isSyntheticAmplitudeApiKey(apiKey?: string): boolean {
+  return apiKey === SYNTHETIC_AMPLITUDE_API_KEY;
+}
+
 export function readAmplitudeProjectTarget(): AmplitudeProjectTarget {
   const value = process.env.NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET;
   if (value === "development") {
@@ -48,10 +58,10 @@ export function describeAnalyticsRuntime({
   let blocker: AnalyticsRuntimeBlocker | null = null;
   if (consent === "storage-unavailable") {
     blocker = "storage_unavailable";
-  } else if (consent !== "granted") {
-    blocker = "consent_not_granted";
   } else if (doNotTrack) {
     blocker = "do_not_track";
+  } else if (consent === "denied") {
+    blocker = "consent_not_granted";
   } else if (!apiKey) {
     blocker = "missing_api_key";
   }

@@ -5,10 +5,12 @@ import { Card } from "@/components/ui/card";
 import {
   OFFICIAL_FOLLOW_UP_RESOURCES,
   type OfficialFollowUpResource,
+  STATE_PROGRAM_EXAMPLES_NOTE,
 } from "@/lib/follow-up-workflows";
 import { resourcesPageHref } from "@/lib/resources/catalog";
 
 const OFFICIAL_RESOURCES_INTRO = "Guidance to support your review.";
+const STATE_PROGRAMS = "Examples from state programs";
 
 type OfficialResourceGroup = {
   category: string;
@@ -79,6 +81,11 @@ export function ExplorerOfficialResources({
                 </li>
               ))}
             </ul>
+            {group.category === STATE_PROGRAMS ? (
+              <p className="ux-reset-explorer-resource-note">
+                {STATE_PROGRAM_EXAMPLES_NOTE}
+              </p>
+            ) : null}
           </section>
         ))}
       </div>

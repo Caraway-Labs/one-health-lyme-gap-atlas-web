@@ -501,7 +501,7 @@ test("publishes an accessible, clear privacy summary", async ({
   ).toBeVisible();
   await expect(
     page.getByText(
-      /Only if you turn analytics on, Atlas sends basic usage events/
+      /Optional analytics are on by default on public Atlas pages, Account, sign-in, and the signed-in professional workspace/
     )
   ).toBeVisible();
   await expect(
@@ -546,14 +546,14 @@ test("publishes an accessible, clear privacy summary", async ({
     name: "Privacy settings",
   });
   await expect(privacySettings).toContainText(
-    "Optional analytics are off until you make a choice."
+    "Optional analytics are on for this browser until you turn them off."
   );
   await expect(privacySettings).toContainText("six months");
   await expect(
-    privacySettings.getByRole("button", { name: "Keep optional analytics off" })
+    privacySettings.getByRole("button", { name: "Turn off optional analytics" })
   ).toBeVisible();
   await privacySettings
-    .getByRole("button", { name: "Keep optional analytics off" })
+    .getByRole("button", { name: "Turn off optional analytics" })
     .click();
   await expect
     .poll(() =>
@@ -565,33 +565,50 @@ test("publishes an accessible, clear privacy summary", async ({
   expect(results.violations).toEqual([]);
 });
 
-test("does not contact Amplitude before consent or after opt-out", async ({
+test("sends Amplitude events by default and stops after opt-out", async ({
   page,
 }) => {
-  const amplitudeCalls: string[] = [];
-  await page.route(/amplitude/i, async (route) => {
-    amplitudeCalls.push(route.request().url());
-    await route.abort();
-  });
-  await page.goto("/");
-  await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
-  await page.getByRole("button", { name: "Privacy settings" }).click();
-  await page
-    .getByRole("dialog", { name: "Privacy settings" })
-    .getByRole("button", { name: "Keep optional analytics off" })
-    .click();
-  await page.reload();
-  await expect.poll(() => amplitudeCalls).toEqual([]);
-});
-
-test("sends Amplitude events after analytics consent", async ({ page }) => {
   const amplitudeCalls: string[] = [];
   await page.route(/amplitude/i, async (route) => {
     amplitudeCalls.push(route.request().url());
     await route.fulfill({ status: 200, body: "{}" });
   });
   await page.goto("/");
-  await expect.poll(() => amplitudeCalls, { timeout: 5_000 }).toEqual([]);
+  await expect
+    .poll(() => amplitudeCalls.length, { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("atlas.analytics-preference.v1")
+    )
+  ).toBeNull();
+
+  await page.getByRole("button", { name: "Privacy settings" }).click();
+  await page
+    .getByRole("dialog", { name: "Privacy settings" })
+    .getByRole("button", { name: "Turn off optional analytics" })
+    .click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("atlas.analytics-preference.v1"))
+    )
+    .toContain('"decision":"denied"');
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Privacy settings" })
+  ).toBeVisible();
+  let amplitudeRequestedAfterOptOut = false;
+  try {
+    await page.waitForRequest(/amplitude/i, { timeout: 3_000 });
+    amplitudeRequestedAfterOptOut = true;
+  } catch (error) {
+    if (!(error instanceof Error) || error.name !== "TimeoutError") {
+      throw error;
+    }
+  }
+  expect(amplitudeRequestedAfterOptOut).toBe(false);
+  const callsAfterOptOut = amplitudeCalls.length;
+
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
     .getByRole("dialog", { name: "Privacy settings" })
@@ -599,7 +616,7 @@ test("sends Amplitude events after analytics consent", async ({ page }) => {
     .click();
   await expect
     .poll(() => amplitudeCalls.length, { timeout: 10_000 })
-    .toBeGreaterThan(0);
+    .toBeGreaterThan(callsAfterOptOut);
 });
 
 test("keeps Amplitude off when Do Not Track is enabled", async ({ page }) => {

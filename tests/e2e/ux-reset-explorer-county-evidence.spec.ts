@@ -98,17 +98,15 @@ test.describe("Atlas Explorer county evidence", () => {
     await expect(page.getByTestId("explorer-review-priority")).toContainText(
       "Highest review priority"
     );
-    const resource = page
-      .locator("summary", {
-        hasText: "Related official resources",
-      })
-      .first();
+    const resource = page.getByRole("link", {
+      name: /Lyme surveillance case definition/,
+    });
     await resource.focus();
-    await page.keyboard.press("Enter");
     await expect(resource).toBeFocused();
+    await expect(resource).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Lyme surveillance case definition" })
-    ).toBeVisible();
+      page.getByText("Questions, partner roles, and official resources")
+    ).toHaveCount(0);
     await expect(page.getByTestId("explorer-summary-limitation")).toHaveCount(
       0
     );

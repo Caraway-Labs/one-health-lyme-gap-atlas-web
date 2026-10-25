@@ -110,6 +110,7 @@ export function ExplorerSuggestedFollowUpPanel({
           omitDisclaimers
           reviewContext={reviewContext}
           showEyebrow={false}
+          variant="explorer"
         />
       ) : null}
     </section>

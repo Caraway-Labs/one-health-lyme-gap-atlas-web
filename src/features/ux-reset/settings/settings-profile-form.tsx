@@ -48,6 +48,7 @@ import {
   userProfileWriteJobTitleMax,
   userProfileWriteOrganizationMax,
 } from "@/generated/zod/userProfileWrite.zod";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import {
   type AtlasStateOption,
   reviewScopeLabel,
@@ -673,6 +674,7 @@ export function SettingsProfileForm() {
             />
           </label>
           <Button
+            {...analyticsControlAttributes("settings_save_starting_view")}
             data-testid="settings-save-profile"
             disabled={saving}
             type="submit"

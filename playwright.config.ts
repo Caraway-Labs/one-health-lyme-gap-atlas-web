@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 import { atlasBrowserProjects } from "./scripts/playwright-projects";
+import { SYNTHETIC_AMPLITUDE_API_KEY } from "./src/lib/amplitude-deployment";
 
 const productionVisuals = process.env.ATLAS_VISUAL_PRODUCTION === "1";
 
@@ -26,7 +27,7 @@ export default defineConfig({
       : "npm run dev -- --hostname 127.0.0.1 --port 3100",
     env: {
       ATLAS_E2E: "1",
-      NEXT_PUBLIC_AMPLITUDE_API_KEY: "00000000000000000000000000000000",
+      NEXT_PUBLIC_AMPLITUDE_API_KEY: SYNTHETIC_AMPLITUDE_API_KEY,
       NEXT_PUBLIC_AMPLITUDE_PROJECT_TARGET: "development",
       NEXT_PUBLIC_KG_CHAT_ENABLED: "true",
     },

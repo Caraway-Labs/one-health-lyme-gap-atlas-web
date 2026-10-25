@@ -210,15 +210,15 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
 
   await page.goto("/");
   await expect.poll(() => new URL(page.url()).pathname).toBe("/");
+  await expect
+    .poll(() => amplitudeCalls.length, { timeout: 10_000 })
+    .toBeGreaterThan(0);
 
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
     .getByRole("dialog", { name: "Privacy settings" })
     .getByRole("button", { name: "Allow optional analytics" })
     .click();
-  await expect
-    .poll(() => amplitudeCalls.length, { timeout: 10_000 })
-    .toBeGreaterThan(0);
 
   await page.evaluate(() => {
     sessionStorage.setItem("AMP_session", "vendor-session");
@@ -257,7 +257,7 @@ test("preserves a legacy analytics grant across the workspace footer", async ({
   await page.getByRole("button", { name: "Privacy settings" }).click();
   await page
     .getByRole("dialog", { name: "Privacy settings" })
-    .getByRole("button", { name: "Keep optional analytics off" })
+    .getByRole("button", { name: "Turn off optional analytics" })
     .click();
 
   await expect

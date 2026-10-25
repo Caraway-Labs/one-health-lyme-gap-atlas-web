@@ -67,7 +67,7 @@ export function CountyActionPlan({
   reviewContext,
   omitDisclaimers = false,
   showEyebrow = true,
-  showResourceAppendix = true,
+  variant = "document",
   whatIfActive = false,
 }: {
   detail: CountyDetail;
@@ -76,13 +76,15 @@ export function CountyActionPlan({
   omitDisclaimers?: boolean;
   reviewContext?: FollowUpReviewContext;
   showEyebrow?: boolean;
-  showResourceAppendix?: boolean;
+  /** Explorer keeps official resources in the adjacent card. */
+  variant?: "document" | "explorer";
   whatIfActive?: boolean;
 }) {
   const workflow = buildCountyFollowUp(detail, reviewContext);
   const headingId = `${idPrefix}county-action-heading-${detail.fips}`;
   const questionsHeadingId = `${idPrefix}follow-up-questions-${detail.fips}`;
   const QuestionsHeading = headingLevel === "h3" ? "h4" : "h5";
+  const explorer = variant === "explorer";
   const interpretation =
     workflow.level.status === "assigned"
       ? FOLLOW_UP_INTERPRETATION
@@ -98,7 +100,7 @@ export function CountyActionPlan({
   return (
     <section
       aria-labelledby={headingId}
-      className="action-plan"
+      className={explorer ? "action-plan action-plan-explorer" : "action-plan"}
       data-review-level={workflow.level.status}
       data-testid="suggested-follow-up"
       data-unavailable-reason={workflow.level.reason ?? ""}
@@ -123,12 +125,12 @@ export function CountyActionPlan({
       <p className="action-note" data-testid="follow-up-interpretation">
         {interpretation}
       </p>
-      {workflow.level.colorResponseNote && !omitDisclaimers ? (
+      {workflow.level.colorResponseNote && !omitDisclaimers && !explorer ? (
         <p className="action-summary" data-testid="follow-up-color-note">
           {workflow.level.colorResponseNote}
         </p>
       ) : null}
-      {workflow.level.governedNextCheck ? (
+      {workflow.level.governedNextCheck && !explorer ? (
         <p className="action-summary" data-testid="follow-up-next-check">
           Returned next check: {workflow.level.governedNextCheck}
         </p>
@@ -143,14 +145,20 @@ export function CountyActionPlan({
           <strong>{FOLLOW_UP_WHAT_IF_TITLE}</strong> {FOLLOW_UP_WHAT_IF_NOTE}
         </p>
       ) : null}
-      <ol className="action-list">
+      <ol
+        className={explorer ? "action-list action-divider-rows" : "action-list"}
+      >
         {workflow.rows.map((row, index) => (
           <FollowUpRow index={index + 1} key={row.id} row={row} />
         ))}
       </ol>
       <section
         aria-labelledby={questionsHeadingId}
-        className="action-questions ux-reset-follow-up-questions"
+        className={
+          explorer
+            ? "action-questions-inset"
+            : "action-questions ux-reset-follow-up-questions"
+        }
         data-testid="follow-up-questions"
       >
         <QuestionsHeading id={questionsHeadingId}>
@@ -162,7 +170,7 @@ export function CountyActionPlan({
           ))}
         </ul>
       </section>
-      {showResourceAppendix ? (
+      {explorer ? null : (
         <details className="action-resources">
           <summary>Related official resources</summary>
           <ul>
@@ -206,7 +214,7 @@ export function CountyActionPlan({
             </Link>
           </p>
         </details>
-      ) : null}
+      )}
     </section>
   );
 }

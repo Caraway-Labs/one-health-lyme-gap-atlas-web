@@ -1890,6 +1890,14 @@
   scroll-margin-bottom: 1.5rem;
 }
 
+/* Chrome keeps a layout box for closed `::details-content` (`content-visibility:
+   hidden`, height 0) whose descendants still extend past that box. Those boxes
+   were added to the workspace scroll after the trust footer, so the pane could
+   scroll into a blank region. `display: none` removes the box until opened. */
+.ux-reset-pro-app details:not([open])::details-content {
+  display: none;
+}
+
 .ux-reset-ask-atlas-storage,
 .ux-reset-ask-atlas-heading {
   display: grid;
@@ -2605,6 +2613,10 @@
   background: var(--action-plan-surface);
 }
 
+.ux-reset-explorer-map-follow-up[data-follow-up-accent="ready"] {
+  box-shadow: inset 0 3px 0 var(--follow-up-accent, var(--muted-foreground));
+}
+
 .ux-reset-explorer-map-follow-up:focus {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
@@ -2624,6 +2636,85 @@
   padding: 0;
   border: 0;
   background: transparent;
+}
+
+.action-plan-explorer .action-summary {
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.action-plan-explorer .action-divider-rows {
+  gap: 0;
+}
+
+.action-plan-explorer .action-divider-rows li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.85rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.action-plan-explorer .action-divider-rows li + li {
+  border-top: 1px solid var(--line);
+}
+
+.action-plan-explorer .action-divider-rows strong {
+  display: block;
+  color: var(--navy);
+  font-size: 0.975rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.action-plan-explorer .action-divider-rows p {
+  margin: 0.2rem 0 0;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.action-plan-explorer .action-who {
+  color: var(--muted-foreground);
+}
+
+.action-plan-explorer .action-who span {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.action-questions-inset {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--teal) 10%, white);
+}
+
+.action-questions-inset h4 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.action-questions-inset ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.action-questions-inset li {
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.action-questions-inset li + li {
+  margin-top: 0.35rem;
 }
 
 .ux-reset-explorer-lower {
@@ -2703,6 +2794,18 @@
 
 .ux-reset-explorer-resource-list li {
   min-width: 0;
+}
+
+.ux-reset-pro-main .ux-reset-explorer-resource-list a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.ux-reset-explorer-resource-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .ux-reset-pro-main .ux-reset-explorer-resource-list a {
@@ -4262,24 +4365,22 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-list,
   .ux-reset-explorer-preview {
-    /* Zero height keeps county content from stretching the map row.
-       The stretched minimum matches the map card. */
-    height: 0;
-    min-height: 100%;
+    /* Stretch with the map row. The county boxes are positioned against
+       this column, so their content cannot grow the row or the workspace
+       scroll pane below the footer. */
+    position: relative;
+    align-self: stretch;
+    height: auto;
+    min-height: 0;
     overflow: hidden;
   }
 
-  .ux-reset-explorer-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ux-reset-explorer-list > .gap-0 {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    height: 100%;
+  .ux-reset-explorer-list > .gap-0,
+  .ux-reset-explorer-column-scroll {
+    position: absolute;
+    inset: 0;
     min-height: 0;
+    overflow: auto;
   }
 
   .ux-reset-explorer-list .ux-reset-review-candidate-list {
@@ -4295,10 +4396,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-  }
-
-  .ux-reset-explorer-preview {
-    overflow: auto;
   }
 
   .ux-reset-explorer-map {
@@ -4338,10 +4435,6 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     padding: 0.35rem 0.9rem 0.75rem;
   }
 
-  .ux-reset-explorer-preview {
-    overflow: auto;
-  }
-
   .ux-reset-explorer-list {
     grid-column: 1;
     grid-row: 1;
@@ -4360,8 +4453,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
   .ux-reset-explorer-lower {
     grid-column: 1 / -1;
     grid-row: 2;
-    grid-template-columns: minmax(0, 62fr) minmax(0, 38fr);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
+    align-items: start;
   }
 
   /* State orientation keeps the map and state list in one column. The
@@ -4377,6 +4470,19 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     > .ux-reset-explorer-list,
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
     > .ux-reset-explorer-preview {
+    position: static;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    > .ux-reset-explorer-list
+    > .gap-0,
+  .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
+    .ux-reset-explorer-column-scroll {
+    position: static;
+    inset: auto;
     height: auto;
     overflow: visible;
   }

@@ -10,6 +10,7 @@ import {
   honorsDoNotTrack,
   readBrowserAnalyticsPreference,
   type AnalyticsConsentState,
+  type AnalyticsPreference,
 } from "@/lib/analytics-consent";
 import {
   atlasAnalytics,
@@ -21,9 +22,28 @@ import {
 export const ANALYTICS_PREFERENCE_CHANGED_EVENT =
   "atlas:analytics-preference-changed";
 
+type AnalyticsPreferenceWrite = {
+  attempted: AnalyticsPreference;
+  written: AnalyticsConsentState;
+};
+
+/**
+ * Opt-out whose write did not persist. Storage can still read as not-decided
+ * or as a stale grant, both of which would otherwise keep the SDK on.
+ * Cleared when this document persists a choice or another tab writes one.
+ */
+let unpersistedOptOut = false;
+
+export function readEnforcedAnalyticsPreference(): AnalyticsConsentState {
+  if (unpersistedOptOut) {
+    return "storage-unavailable";
+  }
+  return readBrowserAnalyticsPreference();
+}
+
 function enforceStoredAnalyticsPreference(): void {
   const mayStart = analyticsMayStart({
-    consent: readBrowserAnalyticsPreference(),
+    consent: readEnforcedAnalyticsPreference(),
     doNotTrack: honorsDoNotTrack(window.navigator),
   });
   if (!mayStart) {
@@ -39,8 +59,16 @@ function onCrossTabAnalyticsPreference(event: StorageEvent): void {
   if (!isAnalyticsPreferenceStorageEvent(event)) {
     return;
   }
-  // Another tab changed or cleared the preference. Stop before any later
-  // track, including after this tab has entered the professional shell.
+  // A persisted grant or denial from another tab replaces an opt-out this
+  // document could not save. Clearing the key does not: that opt-out stays
+  // off until a choice is actually stored. A missing preference with no
+  // held opt-out remains the default-on path.
+  if (event.key === ANALYTICS_PREFERENCE_KEY) {
+    const stored = readBrowserAnalyticsPreference();
+    if (stored === "granted" || stored === "denied") {
+      unpersistedOptOut = false;
+    }
+  }
   notifyAnalyticsPreferenceChanged();
 }
 
@@ -51,11 +79,13 @@ if (typeof window !== "undefined") {
 export function AnalyticsClient() {
   const pathname = usePathname();
   const [consent, setConsent] = useState<AnalyticsConsentState>("not-decided");
+  const [preferenceReady, setPreferenceReady] = useState(false);
 
   useEffect(() => {
     const refreshPreference = () => {
       enforceStoredAnalyticsPreference();
-      setConsent(readBrowserAnalyticsPreference());
+      setConsent(readEnforcedAnalyticsPreference());
+      setPreferenceReady(true);
     };
     const onStorage = (event: StorageEvent) => {
       if (!isAnalyticsPreferenceStorageEvent(event)) {
@@ -79,6 +109,13 @@ export function AnalyticsClient() {
   }, []);
 
   useEffect(() => {
+    // The first render still has the placeholder consent. Wait until the
+    // preference effect has read storage so an opt-out, Do Not Track signal,
+    // or storage failure cannot initialize the SDK for one frame. A stored
+    // grant is applied in that same read, including on professional routes.
+    if (!preferenceReady) {
+      return;
+    }
     const mayStart = analyticsMayStart({
       consent,
       doNotTrack: honorsDoNotTrack(window.navigator),
@@ -100,7 +137,7 @@ export function AnalyticsClient() {
     return () => {
       cancelled = true;
     };
-  }, [consent, pathname]);
+  }, [consent, pathname, preferenceReady]);
 
   useEffect(() => {
     const onInteraction = (event: MouseEvent) => {
@@ -119,11 +156,22 @@ export function AnalyticsClient() {
   return null;
 }
 
-export function notifyAnalyticsPreferenceChanged(): void {
-  // Stop here, not only in AnalyticsClient. The professional /app shell does
-  // not mount that listener, and a grant made on legacy Atlas keeps the
-  // module-global SDK alive after the listener unmounts. Cross-tab storage
-  // events call this same path.
+export function notifyAnalyticsPreferenceChanged(
+  update?: AnalyticsPreferenceWrite
+): void {
+  // Stop here, not only in AnalyticsClient. Docs, the design system, and auth
+  // utilities do not mount that listener, and a grant keeps the module-global
+  // SDK alive after the listener unmounts. Cross-tab storage events call this
+  // same path. A failed opt-out is remembered before the storage re-read so
+  // default-on cannot start the SDK again this document.
+  if (
+    update?.attempted === "denied" &&
+    update.written === "storage-unavailable"
+  ) {
+    unpersistedOptOut = true;
+  } else if (update?.written === "granted" || update?.written === "denied") {
+    unpersistedOptOut = false;
+  }
   enforceStoredAnalyticsPreference();
   window.dispatchEvent(new Event(ANALYTICS_PREFERENCE_CHANGED_EVENT));
 }

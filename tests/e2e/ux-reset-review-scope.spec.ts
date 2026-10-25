@@ -127,10 +127,9 @@ test.describe("Review national and state scope controls", () => {
     await page.keyboard.press("Enter");
     const unitedStates = page.getByRole("option", { name: "United States" });
     await expect(unitedStates).toBeVisible();
-    // A real pointer click can fall through the closing menu onto the map and
-    // select a county. Commit the item with events aimed at the option itself.
-    await unitedStates.dispatchEvent("pointerdown", { pointerType: "mouse" });
-    await unitedStates.dispatchEvent("click", { pointerType: "mouse" });
+    // A pointer click closes the menu on press, then releases on the map and
+    // selects a county. Commit the highlighted option from the keyboard.
+    await unitedStates.press("Enter");
     await expect(scopeSelect).toContainText("United States");
     await expect(page).toHaveURL(/scope=ALL/);
     await expect(page.getByTestId("review-national-orientation")).toBeVisible();

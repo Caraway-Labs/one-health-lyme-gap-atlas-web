@@ -5,6 +5,7 @@ import { type RefObject, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CompareSlotMarker } from "@/features/ux-reset/compare/compare-county-picker";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 /**
  * True once the element has scrolled out of view. Where the browser does not
@@ -61,6 +62,7 @@ export function ComparePinnedPair({
           <div className="ux-reset-compare-pinned-track compare-ab-grid">
             <div className="ux-reset-compare-pinned-tools">
               <Button
+                {...analyticsControlAttributes("compare_swap")}
                 aria-label="Swap first and second county"
                 size="icon-xs"
                 type="button"
@@ -70,6 +72,7 @@ export function ComparePinnedPair({
                 <ArrowLeftRight aria-hidden="true" />
               </Button>
               <Button
+                {...analyticsControlAttributes("compare_edit_counties")}
                 size="xs"
                 type="button"
                 variant="outline"

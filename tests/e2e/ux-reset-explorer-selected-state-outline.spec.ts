@@ -364,7 +364,7 @@ test.describe("State-scoped Explorer boundaries", () => {
 
     for (const layerName of [
       "Blacklegged tick status",
-      "B. burgdorferi status",
+      "Borrelia burgdorferi status",
       "Evidence completeness",
       "Gap review score",
     ]) {
@@ -432,6 +432,73 @@ test.describe("State-scoped Explorer boundaries", () => {
         stage: "national",
       });
     await expectNoHorizontalOverflow(page);
+  });
+});
+
+test.describe("US view outline reset", () => {
+  test("drops a zoomed-out state outline without flashing teal", async ({
+    page,
+  }) => {
+    await installOutlineApi(page);
+    await page.setViewportSize({ height: 1000, width: 1440 });
+    await page.goto("/explore?scope=ALL&focus=ID");
+    await expect(page.getByTestId("review-national-orientation")).toBeVisible();
+    await expect
+      .poll(async () => (await readOutline(page)).selected)
+      .toEqual(["16001", "16085"]);
+    expect((await readOutline(page)).lineColor).toBe("#000000");
+    expect((await readOutline(page)).attribute).toBe("black");
+
+    await page.locator(".maplibre-atlas").evaluate((element) => {
+      const map = Reflect.get(element, "atlasCountyMap") as {
+        getPaintProperty: (layer: string, name: string) => unknown;
+        jumpTo: (camera: { center: [number, number]; zoom: number }) => void;
+        on: (event: string, handler: () => void) => void;
+      };
+      map.jumpTo({ center: [-115.7, 43.3], zoom: 2.2 });
+      const colors: unknown[] = [];
+      map.on("render", () => {
+        colors.push(
+          map.getPaintProperty("selected-state-outline", "line-color")
+        );
+      });
+      Reflect.set(element, "outlineColorFrames", colors);
+    });
+    const canvas = page.locator(".maplibre-atlas canvas");
+    await canvas.hover({ position: { x: 420, y: 280 } });
+    await page
+      .getByRole("button", { name: "US view" })
+      .evaluate((button: HTMLButtonElement) => {
+        button.click();
+      });
+    await expect(page).not.toHaveURL(/focus=/);
+    await expect
+      .poll(async () => (await readOutline(page)).selected)
+      .toEqual([]);
+    await expect
+      .poll(async () => (await readOutline(page)).stage)
+      .toBe("national");
+
+    const frames = await page.locator(".maplibre-atlas").evaluate((element) => {
+      const map = Reflect.get(element, "atlasCountyMap") as {
+        getFilter: (layer: string) => unknown;
+        getPaintProperty: (layer: string, name: string) => unknown;
+      };
+      return {
+        colors: Reflect.get(element, "outlineColorFrames") as unknown[],
+        filter: map.getFilter("selected-state-outline"),
+        lineColor: map.getPaintProperty("selected-state-outline", "line-color"),
+      };
+    });
+    expect(frames.colors.length).toBeGreaterThan(0);
+    expect(frames.colors).not.toContain("#0b7285");
+    expect(frames.lineColor).toBe("#000000");
+    expect(frames.filter).toEqual([
+      "==",
+      ["literal", true],
+      ["literal", false],
+    ]);
+    expect((await readOutline(page)).attribute).toBe("accent");
   });
 });
 
@@ -512,7 +579,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
     expect(tick.selected).toEqual(["16001", "16085"]);
     expect(tick.colors["16001"]).not.toBe(uninsured.colors["16001"]);
     for (const layerName of [
-      "B. burgdorferi status",
+      "Borrelia burgdorferi status",
       "Evidence completeness",
       "Gap review score",
     ]) {
@@ -569,7 +636,7 @@ test.describe("Selected state outlines at U.S. zoom", () => {
         };
       })
       .toEqual({
-        lineColor: "#0b7285",
+        lineColor: "#000000",
         selected: [],
         stage: "national",
       });

@@ -1,10 +1,12 @@
-import { OfflineDisabled } from "@amplitude/analytics-core";
+import { LogLevel, OfflineDisabled } from "@amplitude/analytics-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SYNTHETIC_AMPLITUDE_API_KEY } from "../src/lib/amplitude-deployment";
 import {
   ANALYTICS_RELEASE_VERSION,
   ANALYTICS_SCHEMA_VERSION,
   analyticsControlAttributes,
+  analyticsEnumsAllowed,
   createAtlasAnalytics,
   getAmplitudeBrowserInitOptions,
   isCountyFips,
@@ -71,35 +73,61 @@ describe("Atlas Amplitude boundary", () => {
     expect({
       account: routeIdForPathname("/account"),
       aiEthics: routeIdForPathname("/ai-ethics"),
+      askAtlas: routeIdForPathname("/askatlas"),
+      askAtlasQuery: routeIdForPathname("/askatlas?county=08001"),
       assistant: routeIdForPathname("/assistant"),
       assistantNested: routeIdForPathname("/assistant/conversation"),
+      compare: routeIdForPathname("/compare"),
+      dataProvenance: routeIdForPathname("/data-provenance"),
+      documentation: routeIdForPathname("/docs/guide/"),
+      explorer: routeIdForPathname("/explore"),
+      explorerNested: routeIdForPathname("/explore/counties"),
+      feed: routeIdForPathname("/app/feed"),
+      feedNested: routeIdForPathname("/app/feed/item"),
       frontPorch: routeIdForPathname("/"),
       geographicExplorer: routeIdForPathname("/geographic_explorer"),
       investigate: routeIdForPathname("/investigate"),
       knowledgeGraph: routeIdForPathname("/knowledge-graph"),
+      knownExplorer: routeIds.includes("atlas_explorer"),
       knownFrontPorch: routeIds.includes("front_porch"),
       knownVariant: routeIds.includes("atlas_variant"),
-      feed: routeIdForPathname("/app/feed"),
+      legacyReview: routeIdForPathname("/app/review"),
       overview: routeIdForPathname("/overview"),
       privacy: routeIdForPathname("/privacy"),
+      resources: routeIdForPathname("/resources"),
       retiredVariant: routeIdForPathname("/variant_1"),
       retiredVariantSeven: routeIdForPathname("/variant_7"),
+      settings: routeIdForPathname("/app/settings/"),
+      workspaceHome: routeIdForPathname("/app"),
     }).toStrictEqual({
       account: "account",
       aiEthics: "ai_ethics",
+      askAtlas: "ask_atlas",
+      askAtlasQuery: "ask_atlas",
       assistant: "assistant",
       assistantNested: "assistant",
+      compare: "compare",
+      dataProvenance: "data_provenance",
+      documentation: "documentation",
+      explorer: "atlas_explorer",
+      explorerNested: "atlas_explorer",
+      feed: "intelligence_feed",
+      feedNested: "intelligence_feed",
       frontPorch: "front_porch",
       geographicExplorer: "geographic_explorer",
       investigate: "atlas_home",
       knowledgeGraph: "knowledge_graph",
+      knownExplorer: true,
       knownFrontPorch: true,
       knownVariant: true,
-      feed: "intelligence_feed",
+      legacyReview: "atlas_home",
       overview: "atlas_home",
       privacy: "privacy",
+      resources: "resources",
       retiredVariant: "atlas_variant",
       retiredVariantSeven: "atlas_variant",
+      settings: "settings",
+      workspaceHome: "atlas_home",
     });
   });
 
@@ -219,7 +247,78 @@ describe("Atlas Amplitude boundary", () => {
         "evidence_chat_history_select",
         "evidence_chat_history_delete",
         "evidence_chat_submit",
+        "nav_atlas_explorer",
+        "nav_compare",
+        "nav_ask_atlas",
+        "nav_settings",
+        "nav_feed",
+        "explorer_county_select",
+        "explorer_compare",
+        "compare_swap",
+        "compare_pdf_export",
+        "settings_save_starting_view",
+        "feed_item_open",
+        "workspace_sign_out",
       ])
+    );
+  });
+
+  it("drops unknown route and control enums locally", async () => {
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start("synthetic-development-key");
+
+    analytics.track({
+      eventType: "atlas_route_viewed",
+      properties: {
+        route_id: "not_a_route" as "atlas_home",
+        methodology_version: "v1",
+      },
+    });
+    analytics.track({
+      eventType: "atlas_ui_interaction",
+      properties: {
+        route_id: "atlas_explorer",
+        control_id: "not_a_control" as "nav_brand",
+        action: "activated",
+      },
+    });
+    analytics.track({
+      eventType: "atlas_ui_interaction",
+      properties: {
+        route_id: "compare",
+        control_id: "compare_swap",
+        action: "clicked" as "activated",
+      },
+    });
+    analytics.track({
+      eventType: "atlas_route_viewed",
+      properties: {
+        route_id: "ask_atlas",
+        methodology_version: "v1",
+      },
+    });
+
+    expect({
+      home: analyticsEnumsAllowed({ route_id: "atlas_home" }),
+      retiredControl: analyticsEnumsAllowed({ control_id: "nav_home" }),
+      settings: analyticsEnumsAllowed({ route_id: "settings" }),
+      unknownRoute: analyticsEnumsAllowed({ route_id: "professional" }),
+      validControl: analyticsEnumsAllowed({ control_id: "feed_retry" }),
+    }).toStrictEqual({
+      home: true,
+      retiredControl: false,
+      settings: true,
+      unknownRoute: false,
+      validControl: true,
+    });
+    expect(amplitude.track).toHaveBeenCalledExactlyOnceWith(
+      "atlas_route_viewed",
+      {
+        schema_version: ANALYTICS_SCHEMA_VERSION,
+        release_version: ANALYTICS_RELEASE_VERSION,
+        route_id: "ask_atlas",
+        methodology_version: "v1",
+      }
     );
   });
 
@@ -227,6 +326,29 @@ describe("Atlas Amplitude boundary", () => {
     const options = getAmplitudeBrowserInitOptions();
     expect(options.offline).toBe(OfflineDisabled);
     expect(Boolean(options.offline)).toBeFalsy();
+    expect(options.logLevel).toBeUndefined();
+  });
+
+  it("silences SDK logs for the synthetic Playwright key and keeps a real key audible", async () => {
+    const projectKey = getAmplitudeBrowserInitOptions(
+      "synthetic-development-key"
+    );
+    const syntheticKey = getAmplitudeBrowserInitOptions(
+      SYNTHETIC_AMPLITUDE_API_KEY
+    );
+    expect(projectKey.logLevel).toBeUndefined();
+    expect(syntheticKey.logLevel).toBe(LogLevel.None);
+
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start(SYNTHETIC_AMPLITUDE_API_KEY);
+    expect(amplitude.init).toHaveBeenCalledWith(
+      SYNTHETIC_AMPLITUDE_API_KEY,
+      expect.objectContaining({
+        autocapture: false,
+        logLevel: LogLevel.None,
+        offline: OfflineDisabled,
+      })
+    );
   });
 
   it("uses session-only identity and disables every automatic collection path", async () => {
@@ -327,6 +449,21 @@ describe("Atlas Amplitude boundary", () => {
     expect(amplitude.init).toHaveBeenCalledOnce();
     expect(amplitude.setOptOut).toHaveBeenCalledWith(false);
     expect(amplitude.track).toHaveBeenCalledOnce();
+  });
+
+  it("clears vendor storage on opt-out when no preference record exists", async () => {
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start("synthetic-development-key");
+    sessionStorage.setItem("AMP_session", "vendor-value");
+    localStorage.setItem("amplitude_unsent", "vendor-value");
+
+    analytics.stop();
+
+    expect(amplitude.setOptOut).toHaveBeenLastCalledWith(true);
+    expect(amplitude.reset).toHaveBeenCalledOnce();
+    expect(sessionStorage.getItem("AMP_session")).toBeNull();
+    expect(localStorage.getItem("amplitude_unsent")).toBeNull();
+    expect(localStorage.getItem("atlas.analytics-preference.v1")).toBeNull();
   });
 
   it("opts out and clears only vendor storage when consent is withdrawn", async () => {

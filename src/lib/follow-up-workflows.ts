@@ -202,50 +202,139 @@ export type OfficialFollowUpResource = {
   label: string;
 };
 
+const STATE_PROGRAM_EXAMPLES = [
+  {
+    description:
+      "Wisconsin Department of Health Services. Reporting and investigation protocol.",
+    href: "https://www.dhs.wisconsin.gov/tick/lyme-reporting-surveillance.htm",
+    id: "wisconsin-reporting",
+    label: "Wisconsin: reporting and investigation protocol",
+  },
+  {
+    description: "Minnesota Department of Health. Tick monitoring program.",
+    href: "https://www.health.state.mn.us/diseases/tickborne/monitoring.html",
+    id: "minnesota-tick-monitoring",
+    label: "Minnesota: tick monitoring program",
+  },
+  {
+    description:
+      "California Department of Public Health. Surveillance and outreach resources.",
+    href: "https://www.cdph.ca.gov/Programs/CID/DCDC/Pages/LymeDisease.aspx",
+    id: "california-surveillance",
+    label: "California: surveillance and outreach resources",
+  },
+  {
+    description:
+      "New York State Department of Health. Tick collection and surveillance.",
+    href: "https://www.health.ny.gov/diseases/communicable/lyme/",
+    id: "new-york-tick-surveillance",
+    label: "New York: tick collection and surveillance",
+  },
+] as const;
+
 /** Curated references for the Explorer resources card. Destinations stay on
- * the approved follow-up catalog; visible labels are the shorter card copy. */
+ * the approved follow-up catalog; labels are the shorter card copy. */
 export const OFFICIAL_FOLLOW_UP_RESOURCES = [
   {
-    category: "Lyme disease surveillance",
-    description: "Reporting criteria for Lyme disease.",
+    category: "Human disease surveillance",
+    description: "CDC. Reporting criteria.",
     external: true,
     href: RESOURCES.caseDefinition.href,
     id: RESOURCES.caseDefinition.id,
     label: "Lyme surveillance case definition",
   },
   {
-    category: "Lyme disease surveillance",
-    description: "How residence and exposure affect county counts.",
+    category: "Human disease surveillance",
+    description: "CDC. Residence, exposure, and county counts.",
     external: true,
     href: RESOURCES.countyCaseData.href,
     id: RESOURCES.countyCaseData.id,
     label: "County case data and limitations",
   },
   {
-    category: "Tick and vector surveillance",
-    description: "How to interpret published records.",
+    category: "Human disease surveillance",
+    description: "CDC. Context for comparing reporting years.",
+    external: true,
+    href: RESOURCES.caseDefinitionChange.href,
+    id: RESOURCES.caseDefinitionChange.id,
+    label: "2022 surveillance changes",
+  },
+  {
+    category: "Tick and pathogen surveillance",
+    description: "CDC. Interpret published records.",
     external: true,
     href: RESOURCES.tickRecords.href,
     id: RESOURCES.tickRecords.id,
     label: "Tick and pathogen record definitions",
   },
   {
-    category: "Tick and vector surveillance",
-    description: "CDC guidance for surveillance and interpretation.",
+    category: "Tick and pathogen surveillance",
+    description: "CDC. Plan and interpret surveillance.",
     external: true,
     href: RESOURCES.blackleggedTickGuidance.href,
     id: RESOURCES.blackleggedTickGuidance.id,
     label: "Blacklegged tick surveillance guidance",
   },
   {
-    category: "Clinical testing and reporting",
-    description: "CDC guidance on laboratory diagnosis.",
+    category: "Tick and pathogen surveillance",
+    description: "CDC. Plan and interpret surveillance for Ixodes pacificus.",
+    external: true,
+    href: RESOURCES.westernBlackleggedTickGuidance.href,
+    id: RESOURCES.westernBlackleggedTickGuidance.id,
+    label: "Western blacklegged tick surveillance guidance",
+  },
+  {
+    category: "Clinical and laboratory testing",
+    description: "CDC. Laboratory diagnosis.",
     external: true,
     href: RESOURCES.clinicalTesting.href,
     id: RESOURCES.clinicalTesting.id,
     label: "Clinical testing guidance",
   },
+  {
+    category: "Prevention and outreach",
+    description: "CDC. Prevention guidance.",
+    external: true,
+    href: RESOURCES.prevention.href,
+    id: RESOURCES.prevention.id,
+    label: "Lyme disease prevention",
+  },
+  {
+    category: "Prevention and outreach",
+    description: "CDC. Educational materials.",
+    external: true,
+    href: RESOURCES.lymeEducation.href,
+    id: RESOURCES.lymeEducation.id,
+    label: "Lyme educational materials",
+  },
+  {
+    category: "Prevention and outreach",
+    description: "CDC. Tick communication materials.",
+    external: true,
+    href: RESOURCES.tickCommunication.href,
+    id: RESOURCES.tickCommunication.id,
+    label: "Tick communication resources",
+  },
+  {
+    category: "Community context",
+    description: "ATSDR. Understand social vulnerability measures.",
+    external: true,
+    href: RESOURCES.sviInterpretation.href,
+    id: RESOURCES.sviInterpretation.id,
+    label: "SVI interpretation",
+  },
+  ...STATE_PROGRAM_EXAMPLES.map((example) => ({
+    category: "Examples from state programs",
+    description: example.description,
+    external: true,
+    href: example.href,
+    id: example.id,
+    label: example.label,
+  })),
 ] as const satisfies readonly OfficialFollowUpResource[];
+
+export const STATE_PROGRAM_EXAMPLES_NOTE =
+  "Examples from other state programs. Follow your own state’s reporting requirements and procedures.";
 
 const DOCUMENTED_TICK = new Set(["established", "reported"]);
 const NEGATIVE_PATHOGEN = new Set([
@@ -340,13 +429,23 @@ function pathogenKind(
   return "other";
 }
 
-function unallocatedSentence(county: CountyDetail): string | null {
+/**
+ * State-level 2023 records from `state_unallocated_records_2023`.
+ * The year is the field's surveillance year, not the selected county's cases.
+ */
+export function stateUnallocatedContext(county: CountyDetail): string | null {
   const count = county.state_unallocated_records_2023;
   if (!finite(count) || count <= 0) {
     return null;
   }
-  const noun = count === 1 ? "record was" : "records were";
-  return `${count.toLocaleString("en-US")} published 2023 human-surveillance ${noun} not allocated to a county in this release. Check whether any belong in this county before interpreting the county figure.`;
+  const noun = count === 1 ? "record" : "records";
+  const state = county.state_name.trim() || county.state.trim();
+  const place = county.county.trim() || "the selected county";
+  return `${state} has ${count.toLocaleString("en-US")} published 2023 human-surveillance ${noun} that were not allocated to a county. Those records are state-level and are not ${place} cases.`;
+}
+
+function unallocatedSentence(county: CountyDetail): string | null {
+  return stateUnallocatedContext(county);
 }
 
 type FollowUpCopy = {
@@ -402,6 +501,12 @@ function byIntensity(
   return copy[intensityFor(level)];
 }
 
+function priorityLimit(level: FollowUpReviewLevel): string | null {
+  return intensityFor(level) === "unassigned"
+    ? "This is not a low or high review priority."
+    : null;
+}
+
 function humanRecommendation(
   county: CountyDetail,
   level: FollowUpReviewLevel
@@ -430,6 +535,7 @@ function humanRecommendation(
       }),
       detail: joinDetail([
         "An observed zero is not a missing record and does not show that transmission is absent.",
+        priorityLimit(level),
         unallocated,
       ]),
       verifyQuestion:
@@ -456,6 +562,7 @@ function humanRecommendation(
         intensityFor(level) === "targeted"
           ? "Review residence and likely exposure location."
           : "Include residence and likely exposure location.",
+        priorityLimit(level),
         unallocated,
       ]),
       verifyQuestion:
@@ -484,6 +591,7 @@ function humanRecommendation(
       intensityFor(level) === "targeted"
         ? "Review residence and likely exposure location."
         : null,
+      priorityLimit(level),
       unallocated,
     ]),
     verifyQuestion:
