@@ -4,15 +4,15 @@
  * Update the version and last-updated date when substantive public-facing copy changes.
  */
 export const privacyContent = {
-  version: "1.0.1",
-  lastUpdated: "2026-10-22",
+  version: "1.1.0",
+  lastUpdated: "2026-10-25",
   versionLabel: "Privacy policy version",
   versionPrefix: "Version",
   updatedPrefix: "Last updated",
   hero: {
     eyebrow: "Your data and your choices",
     title: "Privacy without the fine print.",
-    lead: "One Health Atlas helps people understand public-health evidence. It is not built to turn its visitors into a data product. We collect only what we need to run Atlas, keep it secure, and, if you allow it, learn which features are useful. We do not sell personal information, run ads, or use your activity for advertising.",
+    lead: "One Health Atlas helps people understand public-health evidence. It is not built to turn its visitors into a data product. We collect only what we need to run Atlas, keep it secure, and, unless you turn optional analytics off, learn which features are useful. We do not sell personal information, run ads, or use your activity for advertising.",
     note: 'This policy covers onehealthatlas.org, the Atlas Assistant, Ask Atlas, Atlas accounts, and in-product feedback. One Health Atlas is a project of Caraway Labs. In this policy, "we" and "us" mean Caraway Labs.',
   },
   commitmentsIntro: {
@@ -30,13 +30,13 @@ export const privacyContent = {
     },
     {
       title: "Purpose before collection",
-      text: "We collect information only to run a feature you are using, to keep the service secure and reliable, or, when you choose, to understand whether a feature is useful.",
+      text: "We collect information only to run a feature you are using, to keep the service secure and reliable, or, unless you turn optional analytics off, to understand whether a feature is useful.",
     },
   ],
   collection: {
     title: "What we collect and why",
     intro:
-      "Most of Atlas works without collecting anything about you. Here is what we handle and the reason for each.",
+      "Atlas collects only what each feature needs. Here is what we handle and the reason for each.",
     facts: [
       {
         term: "Exploring public Atlas data.",
@@ -48,7 +48,7 @@ export const privacyContent = {
       },
       {
         term: "Optional product analytics.",
-        text: "Only if you turn analytics on, Atlas sends basic usage events, such as which page or feature was used, to our analytics provider. Analytics run on public Atlas pages, Account, and sign-in. They never run in the signed-in professional workspace. Analytics are not linked to your account.",
+        text: "Atlas sends basic usage events, such as which page or feature was used, to our analytics provider. Optional analytics are on by default on public Atlas pages, Account, sign-in, and the signed-in professional workspace. They are not linked to your account.",
       },
       {
         term: "Questions to the Atlas Assistant and Ask Atlas.",
@@ -76,13 +76,13 @@ export const privacyContent = {
   analytics: {
     title: "Your analytics choices",
     choice: {
-      before: "Optional analytics are off until you turn them on. Open ",
+      before: "Optional analytics are on by default. Open ",
       emphasis: "Privacy settings",
       after:
-        " at the bottom of any page to allow them or keep them off, and change your choice at any time. Declining never limits what you can do in Atlas, and we will never block the site behind a consent banner.",
+        " at the bottom of any public page, or from the signed-in workspace footer, to turn them off or allow them again. Turning them off never limits what you can do in Atlas, and we will never block the site behind a consent banner.",
     },
     follow:
-      "If your browser sends a Do Not Track signal, Atlas keeps optional analytics off, even if you allowed them earlier. Your choice is saved only in this browser and expires after six months. If Atlas cannot save your choice, analytics stay off.",
+      "If your browser sends a Do Not Track signal, Atlas keeps optional analytics off, even if you allowed them earlier. A choice to turn analytics off or allow them is saved only in this browser and expires after six months. After it expires, analytics return to the default unless Do Not Track is on. If Atlas cannot save your choice, analytics stay off.",
     exclusionsTitle: "What never goes into analytics",
     exclusions: [
       "Health information, medical history, diagnoses, or treatment details",
@@ -120,7 +120,7 @@ export const privacyContent = {
       },
       {
         term: "Amplitude (optional analytics).",
-        text: "Receives basic usage events only if you turn analytics on. Atlas tells Amplitude not to record your IP address, and the events are not linked to your account.",
+        text: "Receives basic usage events while optional analytics are on. They are on by default, and they stop if you turn analytics off or your browser sends Do Not Track. Atlas tells Amplitude not to record your IP address, and the events are not linked to your account.",
       },
     ],
   },
