@@ -1,9 +1,9 @@
 {
   "sourceRepository": "Caraway-Labs/one-health-lyme-gap-atlas-api",
-  "sourceCommit": "e88887877440c00de0e23301f0a3eac2353134d9",
+  "sourceCommit": "f485d5ef756ac7ae3cebf864535a8e1c0e417f9e",
   "sourcePath": "openapi.json",
   "sourceUrl": "https://api.onehealthatlas.org/openapi.json",
-  "sha256": "dfa540f57f0c359f5adc0a0d8b851d964008fbea72c84f9d5f09bcdf1152fbf0",
+  "sha256": "b26a2e6d9195d6ae3afe17e5db49ebbf4b6fc31808d221430b886ca53e7c55be",
   "openapi": "3.1.0",
   "infoVersion": "0.1.0"
 }
