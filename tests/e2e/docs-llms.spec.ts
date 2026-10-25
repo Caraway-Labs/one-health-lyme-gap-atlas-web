@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
 import {
+  PENDING_DELIVERY_BADGE_LABEL,
+  PENDING_DELIVERY_NOTE,
+} from "@/lib/endpoint-delivery";
+
+import {
   constraintRow,
   constraintTables,
   pinnedParameterPattern,
@@ -12,6 +17,22 @@ import {
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf-8")
 ) as { sha256: string; sourceCommit: string };
+
+test("exports the dated geography identity check in llms text", async ({
+  request,
+}) => {
+  const index = await (await request.get("/llms.txt")).text();
+  const full = await (await request.get("/llms-full.txt")).text();
+  const guide = await (await request.get("/docs/develop/geography.md")).text();
+  expect(index).toContain("https://onehealthatlas.org/docs/develop/geography");
+  expect(index).not.toContain("18 October 2026");
+  expect(full).toContain(PENDING_DELIVERY_BADGE_LABEL);
+  expect(full).toContain(PENDING_DELIVERY_NOTE);
+  expect(full).not.toContain("<EndpointDeliveryBadge");
+  expect(guide).toContain(PENDING_DELIVERY_BADGE_LABEL);
+  expect(guide).toContain('"data": null');
+  expect(guide).not.toContain("HTML error page");
+});
 
 test("serves a stable llms.txt index and the current full docs export", async ({
   request,

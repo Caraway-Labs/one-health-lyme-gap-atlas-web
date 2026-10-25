@@ -13,6 +13,10 @@ import {
 } from "../src/lib/docs-llms-components";
 import { renderPublicDocsPage } from "../src/lib/docs-llms-export";
 import {
+  PENDING_DELIVERY_BADGE_LABEL,
+  PENDING_DELIVERY_NOTE,
+} from "../src/lib/endpoint-delivery";
+import {
   constraintRow,
   constraintTables,
   gfmTables,
@@ -273,4 +277,39 @@ describe("rendered documentation markdown", () => {
     expect(full).toContain("import httpx");
     expect(full).not.toContain("<OpenAPIPage");
   }, 20_000);
+
+  it("renders the dated geography identity check into the docs export", async () => {
+    const files = mdxFiles("content/docs");
+    const pages = await Promise.all(files.map(renderedPage));
+    const full = pages.join("\n\n");
+    const geography =
+      pages[files.indexOf("content/docs/develop/geography.mdx")] ?? "";
+    const identity =
+      pages[
+        files.indexOf(
+          "content/docs/api-reference/geographies/geography_v1_geographies__geography_type___geography_id__get.mdx"
+        )
+      ] ?? "";
+    expect({
+      badge: full.includes(PENDING_DELIVERY_BADGE_LABEL),
+      component: full.includes("<EndpointDeliveryBadge"),
+      dataNull: geography.includes('"data": null'),
+      htmlError: geography.includes("HTML error page"),
+      identityBadge: identity.includes(PENDING_DELIVERY_BADGE_LABEL),
+      identity503: identity.includes("content: 503"),
+      note: full.includes(PENDING_DELIVERY_NOTE),
+      reason: geography.includes("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
+      unavailable: identity.includes("GeographyUnavailable"),
+    }).toStrictEqual({
+      badge: true,
+      component: false,
+      dataNull: true,
+      htmlError: false,
+      identityBadge: true,
+      identity503: false,
+      note: true,
+      reason: true,
+      unavailable: true,
+    });
+  });
 });

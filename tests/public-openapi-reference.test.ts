@@ -184,6 +184,13 @@ describe("public OpenAPI reference", () => {
       ),
       identityBadge: identity.includes(badge),
       identityImport: identity.includes(badgeImport),
+      identityUnavailable: identity.includes(
+        "#/components/schemas/GeographyUnavailable"
+      ),
+      identityEnvelope: identity.includes(
+        "#/components/schemas/ResourceEnvelope_Geography_"
+      ),
+      identity503: identity.includes("content: 503"),
       indexBadge: index.includes(badge),
       indexImport: index.includes(badgeImport),
       indexTabs: index.includes("fumadocs-ui/components/tabs"),
@@ -199,6 +206,9 @@ describe("public OpenAPI reference", () => {
       geographyRoute: true,
       identityBadge: true,
       identityImport: true,
+      identityUnavailable: true,
+      identityEnvelope: true,
+      identity503: false,
       indexBadge: true,
       indexImport: true,
       indexTabs: false,

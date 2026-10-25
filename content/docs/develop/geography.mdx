@@ -1,6 +1,6 @@
 ---
 title: Geography
-description: Identify Atlas counties by FIPS, stay within the lower 48 and DC, and request display polygons while identity delivery is pending.
+description: Identify Atlas counties by FIPS, read the typed geography identity response, and request display polygons separately.
 ---
 
 import { DisplayGeometryCurl } from "@/features/docs/display-geometry-example";
@@ -36,7 +36,7 @@ These guides use the lower 48 states and the District of Columbia. Keep FIPS in 
 
 A five-digit id that matches no row can still return HTTP 200 and `data: []`. That happened for `geography_id=99999` with `case_count_floor_2023` and `year=2023`. Empty is a successful query with no observation.
 
-## Geography resource delivery is unavailable
+## Typed geography identity
 
 The public contract declares:
 
@@ -46,11 +46,49 @@ GET /v1/geographies/{geography_type}/{geography_id}
 
 <EndpointDeliveryBadge />
 
-The operation summary is "Get geography identity (delivery pending)". The description says a validated county or state FIPS returns HTTP `200` with `availability` `UNAVAILABLE`, `reason` `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` null. The identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`. The `200` schema is a union of `ResourceEnvelope_Geography_` and `GeographyUnavailable`. Callers do not receive a `Geography` label or parent from this route today.
+The operation summary is "Get geography identity (delivery pending)". A county or state FIPS with the right shape returns HTTP `200` and `application/json`. While canonical identity delivery is unpublished, that body is `GeographyUnavailable`. Callers do not receive a `Geography` label or parent from this route. Responses use `Cache-Control: no-store`.
 
-A request to `/v1/geographies/county/08001` on 18 October 2026 returned an HTML error page. The origin status was `503`. The client status line was `504`. There was no `Geography` JSON body and no `Retry-After` header on that response. Treat geography identity delivery as unavailable. Do not parse the HTML page as a resource, and do not invent a label from the FIPS. The badge records that production check. It is not a live health indicator.
+`availability` is `UNAVAILABLE`. That names a publication boundary: this capability has not published canonical geography metadata. It does not say the county has no disease, no ticks, or no observations.
 
-The same operation declares `400`, `404` `RESOURCE_NOT_FOUND`, `429` with `Retry-After`, `413`, and `414`. It does not declare `503` or `422`.
+`reason` is `CANONICAL_GEOGRAPHY_UNPUBLISHED`.
+
+`data` is `null`. The route does not fill in a geography resource.
+
+`geography` echoes the requested identity. The identity is validated for shape only. A five-digit county id or a two-digit state id is enough. This response does not assert membership in the current release.
+
+`limitations` is a non-empty list of publication and representation boundaries.
+
+The `200` schema is a union of `ResourceEnvelope_Geography_` and `GeographyUnavailable`. The operation also documents `400`, `404` `RESOURCE_NOT_FOUND`, `413`, `414`, and `429` with `Retry-After`.
+
+On 25 October 2026, `GET /v1/geographies/county/08001` returned HTTP 200. The origin status was 200. The JSON body was:
+
+```json
+{
+  "availability": "UNAVAILABLE",
+  "reason": "CANONICAL_GEOGRAPHY_UNPUBLISHED",
+  "data": null,
+  "geography": {
+    "geography_type": "county",
+    "geography_id": "08001"
+  },
+  "limitations": [
+    "Canonical geography identity delivery is not published by this API capability.",
+    "The requested identity is validated for shape only; membership in the current release is not asserted (use the county availability route for that). No canonical, display, or analysis geometry is returned or inferred."
+  ]
+}
+```
+
+The badge records that dated production check. It is not a live health indicator.
+
+## County membership
+
+The identity route does not say whether a county is in the governed directory. Ask that with the county availability route:
+
+```text
+GET /v1/geographies/{geography_type}/{geography_id}/availability
+```
+
+That route is counties only. A state id returns HTTP `400`. The operation is [Check canonical county geography publication availability](/docs/api-reference/geographies/canonicalGeographyAvailability).
 
 ## Polygons are a different resource
 

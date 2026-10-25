@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { GEOGRAPHY_IDENTITY_CHECK_DATE } from "../src/lib/endpoint-delivery";
 import {
   getDocsUrl,
   getPublishedApiOrigin,
@@ -33,20 +34,39 @@ function readPage(slug: string): string {
 const developText = developPages.map((slug) => readPage(slug)).join("\n");
 
 describe("pending endpoints and timestamp guidance", () => {
-  it("badges geography identity from the origin status and points polygons at display geometry", () => {
+  it("badges the typed geography identity check and points polygons at display geometry", () => {
     const geography = readPage("geography");
+    const identity = geography.split("## Polygons are a different resource")[0];
     const phrases = [
       "<EndpointDeliveryBadge />",
       "It is not a live health indicator.",
+      "validated for shape only",
+      "counties only",
+      "`data` is `null`",
+      "`GeographyUnavailable`",
+      "`CANONICAL_GEOGRAPHY_UNPUBLISHED`",
+      "GET /v1/geographies/{geography_type}/{geography_id}/availability",
+      GEOGRAPHY_IDENTITY_CHECK_DATE,
       "<DisplayGeometryCurl />",
       "application/geo+json",
       "Cache-Control: public, max-age=31536000, immutable",
       "3,144",
       "lower 48 states",
     ];
-    expect(
-      phrases.filter((phrase) => !geography.includes(phrase))
-    ).toStrictEqual([]);
+    const identityText = identity ?? "";
+    expect({
+      missingPhrases: phrases.filter((phrase) => !geography.includes(phrase)),
+      october: identityText.includes("18 October 2026"),
+      serviceUnavailable: identityText.includes("`503`"),
+      gatewayTimeout: identityText.includes("`504`"),
+      html: identityText.includes("HTML"),
+    }).toStrictEqual({
+      missingPhrases: [],
+      october: false,
+      serviceUnavailable: false,
+      gatewayTimeout: false,
+      html: false,
+    });
     expect({
       index: readPage("index").includes("`GET /v1/atlas/geometry`"),
       support: readPage("support").includes("`GET /v1/atlas/geometry`"),
@@ -672,8 +692,7 @@ function tokenProblem(
     if (token.length !== 3) {
       return undefined;
     }
-    return vocab.statuses.has(token) ||
-      (token === "504" && page === "geography")
+    return vocab.statuses.has(token)
       ? undefined
       : `${page}: HTTP ${token} is not a contract status`;
   }
@@ -720,9 +739,9 @@ function contractMismatches(
     if (page === "mcp-clients") {
       continue;
     }
-    if (page !== "geography" && readPage(page).includes("`504`")) {
+    if (readPage(page).includes("`504`")) {
       mismatches.push(
-        `${page}: 504 is only the observed geography client status`
+        `${page}: 504 is not a documented developer-guide status`
       );
     }
     for (const match of readPage(page).matchAll(/`(?<token>[^`\n]+)`/gu)) {
