@@ -14,12 +14,15 @@ import {
 } from "react";
 
 import {
+  CopyCurlButton,
   ExampleRequestPanel,
   ExampleResponsePanel,
   OpenApiExampleLayout,
 } from "@/components/docs-openapi-example";
 import { ResponseHeaders } from "@/components/docs-openapi-response-headers";
+import { buttonVariants } from "@/components/ui/button";
 import { labelUnnamedOpenApiControls } from "@/lib/openapi-control-names";
+import { openApiDocumentUrl, resolvePublicOrigins } from "@/lib/public-origins";
 
 const CreatedOpenAPIPage = createOpenAPIPage({
   content: {
@@ -81,7 +84,9 @@ export function OpenAPIPage(props: OpenAPIPageProps) {
       labeling = true;
       try {
         labelUnnamedOpenApiControls(root);
-        for (const element of root.querySelectorAll(".overflow-x-auto")) {
+        for (const element of root.querySelectorAll(
+          ".overflow-auto, .overflow-x-auto"
+        )) {
           resize.observe(element);
         }
       } finally {
@@ -141,7 +146,20 @@ function OperationLayout({
       <div className="min-w-0 flex-1">
         {header}
         {apiPlayground}
-        {description}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <a
+            className={buttonVariants({
+              className: "underline",
+              size: "sm",
+              variant: "link",
+            })}
+            href={openApiDocumentUrl(resolvePublicOrigins())}
+          >
+            OpenAPI schema
+          </a>
+          <CopyCurlButton />
+        </div>
+        <div className="min-w-0">{description}</div>
         {authSchemes}
         {parameters}
         {body}

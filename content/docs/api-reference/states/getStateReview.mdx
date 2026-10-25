@@ -1,6 +1,6 @@
 ---
 title: Review a state's county evidence
-description: Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
+description: Review a state's county evidence
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/states/{state}/review
       - content: getStateReview
       - content: Review a state's county evidence
-      - content: Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
       - content: state path required Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
       - content: Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
       - content: State
@@ -74,7 +73,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/review","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/review","method":"get"}]} showDescription />
     </>
   );
 }

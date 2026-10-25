@@ -244,7 +244,7 @@ describe("public OpenAPI reference", () => {
     expect(incomplete).toStrictEqual([]);
   });
 
-  it("keeps each operation description in page metadata and out of the native renderer", async () => {
+  it("uses each operation summary as the subtitle and indexes the description once", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const pages = await renderPublicApiReference(contract);
     const problems: string[] = [];
@@ -264,14 +264,25 @@ describe("public OpenAPI reference", () => {
           typeof parsed.description === "string"
             ? parsed.description
             : undefined;
-        const expected = operation.description.replaceAll(/\s+/g, " ").trim();
-        const visibleCopies = expected ? body.split(expected).length - 1 : 0;
-        if (description !== expected) {
-          problems.push(`${operation.operationId} metadata`);
+        const summary = operation.summary.replaceAll(/\s+/g, " ").trim();
+        const longDescription = operation.description.trim();
+        const indexedCopies = indexedDescriptionCopies(parsed, longDescription);
+        if (description !== summary) {
+          problems.push(`${operation.operationId} subtitle`);
         }
-        if (body.includes("showDescription") || visibleCopies !== 0) {
+        if (!body.includes("showDescription")) {
           problems.push(
-            `${operation.operationId} rendered ${visibleCopies} time(s)`
+            `${operation.operationId} missing description renderer`
+          );
+        }
+        if (longDescription && body.includes(longDescription)) {
+          problems.push(
+            `${operation.operationId} description copied into layout`
+          );
+        }
+        if (longDescription && indexedCopies !== 1) {
+          problems.push(
+            `${operation.operationId} indexed ${String(indexedCopies)} time(s)`
           );
         }
       }
@@ -924,6 +935,22 @@ async function failureText(action: () => unknown): Promise<string> {
     throw new Error("Unexpected public OpenAPI failure.", { cause: error });
   }
   return "did-not-fail";
+}
+
+function indexedDescriptionCopies(
+  frontmatter: unknown,
+  description: string
+): number {
+  if (!description || !isRecord(frontmatter)) return 0;
+  const openapi = frontmatter._openapi;
+  if (!isRecord(openapi)) return 0;
+  const structured = openapi.structuredData;
+  if (!isRecord(structured) || !Array.isArray(structured.contents)) return 0;
+  const expected = description.replaceAll(/\s+/g, " ").trim();
+  return structured.contents.filter((entry) => {
+    if (!isRecord(entry) || typeof entry.content !== "string") return false;
+    return entry.content.replaceAll(/\s+/g, " ").trim() === expected;
+  }).length;
 }
 
 function operationPage(

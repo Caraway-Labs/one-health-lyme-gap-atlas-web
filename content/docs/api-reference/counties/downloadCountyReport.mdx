@@ -1,6 +1,6 @@
 ---
 title: Download a county report
-description: 'Download a PDF report for one county. ### Templates | `template` | What it returns | | --- | --- | | `county-v3` (default) | The two-page County Data Brief for the published gap score and Explorer follow-up. It ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. | | `county-v1` | The immutable earlier county report. It still binds score settings. | | `county-v2` | An opt-in report for selected observations. It reads canonical evidence, lineage, value states, and limitations. | ### Key parameters | Parameter | What to send | | --- | --- | | `dataset_version` | Optional release to report on. `county-v2` requires it. | | `period_start`, `period_end`, `measure_id` | `county-v2` only. Send both dates and 1 to 20 measure IDs, repeated or comma-separated. `county-v1` and `county-v3` reject them with 422. | ### Caching `ETag` and `If-None-Match` support 304. Published briefs can be cached for 300 seconds with revalidation. `county-v2` responses must not be cached, and the API revalidates authoritative context before it answers 304. ### Common problems | Response | Cause and what to do | | --- | --- | | `404` | A `county-v2` observation is unknown. | | `413` | The report exceeds the resource limits. Narrow the selection. | | `422` | The template is unknown, or observation selectors were sent to `county-v1` or `county-v3`. | | `503` | `county-v2` provenance is missing or mismatched, or the renderer failed or timed out. Retry later. |'
+description: Download a county report
 full: true
 _openapi:
   preload:
@@ -40,32 +40,6 @@ _openapi:
       - content: GET /v1/counties/{fips}/report.pdf
       - content: downloadCountyReport
       - content: Download a county report
-      - content: |-
-          Download a PDF report for one county.
-
-          ### Templates
-          | `template` | What it returns |
-          | --- | --- |
-          | `county-v3` (default) | The two-page County Data Brief for the published gap score and Explorer follow-up. It ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. |
-          | `county-v1` | The immutable earlier county report. It still binds score settings. |
-          | `county-v2` | An opt-in report for selected observations. It reads canonical evidence, lineage, value states, and limitations. |
-
-          ### Key parameters
-          | Parameter | What to send |
-          | --- | --- |
-          | `dataset_version` | Optional release to report on. `county-v2` requires it. |
-          | `period_start`, `period_end`, `measure_id` | `county-v2` only. Send both dates and 1 to 20 measure IDs, repeated or comma-separated. `county-v1` and `county-v3` reject them with 422. |
-
-          ### Caching
-          `ETag` and `If-None-Match` support 304. Published briefs can be cached for 300 seconds with revalidation. `county-v2` responses must not be cached, and the API revalidates authoritative context before it answers 304.
-
-          ### Common problems
-          | Response | Cause and what to do |
-          | --- | --- |
-          | `404` | A `county-v2` observation is unknown. |
-          | `413` | The report exceeds the resource limits. Narrow the selection. |
-          | `422` | The template is unknown, or observation selectors were sent to `county-v1` or `county-v3`. |
-          | `503` | `county-v2` provenance is missing or mismatched, or the renderer failed or timed out. Retry later. |
       - content: 'fips path required County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
       - content: 'County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
       - content: Fips
@@ -166,7 +140,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/report.pdf","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/report.pdf","method":"get"}]} showDescription />
     </>
   );
 }

@@ -1,6 +1,6 @@
 ---
 title: Query county observations
-description: "Query published county observations for one measure and up to 500 counties. ### What it returns Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations. ### Required parameters Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts. ### Time parameters by measure type | Measure type | Send | Wrong choice returns | | --- | --- | --- | | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. | | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. | | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. | | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. | | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. | ### Value states | Case | How to read it | | --- | --- | | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. | | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. | | Missing context | It does not establish absence or temporal comparability. | | Absent county context rows | They are unavailable evidence, never zero. | ### Empty versus unavailable results | Situation | Response | | --- | --- | | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. | | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. | | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. | ### Paging Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release. ### Caching An `UNAVAILABLE` collection must not be cached."
+description: Query county observations
 full: true
 _openapi:
   preload:
@@ -52,44 +52,6 @@ _openapi:
       - content: GET /v1/observations
       - content: listObservations
       - content: Query county observations
-      - content: |-
-          Query published county observations for one measure and up to 500 counties.
-
-          ### What it returns
-          Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations.
-
-          ### Required parameters
-          Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts.
-
-          ### Time parameters by measure type
-          | Measure type | Send | Wrong choice returns |
-          | --- | --- | --- |
-          | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
-          | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
-          | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. |
-          | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
-          | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
-
-          ### Value states
-          | Case | How to read it |
-          | --- | --- |
-          | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. |
-          | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. |
-          | Missing context | It does not establish absence or temporal comparability. |
-          | Absent county context rows | They are unavailable evidence, never zero. |
-
-          ### Empty versus unavailable results
-          | Situation | Response |
-          | --- | --- |
-          | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. |
-          | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. |
-          | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. |
-
-          ### Paging
-          Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release.
-
-          ### Caching
-          An `UNAVAILABLE` collection must not be cached.
       - content: measure_id query required Exact discovery measure ID.
       - content: Exact discovery measure ID.
       - content: Measure Id
@@ -199,7 +161,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/observations","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/observations","method":"get"}]} showDescription />
     </>
   );
 }
