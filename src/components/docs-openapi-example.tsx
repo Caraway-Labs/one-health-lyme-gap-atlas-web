@@ -12,12 +12,78 @@ import {
   type ResponseExample,
 } from "fumadocs-openapi/operation";
 import { ChevronDown } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { Button } from "@/components/ui/button";
+import {
+  copyPageMarkdown,
+  copyWithDocumentExecCommand,
+} from "@/lib/docs-page-actions";
 import { OPENAPI_CONTROL_NAMES } from "@/lib/openapi-control-names";
 
 const exampleCardClassName =
   "mb-4 flex min-h-0 flex-col overflow-hidden rounded-xl border bg-fd-card";
+const COPIED_LABEL_MS = 2000;
+
+export function curlSampleId(
+  generators: ReadonlyMap<string, { label?: string }>
+): string {
+  if (generators.has("curl")) return "curl";
+  for (const [id, generator] of generators) {
+    if (generator.label?.toLowerCase() === "curl") return id;
+  }
+  return "";
+}
+
+export function CopyCurlButton() {
+  const { codeUsages } = useOperation();
+  const code = useCodeUsage(curlSampleId(codeUsages.map()));
+  const [copied, setCopied] = useState(false);
+  const resetTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current !== null) {
+        window.clearTimeout(resetTimer.current);
+      }
+    },
+    []
+  );
+
+  if (!code) return null;
+
+  const copyCurl = () => {
+    void rememberCopiedCurl(code);
+  };
+
+  async function rememberCopiedCurl(sample: string): Promise<void> {
+    const result = await copyPageMarkdown(
+      sample,
+      navigator.clipboard,
+      copyWithDocumentExecCommand
+    );
+    if (result.status !== "copied") return;
+    setCopied(true);
+    if (resetTimer.current !== null) {
+      window.clearTimeout(resetTimer.current);
+    }
+    resetTimer.current = window.setTimeout(() => {
+      setCopied(false);
+    }, COPIED_LABEL_MS);
+  }
+
+  return (
+    <Button
+      aria-live="polite"
+      onClick={copyCurl}
+      size="sm"
+      type="button"
+      variant="outline"
+    >
+      {copied ? "Copied" : "Copy as curl"}
+    </Button>
+  );
+}
 
 export function OpenApiExampleLayout({
   responseTabs,

@@ -1,6 +1,6 @@
 ---
 title: Get a measure
-description: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
+description: Get a measure
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/measures/{measure_id}
       - content: getMeasure
       - content: Get a measure
-      - content: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
       - content: measure_id path required Exact measure ID from the measure list. An unknown ID returns 404.
       - content: Exact measure ID from the measure list. An unknown ID returns 404.
       - content: Measure Id
@@ -85,7 +84,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/measures/{measure_id}","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/measures/{measure_id}","method":"get"}]} showDescription />
     </>
   );
 }

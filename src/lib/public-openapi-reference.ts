@@ -343,13 +343,14 @@ export async function renderPublicApiReference(
   });
   const generated = await generateFilesOnly({
     addGeneratedComment: false,
-    frontmatter: (_title, description) => ({
-      description: flattenContractText(description ?? ""),
+    frontmatter: (title) => ({
+      description: flattenContractText(title),
     }),
     groupBy: "tag",
-    // DocsDescription already renders frontmatter description. Leave the
-    // native OpenAPI description off so each operation page shows it once.
-    includeDescription: false,
+    // DocsDescription renders the frontmatter description as the subtitle.
+    // That value is the short summary. The long description stays in the
+    // operation body, rendered once by the native OpenAPI Markdown renderer.
+    includeDescription: true,
     input: server,
     per: "operation",
   });
@@ -1755,20 +1756,20 @@ function enrichOperationPage(
   const existing = Array.isArray(structured.contents)
     ? structured.contents.filter(isRecord)
     : [];
+  const described = flattenContractText(operation.description);
   const contents = [
     ...existing.flatMap((entry) =>
       typeof entry.content === "string" ? [{ content: entry.content }] : []
     ),
-    ...operationIndexContents(operation).map((text) => ({ content: text })),
+    ...operationIndexContents(operation)
+      .filter((text) => flattenContractText(text) !== described)
+      .map((text) => ({ content: text })),
   ];
   openapi.structuredData = { ...structured, contents };
   document.data._openapi = openapi;
-  if (
-    typeof document.data.description !== "string" ||
-    document.data.description.trim() === ""
-  ) {
-    document.data.description = operation.summary || operation.operationId;
-  }
+  document.data.description = flattenContractText(
+    operation.summary || operation.operationId
+  );
   const badge = pendingDeliveryBadgeMarkup(operation);
   const body = badge
     ? `${PENDING_DELIVERY_BADGE_IMPORT}\n\n${badge}\n\n${document.body.trim()}`

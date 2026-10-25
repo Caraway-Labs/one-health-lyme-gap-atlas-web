@@ -1,6 +1,6 @@
 ---
 title: Get county surveillance review priority
-description: 'Get the approved Tier 1 surveillance review priority for one county from the current batch. ### How to read it - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. - LOW is a scored tier. Evidence sufficiency is separate. - Percentile is relative to the scored batch and population. - `generated_at_utc` is the model batch time, not the request time. Responses can be cached for 60 seconds. ### Common problems | Response | Cause and what to do | | --- | --- | | `404` | The county has no published result. | | `503` | The current view is unavailable or the stored result is malformed. Retry later. |'
+description: Get county surveillance review priority
 full: true
 _openapi:
   preload:
@@ -30,22 +30,6 @@ _openapi:
       - content: GET /v1/counties/{fips}/tier1-surveillance-priority
       - content: getCountyTier1Priority
       - content: Get county surveillance review priority
-      - content: |-
-          Get the approved Tier 1 surveillance review priority for one county from the current batch.
-
-          ### How to read it
-          - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis.
-          - LOW is a scored tier. Evidence sufficiency is separate.
-          - Percentile is relative to the scored batch and population.
-          - `generated_at_utc` is the model batch time, not the request time.
-
-          Responses can be cached for 60 seconds.
-
-          ### Common problems
-          | Response | Cause and what to do |
-          | --- | --- |
-          | `404` | The county has no published result. |
-          | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
       - content: 'fips path required County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
       - content: 'County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
       - content: Fips
@@ -96,7 +80,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/tier1-surveillance-priority","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/tier1-surveillance-priority","method":"get"}]} showDescription />
     </>
   );
 }

@@ -1,6 +1,6 @@
 ---
 title: Check county geography availability
-description: 'Check whether a county has published canonical geography data. ### When to use it The API confirms the county exists in the current release. It returns HTTP 200 with `availability` set to `UNAVAILABLE`, `reason` set to `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` set to `null`. The resource describes identity only, and the API returns no geometry. State availability is not supported. ### Common problems | Response | Cause and what to do | | --- | --- | | `400` | The ID is malformed, or you asked for a state. Send a five-digit county FIPS code. | | `404` | The county is not in the current release. | | `503` | The county directory is unavailable, empty, duplicated, or inconsistent with the current release. Retry later. | The response must not be cached.'
+description: Check county geography availability
 full: true
 _openapi:
   preload:
@@ -28,20 +28,6 @@ _openapi:
       - content: GET /v1/geographies/{geography_type}/{geography_id}/availability
       - content: checkGeographyAvailability
       - content: Check county geography availability
-      - content: |-
-          Check whether a county has published canonical geography data.
-
-          ### When to use it
-          The API confirms the county exists in the current release. It returns HTTP 200 with `availability` set to `UNAVAILABLE`, `reason` set to `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` set to `null`. The resource describes identity only, and the API returns no geometry. State availability is not supported.
-
-          ### Common problems
-          | Response | Cause and what to do |
-          | --- | --- |
-          | `400` | The ID is malformed, or you asked for a state. Send a five-digit county FIPS code. |
-          | `404` | The county is not in the current release. |
-          | `503` | The county directory is unavailable, empty, duplicated, or inconsistent with the current release. Retry later. |
-
-          The response must not be cached.
       - content: 'geography_type path required Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'
       - content: '#/components/schemas/GeographyType'
       - content: 'Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'
@@ -111,7 +97,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/geographies/{geography_type}/{geography_id}/availability","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/geographies/{geography_type}/{geography_id}/availability","method":"get"}]} showDescription />
     </>
   );
 }

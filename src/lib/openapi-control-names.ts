@@ -28,12 +28,24 @@ export function labelUnnamedOpenApiControls(root: ParentNode): void {
     element.setAttribute("aria-label", name);
     clearEmptyLabelReference(element);
   }
-  for (const element of root.querySelectorAll(".overflow-x-auto")) {
+  for (const element of root.querySelectorAll(
+    ".overflow-auto, .overflow-x-auto"
+  )) {
     if (!(element instanceof HTMLElement)) continue;
     if (element.scrollWidth <= element.clientWidth + 1) continue;
     if (element.tabIndex < 0) element.tabIndex = 0;
+    element.classList.add(
+      "focus-visible:outline-none",
+      "focus-visible:ring-2",
+      "focus-visible:ring-ring"
+    );
     if (!element.getAttribute("aria-label")?.trim()) {
-      element.setAttribute("aria-label", "Scrollable schema path");
+      element.setAttribute(
+        "aria-label",
+        element.querySelector("table")
+          ? "Scrollable table"
+          : "Scrollable schema path"
+      );
     }
   }
 }

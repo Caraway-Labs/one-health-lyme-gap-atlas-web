@@ -1,6 +1,6 @@
 ---
 title: Get county map geometry
-description: Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
+description: Get county map geometry
 full: true
 _openapi:
   preload:
@@ -15,7 +15,6 @@ _openapi:
       - content: GET /v1/atlas/geometry
       - content: getAtlasGeometry
       - content: Get county map geometry
-      - content: Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
       - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
       - content: Dataset Version
@@ -68,7 +67,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/geometry","method":"get"}]} />
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/geometry","method":"get"}]} showDescription />
     </>
   );
 }
