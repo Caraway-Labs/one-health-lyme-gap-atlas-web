@@ -100,7 +100,7 @@ describe("professional shell analytics client", () => {
     vi.unstubAllEnvs();
   });
 
-  it("mounts one client on a professional route and keeps it across the shell", async () => {
+  it("mounts one client on a professional route by default and keeps it across the shell", async () => {
     expect({
       askAtlas: routeMountsAnalyticsClient("/askatlas"),
       callback: routeMountsAnalyticsClient("/auth/callback"),
@@ -131,7 +131,6 @@ describe("professional shell analytics client", () => {
       settings: true,
     });
 
-    writeBrowserAnalyticsPreference("granted");
     pathname = "/overview";
     const view = render(
       <RouteChrome>
@@ -145,7 +144,7 @@ describe("professional shell analytics client", () => {
     );
     await waitFor(() => {
       if (amplitude.init.mock.calls.length !== 1) {
-        throw new Error("legacy Atlas did not start analytics");
+        throw new Error("default-on visit did not start analytics");
       }
     });
     sessionStorage.setItem("AMP_session", "vendor-session");
@@ -177,6 +176,7 @@ describe("professional shell analytics client", () => {
       initCalls: amplitude.init.mock.calls.length,
       interactions: interactionCount(),
       optOut: amplitude.setOptOut.mock.lastCall?.[0] ?? null,
+      preference: localStorage.getItem(ANALYTICS_PREFERENCE_KEY),
       resetCalls: amplitude.reset.mock.calls.length,
       session: sessionStorage.getItem("AMP_session"),
       unsent: localStorage.getItem("amplitude_unsent"),
@@ -184,6 +184,7 @@ describe("professional shell analytics client", () => {
       initCalls: 1,
       interactions: 1,
       optOut: false,
+      preference: null,
       resetCalls: 0,
       session: "vendor-session",
       unsent: "vendor-local",
@@ -255,5 +256,34 @@ describe("professional shell analytics client", () => {
     );
     expect(amplitude.init).not.toHaveBeenCalled();
     expect(amplitude.track).not.toHaveBeenCalled();
+  });
+
+  it("does not start a professional route when Do Not Track is on", async () => {
+    const descriptor = Object.getOwnPropertyDescriptor(navigator, "doNotTrack");
+    Object.defineProperty(navigator, "doNotTrack", {
+      configurable: true,
+      get: () => "1",
+    });
+    try {
+      writeBrowserAnalyticsPreference("granted");
+      pathname = "/explore";
+      render(
+        <RouteChrome>
+          <p>Atlas Explorer</p>
+        </RouteChrome>
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(amplitude.init).not.toHaveBeenCalled();
+      expect(amplitude.track).not.toHaveBeenCalled();
+      expect(amplitude.setOptOut).not.toHaveBeenCalled();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(navigator, "doNotTrack", descriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "doNotTrack");
+      }
+    }
   });
 });
