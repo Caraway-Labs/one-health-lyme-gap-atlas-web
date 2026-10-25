@@ -7,10 +7,12 @@ import { FrameworkProvider } from "fumadocs-core/framework";
 import { findPath, type Folder, type Root } from "fumadocs-core/page-tree";
 import { TreeContextProvider } from "fumadocs-ui/contexts/tree";
 import { getLayoutTabs } from "fumadocs-ui/layouts/shared";
-import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { createElement, type ReactNode } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  developersLinkCurrent,
+  DocsHeader,
   DocsHomeQuickstart,
   DocsSidebarTabs,
 } from "@/components/docs-section-nav";
@@ -21,6 +23,28 @@ import {
   withDocsSidebarTabs,
 } from "@/lib/docs-sidebar-tabs";
 import { getMDXComponents } from "@/mdx-components";
+
+const layoutSlots = vi.hoisted(() => ({
+  current: {
+    isNavTransparent: false,
+    slots: {} as {
+      navTitle?: (props: { className?: string }) => ReactNode;
+      searchTrigger?: {
+        sm?: (props: { className?: string }) => ReactNode;
+      };
+      sidebar?: {
+        trigger?: (props: {
+          children?: ReactNode;
+          className?: string;
+        }) => ReactNode;
+      };
+    },
+  },
+}));
+
+vi.mock(import("fumadocs-ui/layouts/docs"), () => ({
+  useDocsLayout: () => layoutSlots.current as never,
+}));
 
 let pathname = DOCS_HOME_PATH;
 
@@ -278,6 +302,187 @@ describe("documentation sidebar tabs", () => {
       afterHome: PRODUCT_GUIDE_TAB,
       afterLeft: "API reference",
       afterRight: "API reference",
+    });
+  });
+
+  it("matches real pages with a trailing slash and ignores links without a file", () => {
+    const linked = folder(
+      "Developers",
+      "develop",
+      [
+        { name: "Group", type: "separator" },
+        {
+          name: "Quickstart",
+          type: "page",
+          url: "/docs/develop/quickstart",
+        },
+        page("Developer overview", "/docs/develop", "develop/index.mdx"),
+      ],
+      true
+    );
+    expect({
+      linkedQuickstart: isDocsTabCurrent(linked, "/docs/develop/quickstart"),
+      missingFolder: isDocsTabCurrent(undefined, "/docs"),
+      overview: isDocsTabCurrent(linked, "/docs/develop/"),
+      productElsewhere: developersLinkCurrent("/docs"),
+      similarPrefix: developersLinkCurrent("/docs/developer"),
+    }).toStrictEqual({
+      linkedQuickstart: false,
+      missingFolder: false,
+      overview: true,
+      productElsewhere: undefined,
+      similarPrefix: undefined,
+    });
+  });
+
+  it("gives the first tab the tab stop when the page is outside every section", () => {
+    pathname = "/docs/not-a-page";
+    renderTabs(withDocsSidebarTabs(fixtureTree()), <DocsSidebarTabs />);
+    expect(
+      screen
+        .getByRole("tab", { name: PRODUCT_GUIDE_TAB })
+        .getAttribute("tabindex")
+    ).toBe("0");
+  });
+
+  it("omits the tablist when a section has no page URL", () => {
+    const empty = withDocsSidebarTabs({
+      $id: "root",
+      children: [{ name: "Note", type: "separator" }],
+      name: "docs",
+    });
+    renderTabs(empty, <DocsSidebarTabs />);
+    expect(screen.queryByRole("tablist")).toBeNull();
+  });
+
+  it("labels a non-text tab and activates it from the keyboard", () => {
+    const tree = withDocsSidebarTabs(fixtureTree());
+    const product = tree.children[0];
+    if (product?.type === "folder") product.name = <em>ignored</em>;
+    pathname = DOCS_HOME_PATH;
+    renderTabs(tree, <DocsSidebarTabs />);
+    const tablist = screen.getByRole("tablist", {
+      name: "Documentation sections",
+    });
+    const section = screen.getByRole("tab", { name: "Section" });
+    section.focus();
+    fireEvent.keyDown(tablist, { key: "End" });
+    const afterEnd = document.activeElement?.textContent;
+    fireEvent.keyDown(tablist, { key: "ArrowUp" });
+    const afterUp = document.activeElement?.textContent;
+    fireEvent.keyDown(tablist, { key: "ArrowDown" });
+    fireEvent.keyDown(tablist, { key: "a" });
+    const clicks = vi.fn<() => void>();
+    const originalClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = clicks;
+    fireEvent.keyDown(tablist, { key: " " });
+    HTMLAnchorElement.prototype.click = originalClick;
+    (document.activeElement as HTMLElement | null)?.blur();
+    fireEvent.keyDown(tablist, { key: "ArrowRight" });
+    expect({
+      afterEnd,
+      afterUp,
+      clicks: clicks.mock.calls.length,
+      stayed: document.activeElement === document.body,
+    }).toStrictEqual({
+      afterEnd: "API reference",
+      afterUp: "Developers",
+      clicks: 1,
+      stayed: true,
+    });
+  });
+
+  it("shows the Developers header link and the sidebar controls", () => {
+    layoutSlots.current.slots = {
+      navTitle: ({ className }) => (
+        <a className={className} href="https://example.com/docs">
+          One Health Atlas documentation
+        </a>
+      ),
+      searchTrigger: {
+        sm: ({ className }) => (
+          <button className={className} type="button">
+            Search
+          </button>
+        ),
+      },
+      sidebar: {
+        trigger: ({ children, className }) => (
+          <button className={className} type="button">
+            {children}
+            Open Sidebar
+          </button>
+        ),
+      },
+    };
+    pathname = "/docs/develop/";
+    renderTabs(withDocsSidebarTabs(fixtureTree()), <DocsHeader />);
+    expect({
+      brand: screen
+        .getByRole("link", { name: "One Health Atlas documentation" })
+        .getAttribute("href"),
+      current: screen
+        .getByRole("link", { name: "Developers" })
+        .getAttribute("aria-current"),
+      search: screen.getByRole("button", { name: "Search" }).tagName,
+      sidebar: screen.getByRole("button", { name: "Open Sidebar" }).tagName,
+    }).toStrictEqual({
+      brand: "https://example.com/docs",
+      current: "page",
+      search: "BUTTON",
+      sidebar: "BUTTON",
+    });
+  });
+
+  it("keeps the Developers link when header slots are absent", () => {
+    layoutSlots.current.slots = { searchTrigger: {} };
+    pathname = "/docs";
+    renderTabs(withDocsSidebarTabs(fixtureTree()), <DocsHeader />);
+    expect({
+      current: screen
+        .getByRole("link", { name: "Developers" })
+        .getAttribute("aria-current"),
+      sidebar: screen.queryByRole("button"),
+    }).toStrictEqual({
+      current: null,
+      sidebar: null,
+    });
+  });
+
+  it("renders plain docs headings, links, and tables", () => {
+    const components = getMDXComponents();
+    render(
+      createElement(
+        "div",
+        null,
+        createElement(components.h2 as "h2", null, "Query a county"),
+        createElement(
+          components.a as "a",
+          { href: "https://api.onehealthatlas.org/openapi.json" },
+          "OpenAPI schema"
+        ),
+        createElement(
+          components.table as "table",
+          null,
+          createElement(
+            "tbody",
+            null,
+            createElement("tr", null, createElement("td", null, "rows"))
+          )
+        )
+      )
+    );
+    const link = screen.getByRole("link", { name: "OpenAPI schema" });
+    expect({
+      heading: screen.getByRole("heading", { name: "Query a county" }).tagName,
+      href: link.getAttribute("href"),
+      table: screen.getByRole("table").tagName,
+      target: link.getAttribute("target"),
+    }).toStrictEqual({
+      heading: "H2",
+      href: "https://api.onehealthatlas.org/openapi.json",
+      table: "TABLE",
+      target: null,
     });
   });
 
