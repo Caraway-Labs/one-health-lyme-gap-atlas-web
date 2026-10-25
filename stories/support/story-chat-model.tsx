@@ -10,6 +10,7 @@ import {
 import type { EvidenceChatConversationModel } from "@/components/evidence-chat/use-evidence-chat";
 import type { KnowledgeChatResponse } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
+import { ASK_ATLAS_SOURCE_MODES } from "@/lib/ask-atlas-source-mode";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
 import {
@@ -350,6 +351,10 @@ export function useStoryChatModel(
       setAction("Started a new chat.");
     },
     submit,
+    sourceMode: "Literature",
+    sourceModeSelection: false,
+    sourceModes: ASK_ATLAS_SOURCE_MODES,
+    setSourceMode: () => {},
     workspaceHandoffConversationId: active ? active.id : undefined,
   };
 }
