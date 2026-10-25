@@ -1238,55 +1238,60 @@ export function ReviewOperatingPicture({
           </Card>
         </div>
         <div className="ux-reset-explorer-preview">
-          {selectedScenario ? (
-            <p className="type-small" data-testid="explorer-scenario-selected">
-              {explorerScenarioSelectionText(selectedScenario)}
-            </p>
-          ) : null}
-          {!preview && handoff && releaseId && selectedPublished ? (
-            <ReviewPublishedCountyPreview
-              compareHref={handoff.compareHref}
-              county={selectedPublished}
-              onOpen={markReviewReturnFocus}
-              openRef={openRef}
-              release={tierRelease}
-              releaseId={releaseId}
-              reviewResultState={authoritativeResultState}
-            />
-          ) : null}
-          {preview && handoff ? (
-            <ReviewCountyPreviewPanel
-              compareHref={handoff.compareHref}
-              droppedNotes={handoff.droppedNotes}
-              href={handoff.href}
-              openRef={openRef}
-              preview={preview}
-              categoryLabel={
-                authoritativeResultState === "candidates_found"
-                  ? "Returned for review"
-                  : authoritativeResultState
-                    ? reviewResultStateLabel(authoritativeResultState)
-                    : "Review category unavailable"
-              }
-              release={tierRelease}
-              releaseId={releaseId ?? ""}
-              onOpen={markReviewReturnFocus}
-              onViewCountyEvidence={onViewCountyEvidence}
-            />
-          ) : null}
-          {preview || (handoff && releaseId && selectedPublished) ? null : (
-            <>
-              <p className="type-body" data-testid="explorer-preview-empty">
-                No county is selected. Choose one from the list or the map.
+          <div className="ux-reset-explorer-column-scroll">
+            {selectedScenario ? (
+              <p
+                className="type-small"
+                data-testid="explorer-scenario-selected"
+              >
+                {explorerScenarioSelectionText(selectedScenario)}
               </p>
-              <DownloadCountyPdfButton
-                countyName=""
-                fips=""
-                releaseId=""
-                stateCode=""
+            ) : null}
+            {!preview && handoff && releaseId && selectedPublished ? (
+              <ReviewPublishedCountyPreview
+                compareHref={handoff.compareHref}
+                county={selectedPublished}
+                onOpen={markReviewReturnFocus}
+                openRef={openRef}
+                release={tierRelease}
+                releaseId={releaseId}
+                reviewResultState={authoritativeResultState}
               />
-            </>
-          )}
+            ) : null}
+            {preview && handoff ? (
+              <ReviewCountyPreviewPanel
+                compareHref={handoff.compareHref}
+                droppedNotes={handoff.droppedNotes}
+                href={handoff.href}
+                openRef={openRef}
+                preview={preview}
+                categoryLabel={
+                  authoritativeResultState === "candidates_found"
+                    ? "Returned for review"
+                    : authoritativeResultState
+                      ? reviewResultStateLabel(authoritativeResultState)
+                      : "Review category unavailable"
+                }
+                release={tierRelease}
+                releaseId={releaseId ?? ""}
+                onOpen={markReviewReturnFocus}
+                onViewCountyEvidence={onViewCountyEvidence}
+              />
+            ) : null}
+            {preview || (handoff && releaseId && selectedPublished) ? null : (
+              <>
+                <p className="type-body" data-testid="explorer-preview-empty">
+                  No county is selected. Choose one from the list or the map.
+                </p>
+                <DownloadCountyPdfButton
+                  countyName=""
+                  fips=""
+                  releaseId=""
+                  stateCode=""
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 
