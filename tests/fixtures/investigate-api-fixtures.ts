@@ -1,7 +1,9 @@
 import {
   ValueState,
+  type GeographyUnavailable,
   type Indicator,
   type Observation,
+  type ResourceEnvelopeGeography,
 } from "@/generated/models";
 
 export { exploreMetadataFixture as investigateMetadataFixture } from "./explore-api-fixtures";
@@ -108,8 +110,16 @@ const COUNTY_LABELS: Record<string, { label: string; stateFips: string }> = {
 };
 
 /**
- * Geography fixtures keep a two-digit state FIPS parent. They are not a live
- * stand-in for `/v1/geographies`, which the API still answers with 503.
+ * Publication boundary returned with the identity route's HTTP 200 while
+ * canonical geography is unpublished. It is not missing county evidence.
+ */
+export const INVESTIGATE_GEOGRAPHY_UNPUBLISHED_LIMITATION =
+  "Canonical geography identity is not published yet. This is a publication boundary, not missing county evidence.";
+
+/**
+ * Published Geography fixtures keep a two-digit state FIPS parent. They model
+ * the future ResourceEnvelope arm only. The identity route's live HTTP 200 is
+ * {@link investigateGeographyUnavailableBody}.
  */
 export function investigateGeographyFixture(fips: string) {
   const known = COUNTY_LABELS[fips];
@@ -124,6 +134,26 @@ export function investigateGeographyFixture(fips: string) {
       geography_type: "state" as const,
     },
   };
+}
+
+/** Live identity-route success body: no label, and `data` is null. */
+export function investigateGeographyUnavailableBody(
+  fips: string
+): GeographyUnavailable {
+  return {
+    availability: "UNAVAILABLE",
+    data: null,
+    geography: { geography_id: fips, geography_type: "county" },
+    limitations: [INVESTIGATE_GEOGRAPHY_UNPUBLISHED_LIMITATION],
+    reason: "CANONICAL_GEOGRAPHY_UNPUBLISHED",
+  };
+}
+
+/** Future published arm of the identity-route union. */
+export function investigateGeographyEnvelope(
+  geography: NonNullable<ReturnType<typeof investigateGeographyFixture>>
+): ResourceEnvelopeGeography {
+  return { data: geography };
 }
 
 function observation(input: {
