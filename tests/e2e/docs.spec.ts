@@ -118,6 +118,66 @@ function generatedApiReferencePages(): {
   return pages;
 }
 
+test("switches documentation sections from the sidebar tablist", async ({
+  page,
+}, testInfo) => {
+  const phone = testInfo.project.name !== "desktop";
+  await page.goto("/docs");
+  await expect(
+    page.getByRole("heading", { name: "Start with One Health Atlas" })
+  ).toBeVisible();
+  const headerDevelopers = page.getByRole("link", {
+    exact: true,
+    name: "Developers",
+  });
+  await expect(headerDevelopers).toBeVisible();
+  await expect(headerDevelopers).toHaveAttribute("href", "/docs/develop");
+
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  if (phone) await openDocsSidebar(page);
+  const sidebar = docsSidebar(page, testInfo);
+  const tablist = sidebar.getByRole("tablist", {
+    name: "Documentation sections",
+  });
+  const product = tablist.getByRole("tab", { name: "Product guide" });
+  const developers = tablist.getByRole("tab", { name: "Developers" });
+  await expect(product).toHaveAttribute("aria-selected", "true");
+  await expect(product).toHaveAttribute("aria-current", "page");
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "Quickstart" })
+  ).toBeVisible();
+
+  await product.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(developers).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/docs\/develop$/);
+  await expect(
+    page.getByRole("heading", { name: "Developer overview", exact: true })
+  ).toBeVisible();
+  await expect(headerDevelopers).toHaveAttribute("aria-current", "page");
+
+  if (phone) await openDocsSidebar(page);
+  const developerSidebar = docsSidebar(page, testInfo);
+  await developerSidebar.getByRole("tab", { name: "API reference" }).click();
+  await expect(page).toHaveURL(/\/docs\/api-reference$/);
+  await expect(
+    page.getByRole("heading", { name: "API reference", exact: true })
+  ).toBeVisible();
+  const afterSwitch = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth
+  );
+  expect(afterSwitch).toBeLessThanOrEqual(1);
+});
+
 test("renders the public documentation page without the Atlas shell", async ({
   page,
 }, testInfo) => {
@@ -182,32 +242,102 @@ test("keeps every HelpDocs route reachable and accessible", async ({
     expect(blockingViolations, docsPage.path).toEqual([]);
   }
 
-  const sidebar =
-    testInfo.project.name === "desktop"
-      ? page.locator("#nd-sidebar")
-      : page.locator("#nd-sidebar-mobile");
+  const sidebar = docsSidebar(page, testInfo);
   if (testInfo.project.name !== "desktop") {
-    await page.getByRole("button", { name: "Open Sidebar" }).click();
+    await openDocsSidebar(page);
   }
-  await expect(
-    sidebar.getByRole("link", { exact: true, name: "Developer overview" })
-  ).toBeVisible();
-  await expect(
-    sidebar.getByRole("link", { exact: true, name: "FAQ and troubleshooting" })
-  ).toBeVisible();
-  const apiReferenceFolder = sidebar.getByRole("button", {
-    name: "API reference",
-  });
-  await expect(apiReferenceFolder).toBeVisible();
+  await expectDocsTab(sidebar, "API reference");
   const observations = sidebar
     .getByRole("link", { exact: true, name: "Observations" })
     .or(sidebar.getByRole("button", { exact: true, name: "Observations" }));
-  if (!(await observations.isVisible())) await apiReferenceFolder.click();
+  await observations.scrollIntoViewIfNeeded();
   await expect(observations).toBeVisible();
   await expect(
-    sidebar.getByRole("link", { name: "API, MCP, and access" })
+    sidebar.getByRole("link", { exact: true, name: "Developer overview" })
+  ).toHaveCount(0);
+  await expect(
+    sidebar.getByRole("link", { exact: true, name: "FAQ and troubleshooting" })
+  ).toHaveCount(0);
+
+  await sidebar.getByRole("tab", { name: "Product guide" }).click();
+  await expect(page).toHaveURL(/\/docs$/);
+  if (testInfo.project.name !== "desktop") {
+    await openDocsSidebar(page);
+  }
+  const productSidebar = docsSidebar(page, testInfo);
+  await expectDocsTab(productSidebar, "Product guide");
+  const quickstart = productSidebar.getByRole("link", {
+    exact: true,
+    name: "Quickstart",
+  });
+  await quickstart.scrollIntoViewIfNeeded();
+  await expect(quickstart).toBeVisible();
+  const faq = productSidebar.getByRole("link", {
+    exact: true,
+    name: "FAQ and troubleshooting",
+  });
+  await faq.scrollIntoViewIfNeeded();
+  await expect(faq).toBeVisible();
+  const access = productSidebar.getByRole("link", {
+    name: "API, MCP, and access",
+  });
+  await access.scrollIntoViewIfNeeded();
+  await expect(access).toBeVisible();
+  await expect(
+    productSidebar.getByRole("link", {
+      exact: true,
+      name: "Developer overview",
+    })
+  ).toHaveCount(0);
+
+  await productSidebar.getByRole("tab", { name: "Developers" }).click();
+  await expect(page).toHaveURL(/\/docs\/develop$/);
+  if (testInfo.project.name !== "desktop") {
+    await openDocsSidebar(page);
+  }
+  const developerSidebar = docsSidebar(page, testInfo);
+  await expectDocsTab(developerSidebar, "Developers");
+  await expect(
+    developerSidebar.getByRole("link", {
+      exact: true,
+      name: "Developer overview",
+    })
   ).toBeVisible();
+  await expect(
+    developerSidebar.getByRole("link", { exact: true, name: "Quickstart" })
+  ).toBeVisible();
+  await expect(
+    developerSidebar.getByRole("link", {
+      exact: true,
+      name: "FAQ and troubleshooting",
+    })
+  ).toHaveCount(0);
 });
+
+async function openDocsSidebar(page: Page) {
+  await page
+    .locator("#nd-subnav")
+    .getByRole("button", { name: "Open Sidebar" })
+    .click();
+}
+
+function docsSidebar(page: Page, testInfo: { project: { name: string } }) {
+  return testInfo.project.name === "desktop"
+    ? page.locator("#nd-sidebar")
+    : page.locator("#nd-sidebar-mobile");
+}
+
+async function expectDocsTab(
+  sidebar: ReturnType<Page["locator"]>,
+  name: string
+) {
+  const tab = sidebar.getByRole("tab", { exact: true, name });
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+  await expect(tab).toHaveAttribute("aria-current", "page");
+  await expect(
+    sidebar.getByRole("tablist", { name: "Documentation sections" })
+  ).toBeVisible();
+}
 
 async function expectOperationControlNames(page: Page, route: string) {
   const schemaSwitch = page.getByRole("switch", {
@@ -446,7 +576,7 @@ test("opens HelpDocs search and finds the evidence guide", async ({
   await dialog.getByPlaceholder("Search").fill("uncertainty");
   await expect(
     dialog.getByRole("button", {
-      name: /One Health Atlas documentation Evidence, provenance, and uncertainty/,
+      name: /One Health Atlas documentation Product guide Evidence, provenance, and uncertainty/,
     })
   ).toBeVisible({ timeout: 15_000 });
 });
