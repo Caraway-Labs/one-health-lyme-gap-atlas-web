@@ -72,11 +72,12 @@ describe("developer documentation guides", () => {
   it("lists the MVP guide order in the developers folder", () => {
     const folderNavigation = JSON.parse(
       fs.readFileSync(path.join(developRoot, "meta.json"), "utf-8")
-    ) as { title?: string; pages?: string[] };
+    ) as { pages?: string[]; root?: boolean; title?: string };
     const rootNavigation = JSON.parse(
       fs.readFileSync(path.join(docsRoot, "meta.json"), "utf-8")
     ) as { pages?: string[] };
 
+    expect(folderNavigation.root).toBeTruthy();
     expect(folderNavigation.title).toBe("Developers");
     expect(folderNavigation.pages).toStrictEqual([...developPages]);
     expect(rootNavigation.pages).toContain("develop");

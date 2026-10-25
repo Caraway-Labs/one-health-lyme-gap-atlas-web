@@ -1503,7 +1503,7 @@ function renderReferenceNavigation(folders: string[]): string {
     ...remainder,
     "schemas",
   ];
-  return `${JSON.stringify({ pages, title: "API reference" }, null, 2)}\n`;
+  return `${JSON.stringify({ pages, root: true, title: "API reference" }, null, 2)}\n`;
 }
 
 function renderReferenceIndex(

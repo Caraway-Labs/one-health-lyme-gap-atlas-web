@@ -140,6 +140,9 @@ test("keeps the developer quickstart usable at 375px", async ({
   });
   expect(overflow).toBeLessThanOrEqual(1);
 
+  await expect(
+    page.getByRole("link", { exact: true, name: "Developers" })
+  ).toBeVisible();
   const openSidebar = page.getByRole("button", { name: "Open Sidebar" });
   if ((await openSidebar.count()) > 0) {
     await openSidebar.click();
@@ -147,6 +150,9 @@ test("keeps the developer quickstart usable at 375px", async ({
   const sidebar = page.locator(
     "#nd-sidebar:visible, #nd-sidebar-mobile:visible"
   );
+  const developersTab = sidebar.getByRole("tab", { name: "Developers" });
+  await expect(developersTab).toHaveAttribute("aria-selected", "true");
+  await expect(developersTab).toHaveAttribute("aria-current", "page");
   await expect(
     sidebar.getByRole("link", { name: "Developer overview", exact: true })
   ).toBeVisible();
