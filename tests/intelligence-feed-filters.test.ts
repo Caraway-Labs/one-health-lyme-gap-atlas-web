@@ -87,7 +87,7 @@ describe("intelligence feed filters", () => {
       publishedWide: feedPublishedParser.parse("90d"),
       source: feedSourceParser.parse("cdc-lyme"),
     }).toStrictEqual({
-      defaultPublished: "30d",
+      defaultPublished: "all",
       emptySource: null,
       invalidPublished: null,
       invalidSource: null,
@@ -175,23 +175,31 @@ describe("intelligence feed filters", () => {
     expect(feedResultSummary(100, true)).toBe(
       "Showing 100 items · more available"
     );
-    expect(activeFeedFilterCount({ published: "30d", sourceId: null })).toBe(0);
-    expect(
-      activeFeedFilterCount({ published: "7d", sourceId: "cdc-lyme" })
-    ).toBe(2);
+    expect({
+      allDates: activeFeedFilterCount({ published: "all", sourceId: null }),
+      past30: activeFeedFilterCount({ published: "30d", sourceId: null }),
+      sourceAndWeek: activeFeedFilterCount({
+        published: "7d",
+        sourceId: "cdc-lyme",
+      }),
+    }).toStrictEqual({
+      allDates: 0,
+      past30: 1,
+      sourceAndWeek: 2,
+    });
   });
 
-  it("treats the default date window as a narrowed request", () => {
+  it("narrows only when a source or a shorter date window is selected", () => {
     expect({
       allDates: feedRequestNarrows({ published: "all", sourceId: null }),
-      defaultWindow: feedRequestNarrows({ published: "30d", sourceId: null }),
+      past30: feedRequestNarrows({ published: "30d", sourceId: null }),
       sourceOnly: feedRequestNarrows({
         published: "all",
         sourceId: "cdc-lyme",
       }),
     }).toStrictEqual({
       allDates: false,
-      defaultWindow: true,
+      past30: true,
       sourceOnly: true,
     });
   });
