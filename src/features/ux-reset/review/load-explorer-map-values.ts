@@ -6,18 +6,19 @@ import {
   type ExplorerMapObservationReady,
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
-import { mapValuesV1AtlasMapValuesGet } from "@/features/ux-reset/review/map-values-atlas";
-import {
-  mapValuesCollectionSchema,
-  type MapValuesCollection,
-} from "@/features/ux-reset/review/map-values-schema";
 import { RUCC_2023_LABELS } from "@/features/ux-reset/review/review-rationale";
 import {
   isLower48CountyFips,
   stateFipsPrefix,
 } from "@/features/ux-reset/review/review-state-fips";
+import { getAtlasMapValues } from "@/generated/atlas";
 import { ValueState } from "@/generated/models";
+import { GetAtlasMapValuesResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
+
+export type ExplorerMapValuesCollection = ReturnType<
+  typeof GetAtlasMapValuesResponse.parse
+>;
 
 export const explorerMapValuesQueryKey = (releaseId: string) =>
   ["ux-reset-explorer-map-values", releaseId] as const;
@@ -25,14 +26,14 @@ export const explorerMapValuesQueryKey = (releaseId: string) =>
 export async function loadExplorerMapValues(input: {
   releaseId: string;
   signal: AbortSignal;
-}): Promise<MapValuesCollection> {
-  const response = await mapValuesV1AtlasMapValuesGet(
+}): Promise<ExplorerMapValuesCollection> {
+  const response = await getAtlasMapValues(
     { dataset_version: input.releaseId },
     { signal: input.signal }
   );
   const parsed = validateApiResponse(
     "Atlas map values",
-    mapValuesCollectionSchema,
+    GetAtlasMapValuesResponse,
     response.data
   );
   if (parsed.release_id !== input.releaseId) {
@@ -105,22 +106,26 @@ function valueStateForRurality(code: number | null): {
   };
 }
 
+function publishedNumber(value: number | null | undefined): number | null {
+  return typeof value === "number" ? value : null;
+}
+
 function fieldValue(
-  county: MapValuesCollection["counties"][number],
+  county: ExplorerMapValuesCollection["counties"][number],
   layerId: ExplorerObservationLayerId
 ): number | null {
   switch (layerId) {
     case "incidence_floor": {
-      return county.incidence_floor_2023;
+      return publishedNumber(county.incidence_floor_2023);
     }
     case "svi": {
-      return county.svi_percentile;
+      return publishedNumber(county.svi_percentile);
     }
     case "uninsured": {
-      return county.uninsured_percent;
+      return publishedNumber(county.uninsured_percent);
     }
     case "rurality": {
-      return county.rucc_2023;
+      return publishedNumber(county.rucc_2023);
     }
     default: {
       const exhaustive: never = layerId;
@@ -130,7 +135,7 @@ function fieldValue(
 }
 
 function rowForCounty(
-  county: MapValuesCollection["counties"][number],
+  county: ExplorerMapValuesCollection["counties"][number],
   layerId: ExplorerObservationLayerId
 ): ExplorerMapNumericRow {
   const value = fieldValue(county, layerId);
@@ -155,7 +160,7 @@ function rowForCounty(
 }
 
 export function explorerMapValuesLayerReady(input: {
-  collection: MapValuesCollection;
+  collection: ExplorerMapValuesCollection;
   layerId: ExplorerObservationLayerId;
   requestedFips: readonly string[];
   scopeCode?: string | null;
