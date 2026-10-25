@@ -4379,12 +4379,11 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-list,
   .ux-reset-explorer-preview {
-    /* Stretch with the map row. min-height 0 keeps a percentage from
-       resolving against the workspace scroll pane, which was leaving
-       empty scroll below the footer. */
+    /* Stretch with the map row. The county boxes are positioned against
+       this column, so their content cannot grow the row or the workspace
+       scroll pane below the footer. */
+    position: relative;
     align-self: stretch;
-    display: flex;
-    flex-direction: column;
     height: auto;
     min-height: 0;
     overflow: hidden;
@@ -4392,11 +4391,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 
   .ux-reset-explorer-list > .gap-0,
   .ux-reset-explorer-column-scroll {
-    /* Fill the stretched map row from a zero basis and scroll the
-       county content. Block layout keeps that content from shrinking
-       away, and it does not use a percentage of the scroll pane. */
-    display: block;
-    flex: 1 1 0;
+    position: absolute;
+    inset: 0;
     min-height: 0;
     overflow: auto;
   }
@@ -4488,6 +4484,7 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     > .ux-reset-explorer-list,
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
     > .ux-reset-explorer-preview {
+    position: static;
     height: auto;
     min-height: 0;
     overflow: visible;
@@ -4498,7 +4495,8 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
     > .gap-0,
   .ux-reset-explorer-browse:has(> .ux-reset-review-state-nav)
     .ux-reset-explorer-column-scroll {
-    flex: none;
+    position: static;
+    inset: auto;
     height: auto;
     overflow: visible;
   }
