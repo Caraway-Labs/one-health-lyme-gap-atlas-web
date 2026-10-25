@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 import {
   ANALYTICS_PREFERENCE_CHANGED_EVENT,
   notifyAnalyticsPreferenceChanged,
+  readEnforcedAnalyticsPreference,
 } from "@/components/analytics-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,13 +20,12 @@ import {
 import {
   ANALYTICS_PREFERENCE_KEY,
   honorsDoNotTrack,
-  readBrowserAnalyticsPreference,
   writeBrowserAnalyticsPreference,
   type AnalyticsConsentState,
 } from "@/lib/analytics-consent";
 
 const ANALYTICS_PURPOSE =
-  "Public Atlas exploration works the same whether you allow or decline optional product analytics. Atlas uses product analytics only after you explicitly allow them.";
+  "Atlas exploration works the same whether optional product analytics stay on or you turn them off. Product analytics are on by default in this browser, and you can turn them off at any time.";
 
 const STORAGE_LIMITATION =
   "This setting stores only your choice, its date, expiry, and a format version in this browser for up to six months. It does not create an analytics identifier or send an event.";
@@ -39,6 +39,7 @@ type PrivacyPreferencesProps = {
 const preferenceListeners = new Set<() => void>();
 // A failed write returns storage-unavailable while storage still has no record.
 // Cross-tab `storage` events and dialog open clear this before the snapshot is read.
+// A failed opt-out still stays off through readEnforcedAnalyticsPreference.
 let consentOverride: AnalyticsConsentState | null = null;
 
 function isAnalyticsPreferenceStorageEvent(event: StorageEvent): boolean {
@@ -81,7 +82,7 @@ function refreshStoredConsent(): void {
 }
 
 function storedConsentSnapshot(): AnalyticsConsentState {
-  return consentOverride ?? readBrowserAnalyticsPreference();
+  return consentOverride ?? readEnforcedAnalyticsPreference();
 }
 
 function doNotTrackSnapshot(): boolean {
@@ -106,7 +107,7 @@ function analyticsChoiceSummary(
       return "Atlas cannot save a preference in this browser, so optional analytics remain off.";
     }
     case "not-decided": {
-      return "Optional analytics are off until you make a choice.";
+      return "Optional analytics are on for this browser until you turn them off.";
     }
     default: {
       const exhaustive: never = consent;
@@ -132,7 +133,7 @@ function PrivacyChoiceActions({
         type="button"
         variant="secondary"
       >
-        Keep optional analytics off
+        Turn off optional analytics
       </Button>
       <Button
         className={className}
@@ -178,9 +179,10 @@ export function PrivacyPreferences({
     if (decision === "granted" && honorsDoNotTrack(navigator)) {
       return;
     }
-    consentOverride = writeBrowserAnalyticsPreference(decision);
+    const written = writeBrowserAnalyticsPreference(decision);
+    consentOverride = written;
     publishPreferenceChange();
-    notifyAnalyticsPreferenceChanged();
+    notifyAnalyticsPreferenceChanged({ attempted: decision, written });
   };
 
   if (presentation === "section") {
@@ -231,7 +233,7 @@ export function PrivacyPreferences({
         className="overflow-hidden sm:max-w-lg [&>*]:min-w-0"
       >
         <DialogHeader>
-          <span className="eyebrow">Your choice</span>
+          <span className="eyebrow">This browser</span>
           <DialogTitle id="privacy-settings-title">
             Privacy settings
           </DialogTitle>

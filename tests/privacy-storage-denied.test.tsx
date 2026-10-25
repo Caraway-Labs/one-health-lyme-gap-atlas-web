@@ -139,7 +139,7 @@ describe("denied localStorage", () => {
       render(<PrivacyPreferences />);
       fireEvent.click(screen.getByRole("button", { name: "Privacy settings" }));
       fireEvent.click(
-        screen.getByRole("button", { name: "Keep optional analytics off" })
+        screen.getByRole("button", { name: "Turn off optional analytics" })
       );
       expect({
         dialog: screen

@@ -559,15 +559,17 @@ export function ReviewNationalOrientationView({
         </ul>
       </div>
       <aside className="ux-reset-explorer-preview">
-        <p className="eyebrow">Selected county</p>
-        <p className="type-body">
-          No county is selected. Choose a state to open its counties. National
-          ranking is unavailable, and that is not low priority.
-        </p>
-        <p className="type-small">
-          This map shows state boundaries so you can open a state. It is not an
-          Atlas gap score map.
-        </p>
+        <div className="ux-reset-explorer-column-scroll">
+          <p className="eyebrow">Selected county</p>
+          <p className="type-body">
+            No county is selected. Choose a state to open its counties. National
+            ranking is unavailable, and that is not low priority.
+          </p>
+          <p className="type-small">
+            This map shows state boundaries so you can open a state. It is not
+            an Atlas gap score map.
+          </p>
+        </div>
       </aside>
     </div>
   );

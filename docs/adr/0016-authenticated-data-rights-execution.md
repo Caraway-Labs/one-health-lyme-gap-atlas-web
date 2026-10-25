@@ -6,7 +6,7 @@
 
 ## Context
 
-The approved [data-rights workflow](../data-rights-workflow.md) requires authenticated **Export my data** and **Remove all data** with a request ledger, confirmation, processor propagation, and a 30-day completion maximum. Optional accounts now persist a profile through FastAPI `/v1/me/profile` and hosted Supabase Auth. There is no job queue, object store, or extra App Platform worker. Amplitude events are session-scoped and must not receive an account `user_id` ([ADR 0014](0014-privacy-safe-amplitude-browser-analytics.md)). Feedback capture and saved views are not launched.
+The approved [data-rights workflow](../data-rights-workflow.md) requires authenticated **Export my data** and **Remove all data** with a request ledger, confirmation, processor propagation, and a 30-day completion maximum. Optional accounts now persist a profile through FastAPI `/v1/me/profile` and hosted Supabase Auth. There is no job queue, object store, or extra App Platform worker. Amplitude events are session-scoped, retained for 90 days, not sold or used for advertising, and must not receive an account `user_id` ([ADR 0014](0014-privacy-safe-amplitude-browser-analytics.md); consent posture superseded by [ADR 0022](0022-default-on-amplitude-product-analytics.md)). Feedback capture and saved views are not launched.
 
 ## Decision
 
@@ -33,7 +33,7 @@ Do not set Amplitude `user_id`, do not add a first-party analytics proxy, and do
 
 - **New DigitalOcean worker/queue:** Matches a long-running processor model but changes deployment topology (ADR 0004/0009) without a current processor that needs hours or days.
 - **In-process FastAPI BackgroundTasks only:** Would lose the request on restart and would not leave a durable ledger.
-- **Amplitude User Privacy API with account stitching:** Would enable person-level analytics deletion but contradicts the accepted analytics ADR.
+- **Amplitude User Privacy API with account stitching:** Would enable person-level analytics deletion but contradicts ADR 0014 and ADR 0022.
 
 ## Acceptance criteria
 
@@ -50,5 +50,5 @@ Apply the ledger migration to Development, verify with a synthetic account, then
 
 - `docs/data-rights-workflow.md`
 - `docs/privacy-data-inventory.md`
-- ADR 0014 optional accounts; web ADR 0014 Amplitude
+- ADR 0014 optional accounts; web ADR 0014 Amplitude, opt-in posture superseded by ADR 0022
 - API `/v1/me/privacy-requests*` contract tests

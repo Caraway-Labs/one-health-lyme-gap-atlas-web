@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { CSSProperties } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { CountyActionPlan } from "@/components/county-action-plan";
 import { Card } from "@/components/ui/card";
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
+import { explorerFollowUpAccent } from "@/features/ux-reset/review/explorer-follow-up-display";
 import { EXPLORER_MAP_FOLLOW_UP_ID } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import type { GovernedReviewResultState } from "@/lib/follow-up-workflows";
 
@@ -45,6 +47,14 @@ export function ExplorerMapFollowUp({
     <Card
       aria-labelledby={`${EXPLORER_MAP_FOLLOW_UP_ID}-heading`}
       className="ux-reset-explorer-map-follow-up gap-0 p-4"
+      data-follow-up-accent={query.data ? "ready" : "pending"}
+      style={
+        query.data && explorerFollowUpAccent(query.data.color)
+          ? ({
+              "--follow-up-accent": explorerFollowUpAccent(query.data.color),
+            } as CSSProperties)
+          : undefined
+      }
       data-testid="explorer-map-follow-up"
       id={EXPLORER_MAP_FOLLOW_UP_ID}
       tabIndex={-1}
@@ -92,6 +102,7 @@ export function ExplorerMapFollowUp({
             reviewResultState,
           }}
           showEyebrow={false}
+          variant="explorer"
           whatIfActive={whatIfActive}
         />
       ) : null}
