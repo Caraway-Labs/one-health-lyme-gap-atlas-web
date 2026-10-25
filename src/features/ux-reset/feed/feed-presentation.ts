@@ -1,5 +1,5 @@
-import type { FeedEntry } from "@/generated/models/feedEntry";
-import type { FeedEntryPublicationDateState } from "@/generated/models/feedEntryPublicationDateState";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
+import type { FeedListEntryPublicationDateState } from "@/generated/models/feedListEntryPublicationDateState";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   formatUtcCalendarDate,
@@ -13,7 +13,7 @@ export const FEED_EXTERNAL_LINK_TARGET = "_blank";
 const UNTITLED_ITEM = "Untitled item";
 
 const MISSING_PUBLICATION_DATE: Record<
-  Exclude<FeedEntryPublicationDateState, "present">,
+  Exclude<FeedListEntryPublicationDateState, "present">,
   string
 > = {
   invalid: "Publication date not available",
@@ -27,13 +27,13 @@ export type FeedPublicationDate =
 
 export type FeedRequestFailure = "error" | "unavailable";
 
-export function feedItemTitle(entry: FeedEntry): string {
+export function feedItemTitle(entry: FeedListEntry): string {
   const title = entry.title?.trim() ?? "";
   return title.length > 0 ? title : UNTITLED_ITEM;
 }
 
 /** Publisher text from the contract, then the governed source organization. */
-export function feedPublisherLabel(entry: FeedEntry): string {
+export function feedPublisherLabel(entry: FeedListEntry): string {
   const publisher = entry.publisher?.trim() ?? "";
   if (publisher.length > 0) {
     return publisher;
@@ -45,7 +45,7 @@ export function feedPublisherLabel(entry: FeedEntry): string {
  * Show a publication date only when the contract says it is present and the
  * timestamp parses. Fetch time is not a substitute.
  */
-export function feedPublicationDate(entry: FeedEntry): FeedPublicationDate {
+export function feedPublicationDate(entry: FeedListEntry): FeedPublicationDate {
   if (entry.publication_date_state === "present") {
     const parsed = parseAtlasDateTime(entry.published_at);
     if (parsed) {

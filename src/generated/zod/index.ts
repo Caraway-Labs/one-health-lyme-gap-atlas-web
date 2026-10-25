@@ -56,6 +56,7 @@ export * from './feedEntryMeta.zod';
 export * from './feedEntryRead.zod';
 export * from './feedEvidence.zod';
 export * from './feedItems.zod';
+export * from './feedListEntry.zod';
 export * from './feedMeta.zod';
 export * from './feedSource.zod';
 export * from './feedSources.zod';

@@ -10,7 +10,7 @@ import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { resetRouteById } from "@/features/ux-reset/paths";
-import type { FeedEntry } from "@/generated/models/feedEntry";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
 import {
   analyticsControlAttributes,
   trackFeedFilterApplied,
@@ -73,7 +73,7 @@ function FeedLimitations({ limitations }: { limitations: readonly string[] }) {
   );
 }
 
-function FeedPublicationDateText({ entry }: { entry: FeedEntry }) {
+function FeedPublicationDateText({ entry }: { entry: FeedListEntry }) {
   const date = feedPublicationDate(entry);
   if (date.kind === "present") {
     return <time dateTime={date.iso}>{date.text}</time>;
@@ -81,7 +81,7 @@ function FeedPublicationDateText({ entry }: { entry: FeedEntry }) {
   return date.text;
 }
 
-function FeedItem({ entry }: { entry: FeedEntry }) {
+function FeedItem({ entry }: { entry: FeedListEntry }) {
   const title = feedItemTitle(entry);
   const href = feedPublisherHref(entry.canonical_url);
   const publisher = feedPublisherLabel(entry);

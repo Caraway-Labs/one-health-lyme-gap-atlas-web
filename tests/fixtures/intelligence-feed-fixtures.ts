@@ -1,7 +1,7 @@
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
-import type { FeedEntry } from "@/generated/models/feedEntry";
-import type { FeedEntryPublicationDateState } from "@/generated/models/feedEntryPublicationDateState";
-import type { FeedEntrySourceFamily } from "@/generated/models/feedEntrySourceFamily";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
+import type { FeedListEntryPublicationDateState } from "@/generated/models/feedListEntryPublicationDateState";
+import type { FeedListEntrySourceFamily } from "@/generated/models/feedListEntrySourceFamily";
 import type { FeedSource } from "@/generated/models/feedSource";
 import type { FeedSources } from "@/generated/models/feedSources";
 import type { MetadataFeed } from "@/generated/models/metadataFeed";
@@ -17,7 +17,7 @@ type FeedFixtureItem = {
   canonicalUrl?: string | null;
   limitations?: string[];
   organization: string;
-  publicationDateState?: FeedEntryPublicationDateState;
+  publicationDateState?: FeedListEntryPublicationDateState;
   publishedAt?: string | null;
   publisher?: string | null;
   sourceId: string;
@@ -32,7 +32,7 @@ function hexId(seed: string): string {
 export function intelligenceFeedEntry(
   seed: string,
   item: FeedFixtureItem
-): FeedEntry {
+): FeedListEntry {
   const publicationDateState = item.publicationDateState ?? "present";
   const publishedAt =
     item.publishedAt === undefined
@@ -73,15 +73,19 @@ export function intelligenceFeedEntry(
     source_family: sourceFamilyFor(item.sourceId),
     source_family_label: item.publisher ?? item.organization,
     description: { text: null, state: "not_provided" },
-    abstract: null,
     tags: [],
     authors: [],
     pmid: null,
+    pubmed_url: null,
     attribution: item.publisher ?? item.organization,
+    abstract_preview: null,
+    abstract_has_more: false,
+    abstract_state: null,
+    copyright_line: null,
   };
 }
 
-function sourceFamilyFor(sourceId: string): FeedEntrySourceFamily {
+function sourceFamilyFor(sourceId: string): FeedListEntrySourceFamily {
   if (sourceId.includes("pubmed")) return "pubmed";
   if (sourceId.includes("cdc")) return "cdc_other";
   if (sourceId.includes("nysdoh") || sourceId.includes("state")) {
@@ -90,7 +94,7 @@ function sourceFamilyFor(sourceId: string): FeedEntrySourceFamily {
   return "other";
 }
 
-export const mixedIntelligenceFeedItems: FeedEntry[] = [
+export const mixedIntelligenceFeedItems: FeedListEntry[] = [
   intelligenceFeedEntry("cdc", {
     canonicalUrl: "https://www.cdc.gov/lyme/index.html",
     organization: "Centers for Disease Control and Prevention",
@@ -139,7 +143,7 @@ export function intelligenceSourcesEnvelope(
 }
 
 export function intelligenceFeedEnvelope(
-  data: FeedEntry[],
+  data: FeedListEntry[],
   nextPageToken: string | null = null
 ): MetadataFeed {
   return {
