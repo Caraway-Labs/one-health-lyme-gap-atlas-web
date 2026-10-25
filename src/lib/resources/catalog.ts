@@ -644,15 +644,6 @@ export const REGIONAL_CENTERS: readonly RegionalCenter[] = [
   },
 ];
 
-export const REGIONAL_CENTER_FILTERS = [
-  { id: "all", label: "All centers" },
-  { id: "Center of Excellence", label: "Centers of Excellence" },
-  { id: "Training & Evaluation", label: "Training & Evaluation" },
-] as const;
-
-export type RegionalCenterFilter =
-  (typeof REGIONAL_CENTER_FILTERS)[number]["id"];
-
 const STATE_RESOURCES_BY_CODE = new Map(
   STATE_RESOURCES.map((state) => [state.code, state])
 );
@@ -690,13 +681,4 @@ export function statesInAlphabeticalOrder(): readonly StateResource[] {
   return STATE_RESOURCES.toSorted((left, right) =>
     left.name.localeCompare(right.name)
   );
-}
-
-export function regionalCentersForFilter(
-  filter: RegionalCenterFilter
-): readonly RegionalCenter[] {
-  if (filter === "all") {
-    return REGIONAL_CENTERS;
-  }
-  return REGIONAL_CENTERS.filter((center) => center.type === filter);
 }

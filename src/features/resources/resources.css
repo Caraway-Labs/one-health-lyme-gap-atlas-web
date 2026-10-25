@@ -70,6 +70,7 @@
 .resources-cdc-heading {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   min-width: 0;
 }
@@ -322,21 +323,9 @@
   color: var(--teal);
 }
 
-.resources-directory-list a:focus-visible,
-.resources-filters button:focus-visible {
+.resources-directory-list a:focus-visible {
   outline: 3px solid var(--navy);
   outline-offset: 2px;
-}
-
-.resources-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.resources-filters button {
-  min-height: 2.75rem;
-  border-radius: 999px;
 }
 
 .resources-center-grid {
@@ -474,11 +463,6 @@
   letter-spacing: 0.05em;
   line-height: 1.3;
   text-transform: uppercase;
-}
-
-.resources-empty {
-  margin: 0;
-  color: var(--navy);
 }
 
 .resources-state-field {
