@@ -8,17 +8,29 @@
 import type { ProblemDetailsErrorsItem } from './problemDetailsErrorsItem';
 
 /**
- * RFC 9457 error. Stable codes are included when the response contract defines one.
+ * RFC 9457 error body (`application/problem+json`). Some errors add a stable `code`.
  */
 export interface ProblemDetails {
+  /** URI that names the kind of problem, such as `.../problems/validation`. Branch on `code` when it is present. */
   type: string;
+  /** Short summary of the kind of problem. Read `detail` for this occurrence. */
   title: string;
+  /** HTTP status code of the response, repeated in the body. */
   status: number;
+  /** Explanation of this occurrence of the problem, in English. Show it to a developer; do not match on its wording. */
   detail: string;
+  /** Path of the request that failed, for example `/v1/observations`. */
   instance: string;
+  /** Identifies this request. Include it when you contact support. It matches the `X-Request-ID` response header. */
   request_id: string;
-  /** @nullable */
+  /**
+     * Stable machine-readable error code: `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, `QUERY_TOO_BROAD`, `RESOURCE_NOT_FOUND`, `RATE_LIMITED`, or `SERVICE_UNAVAILABLE`. Branch on this field. It is absent on some errors, such as HTTP 422 validation errors.
+     * @nullable
+     */
   code?: string | null;
-  /** @nullable */
+  /**
+     * One entry for each invalid input when a request fails validation. Each entry has `loc` (where the value was sent), `msg`, and `type`. `null` or absent when the error is not about specific inputs.
+     * @nullable
+     */
   errors?: ProblemDetailsErrorsItem[] | null;
 }

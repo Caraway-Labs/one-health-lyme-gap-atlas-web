@@ -16,6 +16,7 @@ import {
   routeIds,
   trackFeedFilterApplied,
   trackFeedFilterCleared,
+  trackFeedItemDetailOpened,
   uiControlIds,
   atlasAnalytics,
 } from "../src/lib/atlas-analytics";
@@ -186,6 +187,38 @@ describe("Atlas Amplitude boundary", () => {
       ],
     ]);
     expect(JSON.stringify(track.mock.calls)).not.toContain("cdc-lyme");
+    track.mockRestore();
+  });
+
+  it("emits a feed detail event without item text", () => {
+    const track = vi.spyOn(atlasAnalytics, "track");
+    trackFeedItemDetailOpened("feed_card_details", "cdc_mmwr");
+    trackFeedItemDetailOpened("feed_card_read_more", "pubmed");
+    trackFeedItemDetailOpened("feed_card_details", "cdc-mmwr" as "cdc_mmwr");
+    expect(track.mock.calls).toStrictEqual([
+      [
+        {
+          eventType: "atlas_feed_item_detail_opened",
+          properties: {
+            entry_surface: "feed_card_details",
+            route_id: "intelligence_feed",
+            source_family: "cdc_mmwr",
+          },
+        },
+      ],
+      [
+        {
+          eventType: "atlas_feed_item_detail_opened",
+          properties: {
+            entry_surface: "feed_card_read_more",
+            route_id: "intelligence_feed",
+            source_family: "pubmed",
+          },
+        },
+      ],
+    ]);
+    expect(JSON.stringify(track.mock.calls)).not.toContain("item_id");
+    expect(JSON.stringify(track.mock.calls)).not.toContain("http");
     track.mockRestore();
   });
 

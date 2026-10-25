@@ -21,7 +21,7 @@ export const observationsV1ObservationsGetParamsPageSizeMax = 500;
 
 export const ObservationsV1ObservationsGetParams = zod.object({
   "measure_id": zod.string().min(1).describe('Exact discovery measure ID.'),
-  "geography_type": zod.enum(['county', 'state']),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place. Only `county` is supported; `state` returns 400 `UNSUPPORTED_FILTER`.'),
   "geography_id": zod.array(zod.string()).min(1).max(observationsV1ObservationsGetParamsGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
   "vintage_year": zod.int().min(observationsV1ObservationsGetParamsVintageYearMin).max(observationsV1ObservationsGetParamsVintageYearMax).nullish().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
   "year": zod.int().min(observationsV1ObservationsGetParamsYearMin).max(observationsV1ObservationsGetParamsYearMax).nullish().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),

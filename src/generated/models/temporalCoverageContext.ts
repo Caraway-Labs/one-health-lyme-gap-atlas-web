@@ -6,9 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * How much of the expected time span the observation covers.
+ */
 export interface TemporalCoverageContext {
+  /** Amount of coverage expected, in `unit`. */
   expected: number;
+  /** Amount of coverage present, in `unit`. */
   observed: number;
+  /** Unit of `expected` and `observed`, such as `day`. */
   unit: string;
+  /** Whether the method accepts less than the expected coverage. */
   partial_allowed: boolean;
 }

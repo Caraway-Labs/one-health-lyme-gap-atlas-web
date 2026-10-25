@@ -8,11 +8,13 @@
 
 export type StateReviewV1StatesStateReviewGetParams = {
 /**
+ * Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.
  * @maxLength 80
  * @nullable
  */
 observation_context?: string | null;
 /**
+ * Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
  * @nullable
  */
 dataset_version?: string | null;

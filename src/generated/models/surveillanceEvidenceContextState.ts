@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Evidence state for the county. None of these values proves absence.
+ */
 export type SurveillanceEvidenceContextState = typeof SurveillanceEvidenceContextState[keyof typeof SurveillanceEvidenceContextState];
 
 

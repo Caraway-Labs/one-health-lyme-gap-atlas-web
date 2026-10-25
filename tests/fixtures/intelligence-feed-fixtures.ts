@@ -1,6 +1,9 @@
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
+import type { FeedAbstract } from "@/generated/models/feedAbstract";
+import type { FeedDescription } from "@/generated/models/feedDescription";
 import type { FeedEntry } from "@/generated/models/feedEntry";
 import type { FeedEntryPublicationDateState } from "@/generated/models/feedEntryPublicationDateState";
+import type { FeedEntrySourceFamily } from "@/generated/models/feedEntrySourceFamily";
 import type { FeedSource } from "@/generated/models/feedSource";
 import type { FeedSources } from "@/generated/models/feedSources";
 import type { MetadataFeed } from "@/generated/models/metadataFeed";
@@ -13,13 +16,22 @@ export const FEED_META_LIMITATIONS = [
 ] as const;
 
 type FeedFixtureItem = {
+  abstract?: FeedAbstract | null;
+  attribution?: string;
+  authors?: string[];
   canonicalUrl?: string | null;
+  description?: FeedDescription;
   limitations?: string[];
   organization: string;
+  pmid?: string | null;
   publicationDateState?: FeedEntryPublicationDateState;
   publishedAt?: string | null;
   publisher?: string | null;
+  registryVersion?: number;
+  sourceFamily?: FeedEntrySourceFamily;
+  sourceFamilyLabel?: string;
   sourceId: string;
+  tags?: string[];
   title?: string | null;
   trust: (typeof BriefingSourceReviewedTrustClassification)[keyof typeof BriefingSourceReviewedTrustClassification];
 };
@@ -40,11 +52,15 @@ export function intelligenceFeedEntry(
         : null
       : item.publishedAt;
   return {
+    abstract: item.abstract === undefined ? null : item.abstract,
+    attribution: item.attribution ?? "Source: fixture",
+    authors: item.authors ?? [],
     canonical_url:
       item.canonicalUrl === undefined
         ? `https://example.org/${item.sourceId}`
         : item.canonicalUrl,
     contract_version: "2.0.0",
+    description: item.description ?? { state: "withheld", text: null },
     fetched_at: "2026-03-03T12:00:00Z",
     item_id: hexId(`item${seed}`),
     limitations: item.limitations ?? [],
@@ -58,15 +74,21 @@ export function intelligenceFeedEntry(
     },
     publication_date_state: publicationDateState,
     published_at: publishedAt,
+    pmid: item.pmid === undefined ? null : item.pmid,
     publisher:
       item.publisher === undefined ? item.organization : item.publisher,
     revision_id: hexId(`rev${seed}`),
     source: {
       organization: item.organization,
-      registry_version: 1,
+      registry_version: item.registryVersion ?? 1,
       reviewed_trust_classification: item.trust,
       source_id: item.sourceId,
     },
+    source_family: item.sourceFamily ?? "other",
+    ...(item.sourceFamilyLabel === undefined
+      ? {}
+      : { source_family_label: item.sourceFamilyLabel }),
+    tags: item.tags ?? [],
     title:
       item.title === undefined ? `${item.organization} update` : item.title,
   };

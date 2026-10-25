@@ -7,6 +7,6 @@
  */
 
 /**
- * Persisted feature/config contract.
+ * The input features and settings the model used.
  */
 export type SituationClassificationFeatureContract = { [key: string]: unknown };

@@ -9,8 +9,14 @@ import type { CollectionLinks } from './collectionLinks';
 import type { CollectionMeta } from './collectionMeta';
 import type { Observation } from './observation';
 
+/**
+ * A page of observations, with paging details and links. Read `meta.availability` and `meta.next_page_token` before you use `data`.
+ */
 export interface CollectionEnvelopeObservation {
+  /** The items on this page. Empty when there are none. */
   data: Observation[];
+  /** Paging, release, and availability details. */
   meta: CollectionMeta;
+  /** Links related to this response. */
   links: CollectionLinks;
 }

@@ -11,8 +11,8 @@ export const stateReviewV1StatesStateReviewGetParamsObservationContextMax = 80;
 
 
 export const StateReviewV1StatesStateReviewGetParams = zod.object({
-  "observation_context": zod.string().max(stateReviewV1StatesStateReviewGetParamsObservationContextMax).nullish(),
-  "dataset_version": zod.string().nullish()
+  "observation_context": zod.string().max(stateReviewV1StatesStateReviewGetParamsObservationContextMax).nullish().describe('Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.'),
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
 export type StateReviewV1StatesStateReviewGetParams = zod.input<typeof StateReviewV1StatesStateReviewGetParams>;

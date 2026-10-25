@@ -11,9 +11,9 @@ export const measuresV1MeasuresGetParamsPageSizeMax = 500;
 
 
 export const MeasuresV1MeasuresGetParams = zod.object({
-  "measure_id": zod.string().nullish(),
-  "indicator_id": zod.string().nullish(),
-  "geography_type": zod.string().nullish(),
+  "measure_id": zod.string().nullish().describe('Return only the measure with this exact ID. Omit it to list every measure. An ID that matches nothing returns an empty list.'),
+  "indicator_id": zod.string().nullish().describe('Return only measures that belong to this indicator ID. Omit it to list every measure.'),
+  "geography_type": zod.string().nullish().describe('Return only measures whose `geography_semantics` field equals this value exactly, for example `COUNTY_FIPS_5`. Omit it to list every measure.'),
   "page_size": zod.int().min(1).max(measuresV1MeasuresGetParamsPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })

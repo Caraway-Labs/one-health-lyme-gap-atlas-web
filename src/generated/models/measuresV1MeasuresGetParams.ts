@@ -8,14 +8,17 @@
 
 export type MeasuresV1MeasuresGetParams = {
 /**
+ * Return only the measure with this exact ID. Omit it to list every measure. An ID that matches nothing returns an empty list.
  * @nullable
  */
 measure_id?: string | null;
 /**
+ * Return only measures that belong to this indicator ID. Omit it to list every measure.
  * @nullable
  */
 indicator_id?: string | null;
 /**
+ * Return only measures whose `geography_semantics` field equals this value exactly, for example `COUNTY_FIPS_5`. Omit it to list every measure.
  * @nullable
  */
 geography_type?: string | null;

@@ -8,12 +8,12 @@
 import * as zod from 'zod';
 
 export const ReviewCoverage = zod.object({
-  "assessed_counties": zod.int(),
-  "eligible_counties": zod.int(),
-  "abstained_counties": zod.int(),
-  "evaluated_counties": zod.int(),
-  "rule_coverage": zod.record(zod.string(), zod.string())
-})
+  "assessed_counties": zod.int().describe('Counties in the requested state that were checked.'),
+  "eligible_counties": zod.int().describe('Counties that met the rule\'s eligibility checks.'),
+  "abstained_counties": zod.int().describe('Counties where the evidence could not be safely evaluated.'),
+  "evaluated_counties": zod.int().describe('Counties that were fully evaluated.'),
+  "rule_coverage": zod.record(zod.string(), zod.string()).describe('Each review rule by name, marked `enabled` or `disabled`.')
+}).describe('How many counties the review looked at and what happened to each.')
 
 export type ReviewCoverage = zod.input<typeof ReviewCoverage>;
 export type ReviewCoverageOutput = zod.output<typeof ReviewCoverage>;

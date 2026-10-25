@@ -6,14 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * The model's membership probability for one situation class.
+ */
 export interface MembershipProbability {
   /**
-     * Version-scoped persisted class identity.
+     * Identifies the class. It is specific to a model version.
      * @minLength 1
      */
   class_id: string;
   /**
-     * Latent-class membership on 0–1 scale; never disease risk.
+     * Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.
      * @minimum 0
      * @maximum 1
      */

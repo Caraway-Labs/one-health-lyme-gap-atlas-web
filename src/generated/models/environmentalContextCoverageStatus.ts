@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * How much of the county the source covers for this day.
+ */
 export type EnvironmentalContextCoverageStatus = typeof EnvironmentalContextCoverageStatus[keyof typeof EnvironmentalContextCoverageStatus];
 
 

@@ -13,6 +13,9 @@ export type ObservationsV1ObservationsGetParams = {
  * @minLength 1
  */
 measure_id: string;
+/**
+ * Kind of place. Only `county` is supported; `state` returns 400 `UNSUPPORTED_FILTER`.
+ */
 geography_type: GeographyType;
 /**
  * Repeat for 1-500 county FIPS strings; preserve leading zeros.

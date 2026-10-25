@@ -8,11 +8,11 @@
 import * as zod from 'zod';
 
 export const TemporalWindowContext = zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-})
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('A span of time with an inclusive start and an exclusive end.')
 
 export type TemporalWindowContext = zod.input<typeof TemporalWindowContext>;
 export type TemporalWindowContextOutput = zod.output<typeof TemporalWindowContext>;

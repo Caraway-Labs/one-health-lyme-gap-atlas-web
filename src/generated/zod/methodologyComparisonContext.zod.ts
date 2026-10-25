@@ -8,15 +8,15 @@
 import * as zod from 'zod';
 
 export const MethodologyComparisonContext = zod.object({
-  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
-  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
-  "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.string().nullable()),
-  "jurisdiction_class": zod.string().nullable(),
-  "references": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
-  "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
-})
+  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1").describe('Version of the contract that defines this object.'),
+  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']).describe('Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the comparison state.'),
+  "methodology_era_ids": zod.array(zod.string().nullable()).describe('Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown.'),
+  "jurisdiction_class": zod.string().nullable().describe('Group of jurisdictions that share a reporting approach. `null` when unknown.'),
+  "references": zod.array(zod.string()).describe('Public references that support the comparison.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "left_observation_id": zod.string().describe('Identifier of the observation on the left side of the comparison.')
+}).describe('Whether this observation can be compared with another across surveillance methods.')
 
 export type MethodologyComparisonContext = zod.input<typeof MethodologyComparisonContext>;
 export type MethodologyComparisonContextOutput = zod.output<typeof MethodologyComparisonContext>;

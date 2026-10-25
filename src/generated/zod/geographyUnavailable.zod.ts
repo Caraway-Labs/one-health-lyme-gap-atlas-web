@@ -10,15 +10,15 @@ import * as zod from 'zod';
 
 
 export const GeographyUnavailable = zod.object({
-  "availability": zod.literal("UNAVAILABLE"),
-  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
-  "data": zod.null().describe('No canonical geography resource or geometry is fabricated.'),
+  "availability": zod.literal("UNAVAILABLE").describe('Always `UNAVAILABLE`: the geography data is not published.'),
+  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED").describe('Why the data is unavailable. The geography data has not been published.'),
+  "data": zod.null().describe('Always `null`. The API returns no geography data or geometry.'),
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('The validated identity that was requested, echoed back.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('The identity you requested, returned unchanged after a format check.'),
   "limitations": zod.array(zod.string()).min(1).describe('Publication and representation boundaries, not scientific absence.')
-}).describe('Typed, successful answer that canonical geography identity is not published yet.\n\nReturned with HTTP 200 by the legacy identity route (ADR 0021). It carries no release\nbecause answering must stay instant and independent of the governed directory.')
+}).describe('HTTP 200 answer that canonical geography data is not published yet.\n\nThe API checks the shape of the requested identity only. It does not confirm that the place\nexists. Use the availability route for a county to confirm that.')
 
 export type GeographyUnavailable = zod.input<typeof GeographyUnavailable>;
 export type GeographyUnavailableOutput = zod.output<typeof GeographyUnavailable>;

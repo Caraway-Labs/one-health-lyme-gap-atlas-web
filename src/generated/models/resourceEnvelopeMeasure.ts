@@ -7,6 +7,10 @@
  */
 import type { Measure } from './measure';
 
+/**
+ * One measure, wrapped in `data`.
+ */
 export interface ResourceEnvelopeMeasure {
+  /** The requested resource. */
   data: Measure;
 }

@@ -36,6 +36,7 @@ import type {
   CountyReportPdfV1CountiesFipsReportPdfGetParams,
   CountySurveillanceSituations,
   CountyV1CountiesFipsGetParams,
+  FeedEntryRead,
   FeedItems,
   FeedSources,
   FeedbackSubmissionRequest,
@@ -52,6 +53,8 @@ import type {
   ListIntelligenceItemsParams,
   ListIntelligenceSourcesParams,
   LiveHealthLiveGet200,
+  MapValuesCollection,
+  MapValuesV1AtlasMapValuesGetParams,
   MeasuresV1MeasuresGetParams,
   MetadataFeed,
   MetadataV1AtlasMetadataGetParams,
@@ -167,7 +170,7 @@ export const getIndicatorsV1IndicatorsGetUrl = (params?: IndicatorsV1IndicatorsG
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover indicators
+ * @summary List indicators
  */
 export const indicatorsV1IndicatorsGet = async (params?: IndicatorsV1IndicatorsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<indicatorsV1IndicatorsGetResponse> => {
 
@@ -238,7 +241,7 @@ export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof i
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Discover indicators
+ * @summary List indicators
  */
 
 export function useIndicatorsV1IndicatorsGet<TData = Awaited<ReturnType<typeof indicatorsV1IndicatorsGet>>, TError = ProblemDetails>(
@@ -471,7 +474,7 @@ export const getMeasuresV1MeasuresGetUrl = (params?: MeasuresV1MeasuresGetParams
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover measures
+ * @summary List measures
  */
 export const measuresV1MeasuresGet = async (params?: MeasuresV1MeasuresGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<measuresV1MeasuresGetResponse> => {
 
@@ -542,7 +545,7 @@ export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measu
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Discover measures
+ * @summary List measures
  */
 
 export function useMeasuresV1MeasuresGet<TData = Awaited<ReturnType<typeof measuresV1MeasuresGet>>, TError = ProblemDetails>(
@@ -775,7 +778,7 @@ export const getSourcesV1SourcesGetUrl = (params?: SourcesV1SourcesGetParams,) =
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover sources
+ * @summary List sources
  */
 export const sourcesV1SourcesGet = async (params?: SourcesV1SourcesGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<sourcesV1SourcesGetResponse> => {
 
@@ -846,7 +849,7 @@ export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sources
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Discover sources
+ * @summary List sources
  */
 
 export function useSourcesV1SourcesGet<TData = Awaited<ReturnType<typeof sourcesV1SourcesGet>>, TError = ProblemDetails>(
@@ -1218,8 +1221,8 @@ export const getGeographyV1GeographiesGeographyTypeGeographyIdGetUrl = (geograph
 }
 
 /**
- * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.
- * @summary Get geography identity (delivery pending)
+ * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`.
+ * @summary Get geography identity
  */
 export const geographyV1GeographiesGeographyTypeGeographyIdGet = async (geographyType: GeographyType,
     geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<geographyV1GeographiesGeographyTypeGeographyIdGetResponse> => {
@@ -1296,7 +1299,7 @@ export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awa
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get geography identity (delivery pending)
+ * @summary Get geography identity
  */
 
 export function useGeographyV1GeographiesGeographyTypeGeographyIdGet<TData = Awaited<ReturnType<typeof geographyV1GeographiesGeographyTypeGeographyIdGet>>, TError = ProblemDetails>(
@@ -1372,8 +1375,20 @@ export const getCanonicalGeographyAvailabilityUrl = (geographyType: GeographyTyp
 }
 
 /**
- * Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.
- * @summary Check canonical county geography publication availability
+ * Check whether a county has published canonical geography data.
+ *
+ * ### When to use it
+ * The API confirms the county exists in the current release. It returns HTTP 200 with `availability` set to `UNAVAILABLE`, `reason` set to `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` set to `null`. The resource describes identity only, and the API returns no geometry. State availability is not supported.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `400` | The ID is malformed, or you asked for a state. Send a five-digit county FIPS code. |
+ * | `404` | The county is not in the current release. |
+ * | `503` | The county directory is unavailable, empty, duplicated, or inconsistent with the current release. Retry later. |
+ *
+ * The response must not be cached.
+ * @summary Check county geography availability
  */
 export const canonicalGeographyAvailability = async (geographyType: GeographyType,
     geographyId: string, options?: Parameters<typeof apiMutator>[1]): Promise<canonicalGeographyAvailabilityResponse> => {
@@ -1450,7 +1465,7 @@ export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typ
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Check canonical county geography publication availability
+ * @summary Check county geography availability
  */
 
 export function useCanonicalGeographyAvailability<TData = Awaited<ReturnType<typeof canonicalGeographyAvailability>>, TError = ProblemDetails>(
@@ -1540,7 +1555,43 @@ export const getObservationsV1ObservationsGetUrl = (params: ObservationsV1Observ
 }
 
 /**
- * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.
+ * Query published county observations for one measure and up to 500 counties.
+ *
+ * ### What it returns
+ * Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations.
+ *
+ * ### Required parameters
+ * Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts.
+ *
+ * ### Time parameters by measure type
+ * | Measure type | Send | Wrong choice returns |
+ * | --- | --- | --- |
+ * | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+ * | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+ * | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. |
+ * | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+ * | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+ *
+ * ### Value states
+ * | Case | How to read it |
+ * | --- | --- |
+ * | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. |
+ * | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. |
+ * | Missing context | It does not establish absence or temporal comparability. |
+ * | Absent county context rows | They are unavailable evidence, never zero. |
+ *
+ * ### Empty versus unavailable results
+ * | Situation | Response |
+ * | --- | --- |
+ * | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. |
+ * | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. |
+ * | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. |
+ *
+ * ### Paging
+ * Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release.
+ *
+ * ### Caching
+ * An `UNAVAILABLE` collection must not be cached.
  * @summary Query county observations
  */
 export const observationsV1ObservationsGet = async (params: ObservationsV1ObservationsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<observationsV1ObservationsGetResponse> => {
@@ -1856,7 +1907,7 @@ export const getListIntelligenceSourcesUrl = (params?: ListIntelligenceSourcesPa
 }
 
 /**
- * First-party read only. Source catalog covers represented item sources, not the private registry or all active sources. Health is explicitly unavailable until DATA publishes it. No freshness thresholds are inferred. page_size 1–500, state-bound tokens, no-store. No ingestion.
+ * First-party read only. Each source_id appears once, with its highest registry_version. Source catalog covers represented item sources, not the private registry or all active sources. Health is explicitly unavailable until DATA publishes it. No freshness thresholds are inferred. page_size 1–500, state-bound tokens, no-store. No ingestion.
  * @summary Read source identities represented by published intelligence
  */
 export const listIntelligenceSources = async (params?: ListIntelligenceSourcesParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIntelligenceSourcesResponse> => {
@@ -2014,7 +2065,7 @@ export const getListIntelligenceFeedUrl = (params?: ListIntelligenceFeedParams,)
 }
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. No excerpts, article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeed = async (params?: ListIntelligenceFeedParams, options?: Parameters<typeof apiMutator>[1]): Promise<listIntelligenceFeedResponse> => {
@@ -2095,6 +2146,157 @@ export function useListIntelligenceFeed<TData = Awaited<ReturnType<typeof listIn
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListIntelligenceFeedQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export type getIntelligenceFeedEntryResponse200 = {
+  data: FeedEntryRead
+  status: 200
+}
+
+export type getIntelligenceFeedEntryResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type getIntelligenceFeedEntryResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getIntelligenceFeedEntryResponse413 = {
+  data: ProblemDetails
+  status: 413
+}
+
+export type getIntelligenceFeedEntryResponse414 = {
+  data: ProblemDetails
+  status: 414
+}
+
+export type getIntelligenceFeedEntryResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type getIntelligenceFeedEntryResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type getIntelligenceFeedEntryResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type getIntelligenceFeedEntryResponseSuccess = (getIntelligenceFeedEntryResponse200) & {
+  headers: Headers;
+};
+export type getIntelligenceFeedEntryResponseError = (getIntelligenceFeedEntryResponse400 | getIntelligenceFeedEntryResponse404 | getIntelligenceFeedEntryResponse413 | getIntelligenceFeedEntryResponse414 | getIntelligenceFeedEntryResponse422 | getIntelligenceFeedEntryResponse429 | getIntelligenceFeedEntryResponse503) & {
+  headers: Headers;
+};
+
+export type getIntelligenceFeedEntryResponse = (getIntelligenceFeedEntryResponseSuccess | getIntelligenceFeedEntryResponseError)
+
+export const getGetIntelligenceFeedEntryUrl = (itemId: string,) => {
+
+
+
+
+  return `/v1/intelligence/feed/${itemId}`
+}
+
+/**
+ * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. It returns no article bodies or media. The entry uses the same fields as the feed list. Cache-Control is no-store. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
+ * @summary Read one source-attributed publication
+ */
+export const getIntelligenceFeedEntry = async (itemId: string, options?: Parameters<typeof apiMutator>[1]): Promise<getIntelligenceFeedEntryResponse> => {
+
+  return apiMutator<getIntelligenceFeedEntryResponse>(getGetIntelligenceFeedEntryUrl(itemId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIntelligenceFeedEntryQueryKey = (itemId: string,) => {
+    return [
+    `/v1/intelligence/feed/${itemId}`
+    ] as const;
+    }
+
+
+export const getGetIntelligenceFeedEntryQueryOptions = <TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIntelligenceFeedEntryQueryKey(itemId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>> = ({ signal }) => getIntelligenceFeedEntry(itemId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: itemId !== null && itemId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIntelligenceFeedEntryQueryResult = NonNullable<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>>
+export type GetIntelligenceFeedEntryQueryError = ProblemDetails
+
+
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>,
+          TError,
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>,
+          TError,
+          Awaited<ReturnType<typeof getIntelligenceFeedEntry>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Read one source-attributed publication
+ */
+
+export function useGetIntelligenceFeedEntry<TData = Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError = ProblemDetails>(
+ itemId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceFeedEntry>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIntelligenceFeedEntryQueryOptions(itemId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3256,7 +3458,7 @@ export const getMetadataV1AtlasMetadataGetUrl = (params?: MetadataV1AtlasMetadat
 
 /**
  * Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
- * @summary Get Atlas release metadata
+ * @summary Get release metadata
  */
 export const metadataV1AtlasMetadataGet = async (params?: MetadataV1AtlasMetadataGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<metadataV1AtlasMetadataGetResponse> => {
 
@@ -3327,7 +3529,7 @@ export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof 
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get Atlas release metadata
+ * @summary Get release metadata
  */
 
 export function useMetadataV1AtlasMetadataGet<TData = Awaited<ReturnType<typeof metadataV1AtlasMetadataGet>>, TError = ProblemDetails>(
@@ -3404,7 +3606,7 @@ export const getGeometryV1AtlasGeometryGetUrl = (params?: GeometryV1AtlasGeometr
 
 /**
  * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
- * @summary Get county display geometry
+ * @summary Get county map geometry
  */
 export const geometryV1AtlasGeometryGet = async (params?: GeometryV1AtlasGeometryGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<geometryV1AtlasGeometryGetResponse> => {
 
@@ -3475,7 +3677,7 @@ export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof 
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get county display geometry
+ * @summary Get county map geometry
  */
 
 export function useGeometryV1AtlasGeometryGet<TData = Awaited<ReturnType<typeof geometryV1AtlasGeometryGet>>, TError = void | ProblemDetails>(
@@ -3639,6 +3841,149 @@ export function useScoresV1AtlasScoresGet<TData = Awaited<ReturnType<typeof scor
 
 
 
+export type mapValuesV1AtlasMapValuesGetResponse200 = {
+  data: MapValuesCollection
+  status: 200
+}
+
+export type mapValuesV1AtlasMapValuesGetResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type mapValuesV1AtlasMapValuesGetResponse422 = {
+  data: ProblemDetails
+  status: 422
+}
+
+export type mapValuesV1AtlasMapValuesGetResponse429 = {
+  data: ProblemDetails
+  status: 429
+}
+
+export type mapValuesV1AtlasMapValuesGetResponse503 = {
+  data: ProblemDetails
+  status: 503
+}
+
+export type mapValuesV1AtlasMapValuesGetResponseSuccess = (mapValuesV1AtlasMapValuesGetResponse200) & {
+  headers: Headers;
+};
+export type mapValuesV1AtlasMapValuesGetResponseError = (mapValuesV1AtlasMapValuesGetResponse404 | mapValuesV1AtlasMapValuesGetResponse422 | mapValuesV1AtlasMapValuesGetResponse429 | mapValuesV1AtlasMapValuesGetResponse503) & {
+  headers: Headers;
+};
+
+export type mapValuesV1AtlasMapValuesGetResponse = (mapValuesV1AtlasMapValuesGetResponseSuccess | mapValuesV1AtlasMapValuesGetResponseError)
+
+export const getMapValuesV1AtlasMapValuesGetUrl = (params?: MapValuesV1AtlasMapValuesGetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/atlas/map-values?${stringifiedParams}` : `/v1/atlas/map-values`
+}
+
+/**
+ * Published incidence floor, social vulnerability percentile, uninsured percent, and rural-urban continuum code for every county in the current snapshot. Optional dataset_version selects an existing release. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+ * @summary Get map values by county
+ */
+export const mapValuesV1AtlasMapValuesGet = async (params?: MapValuesV1AtlasMapValuesGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<mapValuesV1AtlasMapValuesGetResponse> => {
+
+  return apiMutator<mapValuesV1AtlasMapValuesGetResponse>(getMapValuesV1AtlasMapValuesGetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getMapValuesV1AtlasMapValuesGetQueryKey = (params?: MapValuesV1AtlasMapValuesGetParams,) => {
+    return [
+    `/v1/atlas/map-values`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getMapValuesV1AtlasMapValuesGetQueryOptions = <TData = Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError = ProblemDetails>(params?: MapValuesV1AtlasMapValuesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getMapValuesV1AtlasMapValuesGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>> = ({ signal }) => mapValuesV1AtlasMapValuesGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type MapValuesV1AtlasMapValuesGetQueryResult = NonNullable<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>>
+export type MapValuesV1AtlasMapValuesGetQueryError = ProblemDetails
+
+
+export function useMapValuesV1AtlasMapValuesGet<TData = Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError = ProblemDetails>(
+ params: undefined |  MapValuesV1AtlasMapValuesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>,
+          TError,
+          Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMapValuesV1AtlasMapValuesGet<TData = Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError = ProblemDetails>(
+ params?: MapValuesV1AtlasMapValuesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>,
+          TError,
+          Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useMapValuesV1AtlasMapValuesGet<TData = Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError = ProblemDetails>(
+ params?: MapValuesV1AtlasMapValuesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get map values by county
+ */
+
+export function useMapValuesV1AtlasMapValuesGet<TData = Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError = ProblemDetails>(
+ params?: MapValuesV1AtlasMapValuesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof mapValuesV1AtlasMapValuesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getMapValuesV1AtlasMapValuesGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export type countyV1CountiesFipsGetResponse200 = {
   data: CountyDetail
   status: 200
@@ -3691,7 +4036,7 @@ export const getCountyV1CountiesFipsGetUrl = (fips: string,
 
 /**
  * Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
- * @summary Get county analytics and provenance
+ * @summary Get county detail and provenance
  */
 export const countyV1CountiesFipsGet = async (fips: string,
     params?: CountyV1CountiesFipsGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<countyV1CountiesFipsGetResponse> => {
@@ -3768,7 +4113,7 @@ export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof cou
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get county analytics and provenance
+ * @summary Get county detail and provenance
  */
 
 export function useCountyV1CountiesFipsGet<TData = Awaited<ReturnType<typeof countyV1CountiesFipsGet>>, TError = ProblemDetails>(
@@ -3833,8 +4178,23 @@ export const getCountySurveillanceSituationsGetUrl = (fips: string,) => {
 }
 
 /**
- * Primary four_state includes human surveillance; secondary tick_pathogen excludes it. Returns reviewed labels, four membership probabilities per model (0-1, sum 1 within 1e-6), immutable model/batch lineage, source vintages and interpretation limits. Unknown is an available class; No records does not establish absence. Membership is not disease risk, incidence, pathogen presence, causation or Tier 1 priority. HTTP 200 can contain typed UNAVAILABLE variants with null data, including an incompatible release. Unknown county 404; malformed FIPS 422; dependency, malformed persisted data or changing release 503. Cache-Control: no-store; no fallback or inference.
- * @summary Get both persisted county surveillance-situation classifications
+ * Get both surveillance-situation classifications for one county: the primary `four_state` model, which includes human surveillance, and the secondary `tick_pathogen` model, which excludes it.
+ *
+ * ### What you get back
+ * - Reviewed labels and four membership probabilities per model. Each is between 0 and 1, and they sum to 1 within 1e-6.
+ * - Model and batch lineage, source vintages, and interpretation limits.
+ * - `Unknown` is an available class. `No records` does not establish absence.
+ * - Membership is not disease risk, incidence, pathogen presence, causation, or Tier 1 priority.
+ *
+ * A model variant can return HTTP 200 with `UNAVAILABLE` and `null` data, including when the release is incompatible. The API does not infer or fall back to another result. The response must not be cached.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county is unknown. |
+ * | `422` | The FIPS code is malformed. |
+ * | `503` | A dependency failed, stored data is malformed, or the release changed during the request. Retry later. |
+ * @summary Get county surveillance situations
  */
 export const countySurveillanceSituationsGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countySurveillanceSituationsGetResponse> => {
 
@@ -3905,7 +4265,7 @@ export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<ty
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get both persisted county surveillance-situation classifications
+ * @summary Get county surveillance situations
  */
 
 export function useCountySurveillanceSituationsGet<TData = Awaited<ReturnType<typeof countySurveillanceSituationsGet>>, TError = ProblemDetails>(
@@ -3969,8 +4329,22 @@ export const getCountyTier1SurveillancePriorityGetUrl = (fips: string,) => {
 }
 
 /**
- * Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
- * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ * Get the approved Tier 1 surveillance review priority for one county from the current batch.
+ *
+ * ### How to read it
+ * - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis.
+ * - LOW is a scored tier. Evidence sufficiency is separate.
+ * - Percentile is relative to the scored batch and population.
+ * - `generated_at_utc` is the model batch time, not the request time.
+ *
+ * Responses can be cached for 60 seconds.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county has no published result. |
+ * | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
+ * @summary Get county surveillance review priority
  */
 export const countyTier1SurveillancePriorityGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countyTier1SurveillancePriorityGetResponse> => {
 
@@ -4041,7 +4415,7 @@ export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ * @summary Get county surveillance review priority
  */
 
 export function useCountyTier1SurveillancePriorityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityGet>>, TError = ProblemDetails>(
@@ -4105,8 +4479,22 @@ export const getCountyTier1SurveillancePriorityAvailabilityGetUrl = (fips: strin
 }
 
 /**
- * Additive availability contract for current supported county geographies. A successful lookup returns AVAILABLE with the exact persisted result, or UNAVAILABLE with reason NO_PUBLISHED_MODEL and null data after the current geography release and Tier 1 projection have both been read successfully. geography_release_id identifies the release used to validate the FIPS. This endpoint does not turn null into zero or synthesize model output. NOT_ESTIMABLE is a persisted result state and is distinct from no published model result. Malformed FIPS returns 422; an identity outside the current geography release returns typed 404; dependency or malformed-data failures return 503. Public cache TTL 60 seconds.
- * @summary Get Tier 1 result availability and persisted data
+ * Check whether a county has a published Tier 1 result, and get it when it does.
+ *
+ * ### What you get back
+ * - `AVAILABLE` with the published result in `data`.
+ * - `UNAVAILABLE` with `reason` `NO_PUBLISHED_MODEL` and `data` set to `null`.
+ * - `geography_release_id` names the release used to validate the FIPS code.
+ *
+ * `NOT_ESTIMABLE` is a published result state. It is different from no published model result. The API never turns `null` into zero or creates model output. Responses can be cached for 60 seconds.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county is outside the current geography release. |
+ * | `422` | The FIPS code is malformed. |
+ * | `503` | A dependency failed or stored data is malformed. Retry later. |
+ * @summary Check surveillance priority availability
  */
 export const countyTier1SurveillancePriorityAvailabilityGet = async (fips: string, options?: Parameters<typeof apiMutator>[1]): Promise<countyTier1SurveillancePriorityAvailabilityGetResponse> => {
 
@@ -4177,7 +4565,7 @@ export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaite
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get Tier 1 result availability and persisted data
+ * @summary Check surveillance priority availability
  */
 
 export function useCountyTier1SurveillancePriorityAvailabilityGet<TData = Awaited<ReturnType<typeof countyTier1SurveillancePriorityAvailabilityGet>>, TError = ProblemDetails>(
@@ -4264,7 +4652,31 @@ export const getCountyReportPdfV1CountiesFipsReportPdfGetUrl = (fips: string,
 }
 
 /**
- * PDF attachment. The default template is county-v3, the two-page County Data Brief for the published gap score and Explorer follow-up. county-v3 ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. Explicit county-v1 remains the immutable legacy county report and still binds score settings. Optional dataset_version selects a release. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. county-v1 and county-v3 reject observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; published briefs use public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+ * Download a PDF report for one county.
+ *
+ * ### Templates
+ * | `template` | What it returns |
+ * | --- | --- |
+ * | `county-v3` (default) | The two-page County Data Brief for the published gap score and Explorer follow-up. It ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. |
+ * | `county-v1` | The immutable earlier county report. It still binds score settings. |
+ * | `county-v2` | An opt-in report for selected observations. It reads canonical evidence, lineage, value states, and limitations. |
+ *
+ * ### Key parameters
+ * | Parameter | What to send |
+ * | --- | --- |
+ * | `dataset_version` | Optional release to report on. `county-v2` requires it. |
+ * | `period_start`, `period_end`, `measure_id` | `county-v2` only. Send both dates and 1 to 20 measure IDs, repeated or comma-separated. `county-v1` and `county-v3` reject them with 422. |
+ *
+ * ### Caching
+ * `ETag` and `If-None-Match` support 304. Published briefs can be cached for 300 seconds with revalidation. `county-v2` responses must not be cached, and the API revalidates authoritative context before it answers 304.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | A `county-v2` observation is unknown. |
+ * | `413` | The report exceeds the resource limits. Narrow the selection. |
+ * | `422` | The template is unknown, or observation selectors were sent to `county-v1` or `county-v3`. |
+ * | `503` | `county-v2` provenance is missing or mismatched, or the renderer failed or timed out. Retry later. |
  * @summary Download a county report
  */
 export const countyReportPdfV1CountiesFipsReportPdfGet = async (fips: string,
@@ -4576,7 +4988,7 @@ export const getRankingCsvV1AtlasRankingCsvGetUrl = (params?: RankingCsvV1AtlasR
 
 /**
  * Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.
- * @summary Download filtered county rankings
+ * @summary Download county rankings as CSV
  */
 export const rankingCsvV1AtlasRankingCsvGet = async (params?: RankingCsvV1AtlasRankingCsvGetParams, options?: Parameters<typeof apiMutator>[1]): Promise<rankingCsvV1AtlasRankingCsvGetResponse> => {
 
@@ -4647,7 +5059,7 @@ export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typ
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Download filtered county rankings
+ * @summary Download county rankings as CSV
  */
 
 export function useRankingCsvV1AtlasRankingCsvGet<TData = Awaited<ReturnType<typeof rankingCsvV1AtlasRankingCsvGet>>, TError = ProblemDetails>(

@@ -9,30 +9,30 @@ import * as zod from 'zod';
 
 export const candidateCompletenessDefault = `limited`;
 export const Candidate = zod.object({
-  "county_fips": zod.string(),
-  "county_name": zod.string(),
-  "county_url": zod.string(),
-  "reason_codes": zod.array(zod.string()),
-  "reason_text": zod.string(),
-  "evidence_families": zod.array(zod.string()),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "county_name": zod.string().describe('County name.'),
+  "county_url": zod.string().describe('Path of the county resource in this API.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain why the county is listed.'),
+  "reason_text": zod.string().describe('Plain-language explanation of why the county is listed.'),
+  "evidence_families": zod.array(zod.string()).describe('Kinds of evidence the reason draws on, such as `county_vector_status`.'),
   "evidence_references": zod.array(zod.object({
-  "family": zod.string(),
-  "source_product": zod.string(),
-  "source_version": zod.string(),
-  "public_record_ref": zod.string(),
-  "county_fips": zod.string(),
-  "release_id": zod.string(),
-  "source_as_of": zod.string(),
-  "retrieved_at": zod.iso.datetime({"offset":true}),
-  "target": zod.string(),
-  "status": zod.string(),
-  "limitations": zod.array(zod.string())
-})),
-  "completeness": zod.literal("limited").default(candidateCompletenessDefault),
-  "limitations": zod.array(zod.string()),
-  "freshness_comparability": zod.string(),
-  "suggested_next_check": zod.string()
-})
+  "family": zod.string().describe('Kind of evidence, such as `county_pathogen_status`.'),
+  "source_product": zod.string().describe('Source product the record comes from.'),
+  "source_version": zod.string().describe('Version of the source product.'),
+  "public_record_ref": zod.string().describe('Public reference to the source record, for finding it at the publisher.'),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "release_id": zod.string().describe('Identifies the published data release the record came from.'),
+  "source_as_of": zod.string().describe('Date the source says its data was current, for example `2025-12-31`.'),
+  "retrieved_at": zod.iso.datetime({"offset":true}).describe('When Atlas retrieved the record from the publisher, with a UTC offset.'),
+  "target": zod.string().describe('Organism or taxon the record is about, such as a tick species or a pathogen.'),
+  "status": zod.string().describe('Status the publisher reports, such as `Present`, `Reported`, or `No records`. `No records` does not establish absence.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what this record does not show.')
+}).describe('A source record that supports a review candidate.')).describe('Source records that support the reason.'),
+  "completeness": zod.literal("limited").default(candidateCompletenessDefault).describe('How complete the supporting evidence is. It is always `limited`.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the candidate does not show. Keep them with it.'),
+  "freshness_comparability": zod.string().describe('What is known about how current and comparable the evidence is.'),
+  "suggested_next_check": zod.string().describe('A step a reviewer can take to check the evidence further.')
+}).describe('A county that merits a closer look. It is a prompt to review records, not a finding.')
 
 export type Candidate = zod.input<typeof Candidate>;
 export type CandidateOutput = zod.output<typeof Candidate>;

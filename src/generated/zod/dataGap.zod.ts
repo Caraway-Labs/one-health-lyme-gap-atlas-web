@@ -8,10 +8,10 @@
 import * as zod from 'zod';
 
 export const DataGap = zod.object({
-  "county_fips": zod.string(),
-  "code": zod.string(),
-  "detail": zod.string()
-})
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "code": zod.string().describe('Stable code for the kind of gap, such as `OUT_OF_SCOPE`.'),
+  "detail": zod.string().describe('Plain-language explanation of the gap.')
+}).describe('A reason Atlas could not evaluate a county. A gap is not evidence of absence.')
 
 export type DataGap = zod.input<typeof DataGap>;
 export type DataGapOutput = zod.output<typeof DataGap>;

@@ -7,7 +7,7 @@
  */
 
 /**
- * Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.
+ * Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.
  * @nullable
  */
 export type CollectionMetaAvailability = typeof CollectionMetaAvailability[keyof typeof CollectionMetaAvailability] | null;

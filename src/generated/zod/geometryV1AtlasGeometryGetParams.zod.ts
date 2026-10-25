@@ -8,7 +8,7 @@
 import * as zod from 'zod';
 
 export const GeometryV1AtlasGeometryGetParams = zod.object({
-  "dataset_version": zod.string().nullish()
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
 export type GeometryV1AtlasGeometryGetParams = zod.input<typeof GeometryV1AtlasGeometryGetParams>;

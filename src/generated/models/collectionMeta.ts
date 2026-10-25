@@ -8,31 +8,34 @@
 import type { CollectionMetaAvailability } from './collectionMetaAvailability';
 import type { CollectionMetaReason } from './collectionMetaReason';
 
+/**
+ * Paging, release, and availability details for a list response.
+ */
 export interface CollectionMeta {
   /**
-     * Opaque query/release-bound continuation. Null means exhaustion; tokens may expire on restart.
+     * Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.
      * @nullable
      */
   next_page_token?: string | null;
-  /** UTC response construction time; not source freshness or observation time. */
+  /** When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made. */
   response_at?: string;
   /**
-     * Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.
+     * Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.
      * @nullable
      */
   availability?: CollectionMetaAvailability;
   /**
-     * No published rows after a successful initial non-CDC query; otherwise omitted.
+     * Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.
      * @nullable
      */
   reason?: CollectionMetaReason;
   /**
-     * Current governed release actually read for this query.
+     * Identifies the published data release this query read. Results from different releases are not directly comparable.
      * @nullable
      */
   release_id?: string | null;
   /**
-     * Selection availability caveats; observations only.
+     * Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.
      * @nullable
      */
   limitations?: string[] | null;

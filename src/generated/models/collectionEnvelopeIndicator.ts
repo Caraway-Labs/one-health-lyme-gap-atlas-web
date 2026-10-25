@@ -9,8 +9,14 @@ import type { CollectionLinks } from './collectionLinks';
 import type { CollectionMeta } from './collectionMeta';
 import type { Indicator } from './indicator';
 
+/**
+ * A page of indicators, with paging details and links. Read `meta.next_page_token` to get the next page.
+ */
 export interface CollectionEnvelopeIndicator {
+  /** The items on this page. Empty when there are none. */
   data: Indicator[];
+  /** Paging, release, and availability details. */
   meta: CollectionMeta;
+  /** Links related to this response. */
   links: CollectionLinks;
 }

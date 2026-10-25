@@ -39,34 +39,34 @@ export const countyScoreSummaryScoreRuralSignalMax = 100;
 
 
 export const CountyScoreSummary = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyScoreSummaryScoringMethodologyVersionDefault),
-  "incidence_floor_2023": zod.number().min(countyScoreSummaryIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000; null is not zero.'),
-  "svi_percentile": zod.number().nullish(),
-  "uninsured_percentile": zod.number().nullish(),
-  "rucc_2023": zod.int().nullish(),
-  "fips": zod.string(),
-  "county": zod.string(),
-  "state": zod.string(),
-  "state_name": zod.string(),
-  "in_contiguous_tick_scope": zod.boolean(),
-  "human_status": zod.string(),
-  "tick_status": zod.string(),
-  "burgdorferi_status": zod.string(),
-  "evidence_completeness": zod.int(),
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyScoreSummaryScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "incidence_floor_2023": zod.number().min(countyScoreSummaryIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
+  "svi_percentile": zod.number().nullish().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "uninsured_percentile": zod.number().nullish().describe('Percentile of the county\'s uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "rucc_2023": zod.int().nullish().describe('2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.'),
+  "fips": zod.string().describe('Five-digit county FIPS code, with leading zeros.'),
+  "county": zod.string().describe('County name.'),
+  "state": zod.string().describe('Two-letter state or District of Columbia code.'),
+  "state_name": zod.string().describe('Full state name.'),
+  "in_contiguous_tick_scope": zod.boolean().describe('Whether the county is inside the contiguous area the tick data covers.'),
+  "human_status": zod.string().describe('State of the human-case data for the county. `published_count_floor` means a published case-count floor exists. `no_county_linked_record` means no record is linked to the county; it is neither null nor zero.'),
+  "tick_status": zod.string().describe('Tick evidence status the publisher reports: `Established`, `Reported`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
+  "burgdorferi_status": zod.string().describe('Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
+  "evidence_completeness": zod.int().describe('Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality.'),
   "score": zod.object({
-  "score": zod.number().min(countyScoreSummaryScoreScoreMin).max(countyScoreSummaryScoreScoreMax),
-  "human_weakness": zod.number().min(countyScoreSummaryScoreHumanWeaknessMin).max(countyScoreSummaryScoreHumanWeaknessMax),
-  "ecological": zod.number().min(countyScoreSummaryScoreEcologicalMin).max(countyScoreSummaryScoreEcologicalMax),
-  "community": zod.number().min(countyScoreSummaryScoreCommunityMin).max(countyScoreSummaryScoreCommunityMax),
-  "tick_signal": zod.number().min(countyScoreSummaryScoreTickSignalMin).max(countyScoreSummaryScoreTickSignalMax),
-  "pathogen_signal": zod.number().min(countyScoreSummaryScorePathogenSignalMin).max(countyScoreSummaryScorePathogenSignalMax),
-  "svi_signal": zod.number().min(countyScoreSummaryScoreSviSignalMin).max(countyScoreSummaryScoreSviSignalMax),
-  "access_signal": zod.number().min(countyScoreSummaryScoreAccessSignalMin).max(countyScoreSummaryScoreAccessSignalMax),
-  "rural_signal": zod.number().min(countyScoreSummaryScoreRuralSignalMin).max(countyScoreSummaryScoreRuralSignalMax)
-}),
-  "priority": zod.string(),
-  "color": zod.string()
-})
+  "score": zod.number().min(countyScoreSummaryScoreScoreMin).max(countyScoreSummaryScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
+  "human_weakness": zod.number().min(countyScoreSummaryScoreHumanWeaknessMin).max(countyScoreSummaryScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
+  "ecological": zod.number().min(countyScoreSummaryScoreEcologicalMin).max(countyScoreSummaryScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
+  "community": zod.number().min(countyScoreSummaryScoreCommunityMin).max(countyScoreSummaryScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
+  "tick_signal": zod.number().min(countyScoreSummaryScoreTickSignalMin).max(countyScoreSummaryScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
+  "pathogen_signal": zod.number().min(countyScoreSummaryScorePathogenSignalMin).max(countyScoreSummaryScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
+  "svi_signal": zod.number().min(countyScoreSummaryScoreSviSignalMin).max(countyScoreSummaryScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
+  "access_signal": zod.number().min(countyScoreSummaryScoreAccessSignalMin).max(countyScoreSummaryScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
+  "rural_signal": zod.number().min(countyScoreSummaryScoreRuralSignalMin).max(countyScoreSummaryScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
+}).describe('The score and the signals it combines.'),
+  "priority": zod.string().describe('Review-priority label for the score band. A lower label is not a safety finding.'),
+  "color": zod.string().describe('Hex color for the score band, for use in a map or legend.')
+}).describe('A county\'s Surveillance Gap Score with the evidence signals behind it.\n\nThe score is a review aid. Atlas results are not a diagnosis. Atlas results are not an\nestimate of an individual\'s risk.')
 
 export type CountyScoreSummary = zod.input<typeof CountyScoreSummary>;
 export type CountyScoreSummaryOutput = zod.output<typeof CountyScoreSummary>;

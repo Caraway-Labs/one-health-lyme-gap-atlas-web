@@ -8,6 +8,7 @@
 
 export type IndicatorsV1IndicatorsGetParams = {
 /**
+ * Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.
  * @nullable
  */
 indicator_id?: string | null;

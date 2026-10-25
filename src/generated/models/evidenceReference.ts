@@ -6,34 +6,42 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Compact pointer to the Atlas resource that backs a result.
+ */
 export interface EvidenceReference {
+  /** Kind of Atlas resource the reference points to, such as `observation`. */
   resource_type: string;
+  /** Identifier of that resource. */
   resource_id: string;
   /**
-     * Public source resource key; distinct from lineage_source_id and dataset_id.
+     * Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.
      * @nullable
      */
   source_id?: string | null;
   /**
-     * Structured observation provenance identity; not a literature citation.
+     * Identifies the provenance record for the observation. It is not a literature citation.
      * @nullable
      */
   provenance_ref?: string | null;
   /**
-     * Governed semantic contract version, separate from HTTP V1 and application version.
+     * Version of the data contract the value follows. It is separate from the API version and the application version.
      * @nullable
      */
   semantic_version?: string | null;
   /**
-     * Transformation version, distinct from methodology resource version.
+     * Version of the transformation applied to this observation. It is separate from the version of the methodology resource.
      * @nullable
      */
   methodology_version?: string | null;
   /**
-     * Governed release identity for reproducibility.
+     * Identifies the published data release the result came from. Results from different releases are not directly comparable.
      * @nullable
      */
   release_id?: string | null;
-  /** @nullable */
+  /**
+     * Web address of the referenced resource, when one exists.
+     * @nullable
+     */
   uri?: string | null;
 }

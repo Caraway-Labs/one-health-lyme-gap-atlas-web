@@ -9,35 +9,35 @@ import * as zod from 'zod';
 
 export const CollectionEnvelopeIndicator = zod.object({
   "data": zod.array(zod.object({
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "measure_ids": zod.array(zod.string()),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "domain": zod.string().nullish(),
-  "category": zod.string().nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "indicator_id": zod.string().describe('Stable identifier of the indicator. Use it with `\/v1\/indicators\/{indicator_id}`.'),
+  "label": zod.string().describe('Short display name of the indicator.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the indicator. `null` when none is published.'),
+  "measure_ids": zod.array(zod.string()).describe('Identifiers of the measures that belong to this indicator, in sorted order.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "domain": zod.string().nullish().describe('Broad subject area the indicator belongs to, such as `climate`. `null` when none is published.'),
+  "category": zod.string().nullish().describe('Finer grouping inside the domain. `null` when none is published.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist. A mapping does not mean Atlas exchanges data with that standard.')
+}).describe('A public-health concept that groups related measures.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-})
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of indicators, with paging details and links. Read `meta.next_page_token` to get the next page.')
 
 export type CollectionEnvelopeIndicator = zod.input<typeof CollectionEnvelopeIndicator>;
 export type CollectionEnvelopeIndicatorOutput = zod.output<typeof CollectionEnvelopeIndicator>;

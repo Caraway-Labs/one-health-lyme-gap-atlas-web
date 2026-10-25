@@ -11,7 +11,7 @@ export const indicatorsV1IndicatorsGetParamsPageSizeMax = 500;
 
 
 export const IndicatorsV1IndicatorsGetParams = zod.object({
-  "indicator_id": zod.string().nullish(),
+  "indicator_id": zod.string().nullish().describe('Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.'),
   "page_size": zod.int().min(1).max(indicatorsV1IndicatorsGetParamsPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })

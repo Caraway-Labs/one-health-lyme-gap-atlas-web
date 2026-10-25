@@ -1,0 +1,37 @@
+{
+  "abstract": null,
+  "attribution": "Source: Centers for Disease Control and Prevention",
+  "authors": [],
+  "canonical_url": "https://wwwnc.cdc.gov/eid/article/ahead-of-print",
+  "contract_version": "2.0.0",
+  "description": {
+    "state": "present",
+    "text": "Jane Doe, John Roe"
+  },
+  "fetched_at": "2026-03-03T12:00:00Z",
+  "item_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "limitations": [],
+  "pmid": null,
+  "provenance": {
+    "artifact_id": "artifact-cdc-eid",
+    "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "fetch_version": "fetch-v2",
+    "normalization_version": "intelligence-identity-v2",
+    "parser_version": "rss-atom-native-v2",
+    "run_id": "run-cdc-eid"
+  },
+  "publication_date_state": "present",
+  "published_at": "2026-03-02T15:04:00Z",
+  "publisher": "Centers for Disease Control and Prevention",
+  "revision_id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "source": {
+    "organization": "Centers for Disease Control and Prevention",
+    "registry_version": 3,
+    "reviewed_trust_classification": "official_public_health",
+    "source_id": "cdc-eid-ahead-of-print"
+  },
+  "source_family": "cdc_eid",
+  "source_family_label": "CDC EID",
+  "tags": [],
+  "title": "EID author line"
+}

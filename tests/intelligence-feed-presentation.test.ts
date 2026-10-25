@@ -8,6 +8,8 @@ import {
   feedPublisherHref,
   feedPublisherLabel,
   feedRequestFailure,
+  feedSourceFamilyLabel,
+  retainSourceFamilyLabel,
 } from "@/features/ux-reset/feed/feed-presentation";
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
 import { AtlasApiError } from "@/lib/api-mutator";
@@ -98,6 +100,44 @@ describe("intelligence feed presentation", () => {
     expect(feedPublisherHref("data:text/html,hi")).toBeNull();
     expect(feedPublisherHref("https://user:secret@example.org/a")).toBeNull();
     expect(FEED_EXTERNAL_LINK_TARGET).toBe("_blank");
+  });
+
+  it("reads source_family_label and keeps that string after schema validation drops it", () => {
+    const trust =
+      BriefingSourceReviewedTrustClassification.official_public_health;
+    const labeled = intelligenceFeedEntry("label", {
+      organization: "CDC",
+      sourceFamily: "cdc_eid",
+      sourceFamilyLabel: "Weekly report",
+      sourceId: "cdc-mmwr",
+      trust,
+    });
+    const unlabeled = intelligenceFeedEntry("plain", {
+      organization: "CDC",
+      sourceFamily: "cdc_mmwr",
+      sourceId: "cdc-mmwr",
+      trust,
+    });
+    const stripped = { ...labeled };
+    delete (stripped as { source_family_label?: string }).source_family_label;
+    const page = retainSourceFamilyLabel(
+      { data: [stripped, unlabeled] },
+      { data: [labeled, unlabeled] }
+    );
+    const one = retainSourceFamilyLabel({ data: stripped }, { data: labeled });
+    expect({
+      labeled: feedSourceFamilyLabel(labeled),
+      one: feedSourceFamilyLabel(one.data),
+      page: page.data.map((entry) => feedSourceFamilyLabel(entry)),
+      stripped: feedSourceFamilyLabel(stripped),
+      unlabeled: feedSourceFamilyLabel(unlabeled),
+    }).toStrictEqual({
+      labeled: "Weekly report",
+      one: "Weekly report",
+      page: ["Weekly report", null],
+      stripped: null,
+      unlabeled: null,
+    });
   });
 
   it("treats HTTP 503 as unavailable and other failures as request errors", () => {

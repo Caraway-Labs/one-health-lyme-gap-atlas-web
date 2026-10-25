@@ -8,13 +8,13 @@
 import * as zod from 'zod';
 
 export const CollectionMeta = zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-})
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details for a list response.')
 
 export type CollectionMeta = zod.input<typeof CollectionMeta>;
 export type CollectionMetaOutput = zod.output<typeof CollectionMeta>;

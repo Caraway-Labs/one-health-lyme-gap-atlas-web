@@ -8,6 +8,7 @@
 
 export type GeometryV1AtlasGeometryGetParams = {
 /**
+ * Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
  * @nullable
  */
 dataset_version?: string | null;

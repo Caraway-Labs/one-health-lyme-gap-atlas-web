@@ -10,20 +10,20 @@ import * as zod from 'zod';
 
 
 export const EnvironmentalContext = zod.object({
-  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']),
-  "source_time_present": zod.boolean(),
-  "day_convention": zod.string().min(1).describe('Publisher labeled 24-hour period, not a midnight calendar day.'),
-  "expected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "intersected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_supported_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "valid_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_coverage_fraction": zod.union([zod.number().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),zod.string().describe('Monthly source-supported\/legal county area; separate from daily completeness.')]).nullable().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
-  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),zod.string().describe('Daily valid\/source-supported area; completeness threshold 0.95.')]).nullable().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
-  "upstream_date_modified": zod.string().nullable().describe('Upstream modification metadata; never original publication or first availability.'),
-  "weight_version": zod.string(),
-  "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
-  "metadata_revision_id": zod.string()
-}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.')
+  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']).describe('How much of the county the source covers for this day.'),
+  "source_time_present": zod.boolean().describe('Whether the source supplied a time for this observation.'),
+  "day_convention": zod.string().min(1).describe('How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day.'),
+  "expected_area_m2": zod.union([zod.number().describe('County area expected to be covered, in square meters. `null` when unknown.'),zod.string().describe('County area expected to be covered, in square meters. `null` when unknown.')]).nullable().describe('County area expected to be covered, in square meters. `null` when unknown.'),
+  "intersected_area_m2": zod.union([zod.number().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),zod.string().describe('County area that overlaps the source grid, in square meters. `null` when unknown.')]).nullable().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),
+  "source_supported_area_m2": zod.union([zod.number().describe('County area the source supports, in square meters. `null` when unknown.'),zod.string().describe('County area the source supports, in square meters. `null` when unknown.')]).nullable().describe('County area the source supports, in square meters. `null` when unknown.'),
+  "valid_area_m2": zod.union([zod.number().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),zod.string().describe('County area with a valid source value for this day, in square meters. `null` when unknown.')]).nullable().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),
+  "source_coverage_fraction": zod.union([zod.number().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),zod.string().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.')]).nullable().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),
+  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),zod.string().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.')]).nullable().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),
+  "upstream_date_modified": zod.string().nullable().describe('Modification date the source reports. It is not the original publication date or the date the data first became available.'),
+  "weight_version": zod.string().describe('Version of the area weights used to combine grid cells into a county value.'),
+  "geometry_version": zod.string().describe('Version of the county boundaries used for the calculation. The API returns no boundary geometry.'),
+  "metadata_revision_id": zod.string().describe('Identifies the reviewed metadata revision that describes this context.')
+}).describe('How completely the source covers a county and day. It is separate from `value_state`.\n\nArea values are square meters. Exact decimal quantities may be strings.')
 
 export type EnvironmentalContext = zod.input<typeof EnvironmentalContext>;
 export type EnvironmentalContextOutput = zod.output<typeof EnvironmentalContext>;

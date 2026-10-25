@@ -6,45 +6,64 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * The organization and dataset a value came from.
+ */
 export interface Source {
-  /** Public source resource key; distinct from lineage_source_id and dataset_id. */
+  /** Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. */
   source_id: string;
+  /** Display name of the source. */
   label: string;
-  /** @nullable */
+  /**
+     * Organization that publishes the data. `null` when none is recorded.
+     * @nullable
+     */
   publisher: string | null;
+  /** Identifies the source in Atlas lineage records. It differs from `source_id`. */
   lineage_source_id: string;
+  /** Identifies the publisher's dataset. It differs from `source_id`. */
   dataset_id: string;
-  /** Governed semantic contract version, separate from HTTP V1 and application version. */
+  /** Version of the data contract the value follows. It is separate from the API version and the application version. */
   semantic_version: string;
-  /** Governed current-release relationship version. */
+  /** Identifies the published data release this record belongs to. */
   release_version: string;
-  /** @nullable */
+  /**
+     * Web address of the source. `null` when none is published.
+     * @nullable
+     */
   source_url?: string | null;
-  /** @nullable */
+  /**
+     * Reference year or period of the source dataset. It is not an annual value.
+     * @nullable
+     */
   source_vintage?: string | null;
-  /** @nullable */
+  /**
+     * Version label the publisher gives the dataset, when it has one.
+     * @nullable
+     */
   source_version?: string | null;
   /**
+     * Deprecated. Use `upstream_updated_at`. When the publisher published the data.
      * @deprecated
      * @nullable
      */
   published_at?: string | null;
   /**
-     * Atlas acquisition time when governed; distinct from source publication and processing.
+     * Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.
      * @deprecated
      * @nullable
      */
   atlas_acquired_at?: string | null;
   /**
-     * Governed publisher update time; null when unavailable.
+     * When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.
      * @nullable
      */
   upstream_updated_at?: string | null;
   /**
-     * Governed source retrieval time; null when unavailable.
+     * When Atlas last retrieved the data from the publisher. `null` when unavailable.
      * @nullable
      */
   source_retrieved_at?: string | null;
-  /** Governed interpretation limitations; preserve alongside values and versions. */
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations?: string[];
 }

@@ -11,21 +11,42 @@ import type { TemporalLagContext } from './temporalLagContext';
 import type { TemporalReferencePeriodContext } from './temporalReferencePeriodContext';
 import type { TemporalWindowContext } from './temporalWindowContext';
 
+/**
+ * Describes how an observation's time span lines up with a target time span.
+ *
+ * The alignment is descriptive. It does not show cause.
+ */
 export interface TemporalAlignmentContext {
+  /** Version of the contract that defines this object. */
   contract_version: 'atlas-temporal-alignment-v1';
+  /** Identifies the alignment method. */
   method_id: string;
+  /** Version of the alignment method. */
   method_version: string;
+  /** Identifies the source of the aligned observation. */
   source_id: string;
+  /** Identifies the measure that was aligned. */
   measure_id: string;
+  /** Rule used to combine values inside the observation window. */
   aggregation_rule: string;
+  /** What the coverage is counted against, such as days in the window. */
   coverage_denominator: string;
+  /** Time after which new data is not used for the alignment. Includes a UTC offset. */
   decision_cutoff: string;
+  /** Whether the observation can be used for the target window. */
   disposition: TemporalAlignmentContextDisposition;
+  /** Codes that explain the disposition. */
   reason_codes: string[];
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations: string[];
+  /** Time span the observation covers. */
   observation_window: TemporalWindowContext;
+  /** Time span being compared against. */
   target_window: TemporalWindowContext;
+  /** Lag between the two windows. */
   lag: TemporalLagContext;
+  /** Expected and observed coverage of the observation window. */
   coverage: TemporalCoverageContext;
+  /** Reference period of the source dataset. `null` when none applies. */
   reference_period?: TemporalReferencePeriodContext | null;
 }

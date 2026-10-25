@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Breakdown the value applies to, such as an age group. Empty when the release has no strata.
+ */
 export type ObservationStrata = {[key: string]: string};

@@ -7,6 +7,6 @@
  */
 
 /**
- * Persisted sources and source vintages.
+ * Sources and source vintages the model used.
  */
 export type SituationClassificationSourceProvenance = { [key: string]: unknown };

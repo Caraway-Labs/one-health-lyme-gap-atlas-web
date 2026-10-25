@@ -17,7 +17,8 @@ Do not put credentials, Snowflake access, or query logic in the browser. Runtime
 
 - Repository: `Caraway-Labs/one-health-lyme-gap-atlas-api`
 - Branch: `main`
-- Last sync: `f485d5ef756ac7ae3cebf864535a8e1c0e417f9e` (2026-10-24). That commit is the merge of API pull request #346. Both pins are the files at that commit.
+- First-party pin (`contracts/openapi.json`): `a267db8e828766f4a93591c211472897df15dd79` (2026-10-25). That commit adds intelligence feed summaries, abstracts, and `GET /v1/intelligence/feed/{item_id}`.
+- Public pin (`contracts/public-openapi.json`): `f485d5ef756ac7ae3cebf864535a8e1c0e417f9e` (2026-10-24), the merge of API pull request #346. The public document at `a267db8e828766f4a93591c211472897df15dd79` has no intelligence paths. Its other differences are `GET /v1/atlas/map-values` and public description edits, which are outside this feed pin. The manifest still records the public file.
 - Previous first-party pin: `a84c82d3b2f1acaa32c81194388cbaa72e1fd374`, identical to `3897bb18cfdc7cc26892b08b6e74bc6cc347834c` (typed Ask Atlas outcomes on HTTP 200).
 - Previous public pin: `e88887877440c00de0e23301f0a3eac2353134d9`.
 
@@ -53,7 +54,7 @@ Record the exact API commit in the pull request that updates the pins. Update th
 
 `GET /health/ready` exists only on the first-party pin. Its `200` schema is now `ReadinessResponse` (with `ReadinessDependencies`) instead of an inline object. That schema arrived in API #310 and is present in `f485d5ef`. The public document has no health routes, so this difference is not in `contracts/public-openapi.json`.
 
-API commits after `f485d5ef` are not in these pins. They include `GET /v1/atlas/map-values` (#363) and description-only OpenAPI edits (#364, #365, #366).
+The first-party pin includes `GET /v1/atlas/map-values` and the intelligence feed entry fields because those are in `a267db8e828766f4a93591c211472897df15dd79`. The public pin does not. API commits after that SHA, including the operation-id rename, are not in either pin. `FeedEntry` in this pin has `source_family` and does not declare `source_family_label`. The feed reads `source_family_label` from the response payload when that string is present.
 
 ## Ask Atlas chat contract
 

@@ -23,11 +23,11 @@ export const scoresV1AtlasScoresGetParamsMissingHumanWeaknessMultipleOf = 5;
 
 
 export const ScoresV1AtlasScoresGetParams = zod.object({
-  "dataset_version": zod.string().nullish(),
-  "ecological_share": zod.int().min(scoresV1AtlasScoresGetParamsEcologicalShareMin).max(scoresV1AtlasScoresGetParamsEcologicalShareMax).multipleOf(scoresV1AtlasScoresGetParamsEcologicalShareMultipleOf).default(scoresV1AtlasScoresGetParamsEcologicalShareDefault),
-  "smooth_k": zod.int().min(scoresV1AtlasScoresGetParamsSmoothKMin).max(scoresV1AtlasScoresGetParamsSmoothKMax).default(scoresV1AtlasScoresGetParamsSmoothKDefault),
-  "missing_human_weakness": zod.int().min(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMin).max(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMax).multipleOf(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMultipleOf).default(scoresV1AtlasScoresGetParamsMissingHumanWeaknessDefault),
-  "low_incidence_breakpoint": zod.int().nullish()
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
+  "ecological_share": zod.int().min(scoresV1AtlasScoresGetParamsEcologicalShareMin).max(scoresV1AtlasScoresGetParamsEcologicalShareMax).multipleOf(scoresV1AtlasScoresGetParamsEcologicalShareMultipleOf).default(scoresV1AtlasScoresGetParamsEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(scoresV1AtlasScoresGetParamsSmoothKMin).max(scoresV1AtlasScoresGetParamsSmoothKMax).default(scoresV1AtlasScoresGetParamsSmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMin).max(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMax).multipleOf(scoresV1AtlasScoresGetParamsMissingHumanWeaknessMultipleOf).default(scoresV1AtlasScoresGetParamsMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
 export type ScoresV1AtlasScoresGetParams = zod.input<typeof ScoresV1AtlasScoresGetParams>;
