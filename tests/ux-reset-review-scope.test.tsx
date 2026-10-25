@@ -1923,6 +1923,30 @@ describe("Reset Review scope UI", () => {
     });
   });
 
+  it("writes scope=ALL when United States is chosen while the address bar is still a state", async () => {
+    window.history.replaceState(null, "", "/explore?scope=CO&county=08001");
+    const updates: { history: string; query: string }[] = [];
+    renderReview("?scope=ALL", {
+      onUrlUpdate: (query, history) => {
+        updates.push({ history, query });
+      },
+    });
+    fireEvent.click(await screen.findByTestId("review-scope-select"));
+    const unitedStates = await screen.findByRole("option", {
+      name: "United States",
+    });
+    fireEvent.pointerDown(unitedStates, { pointerType: "mouse" });
+    fireEvent.click(unitedStates);
+    await waitFor(() =>
+      expect(
+        updates.some(
+          (update) =>
+            update.history === "push" && update.query.includes("scope=ALL")
+        )
+      ).toBeTruthy()
+    );
+  });
+
   it("writes the saved state again when a scope-less entry reverts to national", async () => {
     window.history.replaceState(null, "", "/explore");
     mockedSearch = "";
