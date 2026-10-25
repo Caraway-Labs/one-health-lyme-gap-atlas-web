@@ -4,7 +4,7 @@ Status: approved design contract for default-on product analytics with explicit 
 
 Owner: Atlas product, engineering, and privacy leads
 
-Last reviewed: 2026-10-24
+Last reviewed: 2026-10-25
 
 ## Product purpose and boundary
 
@@ -222,7 +222,16 @@ Do Not Track check: with `doNotTrack` of `1` or `yes`, confirm no Amplitude requ
 - Vitest asserts `getAmplitudeBrowserInitOptions().offline` is `OfflineDisabled` (falsy), not a truthy string that suppresses delivery.
 - Playwright loads a fresh session with a synthetic API key and expects at least one Amplitude network request without an opt-in click, and expects zero requests after opt-out and under Do Not Track. Test updates belong to the implementation stories, not to this policy record.
 
-Live confirmation that events land in projects `856061` and `860994` requires valid project API keys (Matthew / platform owners).
+Live confirmation that events land in projects `856061` and `860994` uses the production project (event segmentation by `route_id`, or User Lookup / Event Stream when that role is enabled). Do not record the Browser API key.
+
+### Professional workspace production check (#919)
+
+Run this after a production deploy that includes the default-on client. The project is Atlas Web - Production (`856061`). The repeatable procedure and the latest execution note are in [the #919 verification record](evidence/web-919-production-amplitude-verification.md). Related key configuration is [#380](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/380) and [#381](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-web/issues/381).
+
+1. Bundle spot-check. On `https://onehealthatlas.org/`, the compiled API-key reader in the client chunks must return a non-empty trimmed string. `"".trim()` means the Docker build did not receive `NEXT_PUBLIC_AMPLITUDE_API_KEY`. Record presence only.
+2. Fresh signed-in browser on `/explore`, Do Not Track off, storage available, no opt-in click. Expect an Amplitude HTTP 2xx whose body is `atlas_route_viewed` with `route_id` `atlas_explorer` and only allowlisted properties. Unsigned `/explore` stops at sign-in and is not this check.
+3. On `/app/settings`, turn optional analytics off, reload `/explore`, and confirm no further Amplitude request. Vendor `AMP_` / `amplitude` keys are cleared. The first-party preference remains.
+4. In project `856061`, confirm the `atlas_explorer` event, then record the deployment SHA, timestamp, and event names in the verification record.
 
 ## Pre-production acceptance tests
 

@@ -4,7 +4,7 @@ Status: current implementation inventory
 
 Owner: One Health Lyme Gap Atlas product and engineering leads
 
-Last reviewed: 2026-10-24
+Last reviewed: 2026-10-25
 
 ## Purpose and policy
 
@@ -22,7 +22,7 @@ Product analytics must never contain private health information, medical history
 | Browser URL state | Make a selected geography and Atlas controls reproducible/shareable | State, county FIPS, controlled evidence filter, score settings, dataset version | Browser address bar only | Visitor controls it through the URL | Live |
 | Evidence-chat request | Retrieve reviewed evidence through the controlled Atlas API | Question, conversation ID/token, response/citations | Atlas API and knowledge-graph service | Server policy is 30 days; do not treat chat content as product analytics | Feature-gated |
 | Evidence-chat local history | Let a visitor resume recent chats in the same browser | Up to five conversation transcripts, titles, timestamps, response metadata, token | Browser local storage | Expires after 30 days; visitor can clear the local history in the chat workspace | Feature-gated |
-| Product analytics | Understand aggregate feature adoption and improve Atlas | Allowlisted semantic events, on by default for public product routes and the signed-in professional workspace; session-only Amplitude identity; no account linkage; not sold or used for advertising | Amplitude Browser SDK; first-party preference in `localStorage` only after an explicit allow or opt-out | Events retained 90 days; an explicit choice expires after 183 days and returns to the default; visitor can opt out | Policy accepted in ADR 0022. The running client still requires an explicit grant until stories #914–#919 ship |
+| Product analytics | Understand aggregate feature adoption and improve Atlas | Allowlisted semantic events, on by default for public product routes and the signed-in professional workspace; session-only Amplitude identity; no account linkage; not sold or used for advertising | Amplitude Browser SDK; first-party preference in `localStorage` only after an explicit allow or opt-out | Events retained 90 days; an explicit choice expires after 183 days and returns to the default; visitor can opt out | Policy accepted in ADR 0022. The client is default-on with explicit opt-out (#914–#918). Production ingestion is recorded in [web #919](evidence/web-919-production-amplitude-verification.md) |
 | In-product feedback | Receive voluntary usability/data/feature feedback | None | None | None | Planned: web #63, API #42-43, data #129-130 |
 | Optional accounts | Persist an optional profile after explicit Save | Role enum, optional state code, optional bounded organization/job title, Auth email | Hosted Supabase Auth + `atlas_accounts.user_profiles` via FastAPI `/v1/me` | Self-service export/deletion from Account and professional Settings; dormant deletion after one year is a separate ops step | Live profile; saved views not launched. The signed-in professional workspace does not store saved views, saved investigations, or an artifact library |
 
@@ -39,7 +39,7 @@ Before product analytics, feedback, or accounts launch, the owning stories must 
 
 ## Product analytics consent contract
 
-This contract governs non-essential browser product analytics. [ADR 0022](adr/0022-default-on-amplitude-product-analytics.md) supersedes the opt-in-only posture in [ADR 0014](adr/0014-privacy-safe-amplitude-browser-analytics.md). The running client still implements that earlier grant gate until stories #914–#919 ship. The states below are the accepted policy.
+This contract governs non-essential browser product analytics. [ADR 0022](adr/0022-default-on-amplitude-product-analytics.md) supersedes the opt-in-only posture in [ADR 0014](adr/0014-privacy-safe-amplitude-browser-analytics.md). The client implements the states below. Production bundle and project `856061` verification is recorded in [web #919](evidence/web-919-production-amplitude-verification.md).
 
 | State | Entry condition | Browser analytics behavior | Visitor control |
 | --- | --- | --- | --- |
