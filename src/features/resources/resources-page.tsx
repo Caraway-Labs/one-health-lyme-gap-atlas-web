@@ -144,7 +144,7 @@ export function ResourcesPage() {
             const Icon = TOPIC_ICONS[topic.id] ?? FileText;
             return (
               <article className="resources-card" key={topic.id}>
-                <h3>
+                <h3 className="resources-topic-card-heading">
                   <Icon aria-hidden="true" size={18} />
                   <span>{topic.title}</span>
                 </h3>
