@@ -36,16 +36,19 @@ vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: () => <div data-testid="mock-atlas-map" />,
 }));
 
-vi.mock(import("@/features/ux-reset/review/load-explorer-map-values"), async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/features/ux-reset/review/load-explorer-map-values")
-    >();
-  return {
-    ...actual,
-    loadExplorerMapValues,
-  };
-});
+vi.mock(
+  import("@/features/ux-reset/review/load-explorer-map-values"),
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/features/ux-reset/review/load-explorer-map-values")
+      >();
+    return {
+      ...actual,
+      loadExplorerMapValues,
+    };
+  }
+);
 
 const BOUNDARY_COLOR = "#112233";
 const OBSERVED_FIPS = "08001";

@@ -12,18 +12,22 @@ import {
   useExplorerMapObservations,
 } from "@/features/ux-reset/review/use-explorer-map-observations";
 
-vi.mock(import("@/features/ux-reset/review/load-explorer-map-values"), async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/features/ux-reset/review/load-explorer-map-values")
-    >();
-  return {
-    ...actual,
-    loadExplorerMapValues: vi.fn<
-      typeof import("@/features/ux-reset/review/load-explorer-map-values").loadExplorerMapValues
-    >(),
-  };
-});
+vi.mock(
+  import("@/features/ux-reset/review/load-explorer-map-values"),
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/features/ux-reset/review/load-explorer-map-values")
+      >();
+    return {
+      ...actual,
+      loadExplorerMapValues:
+        vi.fn<
+          typeof import("@/features/ux-reset/review/load-explorer-map-values").loadExplorerMapValues
+        >(),
+    };
+  }
+);
 
 const loadMapValues = vi.mocked(loadExplorerMapValues);
 

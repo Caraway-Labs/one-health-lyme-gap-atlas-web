@@ -564,12 +564,10 @@ export function acceptExplorerMapObservations(input: {
   };
 }
 
-export function explorerMapLayerPeriod(layerId: ExplorerObservationLayerId): string {
-  return observationPeriod(
-    EXPLORER_OBSERVATION_SPECS[layerId],
-    null,
-    null
-  );
+export function explorerMapLayerPeriod(
+  layerId: ExplorerObservationLayerId
+): string {
+  return observationPeriod(EXPLORER_OBSERVATION_SPECS[layerId], null, null);
 }
 
 function observationPeriod(

@@ -300,13 +300,12 @@ export function paintReadyObservationLayer(input: {
   const selectedRow = input.selectedFips
     ? input.rows.find((row) => row.fips === input.selectedFips)
     : undefined;
-  const selectionEvidence =
-    selectedRow?.provenance
-      ? evidenceObjectForExplorerMapRow(
-          selectedRow,
-          explorerMapLayerClaimLabel(input.layerId)
-        )
-      : null;
+  const selectionEvidence = selectedRow?.provenance
+    ? evidenceObjectForExplorerMapRow(
+        selectedRow,
+        explorerMapLayerClaimLabel(input.layerId)
+      )
+    : null;
   if (input.layerId === "rurality") {
     return paintRurality({
       omitted: input.omitted,

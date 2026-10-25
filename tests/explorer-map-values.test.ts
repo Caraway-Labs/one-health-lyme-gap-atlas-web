@@ -10,11 +10,11 @@ import {
   UNINSURED_POPULATION_MISSING_COLOR,
   UNINSURED_POPULATION_RAMP,
 } from "@/features/ux-reset/review/explorer-layer-palettes";
-import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { paintReadyObservationLayer } from "@/features/ux-reset/review/explorer-map-layer-scale";
+import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { explorerMapValuesLayerReady } from "@/features/ux-reset/review/load-explorer-map-values";
-import type { MapValuesCollection } from "@/features/ux-reset/review/map-values-schema";
 import { mapValuesV1AtlasMapValuesGet } from "@/features/ux-reset/review/map-values-atlas";
+import type { MapValuesCollection } from "@/features/ux-reset/review/map-values-schema";
 import {
   RURALITY_NO_DATA_COLOR,
   ruralityFillForCode,
@@ -23,12 +23,14 @@ import { useExplorerMapObservations } from "@/features/ux-reset/review/use-explo
 import { ValueState } from "@/generated/models";
 
 vi.mock(import("@/features/ux-reset/review/map-values-atlas"), () => ({
-  getMapValuesV1AtlasMapValuesGetUrl: vi.fn<
-    typeof import("@/features/ux-reset/review/map-values-atlas").getMapValuesV1AtlasMapValuesGetUrl
-  >(),
-  mapValuesV1AtlasMapValuesGet: vi.fn<
-    typeof import("@/features/ux-reset/review/map-values-atlas").mapValuesV1AtlasMapValuesGet
-  >(),
+  getMapValuesV1AtlasMapValuesGetUrl:
+    vi.fn<
+      typeof import("@/features/ux-reset/review/map-values-atlas").getMapValuesV1AtlasMapValuesGetUrl
+    >(),
+  mapValuesV1AtlasMapValuesGet:
+    vi.fn<
+      typeof import("@/features/ux-reset/review/map-values-atlas").mapValuesV1AtlasMapValuesGet
+    >(),
 }));
 
 const mapValuesGet = vi.mocked(mapValuesV1AtlasMapValuesGet);

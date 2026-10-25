@@ -30,12 +30,11 @@ export const getMapValuesV1AtlasMapValuesGetUrl = (
 export const mapValuesV1AtlasMapValuesGet = async (
   params?: MapValuesV1AtlasMapValuesGetParams,
   options?: Parameters<typeof apiMutator>[1]
-): Promise<MapValuesV1AtlasMapValuesGetResponse200> => {
-  return apiMutator<MapValuesV1AtlasMapValuesGetResponse200>(
+): Promise<MapValuesV1AtlasMapValuesGetResponse200> =>
+  apiMutator<MapValuesV1AtlasMapValuesGetResponse200>(
     getMapValuesV1AtlasMapValuesGetUrl(params),
     {
       ...options,
       method: "GET",
     }
   );
-};

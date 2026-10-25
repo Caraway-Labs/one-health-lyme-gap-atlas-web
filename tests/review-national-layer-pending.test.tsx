@@ -18,16 +18,19 @@ vi.mock(import("@/components/atlas-map"), () => ({
 
 const pendingMapValues = Promise.withResolvers<never>();
 
-vi.mock(import("@/features/ux-reset/review/load-explorer-map-values"), async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/features/ux-reset/review/load-explorer-map-values")
-    >();
-  return {
-    ...actual,
-    loadExplorerMapValues: () => pendingMapValues.promise,
-  };
-});
+vi.mock(
+  import("@/features/ux-reset/review/load-explorer-map-values"),
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/features/ux-reset/review/load-explorer-map-values")
+      >();
+    return {
+      ...actual,
+      loadExplorerMapValues: () => pendingMapValues.promise,
+    };
+  }
+);
 
 const RELEASE_ID = "alpha-2026";
 

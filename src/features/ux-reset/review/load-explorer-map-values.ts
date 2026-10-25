@@ -43,9 +43,11 @@ export async function loadExplorerMapValues(input: {
   return parsed;
 }
 
-function valueStateForQuantity(
-  value: number | null
-): { numeric: number | null; raw: string | null; valueState: ValueState } {
+function valueStateForQuantity(value: number | null): {
+  numeric: number | null;
+  raw: string | null;
+  valueState: ValueState;
+} {
   if (value === null) {
     return { numeric: null, raw: null, valueState: ValueState.MISSING };
   }
@@ -64,9 +66,7 @@ function valueStateForQuantity(
   };
 }
 
-function valueStateForRurality(
-  code: number | null
-): {
+function valueStateForRurality(code: number | null): {
   categoryLabel: string | null;
   numeric: number | null;
   raw: string | null;
