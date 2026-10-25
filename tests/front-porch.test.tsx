@@ -417,7 +417,7 @@ describe("front porch view", () => {
       expect(
         allow.hasAttribute("disabled") || allow.ariaDisabled === "true"
       ).toBeTruthy();
-      expect(screen.getByText(/Do Not Track/)).toBeTruthy();
+      expect(screen.getAllByText(/Do Not Track/).length).toBeGreaterThan(1);
     } finally {
       if (descriptor) {
         Object.defineProperty(navigator, "doNotTrack", descriptor);

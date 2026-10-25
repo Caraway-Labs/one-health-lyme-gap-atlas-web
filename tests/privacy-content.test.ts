@@ -31,8 +31,8 @@ function copyStrings(value: unknown): string[] {
 
 describe("Privacy policy content", () => {
   it("keeps a versioned public document and the approved meta description", () => {
-    expect(privacyContent.version).toBe("1.0.1");
-    expect(privacyContent.lastUpdated).toBe("2026-10-22");
+    expect(privacyContent.version).toBe("1.1.0");
+    expect(privacyContent.lastUpdated).toBe("2026-10-25");
     expect(privacyContent.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(pageMetadataForRoute("/privacy")).toStrictEqual({
       description:
