@@ -109,15 +109,15 @@ test("privacy settings dialog stays keyboard accessible", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: "Privacy settings" });
   await expect(dialog).toBeVisible();
 
-  const decline = dialog.getByRole("button", {
-    name: "Keep optional analytics off",
+  const turnOff = dialog.getByRole("button", {
+    name: "Turn off optional analytics",
   });
   const allow = dialog.getByRole("button", {
     name: "Allow optional analytics",
   });
   const close = dialog.getByRole("button", { name: "Close" });
-  await decline.focus();
-  await expect(decline).toBeFocused();
+  await turnOff.focus();
+  await expect(turnOff).toBeFocused();
   await allow.focus();
   await expect(allow).toBeFocused();
   await close.focus();
