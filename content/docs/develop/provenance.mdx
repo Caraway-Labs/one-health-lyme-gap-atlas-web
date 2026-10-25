@@ -177,7 +177,7 @@ Methodology `version` is the resource version. Observation `methodology_version`
 | `meta.response_at` | When the response was built |
 | `environmental_context.upstream_date_modified` | Upstream modification metadata. Not original publication |
 
-A generated timestamp does not become the surveillance date. `environmental_context` is descriptive weather coverage. A null object does not supply it. `normalized_state` keeps the publisher wording, and `value` stays the publisher value.
+A generated timestamp does not become the surveillance date. `environmental_context` is descriptive weather coverage. A null object does not supply it. `normalized_state` is a Data-owned state (`established`, `detected`, `unknown`, or null). The original publisher value stays in `value`.
 
 ## Keep source identity after normalization
 

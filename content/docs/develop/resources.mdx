@@ -60,7 +60,7 @@ The same county and measure, with `start_date` 2023-01-01 and `end_date` 2023-12
 
 A sample case-floor `strata` value was an empty object, not a breakdown.
 
-Also keep period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. Optional `environmental_context` is reviewed environmental context only. Optional `surveillance_context` is published surveillance context on a supported slice. Omitted or null carries no evidence-state, comparability, or lag claim. Present objects have `evidence`, `methodology_comparison`, and `temporal_alignment`. `normalized_state` keeps the publisher wording, and `value` stays the publisher value. Missing context does not establish absence or temporal comparability. Types are in the [schema reference](/docs/api-reference/schemas).
+Also keep period, unit, denominator, source, methodology, `semantic_version`, `release_id`, `provenance_ref`, `limitations`, and `evidence`. Optional `environmental_context` is reviewed environmental context only. Optional `surveillance_context` is published surveillance context on a supported slice. Omitted or null carries no evidence-state, comparability, or lag claim. Present objects have `evidence`, `methodology_comparison`, and `temporal_alignment`. `normalized_state` is a Data-owned state (`established`, `detected`, `unknown`, or null). The original publisher value stays in `value`. Missing context does not establish absence or temporal comparability. Types are in the [schema reference](/docs/api-reference/schemas).
 
 ## Match a response to an action
 
