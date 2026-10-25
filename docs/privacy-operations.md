@@ -49,7 +49,7 @@ Privacy-request actions are not Amplitude events.
 
 ## Mobile privacy E2E (#126)
 
-Playwright sets `ATLAS_E2E=1` so `next.config.ts` hides the Next.js development indicator. The default bottom-left `nextjs-portal` indicator otherwise intercepts footer Privacy clicks on mobile viewports even when no runtime error exists. Do not force-click around the indicator.
+Playwright sets `ATLAS_E2E=1` so `next.config.ts` hides the Next.js development indicator. The default bottom-left `nextjs-portal` indicator otherwise intercepts footer Privacy clicks on mobile viewports even when no runtime error exists. A browser `console.error` opens that same portal during `next dev`. Playwright's all-zero Amplitude key is rejected by ingestion, and the SDK would log that rejection at error level. The client silences SDK logs for that key only, while still initializing so default-on requests stay observable. Do not force-click around the portal.
 
 ## Rollback
 

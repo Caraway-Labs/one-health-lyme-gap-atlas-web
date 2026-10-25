@@ -1,6 +1,7 @@
-import { OfflineDisabled } from "@amplitude/analytics-core";
+import { LogLevel, OfflineDisabled } from "@amplitude/analytics-core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SYNTHETIC_AMPLITUDE_API_KEY } from "../src/lib/amplitude-deployment";
 import {
   ANALYTICS_RELEASE_VERSION,
   ANALYTICS_SCHEMA_VERSION,
@@ -227,6 +228,29 @@ describe("Atlas Amplitude boundary", () => {
     const options = getAmplitudeBrowserInitOptions();
     expect(options.offline).toBe(OfflineDisabled);
     expect(Boolean(options.offline)).toBeFalsy();
+    expect(options.logLevel).toBeUndefined();
+  });
+
+  it("silences SDK logs for the synthetic Playwright key and keeps a real key audible", async () => {
+    const projectKey = getAmplitudeBrowserInitOptions(
+      "synthetic-development-key"
+    );
+    const syntheticKey = getAmplitudeBrowserInitOptions(
+      SYNTHETIC_AMPLITUDE_API_KEY
+    );
+    expect(projectKey.logLevel).toBeUndefined();
+    expect(syntheticKey.logLevel).toBe(LogLevel.None);
+
+    const analytics = createAtlasAnalytics(async () => amplitude);
+    await analytics.start(SYNTHETIC_AMPLITUDE_API_KEY);
+    expect(amplitude.init).toHaveBeenCalledWith(
+      SYNTHETIC_AMPLITUDE_API_KEY,
+      expect.objectContaining({
+        autocapture: false,
+        logLevel: LogLevel.None,
+        offline: OfflineDisabled,
+      })
+    );
   });
 
   it("uses session-only identity and disables every automatic collection path", async () => {

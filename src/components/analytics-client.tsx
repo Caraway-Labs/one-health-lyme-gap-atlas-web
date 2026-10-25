@@ -111,7 +111,8 @@ export function AnalyticsClient() {
   useEffect(() => {
     // The first render still has the placeholder consent. Wait until the
     // preference effect has read storage so an opt-out, Do Not Track signal,
-    // or storage failure cannot initialize the SDK for one frame.
+    // or storage failure cannot initialize the SDK for one frame. A stored
+    // grant is applied in that same read, including on professional routes.
     if (!preferenceReady) {
       return;
     }
@@ -158,11 +159,11 @@ export function AnalyticsClient() {
 export function notifyAnalyticsPreferenceChanged(
   update?: AnalyticsPreferenceWrite
 ): void {
-  // Stop here, not only in AnalyticsClient. The professional /app shell does
-  // not mount that listener, and a grant made on legacy Atlas keeps the
-  // module-global SDK alive after the listener unmounts. Cross-tab storage
-  // events call this same path. A failed opt-out is remembered before the
-  // storage re-read so default-on cannot start the SDK again this document.
+  // Stop here, not only in AnalyticsClient. Docs, the design system, and auth
+  // utilities do not mount that listener, and a grant keeps the module-global
+  // SDK alive after the listener unmounts. Cross-tab storage events call this
+  // same path. A failed opt-out is remembered before the storage re-read so
+  // default-on cannot start the SDK again this document.
   if (
     update?.attempted === "denied" &&
     update.written === "storage-unavailable"
