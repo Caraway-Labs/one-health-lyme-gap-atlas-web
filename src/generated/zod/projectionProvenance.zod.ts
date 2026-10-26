@@ -16,7 +16,7 @@ export const ProjectionProvenance = zod.object({
   "run_id": zod.string().regex(projectionProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(projectionProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(projectionProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(projectionProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 })

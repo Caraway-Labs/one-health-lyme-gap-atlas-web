@@ -17,8 +17,8 @@ Do not put credentials, Snowflake access, or query logic in the browser. Runtime
 
 - Repository: `Caraway-Labs/one-health-lyme-gap-atlas-api`
 - Branch: `main`
-- Last sync: `decc4355c6eb6bfd04ca51f5a1f69eeb1b685ce2` (2026-10-25). Both pins are the files at that commit. `openapi.json` at that commit is byte-identical to `9d137a895576310dfa84e0d17fc297bffe326ebe`, and the public pin matches live `https://api.onehealthatlas.org/openapi.json`. The first-party pin is not the document that URL serves.
-- Previous pins: `9d137a895576310dfa84e0d17fc297bffe326ebe` (2026-10-25).
+- Last sync: `4bc001bb6c03d16aef80762174691fdf9b898707` (2026-10-26). Both pins are the files at that commit. `openapi.json` at that commit is byte-identical to `decc4355c6eb6bfd04ca51f5a1f69eeb1b685ce2`. The first-party pin is not the document `https://api.onehealthatlas.org/openapi.json` serves. `ProjectionProvenance.parser_version` is an enum of `rss-atom-native-v2` and `entrez-efetch-v1`.
+- Previous pins: `decc4355c6eb6bfd04ca51f5a1f69eeb1b685ce2` (2026-10-25).
 
 Record the exact API commit in the pull request that updates the pins. Update the "Last sync" line in this file in the same change.
 
