@@ -136,6 +136,10 @@ export const FEED_ITEM_UNAVAILABLE_MESSAGE =
   "The feed is unavailable right now.";
 export const FEED_ABSTRACT_NOT_PROVIDED_MESSAGE =
   "No abstract in the PubMed record.";
+export const FEED_ABSTRACT_UNAVAILABLE_MESSAGE =
+  "The full abstract is unavailable right now.";
+/** Screen-reader completion for an inline abstract expand. Not shown visually. */
+export const FEED_ABSTRACT_SHOWN_MESSAGE = "Full abstract shown.";
 export const FEED_FOOTER_PUBLIC_DOMAIN =
   "CDC and NIH content is public domain unless noted. PubMed abstracts remain subject to their publishers' copyright; see each abstract's notice.";
 export const FEED_FOOTER_NON_ENDORSEMENT =
@@ -262,6 +266,30 @@ export function feedPanelAbstract(entry: FeedEntry): FeedPanelAbstract {
     }
     default: {
       const exhaustive: never = abstract.state;
+      return exhaustive;
+    }
+  }
+}
+
+/** By-id abstract text for an expanded card. Any other state clears the preview. */
+export function feedExpandedAbstract(entry: FeedEntry): {
+  copyrightLine: string | null;
+  text: string | null;
+} {
+  const abstract = feedPanelAbstract(entry);
+  switch (abstract.kind) {
+    case "text": {
+      return {
+        copyrightLine: abstract.copyrightLine,
+        text: abstract.text,
+      };
+    }
+    case "none":
+    case "not_provided": {
+      return { copyrightLine: null, text: null };
+    }
+    default: {
+      const exhaustive: never = abstract;
       return exhaustive;
     }
   }

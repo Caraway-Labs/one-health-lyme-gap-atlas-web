@@ -1508,7 +1508,14 @@ describe("feed item detail presentation", () => {
       description: { state: "present", text: "a <b>b</b>" },
       title: "Markup description",
     });
-    render(<FeedItemCard entry={entry} itemCaveats={[]} onOpen={() => {}} />);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <FeedItemCard entry={entry} itemCaveats={[]} onOpen={() => {}} />
+      </QueryClientProvider>
+    );
     expect({
       bold: document.querySelector("b"),
       text: screen.getByTestId("feed-description").textContent,
@@ -1527,8 +1534,17 @@ describe("feed item detail presentation", () => {
       sourceFamily: "pubmed",
       title: "Markup abstract",
     });
+    const abstractClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
-      <FeedItemCard entry={abstractEntry} itemCaveats={[]} onOpen={() => {}} />
+      <QueryClientProvider client={abstractClient}>
+        <FeedItemCard
+          entry={abstractEntry}
+          itemCaveats={[]}
+          onOpen={() => {}}
+        />
+      </QueryClientProvider>
     );
     expect({
       bold: document.querySelector("b"),
