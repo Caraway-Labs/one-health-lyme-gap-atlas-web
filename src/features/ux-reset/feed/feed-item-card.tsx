@@ -10,21 +10,23 @@ import { feedCardIllustration } from "./feed-illustrations";
 export function FeedItemCard({
   eagerImage = false,
   entry,
+  imageSlot = 0,
   itemCaveats,
   onOpen,
 }: {
   eagerImage?: boolean;
   entry: FeedListEntry;
+  imageSlot?: number;
   itemCaveats: readonly string[];
   onOpen: (entry: FeedListEntry, surface: FeedDetailEntrySurface) => void;
 }) {
-  const image = feedCardIllustration(entry);
+  const image = feedCardIllustration(entry, imageSlot);
   return (
     <li className="ux-reset-feed-card">
       <div className="ux-reset-feed-thumb">
         <FeedDecorImage
           eager={eagerImage}
-          sizes="(max-width: 520px) 100vw, 8rem"
+          sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 24rem"
           src={image.src}
         />
       </div>

@@ -128,6 +128,8 @@ export function IntelligenceFeedFilters({
             type="search"
           />
         </div>
+      </div>
+      <div className="ux-reset-research-filter-row">
         <div
           aria-describedby={RESEARCH_NEWS_PENDING_NOTE_ID}
           aria-label="Topics"
@@ -146,8 +148,6 @@ export function IntelligenceFeedFilters({
             </button>
           ))}
         </div>
-      </div>
-      <div className="ux-reset-research-filter-row">
         <div className="ux-reset-feed-controls">
           <div className="ux-reset-feed-field">
             <label className="type-small" htmlFor="intelligence-feed-source">

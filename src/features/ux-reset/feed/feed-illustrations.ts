@@ -1,7 +1,8 @@
 /**
  * Decorative illustrations for Research & News. Topic art is chosen only from
  * explicit tag text. Titles, publishers, and source families are not interpreted.
- * Unknown or missing tags use a stable woodland or meadow image.
+ * Unknown or missing tags use a fixed cycle of six distinct illustrations,
+ * one per card position, so the opening grid does not repeat a picture.
  */
 
 export const FEED_FEATURE_ILLUSTRATION = {
@@ -22,6 +23,7 @@ export type FeedCardIllustration = {
 
 type FeedIllustrationId =
   | "deer"
+  | "forest-lake"
   | "forest-path"
   | "laboratory"
   | "meadow"
@@ -39,6 +41,11 @@ const CARD_ILLUSTRATIONS: Record<
     height: CARD_HEIGHT,
     src: "/research-news/c-deer.webp",
     width: CARD_WIDTH,
+  },
+  "forest-lake": {
+    height: 720,
+    src: "/research-news/c-forest-lake-feature.webp",
+    width: 1280,
   },
   "forest-path": {
     height: CARD_HEIGHT,
@@ -82,11 +89,14 @@ const CARD_ILLUSTRATIONS: Record<
   },
 };
 
-const NEUTRAL_ILLUSTRATIONS = [
-  "woodland-wetland",
-  "forest-path",
+/** Opening grid: six different pictures, then the same cycle. */
+const PLACEHOLDER_ILLUSTRATIONS = [
+  "tick",
+  "sampling",
+  "laboratory",
+  "deer",
   "meadow",
-  "woodland-trail",
+  "forest-lake",
 ] as const satisfies readonly FeedIllustrationId[];
 
 const TOPIC_RULES: readonly {
@@ -121,27 +131,26 @@ function illustration(id: FeedIllustrationId): FeedCardIllustration {
   return { id, ...CARD_ILLUSTRATIONS[id] };
 }
 
-/** The same item id always selects the same neutral image. */
-function neutralIllustrationIndex(itemId: string): number {
-  let hash = 0;
-  for (const char of itemId) {
-    hash = (hash + (char.codePointAt(0) ?? 0)) % 997;
-  }
-  return hash % NEUTRAL_ILLUSTRATIONS.length;
+function placeholderIllustrationIndex(slot: number): number {
+  const count = PLACEHOLDER_ILLUSTRATIONS.length;
+  const index = slot % count;
+  return index < 0 ? index + count : index;
 }
 
-export function feedCardIllustration(entry: {
-  item_id: string;
-  tags: readonly string[];
-}): FeedCardIllustration {
+export function feedCardIllustration(
+  entry: {
+    item_id: string;
+    tags: readonly string[];
+  },
+  slot = 0
+): FeedCardIllustration {
   const tags = entry.tags.join(" \n ");
   for (const rule of TOPIC_RULES) {
     if (rule.pattern.test(tags)) {
       return illustration(rule.id);
     }
   }
-  const neutral =
-    NEUTRAL_ILLUSTRATIONS[neutralIllustrationIndex(entry.item_id)] ??
-    "woodland-wetland";
-  return illustration(neutral);
+  const placeholder =
+    PLACEHOLDER_ILLUSTRATIONS[placeholderIllustrationIndex(slot)] ?? "meadow";
+  return illustration(placeholder);
 }

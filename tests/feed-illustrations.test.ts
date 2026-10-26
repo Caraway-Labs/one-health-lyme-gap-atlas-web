@@ -36,22 +36,20 @@ describe("research news illustrations", () => {
     ).toBe("laboratory");
   });
 
-  it("uses a stable woodland image when tags do not name a topic", () => {
-    const first = feedCardIllustration({
-      item_id: "item-without-topics",
-      tags: [],
-    });
-    const again = feedCardIllustration({
-      item_id: "item-without-topics",
-      tags: ["Weekly report"],
-    });
-    expect(first).toStrictEqual(again);
-    expect([
-      "woodland-wetland",
-      "forest-path",
-      "meadow",
-      "woodland-trail",
-    ]).toContain(first.id);
-    expect(first.src.endsWith(".webp")).toBeTruthy();
+  it("gives the first six untagged cards six different pictures", () => {
+    const ids = Array.from(
+      { length: 6 },
+      (_, slot) =>
+        feedCardIllustration(
+          { item_id: `item-${slot}`, tags: ["Weekly report"] },
+          slot
+        ).id
+    );
+    expect(new Set(ids).size).toBe(6);
+    expect(
+      feedCardIllustration({ item_id: "item-0", tags: [] }, 0)
+    ).toStrictEqual(
+      feedCardIllustration({ item_id: "item-0", tags: ["Weekly report"] }, 0)
+    );
   });
 });

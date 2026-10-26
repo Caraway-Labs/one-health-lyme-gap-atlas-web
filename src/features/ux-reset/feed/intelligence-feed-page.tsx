@@ -17,11 +17,6 @@ import {
 } from "@/lib/atlas-analytics";
 
 import {
-  selectFeaturedFeedArticle,
-  FEATURED_FEED_SUBSET_NOTE,
-} from "./feed-feature";
-import { FeedFeaturedArticle } from "./feed-featured-article";
-import {
   activeFeedFilterCount,
   DEFAULT_FEED_PUBLISHED,
   FEED_PUBLISHED_LABELS,
@@ -377,8 +372,6 @@ export function IntelligenceFeedExperience() {
     );
   } else {
     state = "ready";
-    const articles = selectFeaturedFeedArticle(items);
-    const moreAvailable = Boolean(feed.hasNextPage);
     body = (
       <>
         {refreshFailure ? (
@@ -397,36 +390,19 @@ export function IntelligenceFeedExperience() {
               : "The last loaded items are still shown."}
           </AtlasStatusMessage>
         ) : null}
-        {articles.featured ? (
-          <ul className="ux-reset-feed-feature-list">
-            <FeedFeaturedArticle
-              entry={articles.featured}
-              itemCaveats={itemFeedCaveats(articles.featured, sharedCaveats)}
-              moreAvailable={moreAvailable}
-              onOpen={openDetail}
-            />
+        {items.length > 0 ? (
+          <ul className="ux-reset-feed-list">
+            {items.map((entry, index) => (
+              <FeedItemCard
+                eagerImage={index < 6}
+                entry={entry}
+                imageSlot={index}
+                itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
+                key={`${entry.item_id}:${entry.revision_id}:${index}`}
+                onOpen={openDetail}
+              />
+            ))}
           </ul>
-        ) : null}
-        {articles.featured && moreAvailable ? (
-          <p className="ux-reset-feed-subset-note">
-            {FEATURED_FEED_SUBSET_NOTE}
-          </p>
-        ) : null}
-        {articles.rest.length > 0 ? (
-          <>
-            <h2 className="ux-reset-feed-latest-heading">Latest articles</h2>
-            <ul className="ux-reset-feed-list">
-              {articles.rest.map((entry, index) => (
-                <FeedItemCard
-                  eagerImage={index < 2 && articles.featured === null}
-                  entry={entry}
-                  itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
-                  key={`${entry.item_id}:${entry.revision_id}:${index}`}
-                  onOpen={openDetail}
-                />
-              ))}
-            </ul>
-          </>
         ) : null}
         <p className="ux-reset-feed-imagery-note">
           {RESEARCH_NEWS_IMAGERY_NOTE}
