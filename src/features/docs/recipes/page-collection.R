@@ -27,17 +27,33 @@ format_delay <- function(delay) {
   }
 }
 
+numeric_value <- function(value) {
+  if (is.null(value) || length(value) == 0 || is.na(value[[1]])) {
+    return(NA_real_)
+  }
+  if (is.numeric(value)) {
+    return(as.numeric(value[[1]]))
+  }
+  text <- value[[1]]
+  if (is.character(text) && grepl("^-?[0-9]*\\.?[0-9]+$", text)) {
+    return(as.numeric(text))
+  }
+  stop("Atlas value is not a number or null")
+}
+
 format_value <- function(value) {
   if (is.null(value) || length(value) == 0 || is.na(value[[1]])) {
     return("null")
   }
-  if (is.character(value)) {
-    return(value[[1]])
+  number <- as.numeric(value[[1]])
+  if (isTRUE(all.equal(number, round(number)))) {
+    return(sprintf("%.0f", number))
   }
-  if (isTRUE(all.equal(value, round(value)))) {
-    return(sprintf("%.0f", value))
+  text <- format(number, digits = 16, scientific = FALSE, trim = TRUE)
+  if (as.numeric(text) != number) {
+    text <- format(number, digits = 17, scientific = FALSE, trim = TRUE)
   }
-  gsub("\\s+", "", jsonlite::toJSON(value[[1]], auto_unbox = TRUE, digits = 16))
+  text
 }
 
 problem_fields <- function(response) {
@@ -93,7 +109,7 @@ read_rows <- function(response) {
       list(
         period_start = as.character(item$period_start),
         geography_id = as.character(item$geography$geography_id),
-        value = format_value(item$value),
+        value = numeric_value(item$value),
         value_state = as.character(item$value_state),
         release_id = as.character(item$release_id)
       )
@@ -140,19 +156,29 @@ frame <- bind_rows(frames) |>
     geography_id = as.character(geography_id),
     null_state = value_state %in% null_states
   )
+if (!is.numeric(frame$value)) {
+  stop("value must stay numeric so a JSON null stays NA")
+}
 if (any(nchar(frame$geography_id) != 5) || any(!grepl("^[0-9]{5}$", frame$geography_id))) {
   stop("FIPS must stay a 5-character string")
 }
-if (any(frame$null_state & frame$value == "0")) {
+if (any(frame$null_state & !is.na(frame$value) & frame$value == 0)) {
   stop("null value was coerced to zero")
 }
-if (any(frame$null_state & frame$value != "null")) {
+if (any(frame$null_state & !is.na(frame$value))) {
   stop("null value_state returned a value")
 }
 
 lines <- frame |>
   mutate(
-    line = paste(period_start, geography_id, value, value_state, release_id, sep = ",")
+    line = paste(
+      period_start,
+      geography_id,
+      vapply(value, format_value, character(1)),
+      value_state,
+      release_id,
+      sep = ","
+    )
   ) |>
   pull(line)
 if (length(notes) > 0) {
