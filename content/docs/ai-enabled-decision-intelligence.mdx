@@ -3,9 +3,9 @@ title: AI-enabled decision intelligence
 description: Understand what AI means in One Health Atlas, what is available now, and which future capabilities still require release and human review.
 ---
 
-One Health Atlas is an **Epidemiologist Decision Intelligence Platform**. The product direction is AI-enabled: it is intended to help people organize, compare, synthesize, and explain governed One Health evidence so they can decide what deserves investigation.
+Epidemiologists use this page to see what “AI-enabled” means today, which assistance is released, and which decisions stay in human review.
 
-AI-enabled does not mean that Atlas replaces epidemiologists or turns a score into a prediction. The preferred public-health framing is:
+One Health Atlas is an **Epidemiologist Decision Intelligence Platform**. AI-enabled means help with organizing and explaining governed evidence. It does not replace an epidemiologist or turn a score into a prediction. The framing is:
 
 **signals → evidence → hypotheses → anomaly candidates → investigation priorities**
 
@@ -16,40 +16,22 @@ Each step must remain interpretable, bounded by the evidence, clear about uncert
 | Capability | Status | What you can rely on |
 | --- | --- | --- |
 | Transparent follow-up-priority scoring | Available now | The current score is a deterministic, adjustable calculation over released inputs. It helps focus review; it is not a predictive model, diagnosis, causal claim, disease-burden estimate, or individual-risk output. |
-| Model-assisted surveillance review priority | Available now | Signed-in Atlas Explorer can show a persisted HIGH, MEDIUM, or LOW tier for the selected county and on county evidence when that tier's release matches the selected evidence release. Atlas withholds the tier when the returned release differs from the evidence on screen, and when the governed release for the page is not known. A withheld, missing, or not-estimable result is not shown as LOW. The tier is review prioritization, not disease risk, predicted incidence, a diagnosis, or an autonomous decision. It is separate from the rules-based county review score. |
-| Public evidence and provenance context | Available now | The Explorer provides released signals, source/release/method context, limitations, and a table path for reviewing results. Start with [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). |
-| Atlas Assistant: reviewed literature | Early access, feature-gated | `/assistant` can ask the Atlas API about reviewed PubMed and PMC Open Access literature when enabled. Answers include cited evidence and explicit unavailable-evidence outcomes. This does not query live Atlas geography or scores, provide medical advice, or replace human review. |
-| Ask Atlas in the professional workspace | Experimental/demo | Atlas Explorer and Compare open the dedicated [Ask Atlas page](/askatlas). When literature chat is enabled, it uses that same reviewed-literature service and leaves navigation with you. When it is disabled, the Ask Atlas page says Ask Atlas is unavailable and the other workspace pages stay usable. The request is a message plus optional conversation history. There is no Structured mode and no Both mode. |
-| Ask Atlas page at `/askatlas` | Experimental/demo | The dedicated page uses the reviewed-literature service. Saved chats stay in this browser. It does not offer Structured or Both mode, and it does not store chats on Atlas servers. |
-| Broader Atlas evidence assistant | Planned | Mixed Atlas data and knowledge-graph questions need separate governed work and release review. This is not a released capability. |
-| Anomaly candidates and interpretable modeling | Planned | Future forecasts or anomaly outputs may help identify unusual patterns or explain modeled context. They are not released. The deployed model-assisted surveillance review priority is not a forecast. |
-| Literature monitoring or agent assistance | Planned | Future monitoring or agent workflows must use approved sources and explicit release controls. Released MCP evidence tools are anonymous reads of governed public evidence. They do not run an agent. The September 2026 smoke-only development receipt is historical. See [API, MCP, and access](/docs/api-mcp-and-access). |
+| Model-assisted surveillance review priority | Available now | Signed-in Atlas Explorer can show a persisted HIGH, MEDIUM, or LOW tier when that tier's release matches the selected evidence release. Atlas withholds the tier when the returned release differs, and when the governed release for the page is not known. A withheld, missing, or not-estimable result is not shown as LOW. The tier is review prioritization, not disease risk, predicted incidence, a diagnosis, or an autonomous decision. It is separate from the rules-based county review score. |
+| Public evidence and provenance context | Available now | Released signals, source and method context, limitations, and a table path. Start with [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). |
+| Atlas Assistant: reviewed literature | Early access, feature-gated | `/assistant` asks the API about reviewed PubMed and PMC Open Access literature when enabled, with cited evidence or an unavailable-evidence outcome. It does not query live geography or scores, give medical advice, or replace review. |
+| Ask Atlas in the professional workspace | Experimental/demo | Explorer and Compare open [Ask Atlas](/askatlas). Enabled chat uses the same literature service. Disabled chat leaves the other pages usable. The request is a message plus optional history. No Structured mode and no Both mode. |
+| Ask Atlas page at `/askatlas` | Experimental/demo | Chats stay in this browser, not on Atlas servers. |
+| Broader Atlas evidence assistant | Planned | Mixed data and knowledge-graph questions are not released. |
+| Anomaly candidates and interpretable modeling | Planned | Forecasts and anomaly outputs are not released. The review-priority tier is not a forecast. |
+| Literature monitoring or agent assistance | Planned | Not released. MCP evidence tools are anonymous reads and do not run an agent. The September 2026 smoke-only development receipt is historical. See [API, MCP, and access](/docs/api-mcp-and-access). |
 
-The status labels are intentionally explicit. A planned architecture, a design exploration, or a local demo is not evidence that a capability is available in the public release.
-
-## What the current release does
-
-Today, Atlas helps you:
-
-- explore public county and state patterns;
-- review human disease, tick/vector, pathogen, environmental, population, and related context when released;
-- inspect the source, vintage, geography, release, method, completeness, and limitations behind a result;
-- compare supported geographies descriptively; and
-- turn a review-priority signal or evidence gap into a bounded investigation question.
-
-See [current capabilities](/docs/current-capabilities) and [investigation workflows](/docs/investigation-workflows) for the released behavior and task steps.
+A planned architecture, a design exploration, or a local demo is not evidence that a capability is available in the public release.
 
 ## What human review means
 
-Use an AI-assisted or analytical output as a prompt for review. A responsible reviewer should:
+Use an AI-assisted output as a prompt for review. Check source and provenance. Confirm geography, period, coverage, and method. Separate an observation from a derived score or a model. State missing evidence. Choose validation, local review, more analysis, consultation, or no action. If the output cannot show its evidence and limits, treat it as unavailable. Do not infer certainty from fluent language, a rank, a map color, or a generated summary.
 
-1. check the source and provenance;
-2. verify that the geography, period, coverage, and method fit the question;
-3. distinguish observed evidence from a derived score, contextual evidence, or modeled output;
-4. state missing evidence and uncertainty rather than filling gaps with assumptions; and
-5. decide whether source validation, local surveillance review, additional analysis, expert consultation, or no action is appropriate.
-
-If an output cannot show the evidence and limits needed for that review, treat it as unavailable. Do not infer certainty from fluent language, a rank, a map color, or an AI-generated summary.
+Released behavior is in [current capabilities](/docs/current-capabilities) and [investigation workflows](/docs/investigation-workflows).
 
 ## What Atlas AI is not for
 
@@ -62,4 +44,4 @@ Atlas does not:
 - convert missing surveillance into evidence of absence or zero; or
 - make an automatic public-health decision or replace epidemiologists, analysts, local knowledge, or responsible authorities.
 
-The [AI Ethics commitments](/ai-ethics) are the public page for AI status, boundaries, and open decisions. The professional workspace footer opens that same page. Privacy and data-use commitments belong on the [Privacy page](/privacy); this guide does not add to either policy source.
+The [AI Ethics commitments](/ai-ethics) are the public page for AI status, boundaries, and open decisions. The professional workspace footer opens that same page. Privacy and data-use commitments belong on the [Privacy page](/privacy). This guide does not add to either policy source.
