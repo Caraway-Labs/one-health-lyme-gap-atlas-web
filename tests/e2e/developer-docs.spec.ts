@@ -844,10 +844,19 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
     .click();
   await expect(page).toHaveURL(/\/docs\/api-reference\/observations\/?$/);
   await page.goto("/docs/develop/recipes");
-  await page
+  // The saved client is applied after the document loads. Until then the
+  // triggers still show the default Python tab, and a click does not change
+  // the saved choice. R is the choice from the keyboard step above.
+  const recipeR = page.getByRole("tab", { exact: true, name: "R" }).first();
+  await expect(recipeR).toHaveAttribute("aria-selected", "true");
+  const recipeTypeScript = page
     .getByRole("tab", { exact: true, name: "TypeScript" })
-    .first()
-    .click();
+    .first();
+  await recipeTypeScript.click();
+  await expect(recipeTypeScript).toHaveAttribute("aria-selected", "true");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("atlas-http-client")))
+    .toBe("typescript");
 
   await page.goto("/docs/develop/quickstart");
   await expectClientLanguage(page, "TypeScript", "await fetch(url)");
