@@ -16,6 +16,7 @@ const developPages = [
   "index",
   "quickstart",
   "errors",
+  "recipes",
   "rest",
   "geography",
   "resources",
