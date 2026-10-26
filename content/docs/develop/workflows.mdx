@@ -68,7 +68,7 @@ FIPS `08001` is outside the selected geographies. The request returned HTTP 200 
 
 ## Read common response states
 
-HTTP 200 can be a row, `data: []`, or a partial set. An absent county is not a zero. Read `value_state` first. HTTP 404 `RESOURCE_NOT_FOUND` is declared, and a legacy 404 can omit `code`. HTTP 400 is `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, or `QUERY_TOO_BROAD` above 10,000 results. The API never truncates results. HTTP 429 and 503 include `Retry-After`. Keep `request_id`. Limited rows stay `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`, with a null area or null context left null. `PARTIAL_COVERAGE`, `SOURCE_MISSING`, and `OUT_OF_SOURCE_COVERAGE` are coverage gaps.
+HTTP 200 can be a row, `data: []`, or a partial set. An absent county is not a zero. Read `value_state` first. HTTP 404 `RESOURCE_NOT_FOUND` is declared, and a legacy 404 can omit `code`. HTTP 400 is `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, or `QUERY_TOO_BROAD` above 10,000 results. The API never truncates results. HTTP 429 and 503 include `Retry-After`. Keep `request_id`. Codes and retries: [Errors and retries](/docs/develop/errors). Limited rows stay `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`, with a null area or null context left null. `PARTIAL_COVERAGE`, `SOURCE_MISSING`, and `OUT_OF_SOURCE_COVERAGE` are coverage gaps.
 
 ## Reproduce and cite an observation
 

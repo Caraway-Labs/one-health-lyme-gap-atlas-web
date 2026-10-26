@@ -40,25 +40,11 @@ Do not invent a token.
 
 ## Honor rate limits
 
-`429` and `503` declare `Retry-After` ("Seconds to wait before you retry. Wait that long when the header is present."). The illustrative `429` uses `RATE_LIMITED`. No numeric quota, concurrency cap, or fixed range is published. Wait the stated seconds, then retry. Keep `request_id`.
+`429` and `503` can include `Retry-After`. No numeric quota, concurrency cap, or fixed range is published. Wait, then retry. Keep `request_id`. Rules: [Errors and retries](/docs/develop/errors#retries).
 
 ## Handle errors
 
-Canonical errors use RFC 9457 `application/problem+json`. Required fields: `type`, `title`, `status`, `detail`, `instance`, `request_id`. Optional: `code`, and `errors` as objects.
-
-| HTTP status | `code` | When it applies |
-| --- | --- | --- |
-| 400 | `INVALID_REQUEST` | Incomplete query or a value that fails validation |
-| 400 | `UNSUPPORTED_FILTER` | Unknown parameters, `sort`, `aggregation`, or another filter V1 rejects |
-| 400 | `UNSUPPORTED_STRATIFICATION` | `stratification` is sent. This release has no strata |
-| 400 | `QUERY_TOO_BROAD` | Above 10,000 results. The API never truncates results |
-| 404 | `RESOURCE_NOT_FOUND` | Unknown canonical resource id |
-| 413 | `INVALID_REQUEST` | A GET request includes a body |
-| 414 | `INVALID_REQUEST` | The query string is too long |
-| 429 | `RATE_LIMITED` | Wait. Read `Retry-After` |
-| 503 | `SERVICE_UNAVAILABLE` | Data service unavailable. Read `Retry-After` when present. Geography identity pending is HTTP `200` `CANONICAL_GEOGRAPHY_UNPUBLISHED`, not `503` |
-
-Legacy routes keep existing statuses, including `422` and `404`. A sample `GET /v1/counties/00000` returned HTTP 404 `application/problem+json`, detail `County or dataset release not found`, and no `code`. Do not require `code` on every problem body.
+Canonical errors use RFC 9457 `application/problem+json`. Required fields: `type`, `title`, `status`, `detail`, `instance`, `request_id`. Optional: `code`, and `errors` as objects. Codes, HTTP 413, HTTP 414, HTTP 422, and retries: [Errors and retries](/docs/develop/errors).
 
 ## Tell versions apart
 
