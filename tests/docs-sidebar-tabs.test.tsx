@@ -38,6 +38,7 @@ const layoutSlots = vi.hoisted(() => ({
           className?: string;
         }) => ReactNode;
       };
+      themeSwitch?: (props: { className?: string }) => ReactNode;
     },
   },
 }));
@@ -432,6 +433,17 @@ describe("documentation sidebar tabs", () => {
       search: "BUTTON",
       sidebar: "BUTTON",
     });
+  });
+
+  it("places the theme switch in the docs header", () => {
+    layoutSlots.current.slots = {
+      themeSwitch: () => <div role="group">Theme</div>,
+    };
+    pathname = "/docs";
+    renderTabs(withDocsSidebarTabs(fixtureTree()), <DocsHeader />);
+    expect(
+      document.querySelector("#nd-subnav")?.textContent?.includes("Theme")
+    ).toBeTruthy();
   });
 
   it("keeps the Developers link when header slots are absent", () => {

@@ -315,7 +315,7 @@ function LabeledSelect({
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner align={align} className="z-50" sideOffset={4}>
-          <Select.Popup className="bg-fd-popover text-fd-popover-foreground relative z-50 max-w-80 min-w-[calc(var(--anchor-width)+--spacing(2))] overflow-hidden rounded-lg border shadow-md">
+          <Select.Popup className="atlas-docs-root bg-fd-popover text-fd-popover-foreground relative z-50 max-w-80 min-w-[calc(var(--anchor-width)+--spacing(2))] overflow-hidden rounded-lg border shadow-md">
             <Select.List className="p-1">
               {options.map((option) => (
                 <Select.Item

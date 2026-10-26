@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 
 import "./globals.css";
 import { RouteChrome } from "@/components/route-chrome";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { docsThemeBootScript } from "@/lib/docs-theme";
 import { getMetadataBase } from "@/lib/public-origins";
 
 import { Providers } from "./providers";
@@ -56,8 +58,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={inter.variable} lang="en" data-scroll-behavior="smooth">
+    <html
+      className={inter.variable}
+      data-scroll-behavior="smooth"
+      lang="en"
+      suppressHydrationWarning
+    >
       <body>
+        <Script id="atlas-docs-theme" strategy="beforeInteractive">
+          {docsThemeBootScript()}
+        </Script>
         <TooltipProvider>
           <Providers>
             <RouteChrome>{children}</RouteChrome>

@@ -272,7 +272,7 @@ function LabeledSelect({
         >
           <SelectValue>{display}</SelectValue>
         </SelectTrigger>
-        <SelectContent>{children}</SelectContent>
+        <SelectContent className="atlas-docs-root">{children}</SelectContent>
       </Select>
     </div>
   );

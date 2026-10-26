@@ -7,7 +7,9 @@
 /* Lyme Atlas design tokens.
    Semantic chrome tokens (--background, --primary, …) are for application UI.
    Domain/viz tokens (--navy, --teal, map ramps, --priority-*) keep data meaning.
-   Token architecture is dark-mode-capable via CSS variables; no dark theme is shipped. */
+   Token architecture is dark-mode-capable via CSS variables.
+   The signed-in app stays light. Docs dark tokens are scoped to
+   `.dark .atlas-docs-root` (see ADR 0023). */
 :root {
   /* Atlas domain palette: geography, evidence, and branded exceptions. */
   --navy: #082a4d;
@@ -628,6 +630,79 @@ body {
   --color-orange-600: #9a3412;
   --color-red-600: #991b1b;
   --color-yellow-600: #854d0e;
+  background: var(--color-fd-background);
+  color: var(--color-fd-foreground);
+  color-scheme: light;
+}
+/* Docs-only dark theme. The class lives on the document element so Fumadocs
+   `dark:` styles and Shiki dark colors apply, and these tokens stop at the
+   docs root so the signed-in app is unchanged. */
+.dark .atlas-docs-root {
+  --background: #0e1a27;
+  --foreground: #e7eef4;
+  --card: #162636;
+  --card-foreground: #e7eef4;
+  --popover: #162636;
+  --popover-foreground: #e7eef4;
+  --primary: #7dcec4;
+  --primary-foreground: #062d36;
+  --primary-hover: #9adcd4;
+  --secondary: #1c3144;
+  --secondary-foreground: #e7eef4;
+  --muted: #1c3144;
+  --muted-foreground: #c5d2dc;
+  --accent: #1e4d48;
+  --accent-foreground: #e7f6f4;
+  --border: #6a8498;
+  --input: #6a8498;
+  --ring: #8ee0d6;
+  --ink: #e7eef4;
+  --navy: #e7eef4;
+  --teal: #7dcec4;
+  --teal-dark: #9be3da;
+  --mint: #1e4d48;
+  --pale: #1c3144;
+  --color-fd-accent: #1e4d48;
+  --color-fd-accent-foreground: #e7f6f4;
+  --color-fd-background: var(--background);
+  --color-fd-border: var(--border);
+  --color-fd-card: var(--card);
+  --color-fd-card-foreground: var(--card-foreground);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-muted: var(--muted);
+  --color-fd-muted-foreground: var(--muted-foreground);
+  --color-fd-popover: var(--popover);
+  --color-fd-popover-foreground: var(--popover-foreground);
+  --color-fd-primary: #9be3da;
+  --color-fd-primary-foreground: #062d36;
+  --color-fd-secondary: var(--secondary);
+  --color-fd-secondary-foreground: var(--secondary-foreground);
+  --color-fd-ring: var(--ring);
+  --color-fd-overlay: rgba(2, 8, 14, 0.72);
+  --color-fd-info: #9ec5ff;
+  --color-fd-warning: #ffd27a;
+  --color-fd-error: #ffb4a8;
+  --color-fd-success: #9ed9b0;
+  --color-fd-idea: #ffe08a;
+  color-scheme: dark;
+}
+.dark .atlas-docs-root #nd-sidebar {
+  --color-fd-muted: #1c3144;
+  --color-fd-muted-foreground: #c5d2dc;
+  --color-fd-secondary: #1c3144;
+}
+/* One theme control, in the docs header. Hide the sidebar and drawer copies. */
+.atlas-docs-root [data-docs-theme-switch] {
+  display: none;
+}
+.atlas-docs-root #nd-subnav [data-docs-theme-switch] {
+  display: inline-flex;
+}
+.atlas-docs-root #nd-sidebar div:has(> [data-docs-theme-switch]:only-child),
+.atlas-docs-root
+  #nd-sidebar
+  > div:has(> div > [data-docs-theme-switch]:only-child) {
+  display: none;
 }
 /* Fumadocs accordion triggers clear the outline. Restore the site focus ring. */
 .atlas-docs-root :is(a, button):focus-visible {
