@@ -53,7 +53,10 @@ test("annotates provenance citation, null semantics, and field names", async ({
   ).toBeVisible();
   await saveShot(page, "provenance-citation-steps");
 
-  await page.getByRole("button", { name: /value_state/u }).click();
+  await page
+    .locator("#value-state-null")
+    .getByRole("button", { name: /value_state/u })
+    .click();
   await expect(
     page.getByText("Never treat a `null` value as zero")
   ).toBeVisible();
@@ -70,7 +73,10 @@ test("annotates provenance citation, null semantics, and field names", async ({
   await gap.scrollIntoViewIfNeeded();
   await saveShot(page, "provenance-annotated-gap");
 
-  await page.getByRole("button", { name: /source_label/u }).click();
+  await page
+    .locator("#provenance-field-names")
+    .getByRole("button", { name: /source_label/u })
+    .click();
   await expect(
     page.getByText("The source resource field with this value is label.")
   ).toBeVisible();
