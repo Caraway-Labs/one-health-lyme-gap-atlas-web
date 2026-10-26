@@ -15,6 +15,13 @@ import { parse, stringify } from "yaml";
 import { showsPendingDeliveryBadge } from "./endpoint-delivery";
 import { markdownTableCell } from "./markdown-table";
 import {
+  PINNED_OPENAPI_DOWNLOAD_NAME,
+  PINNED_OPENAPI_PROVENANCE_NAME,
+  POSTMAN_COLLECTION_DOWNLOAD_NAME,
+  PUBLIC_DOWNLOADS_RELATIVE_DIR,
+  renderPublicClientDownloads,
+} from "./public-openapi-downloads";
+import {
   componentSchemaNames,
   renderOperationSchemaLine,
   renderSchemaCatalog,
@@ -396,8 +403,27 @@ export async function syncPublicApiReference(options: {
   const directory = path.join(options.root, API_REFERENCE_RELATIVE_DIR);
   const actual = readGeneratedFiles(directory);
 
+  const specBytes = readFileSync(
+    path.join(options.root, PUBLIC_OPENAPI_RELATIVE_PATH)
+  );
+  const downloads = await renderPublicClientDownloads({
+    provenance: contract.provenance,
+    specBytes,
+  });
+  const downloadDirectory = path.join(
+    options.root,
+    PUBLIC_DOWNLOADS_RELATIVE_DIR
+  );
+  const downloadDifferences = compareGeneratedFiles(
+    downloads,
+    readGeneratedFiles(downloadDirectory)
+  );
+
   if (options.check) {
-    const differences = compareGeneratedFiles(expected, actual);
+    const differences = [
+      ...compareGeneratedFiles(expected, actual),
+      ...downloadDifferences.map((difference) => `downloads ${difference}`),
+    ];
     if (differences.length > 0) {
       throw new PublicOpenApiContractError(
         "stale_reference",
@@ -417,6 +443,10 @@ export async function syncPublicApiReference(options: {
     if (!expected.has(relativePath)) {
       rmSync(path.join(directory, relativePath));
     }
+  }
+  mkdirSync(downloadDirectory, { recursive: true });
+  for (const [relativePath, contents] of downloads) {
+    writeFileSync(path.join(downloadDirectory, relativePath), contents);
   }
 }
 
@@ -1563,6 +1593,15 @@ function renderReferenceIndex(
     `Raw spec: [OpenAPI schema](${provenance.sourceUrl}).`,
     "",
     `Pinned source: [${provenance.sourceRepository}@${provenance.sourceCommit}](https://github.com/${provenance.sourceRepository}/blob/${provenance.sourceCommit}/${provenance.sourcePath}).`,
+    "",
+    "## Downloads",
+    "",
+    "Import the pinned contract into a client, or download the file the reference was generated from.",
+    "",
+    `- [Raw OpenAPI schema](${provenance.sourceUrl}).`,
+    `- [Pinned contract](/downloads/${PINNED_OPENAPI_DOWNLOAD_NAME}). Commit \`${escapeInline(provenance.sourceCommit)}\`. Checksum \`${escapeInline(provenance.sha256)}\`.`,
+    `- [Checksum and commit](/downloads/${PINNED_OPENAPI_PROVENANCE_NAME}).`,
+    `- [Postman collection](/downloads/${POSTMAN_COLLECTION_DOWNLOAD_NAME}). Generated from the pinned contract.${contract.servers[0]?.url ? ` The collection variable \`baseUrl\` is \`${escapeInline(contract.servers[0].url)}\`.` : ""}`,
   ];
   if (contract.servers.length > 0) {
     lines.push("", "## Servers", "");

@@ -22,5 +22,8 @@ export default defineConfig({
     "contracts/openapi.json",
     // Generator output. docs:api:check compares these files to the pin.
     "content/docs/api-reference/**",
+    // Pinned contract bytes plus the generated Postman collection. Formatting
+    // would change the checksum or the docs:api:check snapshot.
+    "public/downloads/**",
   ],
 });

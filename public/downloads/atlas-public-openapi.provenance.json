@@ -1,0 +1,8 @@
+{
+  "filename": "atlas-public-openapi.json",
+  "sha256": "c8e0b42feb019eabc4ee0033e7501d5134c946c74750432f7bd5a1ee32a44618",
+  "sourceCommit": "4bc001bb6c03d16aef80762174691fdf9b898707",
+  "sourcePath": "openapi.json",
+  "sourceRepository": "Caraway-Labs/one-health-lyme-gap-atlas-api",
+  "sourceUrl": "https://api.onehealthatlas.org/openapi.json"
+}
