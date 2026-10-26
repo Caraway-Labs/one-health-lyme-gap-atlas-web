@@ -128,7 +128,9 @@ test("shows the evidence flow in words and at 375px", async ({ page }) => {
   await waitForVisibleDiagram(page);
   const caption = page.locator(".docs-mermaid figcaption");
   for (const step of evidenceFlowSteps) {
-    await expect(caption.getByText(step.title, { exact: false })).toBeVisible();
+    await expect(
+      caption.getByText(`${step.title}.`, { exact: true })
+    ).toBeVisible();
   }
   await expect(caption).toContainText("Null is not zero");
   await expect(caption).toContainText("not a literature citation");

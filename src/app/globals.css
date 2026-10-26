@@ -720,13 +720,13 @@ body {
   max-width: min(100%, 22rem);
   height: auto;
 }
-.atlas-docs-root .docs-mermaid-dark {
+.atlas-docs-root .docs-mermaid img.docs-mermaid-dark {
   display: none;
 }
-.dark .atlas-docs-root .docs-mermaid-light {
+.dark .atlas-docs-root .docs-mermaid img.docs-mermaid-light {
   display: none;
 }
-.dark .atlas-docs-root .docs-mermaid-dark {
+.dark .atlas-docs-root .docs-mermaid img.docs-mermaid-dark {
   display: block;
 }
 .atlas-docs-root .docs-mermaid figcaption {
