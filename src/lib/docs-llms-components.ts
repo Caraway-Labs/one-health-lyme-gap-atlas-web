@@ -3,6 +3,7 @@ import {
   playgroundProxyPath,
 } from "@/features/docs/api-playground-operations";
 import { displayGeometryCurl } from "@/features/docs/display-geometry-example";
+import { evidenceFlowMarkdown } from "@/features/docs/evidence-flow";
 import {
   lookupGlossaryTerm,
   renderGlossaryMarkdown,
@@ -136,6 +137,10 @@ function renderKnownComponent(
     }
     case "EndpointDeliveryBadge": {
       return `${PENDING_DELIVERY_BADGE_LABEL} ${PENDING_DELIVERY_NOTE}`;
+    }
+    case "EvidenceFlowDiagram":
+    case "Mermaid": {
+      return evidenceFlowMarkdown();
     }
     case "HttpClientPagination": {
       return clientExampleMarkdown(

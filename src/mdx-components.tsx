@@ -8,6 +8,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 import type { ComponentProps } from "react";
 
+import { Mermaid } from "@/components/docs-mermaid";
 import { OpenAPIPage } from "@/components/docs-openapi-page";
 import { GlossaryList, Term } from "@/features/docs/term";
 
@@ -50,6 +51,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Card,
     Cards,
     GlossaryList,
+    Mermaid,
     OpenAPIPage,
     Step,
     Steps,

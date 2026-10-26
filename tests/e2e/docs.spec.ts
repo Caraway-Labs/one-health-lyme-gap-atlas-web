@@ -517,7 +517,10 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByRole("cell", { name: publicOpenApiManifest.sha256 })
   ).toBeVisible();
-  const rawSpec = page.getByRole("link", { name: "OpenAPI schema" });
+  const rawSpec = page.getByRole("link", {
+    exact: true,
+    name: "OpenAPI schema",
+  });
   await expect(rawSpec).toHaveAttribute(
     "href",
     "https://api.onehealthatlas.org/openapi.json"

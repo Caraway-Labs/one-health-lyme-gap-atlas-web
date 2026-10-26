@@ -34,13 +34,19 @@ function collectFiles(directory, predicate) {
 function routeExists(routePath) {
   const normalizedRoute = routePath === "/" ? "" : routePath.slice(1);
   const routeRoot = path.join(appRoot, normalizedRoute);
-  return [
-    path.join(routeRoot, "page.tsx"),
-    path.join(routeRoot, "page.ts"),
-    path.join(routeRoot, "page.mdx"),
-    path.join(routeRoot, "route.ts"),
-    path.join(routeRoot, "route.tsx"),
-  ].some((candidate) => fs.existsSync(candidate));
+  if (
+    [
+      path.join(routeRoot, "page.tsx"),
+      path.join(routeRoot, "page.ts"),
+      path.join(routeRoot, "page.mdx"),
+      path.join(routeRoot, "route.ts"),
+      path.join(routeRoot, "route.tsx"),
+    ].some((candidate) => fs.existsSync(candidate))
+  ) {
+    return true;
+  }
+  const publicFile = path.join(repositoryRoot, "public", normalizedRoute);
+  return fs.existsSync(publicFile) && fs.statSync(publicFile).isFile();
 }
 
 function docsSlugFromPath(pathPart) {

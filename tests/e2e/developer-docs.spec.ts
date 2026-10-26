@@ -59,8 +59,26 @@ test("publishes onehealthatlas canonical URLs and contract links", async ({
     "https://onehealthatlas.org/docs/api-reference"
   );
   await expect(
-    page.getByRole("link", { name: "OpenAPI schema" })
+    page.getByRole("link", { exact: true, name: "OpenAPI schema" })
   ).toHaveAttribute("href", "https://api.onehealthatlas.org/openapi.json");
+  await expect(
+    page.getByRole("link", { name: "Pinned contract" })
+  ).toHaveAttribute("href", "/downloads/atlas-public-openapi.json");
+  await expect(
+    page.getByRole("link", { name: "Checksum and commit" })
+  ).toHaveAttribute("href", "/downloads/atlas-public-openapi.provenance.json");
+  await expect(
+    page.getByRole("link", { name: "Postman collection" })
+  ).toHaveAttribute("href", "/downloads/atlas.postman_collection.json");
+  await expect(page.locator("main")).toContainText(/Commit\s+[0-9a-f]{40}/);
+  await expect(page.locator("main")).toContainText(/Checksum\s+[0-9a-f]{64}/);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page
+    .getByRole("heading", { exact: true, name: "Downloads" })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/after-api-reference-desktop.png",
+  });
   await expect(
     page.getByRole("link", {
       name: "Atlas documentation and developer guides",
