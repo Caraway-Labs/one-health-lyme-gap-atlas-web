@@ -3,7 +3,7 @@ title: Indicators, measures, and observations
 description: Discover indicators and measures, then read county observations with value states.
 ---
 
-Discover ids, then query one measure for a county and period. An indicator groups measures. A measure is one variable. An observation is that variable for one place and period. Use an example id only when discovery returns it.
+Discover ids, then query one measure for a county and period. An <Term id="indicator">indicator</Term> groups measures. A <Term id="measure">measure</Term> is one variable. An <Term id="observation">observation</Term> is that variable for one place and period. Use an example id only when discovery returns it.
 
 <Callout title="Interpret with care" type="warn">
   Atlas results are not a diagnosis. Atlas results are not an estimate of an
@@ -50,7 +50,9 @@ The same county and measure, with `start_date` 2023-01-01 and `end_date` 2023-12
 
 ## Read value_state
 
-`value` is a number, a string, or null. Null never means zero. Each state and what to do: [Errors and retries](/docs/develop/errors#value-states).
+<Term id="value_state">value_state</Term> says how to read `value`. `value` is a
+number, a string, or null. Null never means zero. Each state and what to do:
+[Errors and retries](/docs/develop/errors#value-states).
 
 A sample case-floor `strata` value was an empty object, not a breakdown.
 

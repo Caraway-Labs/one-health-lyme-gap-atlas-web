@@ -648,6 +648,33 @@ body {
   color: var(--navy);
   font-weight: 750;
 }
+.atlas-docs-root .docs-term {
+  position: relative;
+  display: inline;
+}
+.atlas-docs-root .docs-term-trigger {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--teal-dark);
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+.docs-term-panel a {
+  color: var(--teal-dark);
+  text-decoration: underline;
+}
+.atlas-docs-root .docs-glossary-term {
+  scroll-margin-top: 5rem;
+}
 button,
 input,
 select {

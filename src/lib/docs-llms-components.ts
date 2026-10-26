@@ -4,6 +4,10 @@ import {
 } from "@/features/docs/api-playground-operations";
 import { displayGeometryCurl } from "@/features/docs/display-geometry-example";
 import {
+  lookupGlossaryTerm,
+  renderGlossaryMarkdown,
+} from "@/features/docs/glossary-terms";
+import {
   type HttpClientBody,
   type HttpClientExamples,
   type HttpClientRequest,
@@ -108,6 +112,12 @@ function renderKnownComponent(
   switch (name) {
     case "Card": {
       return cardMarkdown(attributes);
+    }
+    case "GlossaryList": {
+      return renderGlossaryMarkdown();
+    }
+    case "Term": {
+      return lookupGlossaryTerm(requiredString(attributes, "id")).label;
     }
     case "ApiPlayground": {
       const operation = API_PLAYGROUND_OPERATIONS[0];
@@ -273,7 +283,16 @@ function unwrapStructuralTags(markdown: string): string {
     .replaceAll(/<Steps\b[^>]*>/g, "")
     .replaceAll("</Steps>", "")
     .replaceAll(/<Step\b[^>]*>/g, "")
-    .replaceAll("</Step>", "");
+    .replaceAll("</Step>", "")
+    .replaceAll(
+      /<Term\b(?<attributes>[^>]*)>(?<label>[\s\S]*?)<\/Term>/g,
+      (_match, attributeSource: string, label: string) => {
+        lookupGlossaryTerm(
+          requiredString(parseAttributes(attributeSource), "id")
+        );
+        return label;
+      }
+    );
 }
 
 function codeFence(code: string, language = ""): string {

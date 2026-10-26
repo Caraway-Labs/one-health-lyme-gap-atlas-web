@@ -84,6 +84,7 @@ const docsPages = [
     path: "/docs/faq-and-troubleshooting",
     heading: "FAQ and troubleshooting",
   },
+  { path: "/docs/glossary", heading: "Glossary" },
   ...generatedApiReferencePages(),
 ];
 

@@ -9,6 +9,7 @@ import type { MDXComponents } from "mdx/types";
 import type { ComponentProps } from "react";
 
 import { OpenAPIPage } from "@/components/docs-openapi-page";
+import { GlossaryList, Term } from "@/features/docs/term";
 
 type HeadingTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
@@ -38,6 +39,7 @@ function DocsLink({ children, ...props }: ComponentProps<"a">) {
 /**
  * MDX components for docs pages. Callout, Cards, and Accordions are the
  * scannable patterns for guardrails, guide maps, and long reference rows.
+ * Term and GlossaryList share one glossary source.
  */
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
@@ -47,11 +49,13 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     Callout,
     Card,
     Cards,
+    GlossaryList,
     OpenAPIPage,
     Step,
     Steps,
     Tab,
     Tabs,
+    Term,
     TypeTable,
     a: DocsLink,
     h1: plainHeading("h1"),

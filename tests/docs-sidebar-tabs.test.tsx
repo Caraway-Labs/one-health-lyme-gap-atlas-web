@@ -499,6 +499,8 @@ describe("documentation sidebar tabs", () => {
       "Steps",
       "Tab",
       "Tabs",
+      "Term",
+      "GlossaryList",
       "TypeTable",
     ];
 
