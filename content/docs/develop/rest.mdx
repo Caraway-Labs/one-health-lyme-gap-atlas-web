@@ -51,7 +51,7 @@ Canonical errors use RFC 9457 `application/problem+json`. Required fields: `type
 | 400 | `INVALID_REQUEST` | Incomplete query or a value that fails validation |
 | 400 | `UNSUPPORTED_FILTER` | Unknown parameters, `sort`, `aggregation`, or another filter V1 rejects |
 | 400 | `UNSUPPORTED_STRATIFICATION` | `stratification` is sent. This release has no strata |
-| 400 | `QUERY_TOO_BROAD` | Above 10,000 results. The API never truncates results |
+| 400 | `QUERY_TOO_BROAD` | Above 10,000 results. The API never truncates results. That ceiling is not truncation |
 | 404 | `RESOURCE_NOT_FOUND` | Unknown canonical resource id |
 | 413 | `INVALID_REQUEST` | A GET request includes a body |
 | 414 | `INVALID_REQUEST` | The query string is too long |
