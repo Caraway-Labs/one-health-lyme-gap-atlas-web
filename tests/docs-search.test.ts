@@ -22,10 +22,11 @@ const FIXED_QUERIES = [
   "provenance",
 ] as const;
 /**
- * English search export after schema field tables, examples, and search tags.
+ * English search export after schema field tables, examples, search tags,
+ * and the integration recipe sources.
  * A jump past this size means the index is repeating reference text.
  */
-const INDEX_BYTES_BEFORE = 5_266_930;
+const INDEX_BYTES_BEFORE = 5_291_307;
 
 function pageUrl(file: string): string {
   const relative = path

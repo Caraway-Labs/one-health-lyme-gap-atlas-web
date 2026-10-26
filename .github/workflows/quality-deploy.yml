@@ -48,6 +48,14 @@ jobs:
       - run: npm run lint
       - run: npm run check:design-system
       - run: npm run check:ux-reset
+      - name: Run Python integration recipes
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-venv
+          python3 -m venv /tmp/atlas-recipes
+          /tmp/atlas-recipes/bin/pip install --disable-pip-version-check 'httpx==0.28.1' 'pandas==3.1.0'
+          /tmp/atlas-recipes/bin/python -I tests/recipes/run_python_recipes.py
+
       - name: Unit tests + coverage (Vitest)
         run: |
           mkdir -p test-results
