@@ -108,6 +108,18 @@ describe("public OpenAPI reference", () => {
     expect(operationPage(pages, "getGeography")).toContain(
       "Geography response"
     );
+    const errorsLink = "](/docs/develop/errors)";
+    const operationsMissingErrorsLink = [...pages.entries()]
+      .filter(
+        ([file]) =>
+          file.endsWith(".mdx") &&
+          file !== "index.mdx" &&
+          file !== "schemas.mdx" &&
+          !file.endsWith("/index.mdx")
+      )
+      .filter(([, content]) => !content.includes(errorsLink))
+      .map(([file]) => file);
+    expect(operationsMissingErrorsLink).toStrictEqual([]);
     const schemaPage = requiredFile(pages, "schemas.mdx");
     const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
     expect({
