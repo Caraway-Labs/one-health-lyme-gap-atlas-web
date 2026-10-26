@@ -1582,7 +1582,12 @@ function renderReferenceIndex(
     );
   }
   if (contract.summary) lines.push("", `**${escapeInline(contract.summary)}**`);
-  if (contract.description) lines.push("", escapeMdx(contract.description));
+  if (contract.description) {
+    lines.push(
+      "",
+      escapeMdx(descriptionWithDocsChangelog(contract.description))
+    );
+  }
 
   lines.push("", "## Operations", "");
   const canonical = new Set<string>(CANONICAL_EVIDENCE_TAGS);
@@ -2383,6 +2388,20 @@ function slugify(value: string, label: string): string {
     );
   }
   return slug;
+}
+
+const DOCS_API_CHANGELOG_PATH = "/docs/develop/changelog";
+
+/** Point the reference index at the docs changelog for this contract pin. */
+function descriptionWithDocsChangelog(description: string): string {
+  const upstreamChangelog =
+    /https:\/\/github\.com\/Caraway-Labs\/one-health-lyme-gap-atlas-api\/blob\/[^)\s]+\/CHANGELOG\.md/g;
+  const linked = description.replaceAll(
+    upstreamChangelog,
+    DOCS_API_CHANGELOG_PATH
+  );
+  if (linked.includes(DOCS_API_CHANGELOG_PATH)) return linked;
+  return `${linked.trimEnd()}\n\nRelease notes: [API changelog](${DOCS_API_CHANGELOG_PATH}).`;
 }
 
 function escapeMdx(value: string): string {
