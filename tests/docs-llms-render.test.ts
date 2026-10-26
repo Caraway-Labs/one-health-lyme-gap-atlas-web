@@ -128,6 +128,26 @@ describe("rendered documentation markdown", () => {
     expect(markdown).not.toContain("<HttpClientTabs");
   });
 
+  it("renders quickstart steps and the labelled sample", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("### Make a request");
+    expect(markdown).toContain("#### Show example response");
+    expect(markdown).toContain("governed-2026-10-15-january-climate-prod");
+    expect(markdown).toContain(
+      "[Workflow guides](https://onehealthatlas.org/docs/develop/workflows)"
+    );
+    expect(markdown).not.toContain("On 12 October");
+  });
+
+  it("strips quickstart layout tags from the markdown export", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("Interpret with care");
+    expect(markdown).not.toContain("<Callout");
+    expect(markdown).not.toContain("<Card");
+    expect(markdown).not.toContain("<Steps");
+    expect(markdown).not.toContain("were checked");
+  });
+
   it("renders the quickstart playground as an anonymous GET", async () => {
     const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
     expect(markdown).toContain("Anonymous read-only playground.");
