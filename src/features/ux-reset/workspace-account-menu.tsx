@@ -54,6 +54,7 @@ import {
 } from "@/features/ux-reset/workspace-sign-out";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { isProfessionalAppPath } from "@/lib/auth/app-route-guard";
+import { localPreviewRequested } from "@/lib/auth/local-preview";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -327,7 +328,11 @@ export function WorkspaceAccountMenu() {
   }, [identity, queryClient, returnPath]);
 
   useLayoutEffect(() => {
-    if (identity?.kind !== "signed-out" || signOutSuppressesExpiryRedirect) {
+    if (
+      localPreviewRequested() ||
+      identity?.kind !== "signed-out" ||
+      signOutSuppressesExpiryRedirect
+    ) {
       return;
     }
     const generation = beginWorkspaceShellCheck();
