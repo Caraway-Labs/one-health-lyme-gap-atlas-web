@@ -181,6 +181,24 @@ describe("rendered documentation markdown", () => {
     );
   });
 
+  it("finds the provenance value row after schema tables in the full export", async () => {
+    const schemas = await renderedPage(
+      "content/docs/api-reference/schemas.mdx"
+    );
+    const provenance = await renderedPage(
+      "content/docs/develop/provenance.mdx"
+    );
+    const { value } = provenanceUnionRows(`${schemas}\n\n${provenance}`);
+    expect(value).toStrictEqual([
+      "value",
+      "number | string | null",
+      "yes",
+      "The reported value. Read it with `value_state` and `unit`. `null` never means zero.",
+    ]);
+    expect(schemas).toContain("| Name | Type | Required | Description |");
+    expect(schemas).not.toContain("| Field | Type | Required | Description |");
+  });
+
   it("keeps nullable timestamp rows in both provenance tables", async () => {
     const { fiveTimestamps, fourTimestamps } = provenanceUnionRows(
       await renderedPage("content/docs/develop/provenance.mdx")

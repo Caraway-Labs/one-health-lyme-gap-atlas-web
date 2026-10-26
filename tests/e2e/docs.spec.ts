@@ -531,6 +531,38 @@ test("renders the generated observations reference with version, source, and raw
   await expect(
     page.getByRole("heading", { name: "ProblemDetails", exact: true })
   ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Type" }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "request_id", exact: true }).first()
+  ).toBeVisible();
+  await page.goto("/docs/api-reference/schemas#schema-valuestate");
+  await expect(
+    page.getByRole("heading", { name: "ValueState", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "OBSERVED", exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("cell", {
+        name: "a nonzero value the publisher reported. Use value as given.",
+      })
+      .first()
+  ).toBeVisible();
+  await page.goto("/docs/api-reference/schemas#schema-observation");
+  await expect(
+    page.getByRole("heading", { name: "Observation", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.locator('a[href="#schema-valuestate"]').first()
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("link", { name: "GET /v1/observations", exact: true })
+      .first()
+  ).toBeVisible();
 
   const overflow = await page.evaluate(
     () =>
