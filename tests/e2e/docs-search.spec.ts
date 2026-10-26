@@ -1,7 +1,33 @@
+import { accessSync, constants, copyFileSync } from "node:fs";
+import { join } from "node:path";
+
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 
 const TAGS = ["Product", "Guide", "Reference", "MCP"] as const;
+const OPTIONAL_ARTIFACT_DIRECTORY = "/opt/cursor/artifacts";
+
+/** Required images go to the Playwright output dir. Artifact copies are optional. */
+async function saveOutcomeScreenshot(
+  root: Locator,
+  testInfo: TestInfo,
+  filename: string
+) {
+  const outputPath = testInfo.outputPath(filename);
+  await root.screenshot({ path: outputPath });
+  try {
+    accessSync(OPTIONAL_ARTIFACT_DIRECTORY, constants.W_OK);
+    copyFileSync(outputPath, join(OPTIONAL_ARTIFACT_DIRECTORY, filename));
+  } catch {
+    // CI checkouts have no writable /opt/cursor/artifacts directory.
+  }
+}
 
 async function openSearch(page: Page): Promise<Locator> {
   await page.goto("/docs");
@@ -13,7 +39,9 @@ async function openSearch(page: Page): Promise<Locator> {
   return dialog;
 }
 
-test("filters docs search by tag from the keyboard", async ({ page }) => {
+test("filters docs search by tag from the keyboard", async ({
+  page,
+}, testInfo) => {
   const dialog = await openSearch(page);
   const filters = dialog.getByRole("group", { name: "Filter by tag" });
   await expect(filters).toBeVisible();
@@ -69,7 +97,5 @@ test("filters docs search by tag from the keyboard", async ({ page }) => {
   );
   expect(blockingViolations).toEqual([]);
 
-  await page.screenshot({
-    path: "/opt/cursor/artifacts/search-dialog-after-tags.png",
-  });
+  await saveOutcomeScreenshot(dialog, testInfo, "search-dialog-after-tags.png");
 });
