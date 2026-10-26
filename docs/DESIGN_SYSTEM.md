@@ -40,7 +40,7 @@ Map and data-visualization CSS may sit beside this hierarchy.
 - **Semantic chrome:** `--background`, `--foreground`, `--primary`, `--secondary`, `--muted`, `--destructive`, `--success`, `--warning`, `--info`, `--border`, `--input`, `--ring`, radius, spacing, motion.
 - **Domain / viz:** `--navy`, `--teal`, `--mint`, `--action-plan-surface`, `--action-plan-border`, `--priority-*`, `--map-ramp-*`, `--atlas-action-primary`. Do not flatten these into `primary`.
 - Consume semantic tokens in reusable UI. Do not add hardcoded chrome hex in feature components.
-- Dark mode: remap the semantic variables on a future `.dark` class. Do not ship a dark theme from this document.
+- Dark mode for the signed-in app: remap the semantic variables on a future `.dark` class. Do not ship an app dark theme from this document. Public docs are the scoped exception in [ADR 0023](./adr/0023-docs-only-dark-theme.md): dark tokens apply only under `.dark .atlas-docs-root`.
 
 ## Typography
 
