@@ -87,6 +87,24 @@ describe("docs social metadata", () => {
     });
   });
 
+  it("normalizes absolute docs URLs and Windows source paths", () => {
+    const section = docsSectionLabel(
+      "https://onehealthatlas.org/docs/api-reference/"
+    );
+    const home = docsOpenGraphImagePath("https://onehealthatlas.org/docs/");
+    const other = docsOpenGraphImagePath("/help/page");
+    const windows = docsGithubEditPath("\\develop\\quickstart.mdx");
+    const absolute = docsGithubEditPath("/content/docs/index.mdx");
+
+    expect({ absolute, home, other, section, windows }).toStrictEqual({
+      absolute: "content/docs/index.mdx",
+      home: "/docs/og/image.png",
+      other: "/docs/og/help/page/image.png",
+      section: "API reference",
+      windows: "content/docs/develop/quickstart.mdx",
+    });
+  });
+
   it("follows a preview docs URL when that origin is configured", () => {
     const preview = {
       NEXT_PUBLIC_DOCS_URL: "https://preview.example/docs",
