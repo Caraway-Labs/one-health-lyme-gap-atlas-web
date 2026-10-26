@@ -1,9 +1,33 @@
+import { accessSync, constants, copyFileSync } from "node:fs";
+import { join } from "node:path";
+
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import { docsCanonicalUrl } from "../../src/lib/docs-config";
 
-test("shows the pinned API changelog and its feed", async ({ page }) => {
+const OPTIONAL_ARTIFACT_DIRECTORY = "/opt/cursor/artifacts";
+
+/** Required images go to the Playwright output dir. Artifact copies are optional. */
+async function saveOutcomeScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  filename: string,
+  fullPage: boolean
+) {
+  const outputPath = testInfo.outputPath(filename);
+  await page.screenshot({ fullPage, path: outputPath });
+  try {
+    accessSync(OPTIONAL_ARTIFACT_DIRECTORY, constants.W_OK);
+    copyFileSync(outputPath, join(OPTIONAL_ARTIFACT_DIRECTORY, filename));
+  } catch {
+    // CI checkouts have no writable /opt/cursor/artifacts directory.
+  }
+}
+
+test("shows the pinned API changelog and its feed", async ({
+  page,
+}, testInfo) => {
   await page.goto("/docs/develop/quickstart");
   const whatsNew = page
     .locator("main")
@@ -60,14 +84,18 @@ test("shows the pinned API changelog and its feed", async ({ page }) => {
   );
   expect(blocking).toEqual([]);
 
-  await page.screenshot({
-    fullPage: false,
-    path: "/opt/cursor/artifacts/api-changelog-desktop-top.png",
-  });
-  await page.screenshot({
-    fullPage: true,
-    path: "/opt/cursor/artifacts/api-changelog-desktop.png",
-  });
+  await saveOutcomeScreenshot(
+    page,
+    testInfo,
+    "api-changelog-desktop-top.png",
+    false
+  );
+  await saveOutcomeScreenshot(
+    page,
+    testInfo,
+    "api-changelog-desktop.png",
+    true
+  );
 
   const feed = await page.request.get("/docs/changelog.xml");
   expect(feed.status()).toBe(200);
