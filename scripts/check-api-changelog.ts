@@ -1,4 +1,4 @@
-import { changelogPageProblems } from "../src/lib/api-changelog.ts";
+import { changelogPageProblems } from "../src/lib/api-changelog";
 
 const problems = changelogPageProblems(process.cwd());
 if (problems.length > 0) {

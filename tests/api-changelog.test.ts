@@ -1,18 +1,18 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { runApiChangelogPinCheck } from "../scripts/check-docs.mjs";
 import { GET } from "../src/app/docs/changelog.xml/route";
 import {
   changelogPageProblems,
@@ -49,12 +49,23 @@ describe("API changelog", () => {
     const direct = changelogPinProblems(root);
     const docsCheck = runApiChangelogPinCheck(root);
 
-    expect(direct).toStrictEqual([
-      `contracts/api-changelog.manifest.json sourceCommit ${changelogCommit} does not match contracts/public-openapi.manifest.json sourceCommit ${contractCommit}.`,
-    ]);
-    expect(docsCheck.status).not.toBe(0);
-    expect(docsCheck.output).toContain("does not match");
-    expect(docsCheck.output).toContain(changelogCommit);
+    expect({
+      direct,
+      mentionsScript: readFileSync("scripts/check-docs.mjs", "utf-8").includes(
+        "scripts/check-api-changelog.ts"
+      ),
+      outputMentionsCommit:
+        docsCheck.output.includes("does not match") &&
+        docsCheck.output.includes(changelogCommit),
+      status: docsCheck.status,
+    }).toStrictEqual({
+      direct: [
+        `contracts/api-changelog.manifest.json sourceCommit ${changelogCommit} does not match contracts/public-openapi.manifest.json sourceCommit ${contractCommit}.`,
+      ],
+      mentionsScript: true,
+      outputMentionsCommit: true,
+      status: 1,
+    });
   });
 
   it("fails when the changelog source file is missing", () => {
@@ -153,8 +164,7 @@ describe("API changelog", () => {
     const changelog = loadApiChangelog();
     const xml = renderAtomFeed(changelog, origin);
     const response = GET();
-    const document = new JSDOM(xml, { contentType: "text/xml" }).window
-      .document;
+    const document = new DOMParser().parseFromString(xml, "text/xml");
     const feedElement = atomElements(document, "feed")[0];
     if (!feedElement) throw new Error("Atom feed element is missing.");
     const self = [...feedElement.getElementsByTagNameNS(ATOM, "link")].find(
@@ -223,12 +233,37 @@ describe("API changelog", () => {
   });
 });
 
-function atomElements(parent: ParentNode, name: string): Element[] {
+function atomElements(parent: Document | Element, name: string): Element[] {
   return [...parent.getElementsByTagNameNS(ATOM, name)];
 }
 
 function text(parent: Element, name: string): string {
   return atomElements(parent, name)[0]?.textContent ?? "";
+}
+
+function runApiChangelogPinCheck(contentRoot: string): {
+  output: string;
+  status: number;
+} {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--experimental-strip-types",
+      "--disable-warning=ExperimentalWarning",
+      "--import",
+      path.join(process.cwd(), "scripts/register-ts-extension.mjs"),
+      path.join(process.cwd(), "scripts/check-api-changelog.ts"),
+    ],
+    {
+      cwd: contentRoot,
+      encoding: "utf-8",
+      env: process.env,
+    }
+  );
+  return {
+    output: `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim(),
+    status: result.status ?? 1,
+  };
 }
 
 function writePinFixture(options: {

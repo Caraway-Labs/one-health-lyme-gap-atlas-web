@@ -5,7 +5,7 @@ import {
   API_CHANGELOG_PAGE_RELATIVE_PATH,
   loadApiChangelog,
   renderApiChangelogPage,
-} from "../src/lib/api-changelog.ts";
+} from "../src/lib/api-changelog";
 
 const page = renderApiChangelogPage(loadApiChangelog());
 const destination = path.join(process.cwd(), API_CHANGELOG_PAGE_RELATIVE_PATH);

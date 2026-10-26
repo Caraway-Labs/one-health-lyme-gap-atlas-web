@@ -28,6 +28,13 @@ const developPages = [
   "support",
 ] as const;
 
+const developNavigation = [
+  "index",
+  "quickstart",
+  "changelog",
+  ...developPages.slice(2),
+];
+
 function readPage(slug: string): string {
   return fs.readFileSync(path.join(developRoot, `${slug}.mdx`), "utf-8");
 }
@@ -81,7 +88,7 @@ describe("developer documentation guides", () => {
 
     expect(folderNavigation.root).toBeTruthy();
     expect(folderNavigation.title).toBe("Developers");
-    expect(folderNavigation.pages).toStrictEqual([...developPages]);
+    expect(folderNavigation.pages).toStrictEqual([...developNavigation]);
     expect(rootNavigation.pages).toContain("develop");
   });
 
