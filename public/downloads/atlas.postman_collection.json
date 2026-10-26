@@ -1850,7 +1850,7 @@
                   "description": "(Required) Repeat for 1-500 county FIPS strings; preserve leading zeros."
                 },
                 {
-                  "disabled": false,
+                  "disabled": true,
                   "key": "vintage_year",
                   "value": "2006",
                   "description": "Required for county context: 2022 for SVI/ACS, 2023 for RUCC. Excludes year/date filters."
@@ -1862,25 +1862,25 @@
                   "description": "Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31."
                 },
                 {
-                  "disabled": false,
+                  "disabled": true,
                   "key": "start_date",
                   "value": "2023-01-01",
                   "description": "Inclusive period start; requires end_date and excludes year."
                 },
                 {
-                  "disabled": false,
+                  "disabled": true,
                   "key": "end_date",
                   "value": "2023-12-31",
                   "description": "Inclusive period end; requires start_date and excludes year."
                 },
                 {
-                  "disabled": false,
+                  "disabled": true,
                   "key": "stratification",
                   "value": "string",
                   "description": "Current release has no strata; unsupported selections fail explicitly."
                 },
                 {
-                  "disabled": false,
+                  "disabled": true,
                   "key": "stratification",
                   "value": "string",
                   "description": "Current release has no strata; unsupported selections fail explicitly."
@@ -1892,7 +1892,7 @@
                   "description": "Items per page; defaults to 100, configured maximum at most 500."
                 },
                 {
-                  "disabled": false,
+                  "disabled": true,
                   "key": "page_token",
                   "value": "string",
                   "description": "Opaque next_page_token; retain query filters and release."
@@ -1937,27 +1937,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -1965,7 +1971,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []
@@ -2030,27 +2037,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -2058,7 +2071,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []
@@ -2111,27 +2125,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -2139,7 +2159,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []
@@ -2192,27 +2213,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -2220,7 +2247,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []
@@ -2273,27 +2301,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -2301,7 +2335,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []
@@ -2354,27 +2389,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -2382,7 +2423,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []
@@ -2441,27 +2483,33 @@
                     },
                     {
                       "key": "vintage_year",
-                      "value": "2006"
+                      "value": "2006",
+                      "disabled": true
                     },
                     {
                       "key": "year",
-                      "value": "2023"
+                      "value": "2023",
+                      "disabled": false
                     },
                     {
                       "key": "start_date",
-                      "value": "2023-01-01"
+                      "value": "2023-01-01",
+                      "disabled": true
                     },
                     {
                       "key": "end_date",
-                      "value": "2023-12-31"
+                      "value": "2023-12-31",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "stratification",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     },
                     {
                       "key": "page_size",
@@ -2469,7 +2517,8 @@
                     },
                     {
                       "key": "page_token",
-                      "value": "string"
+                      "value": "string",
+                      "disabled": true
                     }
                   ],
                   "variable": []

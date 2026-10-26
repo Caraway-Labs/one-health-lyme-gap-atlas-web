@@ -88,6 +88,7 @@ function convertPinnedSpec(specText: string): string {
     throw new Error("openapi-to-postmanv2 returned no collection.");
   }
   const collection = stabilizeCollection(output.data);
+  selectObservationExample(collection);
   if (collection.info?.schema !== POSTMAN_SCHEMA) {
     throw new Error("Postman collection is not schema v2.1.0.");
   }
@@ -151,6 +152,94 @@ function stabilizeNode(value: unknown, nodePath: string): unknown {
     copy[key] = stabilizeNode(child, `${nodePath}.${key}`);
   }
   return copy;
+}
+
+const OBSERVATION_REQUEST_NAME = "Query county observations";
+const ANNUAL_SURVEILLANCE_MEASURE = "case_count_floor_2023";
+const ANNUAL_SURVEILLANCE_YEAR = "2023";
+const INCOMPATIBLE_WITH_YEAR = new Set([
+  "end_date",
+  "start_date",
+  "stratification",
+  "vintage_year",
+]);
+
+/**
+ * The converter enables every query parameter at once. For
+ * `case_count_floor_2023`, the observation guide accepts `year` 2023 and
+ * rejects that year together with a date range, `vintage_year`, or any
+ * `stratification`. Placeholder paging tokens are not a real next page.
+ */
+function selectObservationExample(collection: PostmanCollection): void {
+  const visit = (node: unknown) => {
+    if (!isRecord(node)) return;
+    if (node.name === OBSERVATION_REQUEST_NAME && isRecord(node.request)) {
+      applyAnnualSurveillanceSelection(node.request);
+      if (Array.isArray(node.response)) {
+        for (const example of node.response) {
+          if (isRecord(example) && isRecord(example.originalRequest)) {
+            applyAnnualSurveillanceSelection(example.originalRequest);
+          }
+        }
+      }
+    }
+    if (!Array.isArray(node.item)) return;
+    for (const child of node.item) visit(child);
+  };
+  visit(collection);
+}
+
+function applyAnnualSurveillanceSelection(
+  request: Record<string, unknown>
+): void {
+  const url = request.url;
+  if (!isRecord(url) || !Array.isArray(url.query)) {
+    throw new Error("Query county observations is missing query parameters.");
+  }
+  const measure = url.query.find(
+    (param) => isQueryParam(param) && param.key === "measure_id"
+  );
+  if (!isQueryParam(measure) || measure.value !== ANNUAL_SURVEILLANCE_MEASURE) {
+    throw new Error(
+      "Observation example measure is not case_count_floor_2023."
+    );
+  }
+  let year = false;
+  for (const param of url.query) {
+    if (!isQueryParam(param)) {
+      throw new Error("Observation query parameter is malformed.");
+    }
+    if (param.key === "year") {
+      param.value = ANNUAL_SURVEILLANCE_YEAR;
+      param.disabled = false;
+      year = true;
+      continue;
+    }
+    if (
+      INCOMPATIBLE_WITH_YEAR.has(param.key) ||
+      (param.key === "page_token" && param.value === "string")
+    ) {
+      param.disabled = true;
+    }
+  }
+  if (!year) {
+    throw new Error("Observation example is missing year.");
+  }
+}
+
+type QueryParam = {
+  disabled?: boolean;
+  key: string;
+  value?: string;
+};
+
+function isQueryParam(value: unknown): value is QueryParam {
+  return (
+    isRecord(value) &&
+    typeof value.key === "string" &&
+    (value.value === undefined || typeof value.value === "string") &&
+    (value.disabled === undefined || typeof value.disabled === "boolean")
+  );
 }
 
 function deterministicId(nodePath: string): string {

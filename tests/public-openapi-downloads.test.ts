@@ -63,4 +63,90 @@ describe("public OpenAPI client downloads", () => {
     });
     expect(again.get(POSTMAN_COLLECTION_DOWNLOAD_NAME)).toBe(collectionText);
   }, 30_000);
+
+  it("keeps the default observation request on year 2023", async () => {
+    const contract = readAndLoadPublicOpenApiContract(process.cwd());
+    const specBytes = readFileSync("contracts/public-openapi.json");
+    const downloads = await renderPublicClientDownloads({
+      provenance: contract.provenance,
+      specBytes,
+    });
+    const collection = JSON.parse(
+      downloads.get(POSTMAN_COLLECTION_DOWNLOAD_NAME) ?? ""
+    ) as { item?: unknown };
+    const request = observationRequest(collection);
+    const query = requestQuery(request);
+    const enabled = query
+      .filter((param) => param.disabled !== true)
+      .map((param) => [param.key, param.value]);
+    const disabled = query
+      .filter((param) => param.disabled === true)
+      .map((param) => param.key);
+    expect(enabled).toStrictEqual([
+      ["measure_id", "case_count_floor_2023"],
+      ["geography_type", "county"],
+      ["geography_id", "08001"],
+      ["year", "2023"],
+      ["page_size", "100"],
+    ]);
+    expect(disabled).toStrictEqual([
+      "vintage_year",
+      "start_date",
+      "end_date",
+      "stratification",
+      "stratification",
+      "page_token",
+    ]);
+  }, 30_000);
 });
+
+type ObservationQueryParam = {
+  disabled?: boolean;
+  key?: string;
+  value?: string;
+};
+
+function observationRequest(collection: { item?: unknown }): {
+  url?: { query?: unknown };
+} {
+  const found = findObservationRequest(collection);
+  if (!found) {
+    throw new Error("Query county observations is missing.");
+  }
+  return found;
+}
+
+function findObservationRequest(
+  node: unknown
+): { url?: { query?: unknown } } | undefined {
+  if (!isRecord(node)) return undefined;
+  if (node.name === "Query county observations" && isRecord(node.request)) {
+    return node.request;
+  }
+  if (!Array.isArray(node.item)) return undefined;
+  for (const child of node.item) {
+    const found = findObservationRequest(child);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+function requestQuery(request: {
+  url?: { query?: unknown };
+}): ObservationQueryParam[] {
+  const query = request.url?.query;
+  if (!Array.isArray(query)) {
+    throw new TypeError("Observation request has no query parameters.");
+  }
+  return query.filter(isObservationQueryParam);
+}
+
+function isObservationQueryParam(
+  value: unknown
+): value is ObservationQueryParam {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
