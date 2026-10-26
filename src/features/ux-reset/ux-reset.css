@@ -4341,10 +4341,68 @@ html.ux-reset-ask-atlas-history-open [data-slot="dialog-overlay"] {
 }
 
 .ux-reset-ask-atlas-workspace .chat-form {
+  display: flex;
+  flex-direction: column;
   padding: 0.85rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--card);
+}
+
+/* DOM order stays after the question so Shift+Tab from the composer still reaches the outcome control. Visual order stays above the question. */
+.ux-reset-ask-atlas-workspace .ask-atlas-source-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  order: -1;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-source-modes legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-source-modes p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-source-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--foreground);
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-governed-answer {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-governed-answer h3 {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-governed-answer dl {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-governed-answer dt {
+  font-weight: 600;
+}
+
+.ux-reset-ask-atlas-workspace .ask-atlas-governed-answer dd {
+  margin: 0;
 }
 
 .ux-reset-ask-atlas-workspace .chat-form textarea {

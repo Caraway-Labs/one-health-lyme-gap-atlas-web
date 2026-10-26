@@ -30,12 +30,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { classifyKnowledgeChatResponse } from "@/lib/ask-atlas-answer-contract";
+import {
+  ASK_ATLAS_ENABLED_SOURCE_MODES,
+  ASK_ATLAS_SOURCE_MODE_BADGE,
+  askAtlasPendingStatus,
+  type AskAtlasSourceMode,
+} from "@/lib/ask-atlas-source-mode";
 import { assistantWorkspaceHref } from "@/lib/assistant-context-handoff";
 import { atlasAssistantWorkspaceHeadingId } from "@/lib/assistant-entry-points";
 import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 import { AssistantOutcome } from "./assistant-outcome";
 import { AssistantStarterPrompts } from "./assistant-starter-prompts";
+import { AskAtlasGovernedAnswer } from "./governed-answer";
 import type { EvidenceChatConversationModel } from "./use-evidence-chat";
 
 export function EvidenceChatConversationContent({
@@ -86,7 +93,11 @@ export function EvidenceChatConversationContent({
     selectConversation,
     setMessage,
     setMobileHistoryOpen,
+    setSourceMode,
     showEmptyState,
+    sourceMode,
+    sourceModeSelection,
+    sourceModes,
     startNewChat,
     submit,
     workspaceHandoffConversationId,
@@ -152,6 +163,10 @@ export function EvidenceChatConversationContent({
   const PanelFooter = mode === "workspace" ? "footer" : "div";
   const Heading = headingLevel === 2 ? "h2" : "h1";
   const heading = askAtlasPage ? "Ask Atlas" : "Atlas Assistant";
+  const composerPlaceholder = askAtlasComposerPlaceholder(
+    askAtlasPage,
+    sourceMode
+  );
   const showCharacterLimit = askAtlasPage && message.length > 0;
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (!askAtlasPage || event.key !== "Enter" || event.shiftKey) {
@@ -190,7 +205,9 @@ export function EvidenceChatConversationContent({
             <div className="ux-reset-ask-atlas-title-block">
               <div className="ux-reset-ask-atlas-heading">
                 <Heading id={assistantHeadingId}>{heading}</Heading>
-                <Badge variant="outline">Reviewed literature</Badge>
+                <Badge variant="outline">
+                  {ASK_ATLAS_SOURCE_MODE_BADGE[sourceMode]}
+                </Badge>
               </div>
             </div>
           ) : (
@@ -312,6 +329,8 @@ export function EvidenceChatConversationContent({
                   turn.response
                     ? turn.response.answer
                     : "";
+                const governed = turn.assistantPayload;
+                const showLiteratureAnswer = !governed;
                 return (
                   <article className={`chat-turn ${turn.role}`} key={turn.id}>
                     <strong>
@@ -320,11 +339,26 @@ export function EvidenceChatConversationContent({
                     {turn.role === "user" && turn.text ? (
                       <p>{turn.text}</p>
                     ) : null}
-                    {visibleAnswer ? <p>{visibleAnswer}</p> : null}
-                    {groundedAnswer ? (
+                    {governed ? (
+                      <AskAtlasGovernedAnswer
+                        actionable={turn.id === turns.at(-1)?.id}
+                        onEditQuestion={editQuestion}
+                        onRetry={ask}
+                        pending={pending}
+                        question={priorQuestion}
+                        turn={governed}
+                      />
+                    ) : null}
+                    {showLiteratureAnswer && visibleAnswer ? (
+                      <p>{visibleAnswer}</p>
+                    ) : null}
+                    {showLiteratureAnswer && groundedAnswer ? (
                       <EvidenceChatAnswerSources response={groundedAnswer} />
                     ) : null}
-                    {turn.response && decision && decision.kind !== "closed" ? (
+                    {showLiteratureAnswer &&
+                    turn.response &&
+                    decision &&
+                    decision.kind !== "closed" ? (
                       <AssistantOutcome
                         actionable={turn.id === turns.at(-1)?.id}
                         onEditQuestion={editQuestion}
@@ -334,7 +368,7 @@ export function EvidenceChatConversationContent({
                         response={turn.response}
                       />
                     ) : null}
-                    {decision?.kind === "closed" ? (
+                    {showLiteratureAnswer && decision?.kind === "closed" ? (
                       <div
                         className="chat-error"
                         data-assistant-state="response_unverified"
@@ -358,7 +392,9 @@ export function EvidenceChatConversationContent({
                   className={pendingStatusVisible ? "processing" : "sr-only"}
                   role="status"
                 >
-                  {pendingStatusVisible ? "Searching reviewed evidence…" : ""}
+                  {pendingStatusVisible
+                    ? askAtlasPendingStatus(sourceMode)
+                    : ""}
                 </p>
               ) : null}
               {failure && (
@@ -415,11 +451,7 @@ export function EvidenceChatConversationContent({
               onChange={(event) => setMessage(event.target.value)}
               onKeyDown={askAtlasPage ? handleComposerKeyDown : undefined}
               disabled={pending}
-              placeholder={
-                askAtlasPage
-                  ? "What does reviewed research say about…"
-                  : "What does reviewed evidence say about…"
-              }
+              placeholder={composerPlaceholder}
             />
             <div className="chat-form-actions">
               {askAtlasPage ? (
@@ -464,6 +496,35 @@ export function EvidenceChatConversationContent({
                 Ask
               </Button>
             </div>
+            {askAtlasPage && sourceModeSelection ? (
+              <fieldset className="ask-atlas-source-modes">
+                <legend>Evidence to ask</legend>
+                <p id="ask-atlas-source-mode-note">
+                  Choose an endpoint. The answer lists the sources it actually
+                  used. Both is not an automatic choice.
+                </p>
+                {sourceModes.map((modeOption) => {
+                  const enabled = (
+                    ASK_ATLAS_ENABLED_SOURCE_MODES as readonly string[]
+                  ).includes(modeOption);
+                  return (
+                    <label className="ask-atlas-source-mode" key={modeOption}>
+                      <input
+                        checked={sourceMode === modeOption}
+                        disabled={!enabled || pending}
+                        name="ask-atlas-source-mode"
+                        type="radio"
+                        value={modeOption}
+                        onChange={() => {
+                          setSourceMode(modeOption);
+                        }}
+                      />
+                      {modeOption}
+                    </label>
+                  );
+                })}
+              </fieldset>
+            ) : null}
             {askAtlasPage ? (
               <p className="medical-notice">{publicCopy.medical_notice}</p>
             ) : null}
@@ -565,5 +626,29 @@ function scrollAnchorAboveComposer(scroller: HTMLElement, anchor: HTMLElement) {
   }
   if (anchorBox.top < scrollerBox.top) {
     scroller.scrollTop += anchorBox.top - scrollerBox.top;
+  }
+}
+
+function askAtlasComposerPlaceholder(
+  askAtlasPage: boolean,
+  sourceMode: AskAtlasSourceMode
+): string {
+  if (!askAtlasPage) {
+    return "What does reviewed evidence say about…";
+  }
+  switch (sourceMode) {
+    case "Literature": {
+      return "What does reviewed research say about…";
+    }
+    case "Structured": {
+      return "Ask for a governed county measure and period…";
+    }
+    case "Both": {
+      return "Ask across governed Atlas data and reviewed literature…";
+    }
+    default: {
+      const unhandled: never = sourceMode;
+      return unhandled;
+    }
   }
 }
