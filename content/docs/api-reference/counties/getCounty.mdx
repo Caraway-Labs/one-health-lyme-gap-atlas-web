@@ -11,7 +11,6 @@ _openapi:
   structuredData:
     headings: []
     contents:
-      - content: Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
       - content: GET /v1/counties/{fips}
       - content: getCounty
       - content: Get county detail and provenance
@@ -58,24 +57,16 @@ _openapi:
       - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
       - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"County or dataset release not found","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
       - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Path value has the wrong form
       - content: Shows HTTP 422 with an `errors` entry and no `code`.
       - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
       - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
       - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
       - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: General request limit reached
       - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
       - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
       - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
-      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
-      - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Data service unavailable
       - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'

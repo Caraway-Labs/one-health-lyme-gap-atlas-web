@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { DocsAccessibility } from "@/components/docs-accessibility";
+import { DocsSearchDialog } from "@/components/docs-search-dialog";
 import {
   DocsHeader,
   DocsHomeQuickstart,
@@ -11,6 +12,7 @@ import {
 } from "@/components/docs-section-nav";
 import { FrontPorchTrustFooter } from "@/features/front-porch/front-porch-trust-footer";
 import { DOCS_SITE_TITLE } from "@/lib/docs-config";
+import { DOCS_SEARCH_DIALOG_TAGS } from "@/lib/docs-search";
 import { docsSource } from "@/lib/docs-source";
 
 import "@/features/ux-reset/trust-footer.css";
@@ -22,7 +24,14 @@ const docsLayoutStyle = {
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <RootProvider
-      search={{ options: { api: "/api/search" } }}
+      search={{
+        SearchDialog: DocsSearchDialog,
+        options: {
+          allowClear: true,
+          api: "/api/search",
+          tags: DOCS_SEARCH_DIALOG_TAGS,
+        },
+      }}
       theme={{ enabled: false }}
     >
       <div className="atlas-docs-root">

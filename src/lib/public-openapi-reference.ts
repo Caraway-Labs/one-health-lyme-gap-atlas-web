@@ -1737,6 +1737,51 @@ function operationSchemaNodes(operation: OperationView): unknown[] {
 const ERRORS_REFERENCE_LINK =
   "Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).";
 
+function uniqueIndexContents(
+  entries: { content: string }[]
+): { content: string }[] {
+  const seen = new Set<string>();
+  const unique: { content: string }[] = [];
+  for (const entry of entries) {
+    const key = flattenContractText(entry.content);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push({ content: entry.content });
+  }
+  return unique;
+}
+
+function headingAnchor(value: string): string | undefined {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+  return slug || undefined;
+}
+
+function descriptionSearchHeadings(
+  description: string
+): { content: string; id: string }[] {
+  const headings: { content: string; id: string }[] = [];
+  const seen = new Set<string>();
+  for (const line of description.split("\n")) {
+    const match = /^#{1,6}\s+(?<text>.+?)\s*$/.exec(line);
+    const text = match?.groups?.text?.replaceAll(/[*_`]/g, "").trim();
+    const baseId = text ? headingAnchor(text) : undefined;
+    if (!text || !baseId) continue;
+    let id = baseId;
+    let suffix = 2;
+    while (seen.has(id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+    seen.add(id);
+    headings.push({ content: text, id });
+  }
+  return headings;
+}
+
 function enrichOperationPage(
   content: string,
   operation: OperationView,
@@ -1754,19 +1799,40 @@ function enrichOperationPage(
     ? structured.contents.filter(isRecord)
     : [];
   const described = flattenContractText(operation.description);
-  const contents = [
+  const summary = flattenContractText(
+    operation.summary || operation.operationId
+  );
+  const contents = uniqueIndexContents([
     ...existing.flatMap((entry) =>
-      typeof entry.content === "string" ? [{ content: entry.content }] : []
+      typeof entry.content === "string" &&
+      flattenContractText(entry.content) !== described
+        ? [{ content: entry.content }]
+        : []
     ),
     ...operationIndexContents(operation)
       .filter((text) => flattenContractText(text) !== described)
       .map((text) => ({ content: text })),
-  ];
-  openapi.structuredData = { ...structured, contents };
-  document.data._openapi = openapi;
-  document.data.description = flattenContractText(
-    operation.summary || operation.operationId
+    ...(summary ? [{ content: summary }] : []),
+  ]);
+  const priorHeadings = Array.isArray(structured.headings)
+    ? structured.headings
+    : [];
+  const priorHeadingText = new Set(
+    priorHeadings.flatMap((entry) =>
+      isRecord(entry) && typeof entry.content === "string"
+        ? [entry.content]
+        : []
+    )
   );
+  const headings = [
+    ...priorHeadings,
+    ...descriptionSearchHeadings(operation.description).filter(
+      (heading) => !priorHeadingText.has(heading.content)
+    ),
+  ];
+  openapi.structuredData = { ...structured, contents, headings };
+  document.data._openapi = openapi;
+  document.data.description = summary;
   const badge = pendingDeliveryBadgeMarkup(operation);
   const schemaLine = renderOperationSchemaLine(
     componentSchemaNames(operationSchemaNodes(operation), schemas),
