@@ -21,8 +21,11 @@ const FIXED_QUERIES = [
   "FIPS",
   "provenance",
 ] as const;
-/** Exported English index size before tag metadata and cleaned reference text. */
-const INDEX_BYTES_BEFORE = 4_399_738;
+/**
+ * English search export after schema field tables, examples, and search tags.
+ * A jump past this size means the index is repeating reference text.
+ */
+const INDEX_BYTES_BEFORE = 5_266_930;
 
 function pageUrl(file: string): string {
   const relative = path
