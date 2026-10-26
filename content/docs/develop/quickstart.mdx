@@ -1,16 +1,19 @@
 ---
 title: Quickstart
-description: Make one anonymous current-release observation request and read every response state that request can return.
+description: Send one anonymous observation request, read the response, and handle the first problems.
 ---
 
 import { ApiPlayground } from "@/features/docs/api-playground";
 import { HttpClientTabs } from "@/features/docs/http-client-tabs";
 
-This page completes one representative production read: the 2023 published case-count floor for New York County. The measure id `case_count_floor_2023` is the example in the public observations operation and a measure in the current catalog. County FIPS `36061` is in the lower 48.
+Send one anonymous request for the 2023 published case-count floor for New York County. The measure id `case_count_floor_2023` is the example on the public observations operation. County FIPS `36061` is in the lower 48.
 
-You need an HTTPS client. You do not create an account, API key, or SDK project. The client tabs on this page, the workflow guides, and the REST pagination example share one choice in this browser. That choice is curl, Python httpx, R httr2, or TypeScript fetch, and it remains selected after a reload.
+Use an HTTPS client. Skip the account and the API key. These client tabs stay in sync with the workflow guides and the REST pagination example: curl, Python httpx, R httr2, or TypeScript fetch. The choice remains after a reload.
 
-## Request
+<Steps>
+<Step>
+
+### Make a request
 
 <HttpClientTabs
   path="/v1/observations"
@@ -19,38 +22,79 @@ You need an HTTPS client. You do not create an account, API key, or SDK project.
 
 `curl -f` hides error bodies. Drop `-f` when you need to read a problem response.
 
-### Try this request
+#### Try this request
 
-This playground sends that anonymous GET through the docs site. It adds no API key and does not change the response. The filled example uses New York County, FIPS `36061`, in the lower 48.
+This playground sends that anonymous GET through the docs site. It adds no API key and leaves the response unchanged.
 
 <ApiPlayground />
 
-A successful body is a collection:
+</Step>
+<Step>
+
+### Read the response
+
+A successful body is a collection. Check `value_state` before you read `value`. Read `value` with `unit`.
+
+<Callout title="Interpret with care" type="warning">
+  `case_count_floor_2023` is a privacy-protected surveillance floor, in `cases`.
+  A case floor is not a diagnosis, a complete count, or an individual risk.
+</Callout>
 
 | Field | Meaning |
 | --- | --- |
-| `data` | Observation records for this query. An empty array means no row matched. |
-| `meta.next_page_token` | Opaque continuation. `null` means this query is exhausted. |
-| `meta.response_at` | UTC time when the service built the response. This is not source freshness. |
-| `links.self` | Link object field. The contract allows `null`. |
+| `data` | Observation records for this query. An empty array means this page has no rows. |
+| `value_state` | How to read `value` on each row. Check it before you read `value`. |
+| `meta.next_page_token` | Opaque continuation. `null` means this query is exhausted. Send it unchanged with the same filters. |
+| `meta.response_at` | When Atlas built the response, in UTC. It does not date the publisher update or the observation. |
+| `meta.availability` | Whether this selection has published results. Read it before you use `data`. |
+| `links.self` | Link to this page. The contract allows `null`. |
 
-On 12 October 2026 this URL returned HTTP 200, one row, `value_state` `OBSERVED`, a numeric `value`, `unit` `cases`, and `environmental_context` null. The number and `release_id` belong to that release. Read them from your response. A later release can change them.
+Keep `limitations` with the value you store. This sample is trimmed from a response for release `governed-2026-10-15-january-climate-prod`. Read `value` and `release_id` from your own response. A later release can change them.
 
-Read `value` only together with `value_state` and `unit`. `case_count_floor_2023` is a privacy-protected case floor in `cases`. It is a surveillance floor, not a diagnosis, a complete incidence count, or an individual risk estimate.
+<Accordions>
+<Accordion title="Show example response">
 
-## States for this request
+```json
+{
+  "data": [
+    {
+      "measure_id": "case_count_floor_2023",
+      "geography": { "geography_type": "county", "geography_id": "36061" },
+      "temporal_grain": "YEAR",
+      "period_start": "2023-01-01",
+      "period_end": "2023-12-31",
+      "value": 1114.0,
+      "value_state": "OBSERVED",
+      "unit": "cases",
+      "denominator": null,
+      "strata": {},
+      "source_id": "human",
+      "methodology_id": "human_confirmed_probable_case_floor_v1",
+      "semantic_version": "2.0.0",
+      "release_id": "governed-2026-10-15-january-climate-prod",
+      "environmental_context": null
+    }
+  ],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-10-26T00:54:40.549206Z",
+    "availability": "AVAILABLE",
+    "release_id": "governed-2026-10-15-january-climate-prod",
+    "limitations": []
+  },
+  "links": { "self": null }
+}
+```
 
-Read `value` with `value_state` and `unit`. Record the value, unit, period, `release_id`, and `semantic_version` from an observed row. An empty `data` array means no row matched. That is HTTP 200, not HTTP 404. A matching `If-None-Match` on a supported detail resource returns HTTP 304 with an empty body.
+</Accordion>
+</Accordions>
 
-Each `value_state`, error `code`, and retry rule is in [Errors and retries](/docs/develop/errors).
+</Step>
+<Step>
 
-`GET /v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=99999&year=2023` returned HTTP 200 with `data: []` on 12 October 2026. An unknown five-digit FIPS can be an empty page. HTTP 404 is the declared not-found status; an empty page means the query succeeded and matched nothing.
+### Follow provenance
 
-The same measure for Adams County, FIPS `08001`, and `year=2023` returned HTTP 200 with `value_state` `MISSING` and `value` null on that date. That row is a gap for the published floor. It is still a successful response.
-
-## Follow provenance
-
-Take `source_id` and `methodology_id` from the observation you received. For this measure on the checked release those ids were `human` and `human_confirmed_probable_case_floor_v1`.
+Copy `source_id` and `methodology_id` from the observation you received. The example uses `human` and `human_confirmed_probable_case_floor_v1`.
 
 <HttpClientTabs
   requests={[
@@ -59,6 +103,59 @@ Take `source_id` and `methodology_id` from the observation you received. For thi
   ]}
 />
 
-Detail routes return `data`. Unknown ids return HTTP 404 `RESOURCE_NOT_FOUND`. A matching `If-None-Match` returns HTTP 304 with an empty body. `GET /v1/sources/human` did that when the previous `ETag` was sent back.
+Detail routes return `data`. An unknown id returns HTTP 404 `RESOURCE_NOT_FOUND`. A matching `If-None-Match` on a source or methodology returns HTTP 304 and an empty body. This observation collection ignores `If-None-Match` and returns HTTP 200.
 
-Continue with [Indicators, measures, and observations](/docs/develop/resources), [Provenance and evidence](/docs/develop/provenance), and the [workflow guides](/docs/develop/workflows).
+</Step>
+<Step>
+
+### Handle problems
+
+Use this table for the quickstart URL, and for the same query with another county FIPS, period, or extra parameter. Handle an empty page, a bad request, and a retry before you look up the other codes.
+
+| State | What you receive | What to do |
+| --- | --- | --- |
+| Observed value | HTTP 200, a row, `value_state` `OBSERVED`, numeric `value` | Record `value`, `unit`, the period, `release_id`, and `semantic_version` |
+| Zero or gap | HTTP 200 and `value_state` `ZERO`, or `value` null with `MISSING`, `SUPPRESSED`, or `UNAVAILABLE` | Keep `ZERO` as numeric zero. Leave a gap null. Do not substitute zero |
+| Empty page | HTTP 200, `data` `[]`. First query: `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. A later empty page stays `AVAILABLE` | An empty page does not establish source coverage or biological absence, and it is not HTTP 404 |
+| Bad request | HTTP 400. Read `code`, `detail`, and `errors` | Change the request and send it again. For this annual measure, send `year` or both `start_date` and `end_date`, and do not send both. `INVALID_REQUEST` covers a missing or inconsistent parameter. Send `geography_type=county`. `state` returns `UNSUPPORTED_FILTER` |
+| Retry | HTTP 429 `RATE_LIMITED`, or HTTP 503 `SERVICE_UNAVAILABLE`, with header `Retry-After` | Wait the seconds in `Retry-After` when the header is present, then send the same request again. Without the header, follow [Retries](/docs/develop/errors#retries). The public document does not publish a numeric quota |
+
+The other codes and states are in [Errors and retries](/docs/develop/errors): [Value states](/docs/develop/errors#value-states), [INVALID_REQUEST](/docs/develop/errors#invalid_request), [UNSUPPORTED_FILTER](/docs/develop/errors#unsupported_filter), [UNSUPPORTED_STRATIFICATION](/docs/develop/errors#unsupported_stratification), [QUERY_TOO_BROAD](/docs/develop/errors#query_too_broad), [RESOURCE_NOT_FOUND](/docs/develop/errors#resource_not_found), [RATE_LIMITED](/docs/develop/errors#rate_limited), [HTTP 413](/docs/develop/errors#http-413), [HTTP 414](/docs/develop/errors#http-414), [HTTP 503](/docs/develop/errors#http-503), and [Retries](/docs/develop/errors#retries).
+
+</Step>
+<Step>
+
+### Next steps
+
+<Cards>
+  <Card
+    title="Errors and retries"
+    href="/docs/develop/errors"
+    description="Look up a code, a retry, or a value state."
+  />
+  <Card
+    title="Indicators, measures, and observations"
+    href="/docs/develop/resources"
+    description="Choose a measure and read each value state."
+  />
+  <Card
+    title="Provenance and evidence"
+    href="/docs/develop/provenance"
+    description="Cite the source, methodology, and release with the value."
+  />
+  <Card
+    title="REST API"
+    href="/docs/develop/rest"
+    description="Page a collection and read every problem code."
+  />
+  <Card
+    title="Workflow guides"
+    href="/docs/develop/workflows"
+    description="Query, compare, and cite a county."
+  />
+</Cards>
+
+Open the [workflow guides](/docs/develop/workflows).
+
+</Step>
+</Steps>
