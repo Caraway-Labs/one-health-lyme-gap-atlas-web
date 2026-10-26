@@ -146,6 +146,15 @@ describe("public OpenAPI reference", () => {
         "| `request_id` | `string` | required |",
         "[ValueState](#schema-valuestate)",
         "| `OBSERVED` | a nonzero value the publisher reported. Use `value` as given. |",
+        "| `MISSING_ASSIGNMENT` | No description yet |",
+        "| `EXACT_INPUT` | the model read the current release |",
+        "| `UNAVAILABLE` | not a finding about the county |",
+        "| `NO_PUBLISHED_MODEL` | no model result is published for the county |",
+        "| `NO_PUBLISHED_RESULTS` | the first query found no published results |",
+        "| `unknown` | supports no conclusion about biological absence |",
+        "| `candidates_found` | lists counties to review |",
+        "| `measure_id` | `string` | required | Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. | `case_count_floor_2023` |",
+        "| `vintage_year` | `integer` | required | Year of the source product or classification. It is not an annual date. | `2023` |",
         "Never turn `null` into zero.",
         "`number \\| string \\| null`",
         "[`GET /v1/observations`](/docs/api-reference/observations/listObservations)",
@@ -224,6 +233,12 @@ describe("public OpenAPI reference", () => {
       anchors: preservedAnchors.filter(
         (anchor) => !schemaPage.includes(`[#${anchor}]`)
       ),
+      assignedTrailingProse: schemaPage.includes(
+        "| `MISSING_ASSIGNMENT` | `null` when `availability` is `AVAILABLE` |"
+      ),
+      unknownTrailingSentence: schemaPage.includes(
+        "| `unknown` | supports no conclusion about biological absence. `null` means"
+      ),
       comparisonLimit: schemaPage.includes("`UNKNOWN` is not `COMPARABLE`."),
       observationBeforeScore:
         schemaPage.indexOf("## Observation [#schema-observation]") <
@@ -237,7 +252,9 @@ describe("public OpenAPI reference", () => {
       truncatedUnknown: schemaPage.includes("| `UNKNOWN` | not |"),
     }).toStrictEqual({
       anchors: [],
+      assignedTrailingProse: false,
       comparisonLimit: true,
+      unknownTrailingSentence: false,
       observationBeforeScore: true,
       observationLink: true,
       problemLink: true,
@@ -708,6 +725,13 @@ describe("public OpenAPI reference", () => {
         "| `MISSING` | no value was reported. |",
         "| `county` | uses five-digit FIPS |",
         "| `state` | uses two-digit FIPS |",
+        "| `measure_id` | `string` | optional | Stable identifier of the measure. | `case_count_floor_2023` |",
+        "| `vintage_year` | `integer` | optional | Year of the source product. | `2023` |",
+        "| `sample_note` | `string` | optional | A labelled example. | `lower-48` |",
+        "| `ONE` | No description yet |",
+        "| `TWO` | No description yet |",
+        "| `THREE` | No description yet |",
+        "| `EXACT` | the model read the current release |",
         "[`GET /v1/readings`](/docs/api-reference/observations/listReadings)",
         "[`GET /v1/counties/{fips}/score`](/docs/api-reference/counties/getScore)",
         "No operation returns or accepts it.",
@@ -715,6 +739,9 @@ describe("public OpenAPI reference", () => {
     ).toStrictEqual([]);
     const scorePage = operationPage(pages, "getScore");
     expect({
+      listedReasonMeaning: schemas.includes(
+        "| `THREE` | `null` when availability is AVAILABLE |"
+      ),
       readingBeforeScore: observationAt > 0 && scoreAt > observationAt,
       readingLinks: missingPhrases(readings, [
         "](/docs/api-reference/schemas#schema-reading)",
@@ -727,6 +754,7 @@ describe("public OpenAPI reference", () => {
         "](/docs/api-reference/schemas#schema-valueflag)",
       ]),
     }).toStrictEqual({
+      listedReasonMeaning: false,
       readingBeforeScore: true,
       readingLinks: [],
       scoreLinks: [],
@@ -1624,9 +1652,36 @@ function documentWithSchemaShapes(): Record<string, unknown> {
               items: { $ref: "#/components/schemas/ValueFlag" },
               type: "array",
             },
+            defined_flag: {
+              description:
+                "`EXACT` means the model read the current release. `null` when absent.",
+              enum: ["EXACT", null],
+              type: ["string", "null"],
+            },
+            measure_id: {
+              description: "Stable identifier of the measure.",
+              examples: ["case_count_floor_2023"],
+              type: "string",
+            },
             note: {
               description: "Note that can be null.",
               type: ["string", "null"],
+            },
+            sample_note: {
+              description: "A labelled example.",
+              examples: { sample: { value: "lower-48" } },
+              type: "string",
+            },
+            unavailable_reason: {
+              description:
+                "Why no classification is published: `ONE`, `TWO`, or `THREE`. `null` when availability is AVAILABLE.",
+              enum: ["ONE", "TWO", "THREE", null],
+              type: ["string", "null"],
+            },
+            vintage_year: {
+              description: "Year of the source product.",
+              examples: [2023],
+              type: "integer",
             },
             place: {
               $ref: "#/components/schemas/Place",

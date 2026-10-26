@@ -14,6 +14,9 @@ const LEADING_MEANING_PUNCTUATION = /^[\s:.,;\-–—]+/;
 const LEADING_MEANS = /^(?:means|is)\s+/i;
 const TRAILING_CONJUNCTION = /\s+(?:and|or)\s*$/i;
 const TRAILING_PUNCTUATION = /[\s.;,]+$/;
+const LIST_CONTINUATION = /^(?:,|;|\bor\b|\band\b)/i;
+const NEW_SENTENCE = /^[.!?]/;
+const SENTENCE_BOUNDARY = /[.!?](?=\s+[`A-Z]|\s*$)/;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -697,7 +700,7 @@ function enumMeanings(
     const current = mentions[index];
     if (!current || meanings.has(current.value)) continue;
     const next = mentions[index + 1];
-    const text = inlineMeaning(
+    const text = definedInlineMeaning(
       description.slice(current.end, next?.index ?? description.length)
     );
     if (text) meanings.set(current.value, text);
@@ -738,6 +741,26 @@ function explicitEnumMeanings(
   return meanings;
 }
 
+function definedInlineMeaning(value: string): string {
+  const trimmed = value.trimStart();
+  // A comma list or a later sentence names the value without defining it.
+  // "`A`, `B`, or `C`. `null` when ..." must not describe `C`.
+  if (
+    !trimmed ||
+    LIST_CONTINUATION.test(trimmed) ||
+    NEW_SENTENCE.test(trimmed)
+  ) {
+    return "";
+  }
+  return inlineMeaning(firstSentence(trimmed));
+}
+
+function firstSentence(value: string): string {
+  const boundary = SENTENCE_BOUNDARY.exec(value);
+  if (!boundary) return value;
+  return value.slice(0, boundary.index + 1);
+}
+
 function inlineMeaning(value: string): string {
   const text = value
     .replace(LEADING_MEANING_PUNCTUATION, "")
@@ -755,6 +778,11 @@ function inlineMeaning(value: string): string {
 function exampleText(schema: unknown): string | undefined {
   if (!isRecord(schema)) return undefined;
   if ("example" in schema) return jsonText(schema.example);
+  // JSON Schema `examples` is an array. OpenAPI media examples are a map.
+  if (Array.isArray(schema.examples)) {
+    const entry = schema.examples[0];
+    return entry === undefined ? undefined : jsonText(entry);
+  }
   if (!isRecord(schema.examples)) return undefined;
   const entry = Object.values(schema.examples)[0];
   if (entry === undefined) return undefined;

@@ -226,7 +226,7 @@ Type: `object`
 
 | Value | Meaning |
 | --- | --- |
-| `NO_PUBLISHED_RESULTS` | the first query found no published results. Omitted otherwise |
+| `NO_PUBLISHED_RESULTS` | the first query found no published results |
 
 
 ## CountyContext [#schema-countycontext]
@@ -239,16 +239,16 @@ Describes the county context field that a population or rurality value came from
 
 Type: `object`
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `contract_version` | `atlas-county-context-consumer/1` | required | Version of the contract that defines this object. |
-| `vintage_year` | `integer` | required | Year of the source product or classification. It is not an annual date. |
-| `source_field` | `string` | required | Name of the field in the source product. |
-| `value_type` | `integer \| number` | required | Whether `value` is an integer or a decimal number. |
-| `category_label` | `string \| null` | required | Official label of the category. `null` for quantities. |
-| `definition` | `string` | required | Plain-language definition of the field. |
-| `allowed_value_states` | array of [ValueState](#schema-valuestate) | required | The `value_state` values this field can return. |
-| `metadata_methodology_version` | `string` | required | Version of the methodology metadata that describes this field. |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `contract_version` | `atlas-county-context-consumer/1` | required | Version of the contract that defines this object. | — |
+| `vintage_year` | `integer` | required | Year of the source product or classification. It is not an annual date. | `2023` |
+| `source_field` | `string` | required | Name of the field in the source product. | — |
+| `value_type` | `integer \| number` | required | Whether `value` is an integer or a decimal number. | — |
+| `category_label` | `string \| null` | required | Official label of the category. `null` for quantities. | — |
+| `definition` | `string` | required | Plain-language definition of the field. | — |
+| `allowed_value_states` | array of [ValueState](#schema-valuestate) | required | The `value_state` values this field can return. | — |
+| `metadata_methodology_version` | `string` | required | Version of the methodology metadata that describes this field. | — |
 
 ### `value_type` values
 
@@ -486,29 +486,29 @@ One variable you can query, such as a case count. It belongs to one indicator.
 
 Type: `object`
 
-| Name | Type | Required | Description |
-| --- | --- | --- | --- |
-| `measure_id` | `string` | required | Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. |
-| `indicator_id` | `string` | required | Identifier of the indicator this measure belongs to. |
-| `label` | `string` | required | Short display name of the measure. |
-| `definition` | `string \| null` | required | Plain-language definition of the measure. `null` when none is published. |
-| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. |
-| `release_version` | `string \| null` | optional | Identifies the published data release this record belongs to. |
-| `measure_type` | `string \| null` | optional | How the value is produced, such as `DERIVED`. `null` when none is published. |
-| `unit` | `string \| null` | optional | Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit. |
-| `denominator` | `string \| null` | optional | What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one. |
-| `geography_types` | array of [GeographyType](#schema-geographytype) \| `null` | optional | Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period. |
-| `temporal_grains` | array of `string` \| `null` | optional | Time intervals the measure is reported in, such as `DAY`. `null` when not listed. |
-| `geography_semantics` | `string \| null` | optional | What the place dimension means for this measure. `null` when not published. |
-| `temporal_semantics` | `string \| null` | optional | What the time dimension means for this measure. `null` when not published. |
-| `allowed_value_states` | array of [ValueState](#schema-valuestate) \| `null` | optional | The `value_state` values this measure can return. `null` when not listed. |
-| `allowed_strata` | array of `string` \| `null` | optional | Breakdowns, such as age group, that the measure supports. `null` when it has none. |
-| `missingness_semantics` | `string \| null` | optional | How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding. |
-| `methodology_id` | `string \| null` | optional | Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies. |
-| `methodology` | `string \| null` | optional | Short name of the method that produces the value. |
-| `source_ids` | array of `string` \| `null` | optional | Identifiers of the sources the measure draws on. `null` when not listed. |
-| `limitations` | array of `string` | optional | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
-| `standards_mappings` | array of [StandardsMapping](#schema-standardsmapping) \| `null` | optional | Optional reviewed links to external standards. `null` when none exist. |
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `measure_id` | `string` | required | Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. | `case_count_floor_2023` |
+| `indicator_id` | `string` | required | Identifier of the indicator this measure belongs to. | — |
+| `label` | `string` | required | Short display name of the measure. | — |
+| `definition` | `string \| null` | required | Plain-language definition of the measure. `null` when none is published. | — |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. | — |
+| `release_version` | `string \| null` | optional | Identifies the published data release this record belongs to. | — |
+| `measure_type` | `string \| null` | optional | How the value is produced, such as `DERIVED`. `null` when none is published. | — |
+| `unit` | `string \| null` | optional | Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit. | — |
+| `denominator` | `string \| null` | optional | What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one. | — |
+| `geography_types` | array of [GeographyType](#schema-geographytype) \| `null` | optional | Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period. | — |
+| `temporal_grains` | array of `string` \| `null` | optional | Time intervals the measure is reported in, such as `DAY`. `null` when not listed. | — |
+| `geography_semantics` | `string \| null` | optional | What the place dimension means for this measure. `null` when not published. | — |
+| `temporal_semantics` | `string \| null` | optional | What the time dimension means for this measure. `null` when not published. | — |
+| `allowed_value_states` | array of [ValueState](#schema-valuestate) \| `null` | optional | The `value_state` values this measure can return. `null` when not listed. | — |
+| `allowed_strata` | array of `string` \| `null` | optional | Breakdowns, such as age group, that the measure supports. `null` when it has none. | — |
+| `missingness_semantics` | `string \| null` | optional | How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding. | — |
+| `methodology_id` | `string \| null` | optional | Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies. | — |
+| `methodology` | `string \| null` | optional | Short name of the method that produces the value. | — |
+| `source_ids` | array of `string` \| `null` | optional | Identifiers of the sources the measure draws on. `null` when not listed. | — |
+| `limitations` | array of `string` | optional | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. | — |
+| `standards_mappings` | array of [StandardsMapping](#schema-standardsmapping) \| `null` | optional | Optional reviewed links to external standards. `null` when none exist. | — |
 
 
 ## Methodology [#schema-methodology]
@@ -829,7 +829,7 @@ Type: `object`
 | --- | --- |
 | `established` | No description yet |
 | `detected` | No description yet |
-| `unknown` | supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher's original value stays in the observation `value` |
+| `unknown` | supports no conclusion about biological absence |
 
 ### `state` values
 
@@ -1397,7 +1397,7 @@ Type: `object`
 | `NOT_PUBLISHED` | No description yet |
 | `UNAPPROVED_BATCH` | No description yet |
 | `INCOMPATIBLE_RELEASE` | No description yet |
-| `MISSING_ASSIGNMENT` | `null` when `availability` is `AVAILABLE` |
+| `MISSING_ASSIGNMENT` | No description yet |
 
 ### `compatibility` values
 
@@ -1544,4 +1544,4 @@ Type: `object`
 
 | Value | Meaning |
 | --- | --- |
-| `NO_PUBLISHED_MODEL` | no model result is published for the county. `null` when a result is available |
+| `NO_PUBLISHED_MODEL` | no model result is published for the county |
