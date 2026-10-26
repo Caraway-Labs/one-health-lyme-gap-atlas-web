@@ -271,7 +271,7 @@ export function feedPanelAbstract(entry: FeedEntry): FeedPanelAbstract {
   }
 }
 
-/** By-id abstract text for an expanded card. Any other state clears the preview. */
+/** By-id abstract text. A null text means that payload has no abstract to show. */
 export function feedExpandedAbstract(entry: FeedEntry): {
   copyrightLine: string | null;
   text: string | null;
@@ -293,6 +293,28 @@ export function feedExpandedAbstract(entry: FeedEntry): {
       return exhaustive;
     }
   }
+}
+
+/**
+ * The fetched by-id abstract stays in effect after collapse. The list preview
+ * returns only while that payload still has abstract text.
+ */
+export function feedCardAbstractDisplay({
+  expanded,
+  preview,
+  resolved,
+}: {
+  expanded: boolean;
+  preview: { copyrightLine: string | null; text: string | null };
+  resolved: { copyrightLine: string | null; text: string | null } | null;
+}): { copyrightLine: string | null; text: string | null } {
+  if (resolved !== null && resolved.text === null) {
+    return resolved;
+  }
+  if (expanded && resolved !== null) {
+    return resolved;
+  }
+  return preview;
 }
 
 export function feedPanelDescription(

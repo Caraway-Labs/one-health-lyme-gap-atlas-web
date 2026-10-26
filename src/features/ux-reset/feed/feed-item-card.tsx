@@ -18,6 +18,7 @@ import {
   FEED_EXTERNAL_LINK_REL,
   FEED_EXTERNAL_LINK_TARGET,
   FEED_ITEM_MISSING_MESSAGE,
+  feedCardAbstractDisplay,
   feedCardAuthorLine,
   feedCardSummary,
   feedCardTags,
@@ -118,15 +119,24 @@ function FeedCardAbstract({
     entry.item_id,
     expanded && summary.hasMore
   );
-  const loaded =
-    expanded && lookup.data ? feedExpandedAbstract(lookup.data) : null;
+  const resolved = lookup.data ? feedExpandedAbstract(lookup.data) : null;
+  const previewText = summary.text.length > 0 ? summary.text : null;
+  const display = feedCardAbstractDisplay({
+    expanded,
+    preview: {
+      copyrightLine: summary.copyrightLine,
+      text: previewText,
+    },
+    resolved,
+  });
   const busy = expanded && lookup.isFetching && lookup.data === undefined;
   const showError = expanded && lookup.isError && !lookup.isFetching;
   const failure = showError ? feedItemLookupFailure(lookup.error) : null;
-  const previewText = summary.text.length > 0 ? summary.text : null;
-  const text = loaded ? loaded.text : previewText;
-  const copyrightLine = loaded ? loaded.copyrightLine : summary.copyrightLine;
-  const status = abstractStatus(failure, loaded?.text ?? null);
+  const { copyrightLine, text } = display;
+  const status = abstractStatus(
+    failure,
+    expanded && resolved !== null ? resolved.text : null
+  );
   return (
     <div>
       <div aria-busy={busy} data-testid="feed-abstract-region" id={regionId}>

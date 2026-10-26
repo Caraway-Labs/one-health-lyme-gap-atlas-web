@@ -637,6 +637,85 @@ describe("PubMed abstract previews", () => {
     });
   });
 
+  it("keeps a suppressed abstract hidden after Show less", async () => {
+    const user = userEvent.setup();
+    const changed = intelligenceFeedEntry("changed", {
+      abstractHasMore: true,
+      abstractPreview: "Fixture preview that the item no longer serves.",
+      abstractState: "present",
+      attribution: COURTESY,
+      copyrightLine: COPYRIGHT,
+      description: { state: "not_provided", text: null },
+      organization: "National Library of Medicine",
+      pmid: "12345678",
+      publisher: "Fixture Journal",
+      pubmedUrl: PUBMED_URL,
+      sourceFamily: "pubmed",
+      sourceFamilyLabel: "PubMed",
+      sourceId: "pubmed-fixture",
+      title: "Fixture changed record",
+      trust: "research_index",
+    });
+    listIntelligenceFeed.mockResolvedValue({
+      data: {
+        ...listFixture,
+        data: [changed],
+      },
+      headers: new Headers(),
+      status: 200,
+    });
+    mockDetail(
+      intelligenceFeedDetail("changed", {
+        abstract: { copyright_line: null, state: "suppressed", text: null },
+        attribution: COURTESY,
+        description: { state: "not_provided", text: null },
+        organization: "National Library of Medicine",
+        pmid: "12345678",
+        publisher: "Fixture Journal",
+        pubmedUrl: PUBMED_URL,
+        sourceFamily: "pubmed",
+        sourceFamilyLabel: "PubMed",
+        sourceId: "pubmed-fixture",
+        title: "Fixture changed record",
+        trust: "research_index",
+      })
+    );
+    renderFeed();
+    const card = cardFor(
+      await screen
+        .findByRole("heading", {
+          name: "Fixture changed record (opens in a new tab)",
+        })
+        .then(() => "Fixture changed record")
+    );
+    await user.click(
+      within(card).getByRole("button", { name: "Show full abstract" })
+    );
+    await waitFor(() => {
+      if (within(card).queryByTestId("feed-abstract")) {
+        throw new Error("Stale abstract is still shown");
+      }
+    });
+    await user.click(within(card).getByRole("button", { name: "Show less" }));
+    const collapsed = card.textContent?.toLowerCase() ?? "";
+    expect({
+      copyright: within(card).queryByTestId("feed-abstract-copyright"),
+      preview: within(card).queryByTestId("feed-abstract"),
+      readMore: within(card).getByRole("button", { name: "Read more" })
+        .textContent,
+      restored: collapsed.includes("fixture preview that the item"),
+      toggle: within(card)
+        .getByRole("button", { name: "Show full abstract" })
+        .getAttribute("aria-expanded"),
+    }).toStrictEqual({
+      copyright: null,
+      preview: null,
+      readMore: "Read more",
+      restored: false,
+      toggle: "false",
+    });
+  });
+
   it("shows the by-id abstract state in the detail panel", async () => {
     const user = userEvent.setup();
     renderFeed();

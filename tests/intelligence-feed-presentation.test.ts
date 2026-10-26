@@ -8,10 +8,12 @@ import {
   feedPublisherHref,
   feedPublisherLabel,
   feedCardSummary,
+  feedCardAbstractDisplay,
   feedExpandedAbstract,
   feedRequestFailure,
 } from "@/features/ux-reset/feed/feed-presentation";
 import { BriefingSourceReviewedTrustClassification } from "@/generated/models/briefingSourceReviewedTrustClassification";
+import { FeedAbstractState } from "@/generated/models/feedAbstractState";
 import type { FeedListEntry } from "@/generated/models/feedListEntry";
 import { AtlasApiError } from "@/lib/api-mutator";
 
@@ -159,6 +161,60 @@ describe("intelligence feed presentation", () => {
     expect(feedExpandedAbstract(suppressed)).toStrictEqual({
       copyrightLine: null,
       text: null,
+    });
+  });
+
+  it("keeps a withdrawn by-id abstract hidden after the card collapses", () => {
+    const preview = {
+      copyrightLine: "© 2026 Fixture Publisher.",
+      text: "Fixture preview that the item no longer serves.",
+    };
+    const detail = (
+      state: (typeof FeedAbstractState)[keyof typeof FeedAbstractState],
+      text: string | null
+    ) =>
+      feedExpandedAbstract(
+        intelligenceFeedDetail(state, {
+          abstract: {
+            copyright_line: "© 2026 Fixture Publisher.",
+            state,
+            text,
+          },
+          organization: "National Library of Medicine",
+          sourceId: "pubmed-fixture",
+          trust: BriefingSourceReviewedTrustClassification.research_index,
+        })
+      );
+    const present = detail(FeedAbstractState.present, "Full fixture abstract.");
+    const hidden = [
+      detail(FeedAbstractState.suppressed, null),
+      detail(FeedAbstractState.withheld, null),
+      detail(FeedAbstractState.empty, ""),
+      detail(FeedAbstractState.not_provided, null),
+    ].map((resolved) =>
+      feedCardAbstractDisplay({ expanded: false, preview, resolved })
+    );
+    expect({
+      collapsedPresent: feedCardAbstractDisplay({
+        expanded: false,
+        preview,
+        resolved: present,
+      }),
+      expandedPresent: feedCardAbstractDisplay({
+        expanded: true,
+        preview,
+        resolved: present,
+      }),
+      hidden,
+    }).toStrictEqual({
+      collapsedPresent: preview,
+      expandedPresent: present,
+      hidden: [
+        { copyrightLine: null, text: null },
+        { copyrightLine: null, text: null },
+        { copyrightLine: null, text: null },
+        { copyrightLine: null, text: null },
+      ],
     });
   });
 
