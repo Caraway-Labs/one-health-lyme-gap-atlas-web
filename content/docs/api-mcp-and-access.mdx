@@ -58,13 +58,13 @@ curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
 curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
 ```
 
-Read `value` with `value_state` and `unit`: `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, `NO_RECORDS`. Gaps and `SUPPRESSED` are not zero. The workspace shows **Suppressed**. `NO_COUNTY_LINKED_RECORD` is neither null nor zero. `NO_RECORDS` keeps `No records` and does not establish biological absence. A published `ZERO` stays a real zero.
+Read `value` with `value_state` and `unit`. Meanings and what to keep: [Errors and retries](/docs/develop/errors#value-states). The workspace shows **Suppressed**.
 
 ## Handle limits and errors
 
-Send one measure, `geography_type=county`, five-digit FIPS codes, and `year` or both dates. Rejected filters, strata, sorting, and aggregation use `RESOURCE_NOT_FOUND`, `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, or `UNSUPPORTED_STRATIFICATION`. Keep `request_id`.
+Send one measure, `geography_type=county`, five-digit FIPS codes, and `year` or both dates. Keep `request_id`. Codes, retries, and `value_state`: [Errors and retries](/docs/develop/errors).
 
-`429` and `503` may include `Retry-After` seconds. No numeric quota is published. Wait, then retry. Send `If-None-Match` for `304`. Details: [REST API](/docs/develop/rest).
+Send `If-None-Match` for `304`. Paging and versions: [REST API](/docs/develop/rest).
 
 ## Reproduce a result
 

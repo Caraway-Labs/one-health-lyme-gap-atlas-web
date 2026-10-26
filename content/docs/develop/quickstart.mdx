@@ -118,9 +118,9 @@ Use this table for the quickstart URL, and for the same query with another count
 | Zero or gap | HTTP 200 and `value_state` `ZERO`, or `value` null with `MISSING`, `SUPPRESSED`, or `UNAVAILABLE` | Keep `ZERO` as numeric zero. Leave a gap null. Do not substitute zero |
 | Empty page | HTTP 200, `data` `[]`. First query: `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. A later empty page stays `AVAILABLE` | An empty page does not establish source coverage or biological absence, and it is not HTTP 404 |
 | Bad request | HTTP 400. Read `code`, `detail`, and `errors` | Change the request and send it again. For this annual measure, send `year` or both `start_date` and `end_date`, and do not send both. `INVALID_REQUEST` covers a missing or inconsistent parameter. Send `geography_type=county`. `state` returns `UNSUPPORTED_FILTER` |
-| Retry | HTTP 429 `RATE_LIMITED`, or HTTP 503 `SERVICE_UNAVAILABLE`, with header `Retry-After` | Wait the seconds in `Retry-After` when the header is present, then send the same request again. The public document does not publish a numeric quota |
+| Retry | HTTP 429 `RATE_LIMITED`, or HTTP 503 `SERVICE_UNAVAILABLE`, with header `Retry-After` | Wait the seconds in `Retry-After` when the header is present, then send the same request again. Without the header, follow [Retries](/docs/develop/errors#retries). The public document does not publish a numeric quota |
 
-`NO_COUNTY_LINKED_RECORD`, `NO_RECORDS`, and the other value states are in [Read value_state](/docs/develop/resources#read-value_state). `UNSUPPORTED_STRATIFICATION`, `QUERY_TOO_BROAD`, HTTP `413`, and HTTP `414` are in [Handle errors](/docs/develop/rest#handle-errors).
+The other codes and states are in [Errors and retries](/docs/develop/errors): [Value states](/docs/develop/errors#value-states), [INVALID_REQUEST](/docs/develop/errors#invalid_request), [UNSUPPORTED_FILTER](/docs/develop/errors#unsupported_filter), [UNSUPPORTED_STRATIFICATION](/docs/develop/errors#unsupported_stratification), [QUERY_TOO_BROAD](/docs/develop/errors#query_too_broad), [RESOURCE_NOT_FOUND](/docs/develop/errors#resource_not_found), [RATE_LIMITED](/docs/develop/errors#rate_limited), [HTTP 413](/docs/develop/errors#http-413), [HTTP 414](/docs/develop/errors#http-414), [HTTP 503](/docs/develop/errors#http-503), and [Retries](/docs/develop/errors#retries).
 
 </Step>
 <Step>
@@ -128,6 +128,11 @@ Use this table for the quickstart URL, and for the same query with another count
 ### Next steps
 
 <Cards>
+  <Card
+    title="Errors and retries"
+    href="/docs/develop/errors"
+    description="Look up a code, a retry, or a value state."
+  />
   <Card
     title="Indicators, measures, and observations"
     href="/docs/develop/resources"

@@ -76,6 +76,8 @@ _openapi:
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/counties/{fips}/surveillance-situations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
 ---
 
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
 export default function Layout(props) {
   const { OpenAPIPage } = props.components ?? {};
   return (

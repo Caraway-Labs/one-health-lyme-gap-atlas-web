@@ -95,6 +95,8 @@ _openapi:
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"Report rendering timed out. Please try again later.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
 ---
 
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
 export default function Layout(props) {
   const { OpenAPIPage } = props.components ?? {};
   return (
