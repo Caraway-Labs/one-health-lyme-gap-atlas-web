@@ -112,6 +112,7 @@ describe("rendered documentation markdown", () => {
 
   it("renders the published MCP interpretation guardrail", async () => {
     const markdown = await renderedPage("content/docs/develop/mcp-clients.mdx");
+    expect(markdown).toContain("Interpret with care");
     expect(markdown).toContain("Missing is not zero.");
     expect(markdown).toContain(
       "A gap or a review priority is not risk or a diagnosis."

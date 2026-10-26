@@ -9,7 +9,13 @@ import { ObservationCurl } from "@/features/docs/observation-query-example";
 
 Choose a checked slice and send only its time parameter. The browser stores the tab. Successful rows use release `governed-2026-10-15-january-climate-prod`.
 
-Examples use FIPS `36061` (New York County, New York). Product geography is the lower 48 states and the District of Columbia. Preserve leading zeros. Atlas results are not a diagnosis. A percentile, status, or floor is not individual risk. An empty page is not a zero. See [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+Examples use FIPS `36061` (New York County, New York). Product geography is the lower 48 states and the District of Columbia. Preserve leading zeros.
+
+<Callout title="Interpret with care" type="warn">
+  Atlas results are not a diagnosis. A percentile, status, or floor is not
+  individual risk. An empty page is not a zero. See [Evidence, provenance, and
+  uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
 
 A sample `GET /v1/measures?page_size=100` returned 25 measures and `next_page_token` null. A later release can change ids. Read `temporal_semantics`. Parameters are on [Observations](/docs/api-reference/observations) and in the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json).
 

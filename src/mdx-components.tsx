@@ -36,8 +36,8 @@ function DocsLink({ children, ...props }: ComponentProps<"a">) {
 }
 
 /**
- * MDX components for docs pages. Defaults cover Callout and Cards.
- * Steps, Accordions, TypeTable, and Tabs are registered for later stories.
+ * MDX components for docs pages. Callout, Cards, and Accordions are the
+ * scannable patterns for guardrails, guide maps, and long reference rows.
  */
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {

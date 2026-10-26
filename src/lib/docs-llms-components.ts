@@ -148,7 +148,7 @@ function renderKnownComponent(
       );
     }
     case "InterpretationGuardrailCopy": {
-      return codeFence(ATLAS_INTERPRETATION_GUARDRAILS, "text");
+      return `#### Interpret with care\n\n${codeFence(ATLAS_INTERPRETATION_GUARDRAILS, "text")}`;
     }
     case "ObservationCurl": {
       return codeFence(observationCurl(requiredString(attributes, "query")));

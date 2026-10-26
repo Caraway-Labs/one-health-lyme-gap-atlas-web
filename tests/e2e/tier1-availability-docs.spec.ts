@@ -9,7 +9,7 @@ test("renders the Tier 1 availability decision guide", async ({
   await page.goto("/docs/develop");
   await page
     .locator("main")
-    .getByRole("link", { name: "Tier 1 availability", exact: true })
+    .getByRole("link", { name: "Tier 1 availability" })
     .click();
   await expect(page).toHaveURL(/\/docs\/develop\/tier1-availability\/?$/);
   await expect(

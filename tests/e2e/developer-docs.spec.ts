@@ -86,7 +86,9 @@ test("follows the quickstart county request from the developer overview", async 
   await page.goto("/docs/develop");
   await page
     .locator("main")
-    .getByRole("link", { name: "Quickstart", exact: true })
+    .getByRole("link", {
+      name: "Quickstart Finish one county observation read",
+    })
     .click();
   await expect(page).toHaveURL(/\/docs\/develop\/quickstart\/?$/);
   await expect(

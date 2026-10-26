@@ -78,7 +78,8 @@ describe("observation query documentation", () => {
       "not a zero",
       "not individual risk",
     ];
-    const missing = required.filter((phrase) => !page.includes(phrase));
+    const collapsed = page.replaceAll(/\s+/g, " ");
+    const missing = required.filter((phrase) => !collapsed.includes(phrase));
     expect(missing).toStrictEqual([]);
     expect(page).not.toMatch(/Alaska|Hawaii|\b(?:AK|HI)\b/);
   });

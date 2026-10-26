@@ -629,6 +629,12 @@ body {
   --color-red-600: #991b1b;
   --color-yellow-600: #854d0e;
 }
+/* Fumadocs accordion triggers clear the outline. Restore the site focus ring. */
+.atlas-docs-root :is(a, button):focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+  outline-style: solid;
+}
 .atlas-docs-root #nd-docs-layout {
   min-height: 100dvh;
 }
