@@ -5,6 +5,7 @@
  * Build artifact for existing first-party Web client and validator generation. Not an external developer contract or HTTP surface. Use the public openapi.json for external documentation.
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectionProvenanceParserVersion } from './projectionProvenanceParserVersion';
 
 export interface ProjectionProvenance {
   /** @pattern ^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$ */
@@ -13,7 +14,7 @@ export interface ProjectionProvenance {
   artifact_id: string;
   /** @pattern ^[a-f0-9]{64}$ */
   artifact_sha256: string;
-  parser_version: 'rss-atom-native-v2';
+  parser_version: ProjectionProvenanceParserVersion;
   /** @pattern ^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$ */
   fetch_version: string;
   normalization_version: 'intelligence-identity-v2';
