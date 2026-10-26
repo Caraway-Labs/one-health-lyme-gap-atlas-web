@@ -88,32 +88,41 @@ test("search and llms.txt include the glossary page", async ({
   ).toBeVisible({ timeout: 15_000 });
 });
 
-test("term definition opens from keyboard focus and from a tap", async ({
+test("term definition opens from the keyboard and the glossary link stays reachable", async ({
   browser,
   page,
 }) => {
   await openQuickstart(page);
   const term = valueStateTerm(page);
   const trigger = term.getByRole("button", { name: "value_state" });
-  const tooltip = term.getByRole("tooltip");
+  const dialog = page.getByRole("dialog", { name: "value_state definition" });
   await term.scrollIntoViewIfNeeded();
   await trigger.focus();
-  await expect(tooltip).toBeVisible();
-  await expect(tooltip).toContainText("Never treat a null value as zero.");
+  await expect(dialog).toHaveCount(0);
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Never treat a null value as zero.");
+  const glossary = dialog.getByRole("link", { name: "Glossary" });
+  await expect(glossary).toHaveAttribute("href", "/docs/glossary#value_state");
+  await page.keyboard.press("Tab");
+  await expect(glossary).toBeFocused();
+  await expect(dialog).toBeVisible();
   await page.screenshot({
     path: "/opt/cursor/artifacts/glossary-after-term.png",
   });
-  await page.keyboard.press("Tab");
-  await expect(tooltip).toBeHidden();
 
-  await trigger.hover();
-  await expect(tooltip).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await trigger.click();
+  await expect(dialog).toBeVisible();
 
   const touchPage = await touchPageFor(browser);
   await openQuickstart(touchPage);
   const touchTerm = valueStateTerm(touchPage);
   await touchTerm.getByRole("button", { name: "value_state" }).tap();
-  await expect(touchTerm.getByRole("tooltip")).toBeVisible();
+  await expect(
+    touchPage.getByRole("dialog", { name: "value_state definition" })
+  ).toBeVisible();
   await touchPage.close();
 });
 

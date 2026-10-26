@@ -1,5 +1,10 @@
-import { useId, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   listGlossaryTerms,
   lookupGlossaryTerm,
@@ -34,30 +39,32 @@ function GlossaryText({ text }: { text: string }) {
 }
 
 /**
- * Inline glossary term. The label and definition are in the server HTML, so
- * the control still reads as plain text when JavaScript is off. Hover, focus,
- * and tap show the definition through CSS; no client script is required.
+ * Inline glossary term. The label is in the server HTML. Activating the
+ * trigger opens the shared Popover so a keyboard user can Tab to the Glossary
+ * link while the definition stays open.
  */
 export function Term({ children, id }: TermProps) {
   const term = lookupGlossaryTerm(id);
-  const descriptionId = useId();
   return (
     <span className="docs-term" data-glossary-term={term.id}>
-      <button
-        aria-describedby={descriptionId}
-        className="docs-term-trigger"
-        type="button"
-      >
-        {children ?? term.label}
-      </button>
-      <span className="docs-term-panel" id={descriptionId} role="tooltip">
-        <span className="docs-term-definition">
-          <GlossaryText text={term.definition} />
-        </span>{" "}
-        <a href={`/docs/glossary#${term.id}`} tabIndex={-1}>
-          Glossary
-        </a>
-      </span>
+      <Popover>
+        <PopoverTrigger className="docs-term-trigger" type="button">
+          {children ?? term.label}
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          aria-label={`${term.label} definition`}
+          className="docs-term-panel w-auto"
+          side="bottom"
+        >
+          <p className="m-0">
+            <span className="docs-term-definition">
+              <GlossaryText text={term.definition} />
+            </span>{" "}
+            <a href={`/docs/glossary#${term.id}`}>Glossary</a>
+          </p>
+        </PopoverContent>
+      </Popover>
     </span>
   );
 }

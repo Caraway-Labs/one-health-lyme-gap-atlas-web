@@ -3,6 +3,7 @@ import path from "node:path";
 
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { GlossaryList, Term } from "@/features/docs/term";
@@ -13,26 +14,48 @@ describe("glossary term control", () => {
     cleanup();
   });
 
-  it("renders the term and its definition as plain text", () => {
+  it("renders the term label before the definition is opened", () => {
     render(<Term id="value_state" />);
 
-    expect(
-      screen.getByRole("button", { name: "value_state" })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("tooltip")).toHaveTextContent(
+    expect(screen.getByRole("button", { name: "value_state" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps the glossary link reachable after the definition opens", async () => {
+    const user = userEvent.setup();
+    render(<Term id="value_state" />);
+    const trigger = screen.getByRole("button", { name: "value_state" });
+
+    trigger.focus();
+    await user.keyboard("{Enter}");
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "value_state definition",
+    });
+    expect(dialog).toHaveTextContent(
       "How to read value. Never treat a null value as zero."
     );
     expect(screen.getByRole("link", { name: "Glossary" })).toHaveAttribute(
       "href",
       "/docs/glossary#value_state"
     );
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Glossary" })).toHaveFocus();
+    expect(dialog).toBeVisible();
   });
 
-  it("keeps custom label text and still resolves the definition", () => {
+  it("keeps custom label text and still resolves the definition", async () => {
+    const user = userEvent.setup();
     render(<Term id="fips">FIPS</Term>);
 
-    expect(screen.getByRole("button", { name: "FIPS" })).toBeInTheDocument();
-    expect(screen.getByRole("tooltip")).toHaveTextContent(
+    await user.click(screen.getByRole("button", { name: "FIPS" }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "FIPS definition",
+    });
+    expect(dialog).toHaveTextContent(
       "Five-digit county FIPS code, with leading zeros."
     );
   });
