@@ -215,7 +215,7 @@ function pageTokenCalls() {
 
 function loadedItemTitles(): (string | null)[] {
   return screen
-    .getAllByRole("heading", { level: 2 })
+    .getAllByTestId("feed-article-title")
     .map((heading) => heading.textContent);
 }
 
@@ -436,9 +436,7 @@ describe("intelligence feed page", () => {
         name: /County-level Lyme reporting, a review/,
       })
     ).resolves.toBeTruthy();
-    const titles = screen
-      .getAllByRole("heading", { level: 2 })
-      .map((heading) => heading.textContent);
+    const titles = loadedItemTitles();
     expect({
       first: titles[0],
       firstRequest: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
@@ -1854,14 +1852,18 @@ describe("feed item detail presentation", () => {
       ])
     );
     renderFeed();
-    await screen.findByRole("heading", {
+    const heading = await screen.findByRole("heading", {
       name: "Suppressed abstract (opens in a new tab)",
     });
+    const card = heading.closest("li");
+    if (!card) {
+      throw new Error("Missing suppressed abstract card");
+    }
     expect({
-      abstract: screen.queryByTestId("feed-abstract"),
-      author: screen.getByText("Doe J").textContent,
-      removed: screen.queryByText("removed"),
-      tag: screen.getByText("Lyme disease").textContent,
+      abstract: within(card).queryByTestId("feed-abstract"),
+      author: within(card).getByText("Doe J").textContent,
+      removed: within(card).queryByText("removed"),
+      tag: within(card).getByText("Lyme disease").textContent,
     }).toStrictEqual({
       abstract: null,
       author: "Doe J",
