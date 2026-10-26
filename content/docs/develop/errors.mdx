@@ -1,0 +1,285 @@
+---
+title: Errors and retries
+description: Look up INVALID_REQUEST, UNSUPPORTED_FILTER, UNSUPPORTED_STRATIFICATION, QUERY_TOO_BROAD, RESOURCE_NOT_FOUND, RATE_LIMITED, HTTP 413, 414, 422, and 503, and read each value_state.
+---
+
+Canonical errors use RFC 9457 `application/problem+json`. Required fields are `type`, `title`, `status`, `detail`, `instance`, and `request_id`. `code` and `errors` are optional. Branch on `code` when it is present. Send `request_id` to support. It matches the `X-Request-ID` response header.
+
+Captured bodies below are production responses with the live `request_id` kept. `RATE_LIMITED` and HTTP 503 use the documented contract example instead, because those responses were not requested.
+
+## Codes
+
+| HTTP status | `code` | When it applies |
+| --- | --- | --- |
+| 400 | `INVALID_REQUEST` | [Missing, malformed, or inconsistent parameter](#invalid_request) |
+| 400 | `UNSUPPORTED_FILTER` | [A parameter V1 does not accept](#unsupported_filter) |
+| 400 | `UNSUPPORTED_STRATIFICATION` | [`stratification` is sent](#unsupported_stratification) |
+| 400 | `QUERY_TOO_BROAD` | [The selection is above 10,000 results](#query_too_broad) |
+| 404 | `RESOURCE_NOT_FOUND` | [Unknown canonical resource id](#resource_not_found) |
+| 413 | `INVALID_REQUEST` | [A GET request includes a body](#http-413) |
+| 414 | `INVALID_REQUEST` | [The query string is too long](#http-414) |
+| 422 | (none) | [Legacy validation](#http-422) |
+| 429 | `RATE_LIMITED` | [Too many requests](#rate_limited) |
+| 503 | `SERVICE_UNAVAILABLE` | [The data service cannot answer](#http-503) |
+
+## INVALID_REQUEST
+
+A parameter is missing, malformed, or inconsistent with the other parameters. Read `detail` and `errors`. Change the request, then send it again. The same request fails again.
+
+Observations without `year` and without both `start_date` and `end_date` returned this body. `errors` is null. The reason is in `detail`.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/invalid-request",
+  "title": "Invalid public query",
+  "status": 400,
+  "detail": "Supply a year or both start_date and end_date.",
+  "instance": "/v1/observations",
+  "request_id": "d85c5512-20c6-4d43-af48-c87f37ca289c",
+  "code": "INVALID_REQUEST",
+  "errors": null
+}
+```
+
+HTTP 413 and HTTP 414 use the same `code` at a different status. See [HTTP 413](#http-413) and [HTTP 414](#http-414).
+
+## UNSUPPORTED_FILTER
+
+The request includes a parameter V1 does not accept, including `sort`, `aggregation`, or an unknown query name. Remove that parameter. The same request fails again.
+
+An observations request that added `sort` returned this body.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/unsupported-filter",
+  "title": "Invalid public query",
+  "status": 400,
+  "detail": "This query filter is not supported in V1.",
+  "instance": "/v1/observations",
+  "request_id": "0c23cfac-0adf-485f-bea5-aa458a7a483a",
+  "code": "UNSUPPORTED_FILTER",
+  "errors": null
+}
+```
+
+## UNSUPPORTED_STRATIFICATION
+
+The request sends `stratification`. The current release has no governed strata. Omit `stratification`. The same request fails again.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/unsupported-stratification",
+  "title": "Invalid public query",
+  "status": 400,
+  "detail": "This release has no governed strata.",
+  "instance": "/v1/observations",
+  "request_id": "196fcd1b-87f0-46f1-8666-861daaa77b5e",
+  "code": "UNSUPPORTED_STRATIFICATION",
+  "errors": null
+}
+```
+
+## QUERY_TOO_BROAD
+
+The selection is above the result limit. Narrow the measure, geography, time, or stratification, then request the first page again. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation. The API does not return a partial page for the rejected selection.
+
+A daily weather query whose county and day selection exceeded that ceiling returned this body.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/query-too-broad",
+  "title": "Invalid public query",
+  "status": 400,
+  "detail": "Narrow measure, geography, time, or stratification selection.",
+  "instance": "/v1/observations",
+  "request_id": "0008ef8f-6899-465d-9ca0-a21057a1d548",
+  "code": "QUERY_TOO_BROAD",
+  "errors": null
+}
+```
+
+## RESOURCE_NOT_FOUND
+
+The resource id, or the selection, is not in the current release. `detail` names what is missing. Check the id against the list operation for that resource. Retrying the same request returns the same response.
+
+`GET /v1/measures/not_a_real_measure` returned this body.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-404",
+  "title": "Not found",
+  "status": 404,
+  "detail": "Measure not found.",
+  "instance": "/v1/measures/not_a_real_measure",
+  "request_id": "3d18c2eb-1d79-4331-8811-12a42e4086b6",
+  "code": "RESOURCE_NOT_FOUND",
+  "errors": null
+}
+```
+
+A legacy route can return HTTP 404 with no `code`. `GET /v1/counties/00000` returned this body. Do not require `code` on every problem body.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-404",
+  "title": "Not found",
+  "status": 404,
+  "detail": "County or dataset release not found",
+  "instance": "/v1/counties/00000",
+  "request_id": "b8681b50-c33f-486e-be5b-19c8502d7010",
+  "errors": null
+}
+```
+
+An empty observation page is HTTP 200 with `data` set to `[]`. That is not HTTP 404.
+
+## RATE_LIMITED
+
+Too many requests arrived in a short time. Wait the number of seconds in `Retry-After`, then retry the same request. Spread later requests out, or reuse a cached response. The public document does not publish a numeric quota.
+
+The contract documents this body and a `Retry-After` header. It was not requested from production. The `request_id` in the example is the contract sample. Send the `request_id` from the response you received.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/rate-limited",
+  "title": "Too many requests",
+  "status": 429,
+  "detail": "Public request limit reached.",
+  "instance": "/v1/indicators/{indicator_id}",
+  "request_id": "3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93",
+  "code": "RATE_LIMITED"
+}
+```
+
+Some legacy routes document HTTP 429 with `Retry-After` and no `code`. Wait on the header the same way. Do not require `code` before you back off.
+
+## HTTP 413
+
+The request is a GET with a body. `code` is `INVALID_REQUEST`. Send the request again without a body, and put every value in the query string.
+
+`GET /v1/indicators` with a body returned this response.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/invalid-request",
+  "title": "Payload too large",
+  "status": 413,
+  "detail": "GET request bodies are unsupported.",
+  "instance": "/v1/indicators",
+  "request_id": "a69c57ce-a318-41fd-9224-632305df5302",
+  "code": "INVALID_REQUEST"
+}
+```
+
+## HTTP 414
+
+The query string is longer than the API accepts. `code` is `INVALID_REQUEST`. Send fewer or shorter parameter values, then retry. This status is separate from HTTP 400.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/invalid-request",
+  "title": "URI too long",
+  "status": 414,
+  "detail": "Query string is too long.",
+  "instance": "/v1/indicators",
+  "request_id": "06e27123-0183-42ee-aeb7-282286f4e359",
+  "code": "INVALID_REQUEST"
+}
+```
+
+## HTTP 422
+
+Legacy routes, including county and state review, scores, geometry, rankings, and PDF reports, return HTTP 422 when a request value fails validation. The body is Problem Details with an `errors` list and no `code`. Each entry names the invalid input and where it was sent. Fix each listed value, then retry. The same request fails again.
+
+`GET /v1/counties/abc` returned this body.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/validation",
+  "title": "Invalid request",
+  "status": 422,
+  "detail": "One or more request values are invalid.",
+  "instance": "/v1/counties/abc",
+  "request_id": "f1f47351-4b84-4599-ab24-5f40a4f0642f",
+  "errors": [
+    {
+      "type": "string_pattern_mismatch",
+      "loc": ["path", "fips"],
+      "msg": "String should match pattern '^\\d{5}$'",
+      "input": "abc"
+    }
+  ]
+}
+```
+
+## HTTP 503
+
+The Atlas data service cannot answer right now. `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check `Content-Type` before you parse the body. Parse it as Problem Details only when the media type is `application/problem+json`.
+
+The contract documents this body. It was not requested from production. `detail` can differ by route. The county report renderer, for example, documents a timeout detail with the same `code`. Send the `request_id` from the response you received.
+
+```json
+{
+  "type": "https://onehealthatlas.org/problems/http-503",
+  "title": "Service unavailable",
+  "status": 503,
+  "detail": "The governed Atlas data service is temporarily unavailable.",
+  "instance": "/v1/indicators/{indicator_id}",
+  "request_id": "3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93",
+  "code": "SERVICE_UNAVAILABLE"
+}
+```
+
+Geography identity that is still unpublished is HTTP 200 with `availability` `UNAVAILABLE` and `reason` `CANONICAL_GEOGRAPHY_UNPUBLISHED`. That response is not HTTP 503.
+
+## Retries
+
+Wait the number of seconds in `Retry-After` when that header is present, then send the same request. The header is documented on HTTP 429 and HTTP 503. Its description is "Seconds to wait before you retry. Wait that long when the header is present."
+
+When HTTP 503 has no `Retry-After`, retry with exponential backoff: increase the wait after each attempt. The contract calls this a growing delay. It does not publish a starting delay or a maximum wait.
+
+HTTP 400, 404, 413, 414, and 422 fail again when the request is unchanged. Change the request before you send it again.
+
+A 5xx body is not always JSON. Read the `Content-Type` response header before parsing. Parse Problem Details only when the media type is `application/problem+json`. Any other media type is not a problem document. Do not invent a `code` from it. Honor `Retry-After` when the header is present, and otherwise use the growing delay above.
+
+## Value states
+
+Read `value` only together with `value_state` and `unit`. Show these states differently from each other. Never turn `null` into zero.
+
+| State | Meaning | What a client should do |
+| --- | --- | --- |
+| `OBSERVED` | Nonzero value the publisher reported | [Use `value` as given](#observed) |
+| `ZERO` | Reported numeric zero. Different from a missing value | [Keep the zero](#zero) |
+| `MISSING` | No value was reported. `value` is null. It is not zero | [Leave `value` null](#missing) |
+| `SUPPRESSED` | Withheld. `value` is null. It is not zero | [Do not estimate it](#suppressed) |
+| `UNAVAILABLE` | No published result. `value` is null. Not zero or absence | [Leave `value` null](#unavailable) |
+| `NO_COUNTY_LINKED_RECORD` | Text `no_county_linked_record`. Neither null nor zero | [Keep the text](#no_county_linked_record) |
+| `NO_RECORDS` | Publisher literal `No records` | [Keep the text](#no_records) |
+
+### OBSERVED
+
+A nonzero value the publisher reported. Use `value` as given.
+
+### ZERO
+
+A reported numeric zero. It is different from a missing value. Keep the zero.
+
+### MISSING
+
+No value was reported, and `value` is null. It is not zero. Leave `value` null. Do not substitute zero.
+
+### SUPPRESSED
+
+The value exists but is withheld, and `value` is null. It is not zero. Do not estimate it.
+
+### UNAVAILABLE
+
+Atlas has no published result for this selection, and `value` is null. It does not mean zero or absence. Leave `value` null.
+
+### NO_COUNTY_LINKED_RECORD
+
+A governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero, and it is not evidence of absence. Keep that text.
+
+### NO_RECORDS
+
+The publisher's literal "No records" result. `value` is the text `No records`. It does not establish biological absence. Keep that text.

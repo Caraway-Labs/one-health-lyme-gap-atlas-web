@@ -15,6 +15,7 @@ const developRoot = path.join(docsRoot, "develop");
 const developPages = [
   "index",
   "quickstart",
+  "errors",
   "rest",
   "geography",
   "resources",
@@ -487,9 +488,8 @@ function responseStatuses(spec: JsonRecord, route: string): string[] {
   return Object.keys(pathItem.get.responses);
 }
 
-function documentedValueStates(resources: string): string[] {
-  const section =
-    resources.split("## Read value_state")[1]?.split("\n## ")[0] ?? "";
+function documentedValueStates(errors: string): string[] {
+  const section = errors.split("## Value states")[1]?.split("\n## ")[0] ?? "";
   const states: string[] = [];
   for (const match of section.matchAll(/^\| `(?<state>[A-Z_]+)` \|/gm)) {
     const state = match.groups?.state;
@@ -500,8 +500,8 @@ function documentedValueStates(resources: string): string[] {
   return states;
 }
 
-function errorTableProblems(rest: string, spec: JsonRecord): string[] {
-  const section = rest.split("## Handle errors")[1]?.split("\n## ")[0] ?? "";
+function errorTableProblems(errors: string, spec: JsonRecord): string[] {
+  const section = errors.split("## Codes")[1]?.split("\n## ")[0] ?? "";
   const rows: { code: string; status: string }[] = [];
   for (const match of section.matchAll(
     /^\| (?<status>\d{3}) \| (?<code>[^|\n]+) \|/gm
@@ -745,13 +745,13 @@ describe("developer guides follow the pinned public OpenAPI contract", () => {
   const vocab = collectVocabulary(spec);
 
   it("documents the public contract value states in enum order", () => {
-    expect(documentedValueStates(readPage("resources"))).toStrictEqual(
+    expect(documentedValueStates(readPage("errors"))).toStrictEqual(
       schemaEnum(spec, "ValueState")
     );
   });
 
   it("lists 413 and 414 apart from HTTP 400", () => {
-    expect(errorTableProblems(readPage("rest"), spec)).toStrictEqual([]);
+    expect(errorTableProblems(readPage("errors"), spec)).toStrictEqual([]);
   });
 
   it("uses only public-contract enums, statuses, codes, headers, and fields", () => {

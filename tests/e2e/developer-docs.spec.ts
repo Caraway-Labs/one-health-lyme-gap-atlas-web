@@ -9,6 +9,7 @@ import { releaseViewportRuns } from "./release-phone-viewport";
 const developerPages = [
   { path: "/docs/develop", heading: "Developer overview" },
   { path: "/docs/develop/quickstart", heading: "Quickstart" },
+  { path: "/docs/develop/errors", heading: "Errors and retries" },
   { path: "/docs/develop/rest", heading: "REST API" },
   { path: "/docs/develop/geography", heading: "Geography" },
   {
@@ -93,8 +94,15 @@ test("follows the quickstart county request from the developer overview", async 
       "https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023"
     )
   ).toBeVisible();
+  await page
+    .locator("main")
+    .getByRole("link", { exact: true, name: "Errors and retries" })
+    .click();
+  await expect(page).toHaveURL(/\/docs\/develop\/errors\/?$/);
   await expect(page.getByText("RATE_LIMITED").first()).toBeVisible();
   await expect(page.getByText("Retry-After").first()).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/docs\/develop\/quickstart\/?$/);
 
   const citation = page
     .locator("main")
@@ -809,19 +817,19 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
 test("renders contract value states and separate 413 and 414 rows", async ({
   page,
 }) => {
-  await page.goto("/docs/develop/resources");
+  await page.goto("/docs/develop/errors");
   await expect(
     page.getByRole("cell", { exact: true, name: "NO_COUNTY_LINKED_RECORD" })
   ).toBeVisible();
   await expect(
     page.getByRole("cell", { exact: true, name: "NO_RECORDS" })
   ).toBeVisible();
-
-  await page.goto("/docs/develop/rest");
   await expect(
     page.getByRole("row", { name: /413\s+INVALID_REQUEST/ })
   ).toBeVisible();
   await expect(
     page.getByRole("row", { name: /414\s+INVALID_REQUEST/ })
   ).toBeVisible();
+  await expect(page.locator("#unsupported_filter")).toBeVisible();
+  await expect(page.locator("#value-states")).toBeVisible();
 });

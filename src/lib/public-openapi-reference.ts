@@ -1742,6 +1742,9 @@ function collectSchemaCatalog(
   }
 }
 
+const ERRORS_REFERENCE_LINK =
+  "Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).";
+
 function enrichOperationPage(
   content: string,
   operation: OperationView
@@ -1771,9 +1774,14 @@ function enrichOperationPage(
     operation.summary || operation.operationId
   );
   const badge = pendingDeliveryBadgeMarkup(operation);
-  const body = badge
-    ? `${PENDING_DELIVERY_BADGE_IMPORT}\n\n${badge}\n\n${document.body.trim()}`
-    : document.body;
+  const body = [
+    badge ? PENDING_DELIVERY_BADGE_IMPORT : "",
+    badge,
+    ERRORS_REFERENCE_LINK,
+    document.body.trim(),
+  ]
+    .filter((part) => part.length > 0)
+    .join("\n\n");
   return joinGeneratedDocument(document.data, body);
 }
 

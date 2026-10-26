@@ -46,17 +46,7 @@ The same county and measure, with `start_date` 2023-01-01 and `end_date` 2023-12
 
 ## Read value_state
 
-`value` is a number, a string, or null. Null never means zero.
-
-| State | Contract meaning |
-| --- | --- |
-| `OBSERVED` | Nonzero value the publisher reported |
-| `ZERO` | Reported numeric zero. Different from a missing value |
-| `MISSING` | No value was reported. It is not zero. `value` is null |
-| `SUPPRESSED` | Withheld. It is not zero. `value` is null |
-| `UNAVAILABLE` | No published result. Not zero or absence. `value` is null |
-| `NO_COUNTY_LINKED_RECORD` | Literal `no_county_linked_record`. Neither null nor zero. Not evidence of absence |
-| `NO_RECORDS` | Publisher literal `No records`. It does not establish biological absence |
+`value` is a number, a string, or null. Null never means zero. Each state and what to do: [Errors and retries](/docs/develop/errors#value-states).
 
 A sample case-floor `strata` value was an empty object, not a breakdown.
 
