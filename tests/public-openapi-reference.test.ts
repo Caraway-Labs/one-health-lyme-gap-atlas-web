@@ -256,7 +256,7 @@ describe("public OpenAPI reference", () => {
     expect(incomplete).toStrictEqual([]);
   });
 
-  it("uses each operation summary as the subtitle and indexes the description once", async () => {
+  it("uses each operation summary as the subtitle and omits the long description from search", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const pages = await renderPublicApiReference(contract);
     const problems: string[] = [];
@@ -292,10 +292,40 @@ describe("public OpenAPI reference", () => {
             `${operation.operationId} description copied into layout`
           );
         }
-        if (longDescription && indexedCopies !== 1) {
+        if (longDescription && indexedCopies !== 0) {
           problems.push(
-            `${operation.operationId} indexed ${String(indexedCopies)} time(s)`
+            `${operation.operationId} indexed the long description ${String(indexedCopies)} time(s)`
           );
+        }
+        const frontmatterRecord = isRecord(parsed) ? parsed : undefined;
+        const structured = isRecord(frontmatterRecord?._openapi)
+          ? frontmatterRecord._openapi.structuredData
+          : undefined;
+        const structuredRecord = isRecord(structured) ? structured : undefined;
+        const indexedText = JSON.stringify(structuredRecord?.contents ?? []);
+        if (summary && !indexedText.includes(summary)) {
+          problems.push(`${operation.operationId} summary is not indexed`);
+        }
+        for (const parameter of operation.parameters) {
+          if (!indexedText.includes(parameter.name)) {
+            problems.push(
+              `${operation.operationId} missing parameter ${parameter.name}`
+            );
+          }
+        }
+        const headingLine = /^#{1,6}\s+(?<text>.+?)\s*$/m.exec(
+          operation.description
+        );
+        const headingText = headingLine?.groups?.text
+          ?.replaceAll(/[*_`]/g, "")
+          .trim();
+        if (
+          headingText &&
+          !JSON.stringify(structuredRecord?.headings ?? []).includes(
+            headingText
+          )
+        ) {
+          problems.push(`${operation.operationId} missing heading`);
         }
       }
     }
