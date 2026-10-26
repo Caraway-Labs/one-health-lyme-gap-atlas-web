@@ -15,6 +15,13 @@ import { parse, stringify } from "yaml";
 import { showsPendingDeliveryBadge } from "./endpoint-delivery";
 import { markdownTableCell } from "./markdown-table";
 import {
+  componentSchemaNames,
+  renderOperationSchemaLine,
+  renderSchemaCatalog,
+  schemaTagGroups,
+  type SchemaCatalogOperation,
+} from "./public-openapi-schema-catalog";
+import {
   getDocsUrl,
   getPublishedApiOrigin,
   getSiteOrigin,
@@ -1379,6 +1386,7 @@ function assemblePublicApiReference(
   const files = new Map<string, string>();
   const located = operationsById(contract);
   const folderOperations = new Map<string, LocatedOperation[]>();
+  const schemaAnchors = schemaAnchorMap(contract.schemas);
 
   for (const file of generated) {
     const relativePath = file.path.split(path.sep).join("/");
@@ -1397,7 +1405,15 @@ function assemblePublicApiReference(
     const entries = folderOperations.get(folder) ?? [];
     entries.push(entry);
     folderOperations.set(folder, entries);
-    files.set(relativePath, enrichOperationPage(file.content, entry.operation));
+    files.set(
+      relativePath,
+      enrichOperationPage(
+        file.content,
+        entry.operation,
+        contract.schemas,
+        schemaAnchors
+      )
+    );
   }
 
   for (const operationId of located.keys()) {
@@ -1432,14 +1448,21 @@ function assemblePublicApiReference(
     );
   }
 
-  const schemaAnchors = schemaAnchorMap(contract.schemas);
   files.set(
     "index.mdx",
     renderReferenceIndex(contract, folderOperations, schemaAnchors)
   );
   files.set(
     "schemas.mdx",
-    renderSchemaCatalog(contract.schemas, schemaAnchors)
+    renderSchemaCatalog({
+      anchors: schemaAnchors,
+      groups: schemaTagGroups(
+        contract.document,
+        contract.tags.map((tag) => tag.name)
+      ),
+      operations: schemaCatalogOperations(contract, folderOperations),
+      schemas: contract.schemas,
+    })
   );
   files.set("meta.json", renderReferenceNavigation(folders));
   return files;
@@ -1662,84 +1685,53 @@ function renderTagIndex(folder: string, entries: LocatedOperation[]): string {
   return `${lines.join("\n").trim()}\n`;
 }
 
-function renderSchemaCatalog(
-  schemas: JsonRecord,
-  schemaAnchors: Map<string, string>
-): string {
-  const names = Object.keys(schemas);
-  const lines = [
-    frontmatter(
-      "Schemas",
-      "Component schema names and descriptions from the pinned public Atlas OpenAPI contract."
-    ),
-    "These component schema descriptions are indexed from the public OpenAPI contract. Operation pages render the schema with the native OpenAPI reference.",
-    "",
-  ];
-  if (names.length === 0) {
-    lines.push("This contract does not declare component schemas.");
-  }
-  for (const name of names) {
-    const anchor = schemaAnchors.get(`#/components/schemas/${name}`);
-    if (!anchor) {
-      throw new PublicOpenApiContractError(
-        "malformed",
-        `Component schema ${name} is missing a stable heading.`
-      );
+function schemaCatalogOperations(
+  contract: LoadedPublicOpenApiContract,
+  folderOperations: Map<string, LocatedOperation[]>
+): SchemaCatalogOperation[] {
+  const folderByOperation = new Map<string, string>();
+  for (const [folder, entries] of folderOperations) {
+    for (const entry of entries) {
+      folderByOperation.set(entry.operation.operationId, folder);
     }
-    lines.push(`## ${escapeInline(name)} [#${anchor}]`, "");
-    lines.push(...schemaCatalogLines(schemas[name]), "");
   }
-  return `${lines.join("\n").trim()}\n`;
+  const operations: SchemaCatalogOperation[] = [];
+  for (const tag of contract.tags) {
+    for (const operation of tag.operations) {
+      const folder = folderByOperation.get(operation.operationId);
+      if (!folder) continue;
+      operations.push({
+        folder,
+        method: operation.method,
+        operationId: operation.operationId,
+        path: operation.path,
+        schemaNames: componentSchemaNames(
+          operationSchemaNodes(operation),
+          contract.schemas
+        ),
+        summary: operation.summary,
+        tag: tag.name,
+      });
+    }
+  }
+  return operations;
 }
 
-function schemaCatalogLines(schema: unknown): string[] {
-  const lines: string[] = [];
-  const seen = new Set<unknown>();
-  const descriptions: string[] = [];
-  const properties: string[] = [];
-  collectSchemaCatalog(schema, descriptions, properties, seen);
-  for (const description of descriptions) {
-    lines.push(escapeMdx(description), "");
+function operationSchemaNodes(operation: OperationView): unknown[] {
+  const nodes: unknown[] = [];
+  for (const parameter of operation.parameters) {
+    nodes.push(parameter.schema);
+    for (const media of parameter.content ?? []) nodes.push(media.schema);
   }
-  for (const property of properties) {
-    lines.push(`- \`${escapeInline(property)}\``);
-  }
-  if (lines.length === 0)
-    lines.push("This schema does not declare a description.");
-  return lines;
-}
-
-function collectSchemaCatalog(
-  schema: unknown,
-  descriptions: string[],
-  properties: string[],
-  seen: Set<unknown>
-): void {
-  if (!isRecord(schema) || seen.has(schema)) return;
-  seen.add(schema);
-  if (typeof schema.description === "string" && schema.description.trim()) {
-    descriptions.push(schema.description.trim());
-  }
-  if (isRecord(schema.properties)) {
-    for (const [name, property] of Object.entries(schema.properties)) {
-      properties.push(name);
-      collectSchemaCatalog(property, descriptions, properties, seen);
+  for (const media of operation.requestBody ?? []) nodes.push(media.schema);
+  for (const response of operation.responses) {
+    for (const media of response.media) nodes.push(media.schema);
+    for (const header of response.headers) {
+      nodes.push(header.schema);
+      for (const media of header.content ?? []) nodes.push(media.schema);
     }
   }
-  collectSchemaCatalog(schema.items, descriptions, properties, seen);
-  collectSchemaCatalog(
-    schema.additionalProperties,
-    descriptions,
-    properties,
-    seen
-  );
-  for (const combiner of ["allOf", "anyOf", "oneOf"] as const) {
-    const branches = schema[combiner];
-    if (!Array.isArray(branches)) continue;
-    for (const branch of branches) {
-      collectSchemaCatalog(branch, descriptions, properties, seen);
-    }
-  }
+  return nodes;
 }
 
 const ERRORS_REFERENCE_LINK =
@@ -1747,7 +1739,9 @@ const ERRORS_REFERENCE_LINK =
 
 function enrichOperationPage(
   content: string,
-  operation: OperationView
+  operation: OperationView,
+  schemas: JsonRecord,
+  schemaAnchors: Map<string, string>
 ): string {
   const document = splitGeneratedDocument(content);
   const openapi = isRecord(document.data._openapi)
@@ -1774,10 +1768,15 @@ function enrichOperationPage(
     operation.summary || operation.operationId
   );
   const badge = pendingDeliveryBadgeMarkup(operation);
+  const schemaLine = renderOperationSchemaLine(
+    componentSchemaNames(operationSchemaNodes(operation), schemas),
+    schemaAnchors
+  );
   const body = [
     badge ? PENDING_DELIVERY_BADGE_IMPORT : "",
     badge,
     ERRORS_REFERENCE_LINK,
+    schemaLine,
     document.body.trim(),
   ]
     .filter((part) => part.length > 0)

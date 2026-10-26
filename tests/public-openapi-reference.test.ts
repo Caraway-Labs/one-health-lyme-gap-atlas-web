@@ -121,7 +121,7 @@ describe("public OpenAPI reference", () => {
       .map(([file]) => file);
     expect(operationsMissingErrorsLink).toStrictEqual([]);
     const schemaPage = requiredFile(pages, "schemas.mdx");
-    const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
+    const schemaCount = schemaPage.match(/^## .+ \[#schema-/gm)?.length ?? 0;
     expect({
       heading: headingCount(pages, "[#listObservations]"),
       index: requiredFile(pages, "index.mdx").includes(
@@ -135,6 +135,22 @@ describe("public OpenAPI reference", () => {
       ),
       problemDetails: schemaPage.includes("## ProblemDetails"),
       schemaCount: schemaCount > 0,
+      schemaPhrases: missingPhrases(schemaPage, [
+        "### Atlas evidence (V1 resources)",
+        "### Atlas analytics and reports",
+        "## Observation [#schema-observation]",
+        "## ValueState [#schema-valuestate]",
+        "## ProblemDetails [#schema-problemdetails]",
+        "| Field | Type | Required | Description |",
+        "| `code` | `string \\| null` | optional |",
+        "| `request_id` | `string` | required |",
+        "[ValueState](#schema-valuestate)",
+        "| `OBSERVED` | a nonzero value the publisher reported. Use `value` as given. |",
+        "Never turn `null` into zero.",
+        "`number \\| string \\| null`",
+        "[`GET /v1/observations`](/docs/api-reference/observations/listObservations)",
+      ]),
+      stable: fileMap(pages),
     }).toStrictEqual({
       heading: 1,
       index: true,
@@ -142,10 +158,91 @@ describe("public OpenAPI reference", () => {
       observationsIndex: true,
       problemDetails: true,
       schemaCount: true,
+      schemaPhrases: [],
+      stable: fileMap(await renderPublicApiReference(contract)),
     });
-    expect(fileMap(pages)).toStrictEqual(
-      fileMap(await renderPublicApiReference(contract))
-    );
+    const preservedAnchors = [
+      "schema-problemdetails",
+      "schema-mapvaluescollection",
+      "schema-countymapvalues",
+      "schema-atlasmetadata",
+      "schema-sourcemetadata",
+      "schema-scorecollection",
+      "schema-countyscoresummary",
+      "schema-score",
+      "schema-countydetail",
+      "schema-countysurveillancesituations",
+      "schema-situationvariant",
+      "schema-situationclassification",
+      "schema-membershipprobability",
+      "schema-tier1countypriority",
+      "schema-priorityreason",
+      "schema-tier1countypriorityavailability",
+      "schema-geographytype",
+      "schema-resourceenvelope-geography",
+      "schema-geography",
+      "schema-geographyidentity",
+      "schema-geographyunavailable",
+      "schema-canonicalgeographyavailability",
+      "schema-collectionenvelope-indicator",
+      "schema-indicator",
+      "schema-standardsmapping",
+      "schema-collectionmeta",
+      "schema-collectionlinks",
+      "schema-resourceenvelope-indicator",
+      "schema-collectionenvelope-measure",
+      "schema-measure",
+      "schema-valuestate",
+      "schema-resourceenvelope-measure",
+      "schema-resourceenvelope-methodology",
+      "schema-methodology",
+      "schema-collectionenvelope-countycontextobservation",
+      "schema-countycontextobservation",
+      "schema-evidencereference",
+      "schema-environmentalcontext",
+      "schema-surveillancecontext",
+      "schema-surveillanceevidencecontext",
+      "schema-methodologycomparisoncontext",
+      "schema-temporalalignmentcontext",
+      "schema-temporalwindowcontext",
+      "schema-temporallagcontext",
+      "schema-temporalcoveragecontext",
+      "schema-temporalreferenceperiodcontext",
+      "schema-countycontext",
+      "schema-collectionenvelope-observation",
+      "schema-observation",
+      "schema-collectionenvelope-source",
+      "schema-source",
+      "schema-resourceenvelope-source",
+      "schema-statereview",
+      "schema-candidate",
+      "schema-publicreviewevidencereference",
+      "schema-datagap",
+      "schema-reviewcoverage",
+    ];
+    expect({
+      anchors: preservedAnchors.filter(
+        (anchor) => !schemaPage.includes(`[#${anchor}]`)
+      ),
+      comparisonLimit: schemaPage.includes("`UNKNOWN` is not `COMPARABLE`."),
+      observationBeforeScore:
+        schemaPage.indexOf("## Observation [#schema-observation]") <
+        schemaPage.indexOf("## Score [#schema-score]"),
+      observationLink: observations.includes(
+        "](/docs/api-reference/schemas#schema-observation)"
+      ),
+      problemLink: observations.includes(
+        "](/docs/api-reference/schemas#schema-problemdetails)"
+      ),
+      truncatedUnknown: schemaPage.includes("| `UNKNOWN` | not |"),
+    }).toStrictEqual({
+      anchors: [],
+      comparisonLimit: true,
+      observationBeforeScore: true,
+      observationLink: true,
+      problemLink: true,
+      truncatedUnknown: false,
+    });
   });
 
   it("renders county report template tabs from the pinned contract", async () => {
@@ -545,6 +642,65 @@ describe("public OpenAPI reference", () => {
       ])
     ).toStrictEqual([]);
     expect(requiredFile(pages, "schemas.mdx")).toContain("[#schema-a-b-2]");
+  });
+
+  it("renders schema types, enums, nullability, arrays, and operation links", async () => {
+    const pinned = pin(documentWithSchemaShapes());
+    const pages = await renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+    );
+    const schemas = requiredFile(pages, "schemas.mdx");
+    const readings = operationPage(pages, "listReadings");
+    const observationAt = schemas.indexOf("## Reading [#schema-reading]");
+    const scoreAt = schemas.indexOf("## Score [#schema-score]");
+
+    expect(
+      missingPhrases(schemas, [
+        "Read each field before writing a parser.",
+        "### Atlas evidence (V1 resources)",
+        "### Atlas analytics and reports",
+        "## Place [#schema-place]",
+        "## Reading [#schema-reading]",
+        "## ValueFlag [#schema-valueflag]",
+        "## Combined [#schema-combined]",
+        "## Score [#schema-score]",
+        "| Field | Type | Required | Description |",
+        "| Field | Type | Required | Description | Example |",
+        "| `note` | `string \\| null` | required |",
+        "| `flags` | array of [ValueFlag](#schema-valueflag) | required |",
+        "| `choice` | [ValueFlag](#schema-valueflag) \\| `null` | optional |",
+        "| `unlabeled` | `integer` | optional | No description yet |",
+        "| `geography_id` | `string` | required | Five-digit FIPS. |",
+        "| `label` | `string` | required | Short label. |",
+        "| `score` | `number` | required | A score. | `1` |",
+        "| Value | Meaning |",
+        "| `OBSERVED` | a nonzero value the publisher reported. |",
+        "| `MISSING` | no value was reported. |",
+        "| `county` | uses five-digit FIPS |",
+        "| `state` | uses two-digit FIPS |",
+        "[`GET /v1/readings`](/docs/api-reference/observations/listReadings)",
+        "[`GET /v1/counties/{fips}/score`](/docs/api-reference/counties/getScore)",
+        "No operation returns or accepts it.",
+      ])
+    ).toStrictEqual([]);
+    const scorePage = operationPage(pages, "getScore");
+    expect({
+      readingBeforeScore: observationAt > 0 && scoreAt > observationAt,
+      readingLinks: missingPhrases(readings, [
+        "](/docs/api-reference/schemas#schema-reading)",
+        "](/docs/api-reference/schemas#schema-place)",
+        "](/docs/api-reference/schemas#schema-valueflag)",
+        "](/docs/api-reference/schemas#schema-combined)",
+      ]),
+      scoreLinks: missingPhrases(scorePage, [
+        "](/docs/api-reference/schemas#schema-score)",
+        "](/docs/api-reference/schemas#schema-valueflag)",
+      ]),
+    }).toStrictEqual({
+      readingBeforeScore: true,
+      readingLinks: [],
+      scoreLinks: [],
+    });
   });
 
   it("checks the pinned contract from the command line", async () => {
@@ -1385,6 +1541,152 @@ function externalSchemaRef(): Record<string, unknown> {
     "application/json"
   ].schema = { $ref: "https://example.com/schemas/Indicator" };
   return document;
+}
+
+function documentWithSchemaShapes(): Record<string, unknown> {
+  return {
+    ...minimalDocument(),
+    components: {
+      schemas: {
+        Combined: {
+          allOf: [
+            { $ref: "#/components/schemas/Place" },
+            {
+              properties: {
+                label: { description: "Short label.", type: "string" },
+              },
+              required: ["label"],
+              type: "object",
+            },
+          ],
+          description: "Place plus a label.",
+        },
+        Orphan: { type: "object" },
+        Place: {
+          description: "A county.",
+          properties: {
+            geography_id: {
+              description: "Five-digit FIPS.",
+              type: "string",
+            },
+          },
+          required: ["geography_id"],
+          type: "object",
+        },
+        PlaceKind: {
+          description:
+            "Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.",
+          enum: ["county", "state"],
+          type: "string",
+        },
+        Reading: {
+          description: "One reading.",
+          properties: {
+            choice: {
+              anyOf: [
+                { $ref: "#/components/schemas/ValueFlag" },
+                { type: "null" },
+              ],
+              description: "A flag or null.",
+            },
+            flags: {
+              description: "States for the reading.",
+              items: { $ref: "#/components/schemas/ValueFlag" },
+              type: "array",
+            },
+            note: {
+              description: "Note that can be null.",
+              type: ["string", "null"],
+            },
+            place: {
+              $ref: "#/components/schemas/Place",
+              description: "Where the reading applies.",
+            },
+            unlabeled: { type: "integer" },
+          },
+          required: ["place", "flags", "note"],
+          type: "object",
+        },
+        Score: {
+          description: "A county score.",
+          properties: {
+            score: {
+              description: "A score.",
+              example: 1,
+              type: "number",
+            },
+          },
+          required: ["score"],
+          type: "object",
+        },
+        ValueFlag: {
+          description:
+            "How to read the value.\n\n- `OBSERVED`: a nonzero value the publisher reported.\n- `MISSING`: no value was reported.",
+          enum: ["OBSERVED", "MISSING"],
+          type: "string",
+        },
+      },
+    },
+    paths: {
+      "/v1/counties/{fips}/score": {
+        get: {
+          operationId: "getScore",
+          parameters: [
+            {
+              in: "query",
+              name: "kind",
+              required: false,
+              schema: { $ref: "#/components/schemas/ValueFlag" },
+            },
+          ],
+          responses: {
+            "200": {
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Score" },
+                },
+              },
+              description: "Score.",
+            },
+          },
+          summary: "Read a score",
+          tags: ["counties"],
+        },
+      },
+      "/v1/readings": {
+        get: {
+          operationId: "listReadings",
+          responses: {
+            "200": {
+              content: {
+                "application/json": {
+                  schema: {
+                    allOf: [
+                      { $ref: "#/components/schemas/Reading" },
+                      { $ref: "#/components/schemas/Combined" },
+                    ],
+                  },
+                },
+              },
+              description: "Readings.",
+            },
+          },
+          summary: "List readings",
+          tags: ["observations"],
+        },
+      },
+    },
+    "x-tagGroups": [
+      {
+        name: "Atlas evidence (V1 resources)",
+        tags: ["observations"],
+      },
+      {
+        name: "Atlas analytics and reports",
+        tags: ["counties"],
+      },
+    ],
+  };
 }
 
 function documentWithCollidingSchemas(): Record<string, unknown> {
