@@ -7,9 +7,9 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 import { ObservationCurl } from "@/features/docs/observation-query-example";
 
-Choose a checked slice and send only its time parameter. The browser stores the tab. Successful rows use release `governed-2026-10-15-january-climate-prod`.
+Choose a checked slice and send only its time parameter. The browser stores the tab. Successful rows use <Term id="release">release</Term> `governed-2026-10-15-january-climate-prod`.
 
-Examples use FIPS `36061` (New York County, New York). Product geography is the lower 48 states and the District of Columbia. Preserve leading zeros.
+Examples use <Term id="fips">FIPS</Term> `36061` (New York County, New York). Product geography is the lower 48 states and the District of Columbia. Preserve leading zeros.
 
 <Callout title="Interpret with care" type="warn">
   Atlas results are not a diagnosis. A percentile, status, or floor is not
@@ -29,7 +29,7 @@ A sample `GET /v1/measures?page_size=100` returned 25 measures and `next_page_to
 
     <ObservationCurl query="measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023" />
 
-    Sample: HTTP 200, one row, `temporal_grain` `YEAR`, 2023-01-01 through 2023-12-31, `OBSERVED`, a numeric `value`, `unit` `cases`, null `environmental_context` and `surveillance_context`. The same dates without `year` returned the same kind of row. `year` 2022 returned HTTP 200, empty `data`, `availability` `UNAVAILABLE`, and `reason` `NO_PUBLISHED_RESULTS`.
+    Sample: HTTP 200, one row, `temporal_grain` `YEAR`, 2023-01-01 through 2023-12-31, `OBSERVED`, a numeric `value`, `unit` `cases`, null `environmental_context` and `surveillance_context`. The same dates without `year` returned the same kind of row. `year` 2022 returned HTTP 200, empty `data`, <Term id="availability">availability</Term> `UNAVAILABLE`, and `reason` `NO_PUBLISHED_RESULTS`.
 
   </Tab>
   <Tab forceMount value="Cumulative vector and pathogen">
@@ -75,7 +75,7 @@ A sample `GET /v1/measures?page_size=100` returned 25 measures and `next_page_to
   <Tab forceMount value="2023 RUCC">
     ### 2023 RUCC
 
-    Send `vintage_year` 2023 and `rucc_2023`. The code is a vintage category, not an annual rate or an ordered distance. Period dates on the checked row were null.
+    Send `vintage_year` 2023 and `rucc_2023`. The code is a <Term id="vintage">vintage</Term> category, not an annual rate or an ordered distance. Period dates on the checked row were null.
 
     <ObservationCurl query="measure_id=rucc_2023&geography_type=county&geography_id=36061&vintage_year=2023" />
 

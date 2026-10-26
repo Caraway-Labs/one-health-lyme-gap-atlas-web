@@ -6,7 +6,7 @@ description: Send one anonymous observation request, read the response, and hand
 import { ApiPlayground } from "@/features/docs/api-playground";
 import { HttpClientTabs } from "@/features/docs/http-client-tabs";
 
-Send one anonymous request for the 2023 published case-count floor for New York County. The measure id `case_count_floor_2023` is the example on the public observations operation. County FIPS `36061` is in the lower 48.
+Send one anonymous request for the 2023 published case-count floor for New York County. The <Term id="measure">measure</Term> id `case_count_floor_2023` is the example on the public observations operation. County <Term id="fips">FIPS</Term> `36061` is in the lower 48.
 
 Use an HTTPS client. Skip the account and the API key. These client tabs stay in sync with the workflow guides and the REST pagination example: curl, Python httpx, R httr2, or TypeScript fetch. The choice remains after a reload.
 
@@ -33,7 +33,7 @@ This playground sends that anonymous GET through the docs site. It adds no API k
 
 ### Read the response
 
-A successful body is a collection. Check `value_state` before you read `value`. Read `value` with `unit`.
+A successful body is a collection. Check <Term id="value_state">value_state</Term> before you read <Term id="value">value</Term>. Read `value` with `unit`.
 
 <Callout title="Interpret with care" type="warn">
   `case_count_floor_2023` is a privacy-protected surveillance floor, in `cases`.
@@ -46,10 +46,10 @@ A successful body is a collection. Check `value_state` before you read `value`. 
 | `value_state` | How to read `value` on each row. Check it before you read `value`. |
 | `meta.next_page_token` | Opaque continuation. `null` means this query is exhausted. Send it unchanged with the same filters. |
 | `meta.response_at` | When Atlas built the response, in UTC. It does not date the publisher update or the observation. |
-| `meta.availability` | Whether this selection has published results. Read it before you use `data`. |
+| `meta.availability` | Whether this selection has published <Term id="availability">availability</Term>. Read it before you use `data`. |
 | `links.self` | Link to this page. The contract allows `null`. |
 
-Keep `limitations` with the value you store. This sample is trimmed from a response for release `governed-2026-10-15-january-climate-prod`. Read `value` and `release_id` from your own response. A later release can change them.
+Keep <Term id="limitations">limitations</Term> with the value you store. This sample is trimmed from a response for <Term id="release">release</Term> `governed-2026-10-15-january-climate-prod`. Read `value` and <Term id="release_id">release_id</Term> from your own response. A later release can change them.
 
 <Accordions>
 <Accordion title="Show example response">
@@ -94,7 +94,7 @@ Keep `limitations` with the value you store. This sample is trimmed from a respo
 
 ### Follow provenance
 
-Copy `source_id` and `methodology_id` from the observation you received. The example uses `human` and `human_confirmed_probable_case_floor_v1`.
+Copy <Term id="source_id">source_id</Term> and <Term id="methodology_id">methodology_id</Term> from the observation you received. Keep the <Term id="provenance_ref">provenance</Term> reference with that row. The example uses `human` and `human_confirmed_probable_case_floor_v1`.
 
 <HttpClientTabs
   requests={[

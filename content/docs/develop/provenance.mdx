@@ -9,7 +9,7 @@ import {
   ValueStateNullTable,
 } from "@/features/docs/provenance-evidence";
 
-Cite a row with its value, `value_state`, and provenance together. Leave a null timestamp null.
+Cite a row with its <Term id="value">value</Term>, <Term id="value_state">value_state</Term>, and <Term id="provenance_ref">provenance</Term> together. Leave a null timestamp null.
 
 `meta.response_at` is the response time. The response time shows when Atlas built the response. It does not show when the publisher last updated the data.
 
@@ -31,15 +31,15 @@ Cite a row with its value, `value_state`, and provenance together. Leave a null 
 | `value`, `value_state`, `unit`, `denominator` | One set. Null is not zero |
 | `source_id` | Public source key |
 | `lineage_source_id`, `dataset_id` | Not `source_id` |
-| `methodology_id` | Null when ungoverned |
+| <Term id="methodology_id">methodology_id</Term> | Null when ungoverned |
 | `methodology_version` | Transformation version |
 | `release_methodology_version` | On some rows |
 | `semantic_version` | Contract version |
 | `release_id` | Not comparable across releases |
 | `provenance_ref` | Not a literature citation |
-| `source_vintage`, `source_label`, `source_url` | Publisher context |
+| `source_vintage`, `source_label`, `source_url` | Publisher context, including <Term id="source_vintage">vintage</Term> |
 | `source_published_at`, `atlas_acquired_at`, `atlas_processed_at` | Observation clocks. Null is unknown |
-| `limitations` | Keep with the value |
+| `limitations` | Keep <Term id="limitations">limitations</Term> with the value |
 | `evidence` | Type, id, optional source, version, release, uri |
 | `surveillance_context` | Optional. Null has no comparability or lag claim |
 
