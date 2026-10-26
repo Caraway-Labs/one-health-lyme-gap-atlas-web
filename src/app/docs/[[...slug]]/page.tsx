@@ -7,6 +7,7 @@ import {
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { DocsLastUpdated } from "@/components/docs-last-updated";
 import { OpenAPIPageProvider } from "@/components/docs-openapi-page";
 import { DocsPageActions } from "@/components/docs-page-actions";
 import { docsCanonicalUrl } from "@/lib/docs-config";
@@ -47,7 +48,6 @@ export default async function Page({ params }: DocsPageProps) {
         sha: DOCS_GITHUB_REF,
       }}
       full={page.data.full}
-      lastUpdate={lastUpdate}
       toc={page.data.toc}
     >
       <DocsPageActions pageUrl={page.url} />
@@ -58,6 +58,7 @@ export default async function Page({ params }: DocsPageProps) {
           <Mdx components={getMDXComponents()} />
         </OpenAPIPageProvider>
       </DocsBody>
+      <DocsLastUpdated date={lastUpdate} />
     </DocsPage>
   );
 }
