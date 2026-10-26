@@ -325,9 +325,12 @@ function groupRank(tag: string, groups: readonly SchemaTagGroup[]): number {
 
 function fieldTable(fields: readonly SchemaField[]): string[] {
   const includeExample = fields.some((field) => field.example !== undefined);
+  // "Name" stays distinct from the provenance null-semantics table, whose
+  // header is "Field | Type | Required | Description". The Markdown export
+  // finds that table by header.
   const header = includeExample
-    ? "| Field | Type | Required | Description | Example |"
-    : "| Field | Type | Required | Description |";
+    ? "| Name | Type | Required | Description | Example |"
+    : "| Name | Type | Required | Description |";
   const divider = includeExample
     ? "| --- | --- | --- | --- | --- |"
     : "| --- | --- | --- | --- |";

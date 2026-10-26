@@ -81,7 +81,7 @@ The county exists, but its canonical geography data is not published yet.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `availability` | `UNAVAILABLE` | required | Always `UNAVAILABLE`: the county's geography data is not published. |
 | `reason` | `CANONICAL_GEOGRAPHY_UNPUBLISHED` | required | Why the data is unavailable. The geography data has not been published. |
@@ -100,7 +100,7 @@ A page of county population or rurality observations, with paging details and li
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | array of [CountyContextObservation](#schema-countycontextobservation) | required | The items on this page. Empty when there are none. |
 | `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
@@ -117,7 +117,7 @@ A page of indicators, with paging details and links. Read `meta.next_page_token`
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | array of [Indicator](#schema-indicator) | required | The items on this page. Empty when there are none. |
 | `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
@@ -134,7 +134,7 @@ A page of measures, with paging details and links. Read `meta.next_page_token` t
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | array of [Measure](#schema-measure) | required | The items on this page. Empty when there are none. |
 | `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
@@ -151,7 +151,7 @@ A page of observations, with paging details and links. Read `meta.availability` 
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | array of [Observation](#schema-observation) | required | The items on this page. Empty when there are none. |
 | `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
@@ -168,7 +168,7 @@ A page of sources, with paging details and links. Read `meta.next_page_token` to
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | array of [Source](#schema-source) | required | The items on this page. Empty when there are none. |
 | `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
@@ -188,7 +188,7 @@ Links related to a list response.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `self` | `string \| null` | optional | Link to this page of results. `null` when the API supplies none. |
 
@@ -206,7 +206,7 @@ Paging, release, and availability details for a list response.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `next_page_token` | `string \| null` | optional | Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart. |
 | `response_at` | `string (date-time)` | optional | When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made. |
@@ -239,7 +239,7 @@ Describes the county context field that a population or rurality value came from
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `contract_version` | `atlas-county-context-consumer/1` | required | Version of the contract that defines this object. |
 | `vintage_year` | `integer` | required | Year of the source product or classification. It is not an annual date. |
@@ -268,7 +268,7 @@ A county population or rurality value, reported for a reference period or a vint
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `metadata_revision_id` | `string \| null` | optional | Identifies the reviewed metadata revision that describes this observation. `null` when none applies. |
 | `observation_id` | `string` | required | Stable identifier of the observation. It also serves as the provenance reference. |
@@ -324,7 +324,7 @@ Area values are square meters. Exact decimal quantities may be strings.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `coverage_status` | `COMPLETE \| PARTIAL_COVERAGE \| SOURCE_MISSING \| OUT_OF_SOURCE_COVERAGE` | required | How much of the county the source covers for this day. |
 | `source_time_present` | `boolean` | required | Whether the source supplied a time for this observation. |
@@ -360,7 +360,7 @@ Compact pointer to the Atlas resource that backs a result.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `resource_type` | `string` | required | Kind of Atlas resource the reference points to, such as `observation`. |
 | `resource_id` | `string` | required | Identifier of that resource. |
@@ -382,7 +382,7 @@ Identity and display name of a county or state. It carries no geometry.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `geography` | [GeographyIdentity](#schema-geographyidentity) | required | Type and FIPS code of the place. |
 | `label` | `string` | required | Display name of the place. |
@@ -400,7 +400,7 @@ Identifies one place by type and FIPS code. It carries no geometry.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `geography_type` | [GeographyType](#schema-geographytype) | required | Kind of place: `county` or `state`. It sets how long `geography_id` is. |
 | `geography_id` | `string` | required | FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`. |
@@ -441,7 +441,7 @@ exists. Use the availability route for a county to confirm that.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `availability` | `UNAVAILABLE` | required | Always `UNAVAILABLE`: the geography data is not published. |
 | `reason` | `CANONICAL_GEOGRAPHY_UNPUBLISHED` | required | Why the data is unavailable. The geography data has not been published. |
@@ -461,7 +461,7 @@ A public-health concept that groups related measures.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `indicator_id` | `string` | required | Stable identifier of the indicator. Use it with `/v1/indicators/{indicator_id}`. |
 | `label` | `string` | required | Short display name of the indicator. |
@@ -486,7 +486,7 @@ One variable you can query, such as a case count. It belongs to one indicator.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `measure_id` | `string` | required | Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. |
 | `indicator_id` | `string` | required | Identifier of the indicator this measure belongs to. |
@@ -521,7 +521,7 @@ The method Atlas used to produce or interpret a measure's values.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `methodology_id` | `string` | required | Identifies the methodology. Use it with `/v1/methodologies/{methodology_id}`. |
 | `measure_id` | `string` | required | Identifier of the measure the methodology applies to. |
@@ -542,7 +542,7 @@ Whether this observation can be compared with another across surveillance method
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `contract_version` | `atlas-lyme-surveillance-methodology-v1` | required | Version of the contract that defines this object. |
 | `comparison_state` | `COMPARABLE \| CAUTION_REQUIRED \| NOT_COMPARABLE \| UNKNOWN` | required | Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`. |
@@ -573,7 +573,7 @@ One value for a measure, a county, and a period, with its state and provenance.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `metadata_revision_id` | `string \| null` | optional | Identifies the reviewed metadata revision that describes this observation. `null` when none applies. |
 | `observation_id` | `string` | required | Stable identifier of the observation. It also serves as the provenance reference. |
@@ -640,7 +640,7 @@ RFC 9457 error body (`application/problem+json`). Some errors add a stable `code
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `type` | `string` | required | URI that names the kind of problem, such as `.../problems/validation`. Branch on `code` when it is present. |
 | `title` | `string` | required | Short summary of the kind of problem. Read `detail` for this occurrence. |
@@ -662,7 +662,7 @@ One county or state identity, wrapped in `data`. The identity carries no geometr
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | [Geography](#schema-geography) | required | The requested resource. |
 
@@ -677,7 +677,7 @@ One indicator, wrapped in `data`.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | [Indicator](#schema-indicator) | required | The requested resource. |
 
@@ -692,7 +692,7 @@ One measure, wrapped in `data`.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | [Measure](#schema-measure) | required | The requested resource. |
 
@@ -707,7 +707,7 @@ One methodology, wrapped in `data`.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | [Methodology](#schema-methodology) | required | The requested resource. |
 
@@ -722,7 +722,7 @@ One source, wrapped in `data`.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `data` | [Source](#schema-source) | required | The requested resource. |
 
@@ -738,7 +738,7 @@ The organization and dataset a value came from.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `source_id` | `string` | required | Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. |
 | `label` | `string` | required | Display name of the source. |
@@ -770,7 +770,7 @@ Optional reviewed link from a public-health concept to an external standard.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `standard` | `string` | required | Name of the external standard, such as `LOINC`. |
 | `version` | `string` | required | Version of the external standard that the mapping targets. |
@@ -792,7 +792,7 @@ Comparison covers case definitions only. Alignment is descriptive, not causal.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `evidence` | [SurveillanceEvidenceContext](#schema-surveillanceevidencecontext) \| `null` | optional | County evidence state. `null` when none is supplied. |
 | `methodology_comparison` | [MethodologyComparisonContext](#schema-methodologycomparisoncontext) \| `null` | optional | Comparability of case definitions. `null` when none is supplied. |
@@ -809,7 +809,7 @@ Evidence state for a county as supplied with the data. Atlas adds no classificat
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `contract_version` | `atlas-surveillance-evidence-v3` | required | Version of the contract that defines this object. |
 | `normalized_state` | `established \| detected \| unknown \| null` | optional | County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher's original value stays in the observation `value`. |
@@ -854,7 +854,7 @@ The alignment is descriptive. It does not show cause.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `contract_version` | `atlas-temporal-alignment-v1` | required | Version of the contract that defines this object. |
 | `method_id` | `string` | required | Identifies the alignment method. |
@@ -893,7 +893,7 @@ How much of the expected time span the observation covers.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `expected` | `integer` \| `number` | required | Amount of coverage expected, in `unit`. |
 | `observed` | `integer` \| `number` | required | Amount of coverage present, in `unit`. |
@@ -911,7 +911,7 @@ How far an observation window sits before its target window.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `kind` | `ZERO \| FIXED \| ROLLING \| SEASONAL` | required | Type of lag rule that applies. |
 | `anchor` | `START \| END_EXCLUSIVE` | required | Edge of the target window that the lag is measured from. |
@@ -946,7 +946,7 @@ The reference period of a source dataset.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | `string` | required | Identifies the reference period. |
 | `start` | `string (date)` | required | First date in the reference period. |
@@ -964,7 +964,7 @@ A span of time with an inclusive start and an exclusive end.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `start` | `string (date)` | required | First date in the window. |
 | `end_exclusive` | `string (date)` | required | First date after the window. It is not in the window. |
@@ -1018,7 +1018,7 @@ Describes the published data release behind the scores and county records.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
 | `release_id` | `string` | required | Identifies the published data release. Results from different releases are not directly comparable. |
@@ -1044,7 +1044,7 @@ A county that merits a closer look. It is a prompt to review records, not a find
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `county_fips` | `string` | required | Five-digit FIPS code of the county, with leading zeros. |
 | `county_name` | `string` | required | County name. |
@@ -1069,7 +1069,7 @@ A county's score plus the release facts behind it.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
 | `incidence_floor_2023` | `number \| null` | required | Published 2023 minimum reported incidence per 100,000 people. `null` is not zero. |
@@ -1107,7 +1107,7 @@ The county values a map needs to color its shapes, without the full score record
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
 | `incidence_floor_2023` | `number \| null` | optional | Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero. |
@@ -1129,7 +1129,7 @@ estimate of an individual's risk.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
 | `incidence_floor_2023` | `number \| null` | optional | Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero. |
@@ -1160,7 +1160,7 @@ Two distinct model outputs; Unknown is a valid available classification.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `county_fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
 | `release_id` | `string` | required | Identifies the current data release. |
@@ -1179,7 +1179,7 @@ A reason Atlas could not evaluate a county. A gap is not evidence of absence.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `county_fips` | `string` | required | Five-digit FIPS code of the county, with leading zeros. |
 | `code` | `string` | required | Stable code for the kind of gap, such as `OUT_OF_SCOPE`. |
@@ -1196,7 +1196,7 @@ County values for drawing a map. Show the same values in a table for non-map use
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `release_id` | `string` | required | Identifies the published data release. Results from different releases are not directly comparable. |
 | `counties` | array of [CountyMapValues](#schema-countymapvalues) | required | One entry for each county. |
@@ -1212,7 +1212,7 @@ The model's membership probability for one situation class.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `class_id` | `string` | required | Identifies the class. It is specific to a model version. |
 | `probability` | `number` | required | Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk. |
@@ -1229,7 +1229,7 @@ One reason a county received its review priority.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `code` | `string` | required | Stable code for the reason. |
 | `text` | `string` | required | Plain-language statement of the reason. |
@@ -1245,7 +1245,7 @@ A source record that supports a review candidate.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `family` | `string` | required | Kind of evidence, such as `county_pathogen_status`. |
 | `source_product` | `string` | required | Source product the record comes from. |
@@ -1270,7 +1270,7 @@ How many counties the review looked at and what happened to each.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `assessed_counties` | `integer` | required | Counties in the requested state that were checked. |
 | `eligible_counties` | `integer` | required | Counties that met the rule's eligibility checks. |
@@ -1290,7 +1290,7 @@ The Surveillance Gap Score and the signals it combines. Every value runs from 0 
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `score` | `number` | required | Overall Surveillance Gap Score. A higher value means a higher review priority. |
 | `human_weakness` | `number` | required | How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness. |
@@ -1313,7 +1313,7 @@ Surveillance Gap Scores for every county in the release, for one set of settings
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
 | `release_id` | `string` | required | Identifies the published data release. Results from different releases are not directly comparable. |
@@ -1335,7 +1335,7 @@ estimate of an individual's risk.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `model_id` | `string` | required | Identifies the model that assigned the class. |
 | `model_version` | `string` | required | Version of the model. |
@@ -1371,7 +1371,7 @@ The result of one situation model for a county, or the reason there is none.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `model_id` | `string` | required | Identifies the situation model. |
 | `availability` | `AVAILABLE \| UNAVAILABLE` | required | Whether a published classification exists. `UNAVAILABLE` is not a finding about the county. |
@@ -1419,7 +1419,7 @@ A source dataset listed in the release metadata.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `key` | `string` | required | Stable key of the source within this release. |
 | `label` | `string` | required | Display name of the source. |
@@ -1441,7 +1441,7 @@ show that no county needs attention.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `requested_state` | `string` | required | Two-letter state or District of Columbia code. |
 | `methodology_id` | `string` | required | Identifies the review methodology. |
@@ -1481,7 +1481,7 @@ risk, and it is not a diagnosis.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `county_fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
 | `priority_tier` | `HIGH \| MEDIUM \| LOW \| null` | required | HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE. |
@@ -1526,7 +1526,7 @@ Whether a Tier 1 result is published for a county, with the result when it is.
 
 Type: `object`
 
-| Field | Type | Required | Description |
+| Name | Type | Required | Description |
 | --- | --- | --- | --- |
 | `availability` | `AVAILABLE \| UNAVAILABLE` | required | Whether a published Tier 1 result exists for this county. |
 | `geography_release_id` | `string` | required | Identifies the geography release used to confirm the county exists. |
