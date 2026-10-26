@@ -13,6 +13,8 @@ import {
 } from "./e2e/release-phone-viewport";
 
 export interface ViewportCall {
+  /** Phone width that issue #952 requires on the desktop project. */
+  desktopRequired: boolean;
   file: string;
   guarded: boolean;
   line: number;
@@ -310,9 +312,18 @@ export function scanPhoneViewportCalls(): ViewportCall[] {
         node.arguments[0]
       ) {
         const guarded = callIsGuarded(node, source);
-        const widths = expressionWidths(node.arguments[0], sourceFile);
+        const argument = node.arguments[0];
+        const argumentText = source.slice(
+          argument.getStart(),
+          argument.getEnd()
+        );
+        const desktopRequired = argumentText.includes(
+          "evidenceFlowDiagramViewport"
+        );
+        const widths = expressionWidths(argument, sourceFile);
         if (widths.length === 0) {
           calls.push({
+            desktopRequired,
             file,
             guarded: false,
             line: lineOf(sourceFile, node),
@@ -324,6 +335,7 @@ export function scanPhoneViewportCalls(): ViewportCall[] {
             continue;
           }
           calls.push({
+            desktopRequired,
             file,
             guarded,
             line: lineOf(sourceFile, node),

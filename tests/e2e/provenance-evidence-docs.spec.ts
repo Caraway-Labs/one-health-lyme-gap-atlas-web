@@ -138,7 +138,8 @@ test("shows the evidence flow in words and at 375px", async ({ page }) => {
   await frameDiagram(page);
   await saveShot(page, "after-provenance-diagram-desktop");
 
-  await page.setViewportSize({ width: 375, height: 812 });
+  const evidenceFlowDiagramViewport = { height: 812, width: 375 };
+  await page.setViewportSize(evidenceFlowDiagramViewport);
   await heading.scrollIntoViewIfNeeded();
   await expect(diagram).toBeVisible();
   const lightOverflow = await page.evaluate(() => {
