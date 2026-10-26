@@ -425,7 +425,7 @@ test.describe("professional shell scroll containment", () => {
       .click();
     await expect(page).toHaveURL(/\/app\/feed$/);
     await expect(
-      page.getByRole("heading", { exact: true, name: "Feed" })
+      page.getByRole("heading", { exact: true, name: "Research & News" })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Lyme disease surveillance update" })
@@ -1118,7 +1118,7 @@ test.describe("professional shell scroll containment mobile", () => {
 
     await page.goto("/app/feed");
     await expect(
-      page.getByRole("heading", { exact: true, name: "Feed" })
+      page.getByRole("heading", { exact: true, name: "Research & News" })
     ).toBeVisible();
     await expect.poll(() => mainScrollTop(page)).toBe(0);
     const feed = await footerFlow(page);

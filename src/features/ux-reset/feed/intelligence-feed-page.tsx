@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
-import { resetRouteById } from "@/features/ux-reset/paths";
 import type { FeedListEntry } from "@/generated/models/feedListEntry";
 import {
   analyticsControlAttributes,
@@ -17,6 +16,11 @@ import {
   type FeedDetailEntrySurface,
 } from "@/lib/atlas-analytics";
 
+import {
+  selectFeaturedFeedArticle,
+  FEATURED_FEED_SUBSET_NOTE,
+} from "./feed-feature";
+import { FeedFeaturedArticle } from "./feed-featured-article";
 import {
   activeFeedFilterCount,
   DEFAULT_FEED_PUBLISHED,
@@ -45,6 +49,11 @@ import {
   sharedFeedCaveats,
 } from "./feed-presentation";
 import { IntelligenceFeedFilters } from "./intelligence-feed-filters";
+import {
+  RESEARCH_NEWS_HEADING,
+  RESEARCH_NEWS_IMAGERY_NOTE,
+  RESEARCH_NEWS_SUBTITLE,
+} from "./research-news-controls";
 import {
   resetIntelligenceFeedToFirstPage,
   useIntelligenceFeed,
@@ -114,7 +123,6 @@ function FeedRetry({ onRetry }: { onRetry: () => Promise<unknown> }) {
 }
 
 export function IntelligenceFeedExperience() {
-  const route = resetRouteById("feed");
   const queryClient = useQueryClient();
   const filterBarRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
@@ -369,9 +377,10 @@ export function IntelligenceFeedExperience() {
     );
   } else {
     state = "ready";
+    const articles = selectFeaturedFeedArticle(items);
+    const moreAvailable = Boolean(feed.hasNextPage);
     body = (
       <>
-        <FeedLimitations limitations={limitations} />
         {refreshFailure ? (
           <AtlasStatusMessage
             action={<FeedRetry onRetry={() => feed.refetch()} />}
@@ -388,6 +397,41 @@ export function IntelligenceFeedExperience() {
               : "The last loaded items are still shown."}
           </AtlasStatusMessage>
         ) : null}
+        {articles.featured ? (
+          <ul className="ux-reset-feed-feature-list">
+            <FeedFeaturedArticle
+              entry={articles.featured}
+              itemCaveats={itemFeedCaveats(articles.featured, sharedCaveats)}
+              moreAvailable={moreAvailable}
+              onOpen={openDetail}
+            />
+          </ul>
+        ) : null}
+        {articles.featured && moreAvailable ? (
+          <p className="ux-reset-feed-subset-note">
+            {FEATURED_FEED_SUBSET_NOTE}
+          </p>
+        ) : null}
+        {articles.rest.length > 0 ? (
+          <>
+            <h2 className="ux-reset-feed-latest-heading">Latest articles</h2>
+            <ul className="ux-reset-feed-list">
+              {articles.rest.map((entry, index) => (
+                <FeedItemCard
+                  eagerImage={index < 2 && articles.featured === null}
+                  entry={entry}
+                  itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
+                  key={`${entry.item_id}:${entry.revision_id}:${index}`}
+                  onOpen={openDetail}
+                />
+              ))}
+            </ul>
+          </>
+        ) : null}
+        <p className="ux-reset-feed-imagery-note">
+          {RESEARCH_NEWS_IMAGERY_NOTE}
+        </p>
+        <FeedLimitations limitations={limitations} />
         {sharedCaveats.length > 0 ? (
           <ul
             className="ux-reset-feed-limitations"
@@ -398,16 +442,6 @@ export function IntelligenceFeedExperience() {
             ))}
           </ul>
         ) : null}
-        <ul className="ux-reset-feed-list">
-          {items.map((entry) => (
-            <FeedItemCard
-              entry={entry}
-              itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
-              key={`${entry.item_id}:${entry.revision_id}`}
-              onOpen={openDetail}
-            />
-          ))}
-        </ul>
         {nextPageFailure ? (
           <AtlasStatusMessage
             action={<FeedRetry onRetry={() => feed.fetchNextPage()} />}
@@ -455,8 +489,8 @@ export function IntelligenceFeedExperience() {
       data-testid="intelligence-feed"
     >
       <header className="ux-reset-page-header">
-        <h1 id="intelligence-feed-heading">{route.label}</h1>
-        <p className="type-body">{route.description}</p>
+        <h1 id="intelligence-feed-heading">{RESEARCH_NEWS_HEADING}</h1>
+        <p className="type-body">{RESEARCH_NEWS_SUBTITLE}</p>
       </header>
       <IntelligenceFeedFilters
         filterBarRef={filterBarRef}
@@ -469,16 +503,10 @@ export function IntelligenceFeedExperience() {
           void sources.refetch();
         }}
         onSourceChange={applySource}
+        resultSummary={summary}
         sourceOptions={sourceOptions}
         sourcesError={sources.isError}
       />
-      <p
-        aria-atomic="true"
-        aria-live="polite"
-        className="type-small ux-reset-feed-summary"
-      >
-        {summary}
-      </p>
       {body}
       <FeedFooter />
       <FeedItemDetailDialog

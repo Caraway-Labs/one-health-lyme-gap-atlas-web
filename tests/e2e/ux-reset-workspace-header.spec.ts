@@ -27,7 +27,7 @@ const CANONICAL_DESTINATIONS = [
     title: "Ask Atlas",
   },
   {
-    heading: "Feed",
+    heading: "Research & News",
     path: "/app/feed",
     title: "Intelligence Feed",
   },

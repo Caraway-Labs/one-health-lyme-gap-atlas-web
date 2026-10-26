@@ -135,7 +135,7 @@ test("shows trusted-source items from workspace navigation", async ({
     .click();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Feed" })
+    page.getByRole("heading", { level: 1, name: "Research & News" })
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
@@ -981,7 +981,7 @@ test("shows richer cards and a detail drawer", async ({ page }) => {
   );
   await expect(page).toHaveURL(new RegExp(`item=${described.item_id}`));
   const pageHeading = page.locator("#intelligence-feed-heading");
-  await expect(pageHeading).toHaveText("Feed");
+  await expect(pageHeading).toHaveText("Research & News");
   const headingBox = await pageHeading.boundingBox();
   expect(headingBox?.width ?? 0).toBeGreaterThan(0);
   const drawer = await dialog.boundingBox();
