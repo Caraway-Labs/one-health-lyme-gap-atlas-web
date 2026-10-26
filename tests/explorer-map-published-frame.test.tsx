@@ -19,7 +19,7 @@ import {
 } from "@/features/ux-reset/review/explorer-county-reference";
 import type { ExplorerMapLayerId } from "@/features/ux-reset/review/explorer-map-layers";
 import { EXPLORER_MAP_LOADING_DELAY_MS } from "@/features/ux-reset/review/explorer-map-loading";
-import type { ExplorerMapNumericRow } from "@/features/ux-reset/review/explorer-map-observation";
+import { explorerMapValuesQueryKey } from "@/features/ux-reset/review/load-explorer-map-values";
 import { ReviewNationalPicture } from "@/features/ux-reset/review/review-national-picture";
 import { ReviewOperatingPicture } from "@/features/ux-reset/review/review-operating-picture";
 import {
@@ -27,7 +27,7 @@ import {
   usePublishedExplorerMapFrame,
 } from "@/features/ux-reset/review/use-explorer-map-loading";
 import { EXPLORER_SCORE_SETTINGS } from "@/features/ux-reset/review/use-explorer-map-scores";
-import { ValueState, type CountyScoreSummary } from "@/generated/models";
+import type { CountyScoreSummary } from "@/generated/models";
 import type { CountyDisplayGeometryFeatureCollection } from "@/lib/county-geography";
 
 import { buildStateReview } from "./fixtures/review-operating-picture-fixtures";
@@ -472,44 +472,6 @@ describe("confirmed empty explorer map frames", () => {
   });
 });
 
-function sviRow(fips: string, numeric: number): ExplorerMapNumericRow {
-  const raw = String(numeric);
-  return {
-    categoryLabel: null,
-    fips,
-    numeric,
-    provenance: {
-      atlasAcquiredAt: null,
-      evidence: {
-        provenance_ref: "prov",
-        resource_id: "resource",
-        resource_type: "observation",
-      },
-      limitations: [],
-      measureId: "svi_percentile_2022",
-      methodology: null,
-      methodologyId: null,
-      methodologyVersion: "svi_numeric_projection_v2",
-      observationId: `obs-${fips}`,
-      periodEnd: "2022-12-31",
-      periodStart: "2018-01-01",
-      provenanceRef: "prov",
-      publishedValue: raw,
-      releaseId: RELEASE_ID,
-      semanticVersion: "1.0.0",
-      sourceId: "context_svi",
-      sourceLabel: "CDC/ATSDR Social Vulnerability Index",
-      sourcePublishedAt: null,
-      sourceUrl: null,
-      sourceVintage: "2022 (2018-2022 ACS)",
-      temporalGrain: "PERIOD",
-      unit: "percentile",
-    },
-    raw,
-    valueState: numeric === 0 ? ValueState.ZERO : ValueState.OBSERVED,
-  };
-}
-
 function seedEmptyScoreLayer(
   client: QueryClient,
   observationFips: readonly string[]
@@ -523,24 +485,16 @@ function seedEmptyScoreLayer(
       settings: EXPLORER_SCORE_SETTINGS,
     }
   );
-  client.setQueryData(
-    [
-      "ux-reset-explorer-map-observations",
-      RELEASE_ID,
-      "svi",
-      observationFips.join(","),
-    ],
-    {
-      knownEmptySelection: null,
-      omitted: 0,
-      period: "Social vulnerability vintage 2022.",
-      rows: observationFips.map((fips, index) =>
-        sviRow(fips, index === 0 ? 0 : 1)
-      ),
-      sourceLabel: "CDC/ATSDR Social Vulnerability Index",
-      unit: "percentile",
-    }
-  );
+  client.setQueryData(explorerMapValuesQueryKey(RELEASE_ID), {
+    counties: observationFips.map((fips, index) => ({
+      fips,
+      incidence_floor_2023: null,
+      rucc_2023: null,
+      svi_percentile: index === 0 ? 0 : 1,
+      uninsured_percent: null,
+    })),
+    release_id: RELEASE_ID,
+  });
 }
 
 function nationalLayerPicture(

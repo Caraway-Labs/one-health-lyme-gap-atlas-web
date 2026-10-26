@@ -300,7 +300,7 @@ export function paintReadyObservationLayer(input: {
   const selectedRow = input.selectedFips
     ? input.rows.find((row) => row.fips === input.selectedFips)
     : undefined;
-  const selectionEvidence = selectedRow
+  const selectionEvidence = selectedRow?.provenance
     ? evidenceObjectForExplorerMapRow(
         selectedRow,
         explorerMapLayerClaimLabel(input.layerId)
