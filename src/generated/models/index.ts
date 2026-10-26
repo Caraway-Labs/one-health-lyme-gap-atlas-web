@@ -164,6 +164,7 @@ export * from './privacyRequestStatusState';
 export * from './problemDetails';
 export * from './problemDetailsErrorsItem';
 export * from './projectionProvenance';
+export * from './projectionProvenanceParserVersion';
 export * from './publicReviewEvidenceReference';
 export * from './publisherDateStates';
 export * from './publisherDateStatesPublishedAt';

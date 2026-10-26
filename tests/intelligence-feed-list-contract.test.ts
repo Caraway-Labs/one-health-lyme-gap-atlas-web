@@ -7,6 +7,7 @@ import { MetadataFeed } from "@/generated/zod/metadataFeed.zod";
 import {
   intelligenceFeedEnvelope,
   mixedIntelligenceFeedItems,
+  pubmedEntrezWithheldListEntry,
 } from "./fixtures/intelligence-feed-fixtures";
 
 const LIVE_LIST_ABSTRACT_FIELDS = {
@@ -28,6 +29,34 @@ describe("intelligence feed list contract", () => {
     }
 
     const parsed = MetadataFeed.safeParse(response);
+    expect(parsed.success).toBeTruthy();
+  });
+
+  it("parses a PubMed Entrez row with a withheld abstract and a null publisher date", () => {
+    const row = pubmedEntrezWithheldListEntry;
+    expect({
+      abstractPreview: row.abstract_preview,
+      abstractState: row.abstract_state,
+      parserVersion: row.provenance.parser_version,
+      publicationDateState: row.publication_date_state,
+      publishedAt: row.published_at,
+      pubmedUrl: row.pubmed_url,
+      sourceFamily: row.source_family,
+      sourceFamilyLabel: row.source_family_label,
+      trust: row.source.reviewed_trust_classification,
+    }).toStrictEqual({
+      abstractPreview: null,
+      abstractState: "withheld",
+      parserVersion: "entrez-efetch-v1",
+      publicationDateState: "not_provided",
+      publishedAt: null,
+      pubmedUrl: "https://pubmed.ncbi.nlm.nih.gov/40000001/",
+      sourceFamily: "pubmed",
+      sourceFamilyLabel: "PubMed",
+      trust: "research_index",
+    });
+
+    const parsed = MetadataFeed.safeParse(intelligenceFeedEnvelope([row]));
     expect(parsed.success).toBeTruthy();
   });
 

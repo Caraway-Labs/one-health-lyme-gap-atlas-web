@@ -10,6 +10,7 @@ const developerPages = [
   { path: "/docs/develop", heading: "Developer overview" },
   { path: "/docs/develop/quickstart", heading: "Quickstart" },
   { path: "/docs/develop/errors", heading: "Errors and retries" },
+  { path: "/docs/develop/recipes", heading: "Integration recipes" },
   { path: "/docs/develop/rest", heading: "REST API" },
   { path: "/docs/develop/geography", heading: "Geography" },
   {
@@ -802,6 +803,60 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
   await page.screenshot({
     path: "/opt/cursor/artifacts/client-tabs-rest-typescript.png",
   });
+
+  await page.goto("/docs/develop/recipes");
+  await expect(
+    page.getByRole("heading", { name: "Integration recipes", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("tab", { exact: true, name: "TypeScript" }).first()
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("runCountyTable").first()).toBeVisible();
+  await expect(page.getByText("01001,null,MISSING").first()).toBeVisible();
+  const recipePython = page
+    .getByRole("tab", { exact: true, name: "Python" })
+    .first();
+  await recipePython.focus();
+  await expect(recipePython).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("tab", { exact: true, name: "R" }).first()
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("library(dplyr)").first()).toBeVisible();
+  await page
+    .getByRole("tab", { exact: true, name: "R" })
+    .first()
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/recipes-desktop.png",
+    fullPage: true,
+  });
+  await page
+    .locator("main")
+    .getByRole("link", { exact: true, name: "Errors and retries" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/docs\/develop\/errors\/?$/);
+  await page.goto("/docs/develop/recipes");
+  await page
+    .locator("main")
+    .getByRole("link", { exact: true, name: "Observations" })
+    .click();
+  await expect(page).toHaveURL(/\/docs\/api-reference\/observations\/?$/);
+  await page.goto("/docs/develop/recipes");
+  // The saved client is applied after the document loads. Until then the
+  // triggers still show the default Python tab, and a click does not change
+  // the saved choice. R is the choice from the keyboard step above.
+  const recipeR = page.getByRole("tab", { exact: true, name: "R" }).first();
+  await expect(recipeR).toHaveAttribute("aria-selected", "true");
+  const recipeTypeScript = page
+    .getByRole("tab", { exact: true, name: "TypeScript" })
+    .first();
+  await recipeTypeScript.click();
+  await expect(recipeTypeScript).toHaveAttribute("aria-selected", "true");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("atlas-http-client")))
+    .toBe("typescript");
 
   await page.goto("/docs/develop/quickstart");
   await expectClientLanguage(page, "TypeScript", "await fetch(url)");

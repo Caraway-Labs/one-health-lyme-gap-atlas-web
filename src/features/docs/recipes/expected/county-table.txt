@@ -1,0 +1,5 @@
+release_id: governed-2026-10-15-january-climate-prod
+geography_id,value,value_state,release_id
+01001,null,MISSING,governed-2026-10-15-january-climate-prod
+08001,null,MISSING,governed-2026-10-15-january-climate-prod
+36061,1114,OBSERVED,governed-2026-10-15-january-climate-prod

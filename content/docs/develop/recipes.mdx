@@ -1,0 +1,110 @@
+---
+title: Integration recipes
+description: Load county observations into a table, page until next_page_token is null, and retry 429 and 503.
+---
+
+import { Tab } from "fumadocs-ui/components/tabs";
+
+import { RecipeLanguageTabs } from "@/features/docs/http-client-tabs";
+
+Send these scripts to `https://api.onehealthatlas.org`. Public reads need no API key. Leave the ATLAS_API_BASE_URL environment variable unset for production. Set it only when the script should use another origin.
+
+Each script keeps county FIPS as a 5-character string, leaves a null `value` null, and prints `release_id` with the rows. `release_id` names the data release. It is not the response time. A `400`, `404`, or `422` is not retried. `429` and `503` wait for `Retry-After` when that header is present. Without it, the script waits 1 second, doubles after each failure up to 60 seconds, adds jitter, and stops after 4 attempts. Read the media type before parsing a problem body. Do not invent a `code` when the media type is not `application/problem+json`.
+
+<Callout title="Interpret with care" type="warn">
+  A null `value` is not zero. `MISSING`, `SUPPRESSED`, and `UNAVAILABLE` stay
+  null. A case floor is not a diagnosis or an individual risk. Read the limit in
+  [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
+
+Codes, retries, and value states are on [Errors and retries](/docs/develop/errors). Parameters and the observation schema are on [Observations](/docs/api-reference/observations).
+
+The samples below are from release `governed-2026-10-15-january-climate-prod`. The Python and TypeScript snippets print the captured sample. The R scripts print the same columns.
+
+## Load several counties
+
+Request `case_count_floor_2023` for FIPS `01001`, `08001`, and `36061` in 2023. Load the rows into a table. `01001` keeps its leading zero. In this release, `01001` and `08001` are `MISSING` and `value` is null. `36061` is `OBSERVED`.
+
+Python uses httpx and pandas. R uses httr2 and dplyr. TypeScript uses fetch.
+
+<RecipeLanguageTabs>
+  <Tab value="Python">
+    <include lang="python" meta='title="county-table.py"'>
+      ../../../src/features/docs/recipes/county-table.py
+    </include>
+  </Tab>
+  <Tab value="R">
+    <include lang="r" meta='title="county-table.R"'>
+      ../../../src/features/docs/recipes/county-table.R
+    </include>
+  </Tab>
+  <Tab value="TypeScript">
+    <include lang="ts" meta='title="county-table.ts"'>
+      ../../../src/features/docs/recipes/county-table.ts
+    </include>
+  </Tab>
+</RecipeLanguageTabs>
+
+Expected output for the captured sample:
+
+<include lang="text" meta='title="county-table.txt"'>
+  ../../../src/features/docs/recipes/expected/county-table.txt
+</include>
+
+## Page until the token is null
+
+Request January 2025 average temperature for FIPS `36061` with `page_size` 2. Send `meta.next_page_token` back as `page_token` with the same filters. Stop when `next_page_token` is null. Do not parse the token. The loop also stops after 100 pages if a token never clears.
+
+The captured sample has two pages. The second page in the sample has `next_page_token` null, so the script stops after 2025-01-04. A live January query keeps paging until the API returns null.
+
+<RecipeLanguageTabs>
+  <Tab value="Python">
+    <include lang="python" meta='title="page-collection.py"'>
+      ../../../src/features/docs/recipes/page-collection.py
+    </include>
+  </Tab>
+  <Tab value="R">
+    <include lang="r" meta='title="page-collection.R"'>
+      ../../../src/features/docs/recipes/page-collection.R
+    </include>
+  </Tab>
+  <Tab value="TypeScript">
+    <include lang="ts" meta='title="page-collection.ts"'>
+      ../../../src/features/docs/recipes/page-collection.ts
+    </include>
+  </Tab>
+</RecipeLanguageTabs>
+
+Expected output for the captured sample:
+
+<include lang="text" meta='title="page-collection.txt"'>
+  ../../../src/features/docs/recipes/expected/page-collection.txt
+</include>
+
+## Read value_state and retry
+
+Request `case_count_floor_2023` for FIPS `08001` and `36061`. Read `value` only with `value_state`. On `429` or `503`, wait for `Retry-After`, then send the same request again. The captured sample returns `429` with `Retry-After: 0` and `code` `RATE_LIMITED`, then the rows. Rules for other statuses: [Errors and retries](/docs/develop/errors#retries). Value states: [Errors and retries](/docs/develop/errors#value-states).
+
+<RecipeLanguageTabs>
+  <Tab value="Python">
+    <include lang="python" meta='title="value-state.py"'>
+      ../../../src/features/docs/recipes/value-state.py
+    </include>
+  </Tab>
+  <Tab value="R">
+    <include lang="r" meta='title="value-state.R"'>
+      ../../../src/features/docs/recipes/value-state.R
+    </include>
+  </Tab>
+  <Tab value="TypeScript">
+    <include lang="ts" meta='title="value-state.ts"'>
+      ../../../src/features/docs/recipes/value-state.ts
+    </include>
+  </Tab>
+</RecipeLanguageTabs>
+
+Expected output for the captured sample:
+
+<include lang="text" meta='title="value-state.txt"'>
+  ../../../src/features/docs/recipes/expected/value-state.txt
+</include>

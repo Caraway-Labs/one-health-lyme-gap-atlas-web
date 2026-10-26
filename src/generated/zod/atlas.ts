@@ -965,7 +965,7 @@ export const ListIntelligenceItemsResponse = zod.object({
   "run_id": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 }),
@@ -1162,7 +1162,7 @@ export const ListIntelligenceFeedResponse = zod.object({
   "run_id": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 }),
@@ -1293,7 +1293,7 @@ export const GetIntelligenceFeedEntryResponse = zod.object({
   "run_id": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 }),

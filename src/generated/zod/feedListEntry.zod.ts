@@ -86,7 +86,7 @@ export const FeedListEntry = zod.object({
   "run_id": zod.string().regex(feedListEntryProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(feedListEntryProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(feedListEntryProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(feedListEntryProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 }),

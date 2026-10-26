@@ -50,6 +50,7 @@ import {
   intelligenceFeedEntry,
   intelligenceSourcesEnvelope,
   mixedIntelligenceFeedItems,
+  pubmedEntrezWithheldListEntry,
 } from "./fixtures/intelligence-feed-fixtures";
 
 const listIntelligenceFeed = vi.hoisted(() =>
@@ -301,6 +302,32 @@ describe("intelligence feed page", () => {
       request: { page_size: FEED_PAGE_SIZE },
       withheld: "Publication date withheld",
     });
+  });
+
+  it("renders a PubMed Entrez row with a null date and a withheld abstract", async () => {
+    succeed(intelligenceFeedEnvelope([pubmedEntrezWithheldListEntry]));
+    renderFeed();
+
+    await expect(
+      screen.findByRole("heading", {
+        name: /Tick-borne disease index record without a publisher date/,
+      })
+    ).resolves.toBeTruthy();
+    const feed = screen.getByTestId("intelligence-feed");
+    expect({
+      abstract: feed.querySelector("[data-testid='feed-abstract']"),
+      date: screen.getByText("Publication date not provided").textContent,
+      invalidDate: feed.textContent?.includes("Invalid Date") ?? false,
+      sourceFamily: screen.getByTestId("feed-source-family").textContent,
+      state: feed.dataset.feedState,
+    }).toStrictEqual({
+      abstract: null,
+      date: "Publication date not provided",
+      invalidDate: false,
+      sourceFamily: "PubMed",
+      state: "ready",
+    });
+    expect(feed.textContent?.includes("No abstract")).toBeFalsy();
   });
 
   it("opens publisher pages with the workspace external-link contract", async () => {
