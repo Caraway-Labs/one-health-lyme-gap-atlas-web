@@ -5,6 +5,7 @@ import {
   AskAtlasAnswerContractError,
   type AskAtlasCloseReason,
 } from "@/lib/ask-atlas-answer-contract";
+import { AskAtlasAssistantRequestError } from "@/lib/ask-atlas-assistant-adapter";
 import { AskAtlasLiteratureRequestError } from "@/lib/ask-atlas-literature-adapter";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 
@@ -69,7 +70,10 @@ function isTimeoutError(error: unknown): boolean {
 }
 
 export function clientFailure(error: unknown): ClientFailure {
-  if (error instanceof AskAtlasLiteratureRequestError) {
+  if (
+    error instanceof AskAtlasLiteratureRequestError ||
+    error instanceof AskAtlasAssistantRequestError
+  ) {
     return {
       message: error.message,
       retry: false,

@@ -16,13 +16,20 @@ vi.mock(import("@/components/atlas-map"), () => ({
   AtlasMap: () => <div data-testid="mock-atlas-map" />,
 }));
 
-const pendingObservations = Promise.withResolvers<never>();
+const pendingMapValues = Promise.withResolvers<never>();
 
 vi.mock(
-  import("@/features/ux-reset/review/load-explorer-map-observations"),
-  () => ({
-    loadExplorerMapObservations: () => pendingObservations.promise,
-  })
+  import("@/features/ux-reset/review/load-explorer-map-values"),
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import("@/features/ux-reset/review/load-explorer-map-values")
+      >();
+    return {
+      ...actual,
+      loadExplorerMapValues: () => pendingMapValues.promise,
+    };
+  }
 );
 
 const RELEASE_ID = "alpha-2026";

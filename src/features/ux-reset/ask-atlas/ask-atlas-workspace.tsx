@@ -5,9 +5,11 @@ import { useEffect } from "react";
 import { EvidenceChatWorkspaceShell } from "@/components/evidence-chat/evidence-chat-layout-shell";
 import { useEvidenceChat } from "@/components/evidence-chat/use-evidence-chat";
 import { Badge } from "@/components/ui/badge";
+import { useAskAtlasInheritedContext } from "@/features/ux-reset/ask-atlas/ask-atlas-context";
 import { AskAtlasLiteraturePrompts } from "@/features/ux-reset/ask-atlas/ask-atlas-literature-prompts";
 import { AskAtlasUnavailableNotice } from "@/features/ux-reset/ask-atlas/ask-atlas-unavailable";
 import { replaceObsoleteAskAtlasPageReference } from "@/features/ux-reset/ask-atlas/workspace-href";
+import { structuredContextFromInherited } from "@/lib/ask-atlas-structured-context";
 import { isAtlasAssistantLiteratureEnabled } from "@/lib/assistant-entry-points";
 
 const ASK_ATLAS_WORKSPACE_DISABLED_HEADING_ID =
@@ -53,10 +55,13 @@ function AskAtlasWorkspaceChat({
 }: {
   initialConversationId?: string;
 }) {
+  const inherited = useAskAtlasInheritedContext();
   const model = useEvidenceChat({
     initialConversationId,
     mode: "workspace",
     requestsEnabled: true,
+    sourceModeSelection: true,
+    structuredContext: structuredContextFromInherited(inherited),
   });
   const handleSelectPrompt = (question: string) => {
     model.editQuestion(question);

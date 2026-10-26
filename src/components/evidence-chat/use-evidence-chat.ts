@@ -9,13 +9,22 @@ import {
   useState,
 } from "react";
 
-import type { KnowledgeChatResponse } from "@/generated/models";
+import type {
+  KnowledgeChatResponse,
+  StructuredContext,
+} from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   acceptAskAtlasPayload,
   AskAtlasAnswerContractError,
 } from "@/lib/ask-atlas-answer-contract";
-import { postLiteratureChat } from "@/lib/ask-atlas-literature-adapter";
+import { postAskAtlas } from "@/lib/ask-atlas-assistant-adapter";
+import type { AskAtlasGovernedTurn } from "@/lib/ask-atlas-assistant-payload";
+import {
+  ASK_ATLAS_SOURCE_MODES,
+  isEnabledAskAtlasSourceMode,
+  type AskAtlasSourceMode,
+} from "@/lib/ask-atlas-source-mode";
 import {
   readAssistantConversationId,
   resolveActiveConversation,
@@ -28,6 +37,7 @@ import {
   clearConversations,
   conversationHistory,
   createConversation,
+  createLocalConversation,
   loadConversations,
   removeConversation,
   RETENTION_MS,
@@ -81,7 +91,11 @@ export interface EvidenceChatConversationModel {
   selectConversation: (id: string) => void;
   setMessage: (value: string) => void;
   setMobileHistoryOpen: (open: boolean) => void;
+  setSourceMode: (mode: AskAtlasSourceMode) => void;
   showEmptyState: boolean;
+  sourceMode: AskAtlasSourceMode;
+  sourceModeSelection: boolean;
+  sourceModes: readonly AskAtlasSourceMode[];
   startNewChat: (focusComposer?: boolean) => void;
   submit: (event: FormEvent) => void;
   workspaceHandoffConversationId: string | undefined;
@@ -91,10 +105,14 @@ export function useEvidenceChat({
   mode = "workspace",
   initialConversationId,
   requestsEnabled = true,
+  sourceModeSelection = false,
+  structuredContext,
 }: {
   mode?: AssistantChatLayoutMode;
   initialConversationId?: string;
   requestsEnabled?: boolean;
+  sourceModeSelection?: boolean;
+  structuredContext?: StructuredContext;
 }): EvidenceChatConversationModel {
   const syncWorkspaceUrl = mode === "workspace";
   const requestSerial = useRef(0);
@@ -124,6 +142,24 @@ export function useEvidenceChat({
   const handoffFocusApplied = useRef(false);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const mobileHistoryToggleRef = useRef<HTMLButtonElement>(null);
+  const [sourceMode, setSourceModeState] =
+    useState<AskAtlasSourceMode>("Literature");
+  const sourceModeRef = useRef(sourceMode);
+  const structuredContextRef = useRef(structuredContext);
+  useLayoutEffect(() => {
+    sourceModeRef.current = sourceMode;
+    structuredContextRef.current = structuredContext;
+  }, [sourceMode, structuredContext]);
+
+  const setSourceMode = useCallback(
+    (next: AskAtlasSourceMode) => {
+      if (!sourceModeSelection || !isEnabledAskAtlasSourceMode(next)) {
+        return;
+      }
+      setSourceModeState(next);
+    },
+    [sourceModeSelection]
+  );
 
   const applyConversationSelection = useCallback(
     (
@@ -392,6 +428,76 @@ export function useEvidenceChat({
     rememberOutcome(question, acceptedResponse);
   }
 
+  function settleGovernedResponse(
+    question: string,
+    turn: AskAtlasGovernedTurn,
+    replaceOperationalTurn: boolean
+  ) {
+    const stored = loadConversations();
+    const ownedId = active?.id;
+    const owned = ownedId
+      ? stored.find((item) => item.id === ownedId)
+      : undefined;
+    if (ownedId && !owned) {
+      return;
+    }
+    const conversation =
+      owned ?? active ?? createLocalConversation(crypto.randomUUID(), question);
+    const now = new Date().toISOString();
+    const priorTurns = replaceOperationalTurn
+      ? conversation.turns.slice(0, -2)
+      : conversation.turns;
+    const turnId = turn.requestId ?? crypto.randomUUID();
+    const outcome =
+      turn.kind === "structured"
+        ? turn.response.answer.outcome
+        : turn.response.outcome;
+    const sources =
+      turn.kind === "structured"
+        ? (turn.response.answer.actual_sources_used ?? [])
+        : turn.response.actual_sources_used;
+    const updated: LocalConversation = {
+      ...conversation,
+      expiresAt: new Date(Date.parse(now) + RETENTION_MS).toISOString(),
+      turns: [
+        ...priorTurns,
+        {
+          createdAt: now,
+          id: `${turnId}:user`,
+          role: "user",
+          text: question,
+        },
+        {
+          assistantPayload: turn,
+          createdAt: now,
+          id: turnId,
+          role: "assistant",
+          text: outcome,
+        },
+      ],
+      updatedAt: now,
+    };
+    const next = [
+      updated,
+      ...stored.filter((item) => item.id !== updated.id),
+    ].slice(0, 5);
+    saveConversations(next);
+    setConversations(next);
+    const selectionStillOwnsRequest =
+      !ownedId ||
+      activeIdRef.current === ownedId ||
+      activeIdRef.current === "__latest__";
+    if (!selectionStillOwnsRequest) {
+      return;
+    }
+    activeIdRef.current = updated.id;
+    setActiveId(updated.id);
+    setMissingConversationId(null);
+    setFailure(null);
+    setRetryQuestion("");
+    setMessage(sources.length === 0 && outcome !== "ANSWERED" ? question : "");
+  }
+
   async function ask(question: string) {
     if (!question || pending || !requestsEnabled) {
       return;
@@ -443,36 +549,35 @@ export function useEvidenceChat({
     setPending(true);
     setFailure(null);
     try {
-      const result = await postLiteratureChat(
-        {
-          history: conversationHistory(
-            replaceOperationalTurn && active
-              ? { ...active, turns: active.turns.slice(0, -2) }
-              : active
-          ),
-          message: question,
-        },
-        { signal: controller.signal }
-      );
+      const selectedMode = sourceModeSelection
+        ? sourceModeRef.current
+        : "Literature";
+      const result = await postAskAtlas({
+        context:
+          selectedMode === "Literature"
+            ? undefined
+            : structuredContextRef.current,
+        history: conversationHistory(
+          replaceOperationalTurn && active
+            ? { ...active, turns: active.turns.slice(0, -2) }
+            : active
+        ),
+        mode: selectedMode,
+        question,
+        signal: controller.signal,
+      });
       if (!requestStillCurrent(serial) || controller.signal.aborted) {
         return;
       }
-      const accepted = acceptAskAtlasPayload(result.data);
-      if (!accepted.ok) {
-        throw new AskAtlasAnswerContractError(
-          accepted.reason === "not_chat_response"
-            ? "malformed"
-            : accepted.reason
+      if (result.kind === "literature") {
+        settleAcceptedResponse(
+          question,
+          result.response,
+          replaceOperationalTurn
         );
+        return;
       }
-      // HTTP 200 is the primary transport for every typed outcome, including
-      // operational failures. Retry-After may be absent and does not change
-      // the outcome or its copy.
-      settleAcceptedResponse(
-        question,
-        accepted.response,
-        replaceOperationalTurn
-      );
+      settleGovernedResponse(question, result, replaceOperationalTurn);
     } catch (error) {
       if (
         !requestStillCurrent(serial) ||
@@ -605,7 +710,11 @@ export function useEvidenceChat({
     selectConversation,
     setMessage,
     setMobileHistoryOpen,
+    setSourceMode,
     showEmptyState,
+    sourceMode: sourceModeSelection ? sourceMode : "Literature",
+    sourceModeSelection,
+    sourceModes: ASK_ATLAS_SOURCE_MODES,
     startNewChat,
     submit,
     workspaceHandoffConversationId,
