@@ -57,7 +57,7 @@ export type ExplorerMapNumericRow = {
   categoryLabel: string | null;
   fips: string;
   numeric: number | null;
-  provenance: ExplorerMapRowProvenance;
+  provenance?: ExplorerMapRowProvenance;
   raw: string | null;
   valueState: ValueState;
 };
@@ -85,6 +85,11 @@ export function evidenceObjectForExplorerMapRow(
   claimLabel: string
 ): EvidenceObjectModel {
   const provenance = row.provenance;
+  if (!provenance) {
+    throw new ExplorerMapContractError(
+      "Map row is missing governed provenance."
+    );
+  }
   const periodStart = provenance.periodStart ?? "";
   const periodEnd = provenance.periodEnd ?? "";
   const model = evidenceObjectFromObservation({
@@ -557,6 +562,12 @@ export function acceptExplorerMapObservations(input: {
     sourceLabel,
     unit: input.spec.unit,
   };
+}
+
+export function explorerMapLayerPeriod(
+  layerId: ExplorerObservationLayerId
+): string {
+  return observationPeriod(EXPLORER_OBSERVATION_SPECS[layerId], null, null);
 }
 
 function observationPeriod(

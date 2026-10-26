@@ -547,7 +547,7 @@ export function ReviewNationalPicture({
     }
     if (isExplorerObservationLayer(mapLayer)) {
       void queryClient.refetchQueries({
-        queryKey: ["ux-reset-explorer-map-observations", releaseId, mapLayer],
+        queryKey: ["ux-reset-explorer-map-values", releaseId],
       });
       return;
     }

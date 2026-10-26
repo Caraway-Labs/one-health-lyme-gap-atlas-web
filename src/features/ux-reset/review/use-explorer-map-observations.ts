@@ -1,6 +1,6 @@
 "use client";
 
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import type { KnownEmptyObservationSelection } from "@/features/ux-reset/observations/selection-availability";
@@ -13,12 +13,15 @@ import {
 } from "@/features/ux-reset/review/explorer-map-layers";
 import {
   EXPLORER_OBSERVATION_LAYER_IDS,
-  EXPLORER_OBSERVATION_SPECS,
   ExplorerMapContractError,
   type ExplorerMapObservationReady,
   type ExplorerObservationLayerId,
 } from "@/features/ux-reset/review/explorer-map-observation";
-import { loadExplorerMapObservations } from "@/features/ux-reset/review/load-explorer-map-observations";
+import {
+  explorerMapValuesLayerReady,
+  explorerMapValuesQueryKey,
+  loadExplorerMapValues,
+} from "@/features/ux-reset/review/load-explorer-map-values";
 import {
   isLower48CountyFips,
   stateFipsPrefix,
@@ -66,11 +69,11 @@ function failureReason(error: unknown): string {
     return error.message;
   }
   if (error instanceof ApiResponseValidationError) {
-    return "The observation response did not match the governed contract for this layer.";
+    return "The map values response did not match the governed contract for this layer.";
   }
   if (error instanceof AtlasApiError) {
     if (error.status === 404) {
-      return "No admitted observations were published for this measure on the current release.";
+      return error.message || "Dataset release not found";
     }
     if (error.status === 400) {
       return (
@@ -79,10 +82,10 @@ function failureReason(error: unknown): string {
       );
     }
   }
-  return "Published observations could not be loaded for this layer.";
+  return "Published map values could not be loaded for this layer.";
 }
 
-function retryObservation(failureCount: number, error: unknown): boolean {
+function retryMapValues(failureCount: number, error: unknown): boolean {
   if (
     error instanceof ExplorerMapContractError ||
     error instanceof DatedObservationContractError ||
@@ -144,45 +147,34 @@ export function useExplorerMapObservations(input: {
       ].toSorted(),
     [input.fips, scopePrefix]
   );
-  const fipsKey = fips.join(",");
-  const enabled =
+  const fetchEnabled =
     Boolean(input.releaseId) &&
     input.geometryStatus === "ready" &&
-    fips.length > 0;
-  const queries = useQueries({
-    queries: EXPLORER_OBSERVATION_LAYER_IDS.map((layerId) => ({
-      enabled: enabled && layerId === input.activeLayerId,
-      queryFn: ({ signal }: { signal: AbortSignal }) => {
-        const releaseId = input.releaseId;
-        if (!releaseId) {
-          throw new ExplorerMapContractError(
-            "Map layers require a governed release."
-          );
-        }
-        return loadExplorerMapObservations({
-          fips,
-          releaseId,
-          signal,
-          spec: EXPLORER_OBSERVATION_SPECS[layerId],
-        });
-      },
-      queryKey: [
-        "ux-reset-explorer-map-observations",
-        input.releaseId,
-        layerId,
-        fipsKey,
-      ],
-      retry: retryObservation,
-      staleTime: (query: { state: { data?: ExplorerMapObservationReady } }) =>
-        query.state.data?.knownEmptySelection ? 0 : Number.POSITIVE_INFINITY,
-    })),
+    fips.length > 0 &&
+    isExplorerObservationLayer(input.activeLayerId);
+  const query = useQuery({
+    enabled: fetchEnabled,
+    queryFn: ({ signal }) => {
+      const releaseId = input.releaseId;
+      if (!releaseId) {
+        throw new ExplorerMapContractError(
+          "Map layers require a governed release."
+        );
+      }
+      return loadExplorerMapValues({ releaseId, signal });
+    },
+    queryKey: input.releaseId
+      ? explorerMapValuesQueryKey(input.releaseId)
+      : ["ux-reset-explorer-map-values", "pending"],
+    retry: retryMapValues,
+    staleTime: Number.POSITIVE_INFINITY,
   });
   return useMemo(() => {
     const states = {} as Record<
       ExplorerObservationLayerId,
       ExplorerObservationLayerState
     >;
-    for (const [index, layerId] of EXPLORER_OBSERVATION_LAYER_IDS.entries()) {
+    for (const layerId of EXPLORER_OBSERVATION_LAYER_IDS) {
       if (input.geometryStatus === "loading") {
         states[layerId] = { reason: GEOMETRY_LOADING_REASON, status: "idle" };
         continue;
@@ -202,15 +194,6 @@ export function useExplorerMapObservations(input: {
         };
         continue;
       }
-      const query = queries[index];
-      if (!query) {
-        states[layerId] = { status: "unloaded" };
-        continue;
-      }
-      if (query.isFetching && !query.data && layerId === input.activeLayerId) {
-        states[layerId] = { reason: LOADING_REASON, status: "loading" };
-        continue;
-      }
       if (query.isError) {
         states[layerId] = {
           reason: failureReason(query.error),
@@ -219,21 +202,37 @@ export function useExplorerMapObservations(input: {
         continue;
       }
       if (query.data) {
-        states[layerId] = { ...query.data, status: "ready" };
+        states[layerId] = {
+          ...explorerMapValuesLayerReady({
+            collection: query.data,
+            layerId,
+            requestedFips: fips,
+            scopeCode: input.scopeCode,
+          }),
+          status: "ready",
+        };
         continue;
       }
-      if (layerId !== input.activeLayerId || query.fetchStatus === "idle") {
-        states[layerId] = { status: "unloaded" };
+      if (
+        query.isFetching &&
+        isExplorerObservationLayer(input.activeLayerId) &&
+        layerId === input.activeLayerId
+      ) {
+        states[layerId] = { reason: LOADING_REASON, status: "loading" };
         continue;
       }
-      states[layerId] = { reason: LOADING_REASON, status: "loading" };
+      states[layerId] = { status: "unloaded" };
     }
     return states;
   }, [
-    fips.length,
+    fips,
     input.activeLayerId,
     input.geometryStatus,
     input.releaseId,
-    queries,
+    input.scopeCode,
+    query.data,
+    query.error,
+    query.isError,
+    query.isFetching,
   ]);
 }

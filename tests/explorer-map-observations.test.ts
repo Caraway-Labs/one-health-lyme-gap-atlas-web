@@ -12,10 +12,6 @@ import {
   EXPLORER_OBSERVATION_SPECS,
   ExplorerMapContractError,
 } from "@/features/ux-reset/review/explorer-map-observation";
-import {
-  loadExplorerMapObservations,
-  splitExplorerMapObservationBatches,
-} from "@/features/ux-reset/review/load-explorer-map-observations";
 import { observationGate } from "@/features/ux-reset/review/use-explorer-map-observations";
 import type { CountyContextObservation, Observation } from "@/generated/models";
 import { ValueState } from "@/generated/models";
@@ -224,47 +220,6 @@ describe("Explorer map observations", () => {
     ).toThrow(/does not invent dates/);
   });
 
-  it("follows one continuation page and keeps a missing value null", async () => {
-    const first = dated({ fips: "06037", value: 0.15 });
-    const second = dated({
-      fips: "01001",
-      state: ValueState.MISSING,
-      value: null,
-    });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = new URL(String(input), "http://localhost:8000");
-        const token = url.searchParams.get("page_token");
-        const body = token
-          ? {
-              data: [second],
-              links: {},
-              meta: { next_page_token: null },
-            }
-          : {
-              data: [first],
-              links: {},
-              meta: { next_page_token: "page-2" },
-            };
-        return Response.json(body);
-      })
-    );
-    const ready = await loadExplorerMapObservations({
-      fips: ["06037", "01001"],
-      releaseId: "release-1",
-      signal: new AbortController().signal,
-      spec: EXPLORER_OBSERVATION_SPECS.incidence_floor,
-    });
-    expect(ready.rows.map((row) => [row.fips, row.numeric])).toStrictEqual([
-      ["06037", 0.15],
-      ["01001", null],
-    ]);
-    expect(ready.omitted).toBe(0);
-    expect(ready.rows[0]?.provenance.provenanceRef).toBe("prov");
-    expect(ready.rows[0]?.provenance.evidence.resource_id).toBe("resource");
-  });
-
   it("keeps governed limitations and provenance for the selected county", async () => {
     const observed = {
       ...dated({ fips: "08001", value: 1.2 }),
@@ -292,12 +247,13 @@ describe("Explorer map observations", () => {
       sourceLabel: ready.sourceLabel,
       unit: ready.unit,
     });
+    const row = ready.rows[0];
     expect({
-      acquired: ready.rows[0]?.provenance.atlasAcquiredAt,
-      limitations: ready.rows[0]?.provenance.limitations,
-      method: ready.rows[0]?.provenance.methodologyVersion,
-      provenance: ready.rows[0]?.provenance.provenanceRef,
-      published: ready.rows[0]?.provenance.sourcePublishedAt,
+      acquired: row?.provenance?.atlasAcquiredAt,
+      limitations: row?.provenance?.limitations,
+      method: row?.provenance?.methodologyVersion,
+      provenance: row?.provenance?.provenanceRef,
+      published: row?.provenance?.sourcePublishedAt,
       state: paint.selectionEvidence?.availability,
       reason: paint.selectionEvidence?.reasonCode,
     }).toStrictEqual({
@@ -343,38 +299,12 @@ describe("Explorer map observations", () => {
     });
   });
 
-  it("keeps a layer disabled when the collection has no admitted rows", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => Response.json({ data: [], links: {}, meta: {} }))
-    );
-    await expect(
-      loadExplorerMapObservations({
-        fips: ["08001"],
-        releaseId: "release-1",
-        signal: new AbortController().signal,
-        spec: EXPLORER_OBSERVATION_SPECS.incidence_floor,
-      })
-    ).rejects.toThrow(/no rows/);
+  it("keeps a layer disabled when map values fail to load", () => {
     expect(
       observationGate({
-        reason: "The observation collection returned no rows.",
+        reason: "Dataset release not found",
         status: "error",
       }).selectable
     ).toBeFalsy();
-  });
-
-  it("splits a national county list into more than one bounded batch", () => {
-    const fips = Array.from(
-      { length: 800 },
-      (_, index) => `08${String(index).padStart(3, "0")}`
-    );
-    const batches = splitExplorerMapObservationBatches({
-      fips,
-      spec: EXPLORER_OBSERVATION_SPECS.svi,
-    });
-    expect(batches.length).toBeGreaterThan(1);
-    expect(batches.length).toBeLessThan(fips.length);
-    expect(batches.flat()).toStrictEqual(fips);
   });
 });
