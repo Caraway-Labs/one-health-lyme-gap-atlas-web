@@ -29,7 +29,10 @@ describe("documentation configuration", () => {
       "src/app/docs/[[...slug]]/page.tsx",
       "utf-8"
     );
-    expect(pageSource).toContain("canonical: docsCanonicalUrl(page.url)");
+    const socialSource = await readFile("src/lib/docs-social.ts", "utf-8");
+    expect(pageSource).toContain("docsPageSocialMetadata");
+    expect(socialSource).toContain("docsCanonicalUrl(page.url, environment)");
+    expect(socialSource).toContain("docsOpenGraphImagePath(page.url)");
     const previousSite = process.env.NEXT_PUBLIC_SITE_URL;
     const previousDocs = process.env.NEXT_PUBLIC_DOCS_URL;
     process.env.NEXT_PUBLIC_SITE_URL = "https://preview.example";
