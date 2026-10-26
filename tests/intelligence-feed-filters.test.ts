@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   activeFeedFilterCount,
   buildFeedListParams,
+  feedPageParams,
   feedRequestNarrows,
   collectIntelligenceSourcePages,
+  FEED_PAGE_SIZE,
   feedPublishedParser,
   feedResultSummary,
   feedSourceOptions,
@@ -74,6 +76,34 @@ describe("intelligence feed filters", () => {
       now
     );
     expect(params && "published_to" in params).toBeFalsy();
+  });
+
+  it("sends page_size 25 for the default view, filters, and the next page", () => {
+    const now = new Date("2026-04-15T18:00:00.000Z");
+    const publishedFrom = publishedFromForPreset("30d", now);
+    expect({
+      dates: feedPageParams({ published: "30d", sourceId: null }, now),
+      defaultView: feedPageParams({ published: "all", sourceId: null }, now),
+      narrows: feedRequestNarrows({ published: "all", sourceId: null }),
+      nextPage: feedPageParams(
+        { published: "30d", sourceId: null },
+        now,
+        "page-2"
+      ),
+      pageSize: FEED_PAGE_SIZE,
+      source: feedPageParams({ published: "all", sourceId: "cdc-lyme" }, now),
+    }).toStrictEqual({
+      dates: { page_size: 25, published_from: publishedFrom },
+      defaultView: { page_size: 25 },
+      narrows: false,
+      nextPage: {
+        page_size: 25,
+        page_token: "page-2",
+        published_from: publishedFrom,
+      },
+      pageSize: 25,
+      source: { page_size: 25, source_id: "cdc-lyme" },
+    });
   });
 
   it("parses shareable filter params and rejects invalid values", () => {

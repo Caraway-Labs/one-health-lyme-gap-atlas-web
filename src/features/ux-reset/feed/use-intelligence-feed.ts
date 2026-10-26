@@ -19,9 +19,8 @@ import {
 import { validateApiResponse } from "@/lib/api-response-validation";
 
 import {
-  buildFeedListParams,
+  feedPageParams,
   isStaleFeedPageToken,
-  withFeedPageToken,
   type FeedFilterState,
 } from "./feed-filters";
 
@@ -34,10 +33,7 @@ async function readFeedPage(
   pageToken?: string,
   signal?: AbortSignal
 ): Promise<MetadataFeedOutput> {
-  const params = withFeedPageToken(
-    buildFeedListParams(filters, new Date()),
-    pageToken
-  );
+  const params = feedPageParams(filters, new Date(), pageToken);
   const response = await listIntelligenceFeed(params, { signal });
   return validateApiResponse("Intelligence feed", MetadataFeed, response.data);
 }
@@ -50,7 +46,7 @@ export function resetIntelligenceFeedToFirstPage(
   return queryClient.resetQueries({
     exact: true,
     queryKey: getListIntelligenceFeedQueryKey(
-      buildFeedListParams(filters, new Date())
+      feedPageParams(filters, new Date())
     ),
   });
 }
@@ -58,7 +54,7 @@ export function resetIntelligenceFeedToFirstPage(
 export function useIntelligenceFeed(filters: FeedFilterState, enabled = true) {
   const queryClient = useQueryClient();
   const [isRestartingPage, setRestartingPage] = useState(false);
-  const listParams = buildFeedListParams(filters, new Date());
+  const listParams = feedPageParams(filters, new Date());
   const queryKey = getListIntelligenceFeedQueryKey(listParams);
   const query = useInfiniteQuery<
     MetadataFeedOutput,
