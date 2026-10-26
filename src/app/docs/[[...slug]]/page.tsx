@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 
 import { OpenAPIPageProvider } from "@/components/docs-openapi-page";
 import { DocsPageActions } from "@/components/docs-page-actions";
+import { docsCanonicalUrl } from "@/lib/docs-config";
 import {
   DOCS_GITHUB_REF,
   DOCS_REPOSITORY,
@@ -71,11 +72,21 @@ export async function generateMetadata({
   const page = docsSource.getPage((await params).slug);
   if (!page) notFound();
 
-  return docsPageSocialMetadata({
+  const metadata = docsPageSocialMetadata({
     description: page.data.description,
     title: page.data.title,
     url: page.url,
   });
+  if (page.url !== "/docs/develop/changelog") return metadata;
+  return {
+    ...metadata,
+    alternates: {
+      ...metadata.alternates,
+      types: {
+        "application/atom+xml": docsCanonicalUrl("/docs/changelog.xml"),
+      },
+    },
+  };
 }
 
 function exportedLastModified(data: object): Date | undefined {

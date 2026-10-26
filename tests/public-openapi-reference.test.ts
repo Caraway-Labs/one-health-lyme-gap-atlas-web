@@ -83,9 +83,18 @@ describe("public OpenAPI reference", () => {
         contract.provenance.sha256,
         "[OpenAPI schema](https://api.onehealthatlas.org/openapi.json)",
         "[Atlas documentation and developer guides](https://onehealthatlas.org/docs)",
+        "[API changelog](/docs/develop/changelog)",
+        "Atlas results are not a diagnosis.",
+        "an individual's risk.",
       ])
     ).toStrictEqual([]);
-    expect(index.includes("Alaska") || index.includes("Hawaii")).toBeFalsy();
+    expect({
+      githubChangelog: index.includes("blob/main/CHANGELOG.md"),
+      outsideLower48: index.includes("Alaska") || index.includes("Hawaii"),
+    }).toStrictEqual({
+      githubChangelog: false,
+      outsideLower48: false,
+    });
   });
 
   it("renders the observations operation once with its example, schema, and error", async () => {
