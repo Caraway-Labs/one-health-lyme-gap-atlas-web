@@ -162,7 +162,9 @@ describe("Tier 1 availability guide", () => {
       highRisk: guide.match(/high risk/giu),
       individualRisk: /individual risk/iu.test(guide),
       nullData: guide.includes("A null `data` value is not low priority."),
-      predictedIncidence: guide.match(/predicted incidence/gu)?.length ?? 0,
+      predictedIncidence:
+        guide.replaceAll(/\s+/g, " ").match(/predicted incidence/gu)?.length ??
+        0,
       unpublished: guide.includes(
         "There is no retrieved `NO_PUBLISHED_MODEL` payload"
       ),

@@ -35,7 +35,7 @@ This playground sends that anonymous GET through the docs site. It adds no API k
 
 A successful body is a collection. Check `value_state` before you read `value`. Read `value` with `unit`.
 
-<Callout title="Interpret with care" type="warning">
+<Callout title="Interpret with care" type="warn">
   `case_count_floor_2023` is a privacy-protected surveillance floor, in `cases`.
   A case floor is not a diagnosis, a complete count, or an individual risk.
 </Callout>
@@ -112,13 +112,37 @@ Detail routes return `data`. An unknown id returns HTTP 404 `RESOURCE_NOT_FOUND`
 
 Use this table for the quickstart URL, and for the same query with another county FIPS, period, or extra parameter. Handle an empty page, a bad request, and a retry before you look up the other codes.
 
-| State | What you receive | What to do |
-| --- | --- | --- |
-| Observed value | HTTP 200, a row, `value_state` `OBSERVED`, numeric `value` | Record `value`, `unit`, the period, `release_id`, and `semantic_version` |
-| Zero or gap | HTTP 200 and `value_state` `ZERO`, or `value` null with `MISSING`, `SUPPRESSED`, or `UNAVAILABLE` | Keep `ZERO` as numeric zero. Leave a gap null. Do not substitute zero |
-| Empty page | HTTP 200, `data` `[]`. First query: `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. A later empty page stays `AVAILABLE` | An empty page does not establish source coverage or biological absence, and it is not HTTP 404 |
-| Bad request | HTTP 400. Read `code`, `detail`, and `errors` | Change the request and send it again. For this annual measure, send `year` or both `start_date` and `end_date`, and do not send both. `INVALID_REQUEST` covers a missing or inconsistent parameter. Send `geography_type=county`. `state` returns `UNSUPPORTED_FILTER` |
-| Retry | HTTP 429 `RATE_LIMITED`, or HTTP 503 `SERVICE_UNAVAILABLE`, with header `Retry-After` | Wait the seconds in `Retry-After` when the header is present, then send the same request again. Without the header, follow [Retries](/docs/develop/errors#retries). The public document does not publish a numeric quota |
+<Accordions>
+  <Accordion title="Observed value — record the value with its unit, period, and release">
+    HTTP 200, a row, `value_state` `OBSERVED`, numeric `value`. Record `value`,
+    `unit`, the period, `release_id`, and `semantic_version`.
+  </Accordion>
+  <Accordion title="Zero or gap — keep numeric zero and leave a gap null">
+    HTTP 200 and `value_state` `ZERO`, or `value` null with `MISSING`,
+    `SUPPRESSED`, or `UNAVAILABLE`. Keep `ZERO` as numeric zero. Leave a gap
+    null. Do not substitute zero.
+  </Accordion>
+  <Accordion title="Empty page — an empty page is not HTTP 404">
+    HTTP 200, `data` `[]`. First query: `meta.availability` `UNAVAILABLE` and
+    `reason` `NO_PUBLISHED_RESULTS`. A later empty page stays `AVAILABLE`. An
+    empty page does not establish source coverage or biological absence, and it
+    is not HTTP 404.
+  </Accordion>
+  <Accordion title="Bad request — change the request and send it again">
+    HTTP 400. Read `code`, `detail`, and `errors`. Change the request and send
+    it again. For this annual measure, send `year` or both `start_date` and
+    `end_date`, and do not send both. `INVALID_REQUEST` covers a missing or
+    inconsistent parameter. Send `geography_type=county`. `state` returns
+    `UNSUPPORTED_FILTER`.
+  </Accordion>
+  <Accordion title="Retry — wait for Retry-After, then send the same request">
+    HTTP 429 `RATE_LIMITED`, or HTTP 503 `SERVICE_UNAVAILABLE`, with header
+    `Retry-After`. Wait the seconds in `Retry-After` when the header is present,
+    then send the same request again. Without the header, follow
+    [Retries](/docs/develop/errors#retries). The public document does not
+    publish a numeric quota.
+  </Accordion>
+</Accordions>
 
 The other codes and states are in [Errors and retries](/docs/develop/errors): [Value states](/docs/develop/errors#value-states), [INVALID_REQUEST](/docs/develop/errors#invalid_request), [UNSUPPORTED_FILTER](/docs/develop/errors#unsupported_filter), [UNSUPPORTED_STRATIFICATION](/docs/develop/errors#unsupported_stratification), [QUERY_TOO_BROAD](/docs/develop/errors#query_too_broad), [RESOURCE_NOT_FOUND](/docs/develop/errors#resource_not_found), [RATE_LIMITED](/docs/develop/errors#rate_limited), [HTTP 413](/docs/develop/errors#http-413), [HTTP 414](/docs/develop/errors#http-414), [HTTP 503](/docs/develop/errors#http-503), and [Retries](/docs/develop/errors#retries).
 

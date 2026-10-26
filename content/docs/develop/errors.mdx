@@ -9,18 +9,18 @@ Captured bodies below are production responses with the live `request_id` kept. 
 
 ## Codes
 
-| HTTP status | `code` | When it applies |
-| --- | --- | --- |
-| 400 | `INVALID_REQUEST` | [Missing, malformed, or inconsistent parameter](#invalid_request) |
-| 400 | `UNSUPPORTED_FILTER` | [A parameter V1 does not accept](#unsupported_filter) |
-| 400 | `UNSUPPORTED_STRATIFICATION` | [`stratification` is sent](#unsupported_stratification) |
-| 400 | `QUERY_TOO_BROAD` | [The selection is above 10,000 results](#query_too_broad) |
-| 404 | `RESOURCE_NOT_FOUND` | [Unknown canonical resource id](#resource_not_found) |
-| 413 | `INVALID_REQUEST` | [A GET request includes a body](#http-413) |
-| 414 | `INVALID_REQUEST` | [The query string is too long](#http-414) |
-| 422 | (none) | [Legacy validation](#http-422) |
-| 429 | `RATE_LIMITED` | [Too many requests](#rate_limited) |
-| 503 | `SERVICE_UNAVAILABLE` | [The data service cannot answer](#http-503) |
+| HTTP status | `code` | When it applies | What to do |
+| --- | --- | --- | --- |
+| 400 | `INVALID_REQUEST` | [Missing, malformed, or inconsistent parameter](#invalid_request) | Change the request, then send it again |
+| 400 | `UNSUPPORTED_FILTER` | [A parameter V1 does not accept](#unsupported_filter) | Remove that parameter |
+| 400 | `UNSUPPORTED_STRATIFICATION` | [`stratification` is sent](#unsupported_stratification) | Omit `stratification` |
+| 400 | `QUERY_TOO_BROAD` | [The selection is above 10,000 results](#query_too_broad) | Narrow the measure, geography, time, or stratification, then request the first page again |
+| 404 | `RESOURCE_NOT_FOUND` | [Unknown canonical resource id](#resource_not_found) | Check the id against the list operation for that resource |
+| 413 | `INVALID_REQUEST` | [A GET request includes a body](#http-413) | Send the request again without a body |
+| 414 | `INVALID_REQUEST` | [The query string is too long](#http-414) | Send fewer or shorter parameter values, then retry |
+| 422 | (none) | [Legacy validation](#http-422) | Fix each listed value, then retry |
+| 429 | `RATE_LIMITED` | [Too many requests](#rate_limited) | Wait for `Retry-After`, or use the [retry fallback](#retries) |
+| 503 | `SERVICE_UNAVAILABLE` | [The data service cannot answer](#http-503) | Wait for `Retry-After`, or use the [retry fallback](#retries) |
 
 ## INVALID_REQUEST
 
@@ -244,7 +244,7 @@ A 5xx body is not always JSON. Read the `Content-Type` response header before pa
 
 Read `value` only together with `value_state` and `unit`. Show these states differently from each other. Never turn `null` into zero.
 
-| State | Meaning | What a client should do |
+| State | Meaning | What to do |
 | --- | --- | --- |
 | `OBSERVED` | Nonzero value the publisher reported | [Use `value` as given](#observed) |
 | `ZERO` | Reported numeric zero. Different from a missing value | [Keep the zero](#zero) |
