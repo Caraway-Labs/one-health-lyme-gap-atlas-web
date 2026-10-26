@@ -135,7 +135,7 @@ An empty observation page is HTTP 200 with `data` set to `[]`. That is not HTTP 
 
 ## RATE_LIMITED
 
-Too many requests arrived in a short time. Wait the number of seconds in `Retry-After`, then retry the same request. Spread later requests out, or reuse a cached response. The public document does not publish a numeric quota.
+Too many requests arrived in a short time. A `429` or `503` can carry `Retry-After` in seconds; wait that long. Without it, use the [retry fallback](#retries). Spread later requests out, or reuse a cached response. The public document does not publish a per-key quota.
 
 The contract documents this body and a `Retry-After` header. It was not requested from production. The `request_id` in the example is the contract sample. Send the `request_id` from the response you received.
 
@@ -214,7 +214,7 @@ Legacy routes, including county and state review, scores, geometry, rankings, an
 
 ## HTTP 503
 
-The Atlas data service cannot answer right now. `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check `Content-Type` before you parse the body. Parse it as Problem Details only when the media type is `application/problem+json`.
+The Atlas data service cannot answer right now. `code` is `SERVICE_UNAVAILABLE`. A `429` or `503` can carry `Retry-After` in seconds; wait that long. Without it, use the [retry fallback](#retries). Check `Content-Type` before you parse the body. Parse it as Problem Details only when the media type is `application/problem+json`.
 
 The contract documents this body. It was not requested from production. `detail` can differ by route. The county report renderer, for example, documents a timeout detail with the same `code`. Send the `request_id` from the response you received.
 
@@ -234,13 +234,11 @@ Geography identity that is still unpublished is HTTP 200 with `availability` `UN
 
 ## Retries
 
-Wait the number of seconds in `Retry-After` when that header is present, then send the same request. The header is documented on HTTP 429 and HTTP 503. Its description is "Seconds to wait before you retry. Wait that long when the header is present."
+The public contract states: "A `429` or `503` can carry `Retry-After` in seconds; wait that long. Without it, wait 1 second, double after each failure up to 60 seconds, add jitter, and stop after a few attempts. Do not retry a `400`, `404`, or `422`." That fallback applies to both HTTP 429 and HTTP 503 when `Retry-After` is absent. The header description is "Seconds to wait before you retry. Wait that long when the header is present."
 
-When HTTP 503 has no `Retry-After`, retry with exponential backoff: increase the wait after each attempt. The contract calls this a growing delay. It does not publish a starting delay or a maximum wait.
+HTTP 413 and HTTP 414 also fail again when the request is unchanged. Change the request before you send it again.
 
-HTTP 400, 404, 413, 414, and 422 fail again when the request is unchanged. Change the request before you send it again.
-
-A 5xx body is not always JSON. Read the `Content-Type` response header before parsing. Parse Problem Details only when the media type is `application/problem+json`. Any other media type is not a problem document. Do not invent a `code` from it. Honor `Retry-After` when the header is present, and otherwise use the growing delay above.
+A 5xx body is not always JSON. Read the `Content-Type` response header before parsing. Parse Problem Details only when the media type is `application/problem+json`. Any other media type is not a problem document. Do not invent a `code` from it. Honor `Retry-After` when the header is present. Without it, wait 1 second, double after each failure up to 60 seconds, add jitter, and stop after a few attempts.
 
 ## Value states
 
