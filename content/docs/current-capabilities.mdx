@@ -3,7 +3,13 @@ title: Current capabilities
 description: See what One Health Atlas supports in the current public release and how each capability contributes to evidence-aware investigation.
 ---
 
-This page describes the current public Atlas experience. Use it to choose a supported workflow and to avoid treating a planned or experimental idea as a released capability.
+Epidemiologists use this page to choose a supported workflow and to keep a planned or experimental idea separate from a released capability.
+
+<Callout title="Interpret with care" type="warn">
+  A review-priority signal is not a diagnosis, a disease-burden estimate, or an
+  individual risk estimate. Atlas does not predict an outbreak with certainty or
+  act for a public-health authority.
+</Callout>
 
 ## Capability status
 
@@ -11,19 +17,19 @@ Atlas uses four status labels:
 
 - **Available now** — verified in the current public release and appropriate to document as user behavior.
 - **Planned** — part of the product direction, but not available to rely on today.
-- **Experimental/demo** — available only in a constrained, feature-gated, or validation context; do not treat it as a production commitment.
+- **Experimental/demo** — available only in a constrained, feature-gated, or validation context. Do not treat it as a production commitment.
 - **Not supported** — outside the current product promise or deliberately excluded from the public experience.
 
 ## What you can do today
 
-| Capability | Status | How it supports investigation | Important boundary |
-| --- | --- | --- | --- |
-| Front Porch | Available now | Read the public introduction at `/` without a sign-in. | It does not show county scores, a map of results, or a comparison. |
-| Atlas Explorer | Available now | Sign in and start from the United States or one state. Read the map and county list together, then open county evidence and suggested follow-up on the same address. | A review-priority signal is not a diagnosis, disease-burden estimate, or individual risk estimate. National scope is a bounded picture, not a ranking of every U.S. county. |
-| Compare two counties | Available now | Open Compare for two counties from the same release and read each measure's unit, period, and availability. | The page does not rank a winner. It does not compare five counties. |
-| Inspect evidence and provenance | Available now | Open county evidence and **Inspect provenance** before deciding what to review next. | Check source, geography, time or vintage, release, method version, freshness, completeness, uncertainty, and limitations. |
-| Share a workspace address | Available now | Share an Atlas Explorer or Compare URL that keeps scope, county, compare, release, period, and Explorer mode. | Record the release and method with the URL. A URL does not guarantee that a future release will contain identical data. |
-| County PDF | Available now | From county evidence, export a county PDF when Atlas can verify that the file matches the displayed county, observations, sources, period, and caveats. | If that check fails, the PDF is unavailable. That is not a claim that the report contains none of a period. |
+| Capability | Status | Boundary |
+| --- | --- | --- |
+| Front Porch at `/` | Available now | Public introduction. No county scores, results map, or comparison. |
+| Atlas Explorer | Available now | National scope is a bounded picture, not a ranking of every U.S. county. |
+| Compare two counties | Available now | No winner and no five-county comparison. |
+| Inspect evidence and provenance | Available now | Check source, geography, vintage, release, method, freshness, and limitations. |
+| Share a workspace address | Available now | Record the release and method with the URL. A later release may differ. |
+| County PDF | Available now | A failed verification check makes the PDF unavailable. That is not a claim that the report contains none of a period. |
 
 ## Authenticated professional workspace
 
@@ -31,14 +37,14 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 
 | Capability | Status | How it supports investigation | Important boundary |
 | --- | --- | --- | --- |
-| Atlas Explorer at [/explore](/explore) | Available now | Start from the United States or one state, and read the map and county list. Open county evidence or suggested follow-up on that address. | National scope is a bounded picture. It is not a ranking of every U.S. county. A saved default applies only when the address has no scope and no county. On a state picture with no county, Atlas Explorer selects the first published review candidate and writes it into the address. A county that is present but does not validate opens with `selection=required` and is not replaced. |
-| Model-assisted surveillance review priority | Available now | On signed-in Atlas Explorer, read a persisted HIGH, MEDIUM, or LOW tier for the selected county or on county evidence when its release matches the selected evidence release. | Atlas withholds a tier from a different release, and withholds it when the governed release for the page is not known. A withheld, missing, or not-estimable result is not shown as LOW. This is review prioritization, not disease risk or predicted incidence. It is separate from the rules-based county review score. Forecasts are not released. |
-| Compare at [/compare](/compare) | Available now | Compare two counties on aligned measures, with unit, period, and availability on each value. | This page does not rank a winner. |
-| Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Atlas Explorer start, plus optional role, organization, and job title. Sign out, export, and removal use the account controls on the same page. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
-| Docs from the workspace | Available now | Open this reference in a new tab from the workspace navigation. | The original workspace tab keeps its URL. Docs is not in-page help. |
-| Ask Atlas at [/askatlas](/askatlas) | Experimental/demo | Atlas Explorer and Compare open this dedicated page. It requests reviewed literature when that service is enabled. | Feature-gated. The county or comparison on the previous page is not sent with the question. With the service off, the page says Ask Atlas is unavailable and the other pages stay usable. There is no side panel, no Structured mode, and no Both mode. History stays in this browser. |
-| Feed at [/app/feed](/app/feed) | Planned | The destination is in the navigation. | It does not yet provide feed items or alerts. |
-| Data Provenance at [/data-provenance](/data-provenance) | Available now | Read the current release source catalog, a conceptual lineage, and links to the methodology guides. | The page does not replace provenance beside a result, and it does not add sources that the release did not return. |
+| Atlas Explorer at [/explore](/explore) | Available now | Map, list, county evidence, and suggested follow-up. | A default applies only with no scope and no county. A state picture with no county selects the first published review candidate. An invalid county opens with `selection=required` and is not replaced. |
+| Model-assisted surveillance review priority | Available now | Read a persisted HIGH, MEDIUM, or LOW tier for the selected county when its release matches the selected evidence release. | Atlas withholds a tier from a different release, and withholds it when the governed release for the page is not known. A withheld, missing, or not-estimable result is not shown as LOW. This is review prioritization, not disease risk or predicted incidence. It is separate from the rules-based county review score. Forecasts are not released. |
+| Compare at [/compare](/compare) | Available now | Compare two counties on aligned measures. | This page does not rank a winner. |
+| Settings at [/app/settings](/app/settings) | Available now | Save United States or a state as the next Atlas Explorer start, plus optional role, organization, and job title. | Optional fields can stay empty. The default does not change evidence values or block other geographies. |
+| Docs from the workspace | Available now | Open this reference in a new tab. | The original workspace tab keeps its URL. Docs is not in-page help. |
+| Ask Atlas at [/askatlas](/askatlas) | Experimental/demo | Reviewed literature when enabled. | The previous county or comparison is not sent. Service off leaves the other pages usable. No side panel, Structured mode, or Both mode. History stays in this browser. |
+| Feed at [/app/feed](/app/feed) | Available now | Scan recent items from approved trusted sources and open the publisher page. | An empty, disabled, or failed feed is its own state. Feed does not send alerts or keep a saved-article library. |
+| Data Provenance at [/data-provenance](/data-provenance) | Available now | Read the current release source catalog and links to the methodology guides. | The page does not replace provenance beside a result, and it does not add sources the release did not return. |
 | Evidence brief | Experimental/demo | A direct `plan=evidence-brief` address still opens that brief and returns to county evidence. | It is not a workspace destination. Surveillance planning is not released. |
 | API keys in Settings | Not supported | Public API reads do not use a key. | Settings does not generate or revoke a key. See [API, MCP, and access](/docs/api-mcp-and-access) and the [developer quickstart](/docs/develop/quickstart). |
 
@@ -46,23 +52,48 @@ These routes require sign-in. The [professional workspace](/docs/professional-wo
 
 | Capability | Status | What this means for you |
 | --- | --- | --- |
-| Historical release trends | Not supported | The public explorer currently exposes one active release. A generated date is release metadata, not the date of disease observations. |
-| Guaranteed outbreak prediction or automated public-health action | Not supported | Atlas surfaces signals and investigation candidates. It does not predict with certainty or act on behalf of an authority. |
-| Clinical diagnosis or person-level exposure risk | Not supported | Atlas is a population-level public-health decision-support experience, not a clinical or individual-risk tool. |
-| Additional clinical, laboratory, jurisdictional, or other governed sources | Planned | Atlas is designed to adapt future sources into the same evidence model. The current release stays open-data-first. See [Sources and canonical evidence](/docs/sources-and-canonical-evidence). |
-| Live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory ingestion | Not supported | Naming a future standard is not a connection. No live EHR or production clinical-laboratory feed is part of this release. |
-| AI-generated findings treated as authoritative | Experimental/demo | AI-enabled experiences must remain grounded in approved evidence, show limitations, and retain human review. Do not use an AI suggestion as a finding by itself. |
-| Alerts, private feeds, or account-based evidence access | Not supported | The Front Porch remains usable without sign-in. A workspace account does not unlock different governed evidence, change a score, or authorize an interpretation. Feed does not list items, and alerts are not released. |
-| Separate public map, five-county comparison, or Investigation Workspace | Not supported | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. They do not restore a separate public analytical page. |
+| Historical release trends | Not supported | The public explorer exposes one active release. A generated date is release metadata, not the observation date. |
+| Guaranteed outbreak prediction or automated public-health action | Not supported | Atlas surfaces signals and investigation candidates. It does not predict with certainty or act for an authority. |
+| Clinical diagnosis or person-level exposure risk | Not supported | Atlas supports population-level review. It is not a clinical or individual-risk tool. |
+| Additional clinical, laboratory, jurisdictional, or other governed sources | Planned | Future sources are designed to enter the same evidence model. The current release stays open-data-first. See [Sources and canonical evidence](/docs/sources-and-canonical-evidence). |
+| Live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory ingestion | Not supported | No live EHR or production clinical-laboratory feed is in this release. |
+| AI-generated findings treated as authoritative | Experimental/demo | Keep AI grounded in approved evidence, show limitations, and retain human review. |
+| Alerts, private feeds, or account-based evidence access | Not supported | An account does not unlock different evidence or change a score. Alerts are not released. Feed lists trusted-source items and does not keep a saved library. |
+| Separate public map, five-county comparison, or Investigation Workspace | Not supported | Older `/overview`, `/geographic_explorer`, and `/investigate` bookmarks open Atlas Explorer after sign-in. |
 
 ## Where to start
 
-- Sign in and open [Atlas Explorer](/explore) for the map, county list, county evidence, and suggested follow-up.
-- Open [Compare](/compare) for two counties.
-- Read the [professional workspace](/docs/professional-workspace) guide for Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs.
-- Follow the [investigation workflows](/docs/investigation-workflows) for question-to-next-step guidance.
-- Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) and the methodology context beside the result before relying on a signal. Keep the [AI Ethics commitments](/ai-ethics) nearby for AI-enabled or experimental experiences.
-- Read [sources and canonical evidence](/docs/sources-and-canonical-evidence) before treating a future source, file format, or clinical standard as available.
-- Read [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) for the status of AI-assisted and future capabilities, or use the [FAQ and troubleshooting guide](/docs/faq-and-troubleshooting) for common questions.
+<Cards>
+  <Card
+    title="Atlas Explorer"
+    href="/explore"
+    description="Map, county list, county evidence, and suggested follow-up."
+  />
+  <Card
+    title="Compare"
+    href="/compare"
+    description="Two counties from the same release."
+  />
+  <Card
+    title="Professional workspace"
+    href="/docs/professional-workspace"
+    description="Atlas Explorer, Compare, Ask Atlas, Feed, Settings, and Docs."
+  />
+  <Card
+    title="Investigation workflows"
+    href="/docs/investigation-workflows"
+    description="Move from a question to a next step."
+  />
+  <Card
+    title="Evidence and uncertainty"
+    href="/docs/evidence-and-uncertainty"
+    description="Read a signal with its provenance."
+  />
+  <Card
+    title="Sources and canonical evidence"
+    href="/docs/sources-and-canonical-evidence"
+    description="Separate a future source from today's release."
+  />
+</Cards>
 
-The current release is a situational-awareness foundation. When a question depends on a feed, model, alert, historical comparison, or export that is not listed as available now, treat it as an open product or data dependency and do not infer the answer from the interface.
+Also read [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence), the [AI Ethics commitments](/ai-ethics), and the [FAQ](/docs/faq-and-troubleshooting). If a model, alert, historical comparison, or export is not listed as available now, leave the question open.
