@@ -22,6 +22,7 @@ import {
   PUBLIC_OPENAPI_MANIFEST_RELATIVE_PATH,
   PUBLIC_OPENAPI_RELATIVE_PATH,
   compareAuthoritativeOpenApiChecksum,
+  formatPublicOpenApiDriftFailure,
   loadPublicOpenApiContract,
   readAndLoadPublicOpenApiContract,
   renderPublicApiReference,
@@ -286,6 +287,7 @@ describe("public OpenAPI reference", () => {
     );
     expect(
       missingPhrases(counties, [
+        'groupId="atlas-county-report-template"',
         'items={["county-v1 scoring","county-v2 evidence"]}',
         'value="county-v1 scoring"',
         'value="county-v2 evidence"',
@@ -2506,6 +2508,28 @@ describe("public OpenAPI drift", () => {
     expect(
       existsSync(path.join(process.cwd(), PUBLIC_OPENAPI_RELATIVE_PATH))
     ).toBeTruthy();
+  });
+
+  it("prints a drift failure without changing the pin", () => {
+    const mismatch = formatPublicOpenApiDriftFailure(
+      new PublicOpenApiContractError(
+        "stale_contract",
+        "Pinned checksum differs from the authoritative checksum."
+      )
+    );
+    const unavailable = formatPublicOpenApiDriftFailure(
+      new PublicOpenApiContractError("unavailable", "could not be retrieved")
+    );
+    expect(mismatch).toContain(
+      "Public OpenAPI drift check failed (stale_contract)"
+    );
+    expect(mismatch).toContain("were not changed");
+    expect(unavailable).toContain(
+      "Public OpenAPI drift check failed (unavailable)"
+    );
+    expect(unavailable).toContain(
+      "The pinned contract, manifest, and generated pages were not changed."
+    );
   });
 
   it("accepts bytes whose checksum matches the pin", async () => {

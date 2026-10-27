@@ -482,9 +482,33 @@
 .ux-reset-feed-summary-text,
 .ux-reset-feed-copyright,
 .ux-reset-feed-attribution,
+.ux-reset-feed-abstract-status,
 .ux-reset-feed-footer {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.ux-reset-feed-abstract-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ux-reset-feed-abstract-actions button,
+.ux-reset-feed-pubmed-link {
+  min-height: var(--control-height);
+}
+
+.ux-reset-feed-pubmed-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--foreground);
+}
+
+.ux-reset-feed-abstract-status {
+  margin: 0;
 }
 
 .ux-reset-feed-summary-text,
