@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { BANNED_TERMS } from "../scripts/docs-banned-terms.mjs";
 import {
   DEVELOPER_PAGE_WORD_BUDGET,
+  type DocsCheckFinding,
   checkBannedTerms,
   checkDatedTestLog,
   checkDocsCopyStructure,
@@ -36,9 +37,10 @@ describe("dated test-log sentences", () => {
       page("On 25 October 2026, the sample returned HTTP 200.")
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0]?.line).toBe(6);
-    expect(findings[0]?.rule).toBe("dated-test-log");
-    expect(formatDocsCheckFinding(findings[0])).toContain(
+    const finding = requiredFinding(findings);
+    expect(finding.line).toBe(6);
+    expect(finding.rule).toBe("dated-test-log");
+    expect(formatDocsCheckFinding(finding)).toContain(
       `${developerPage}:6: dated-test-log:`
     );
   });
@@ -232,10 +234,11 @@ describe("banned terms", () => {
       )
     );
     expect(findings).toHaveLength(1);
-    expect(findings[0]?.rule).toBe("banned-term");
-    expect(findings[0]?.line).toBe(6);
-    expect(findings[0]?.fix).toContain("result limit");
-    expect(formatDocsCheckFinding(findings[0])).toMatch(
+    const finding = requiredFinding(findings);
+    expect(finding.rule).toBe("banned-term");
+    expect(finding.line).toBe(6);
+    expect(finding.fix).toContain("result limit");
+    expect(formatDocsCheckFinding(finding)).toMatch(
       /^content\/docs\/develop\/example\.mdx:6: banned-term: /
     );
   });
@@ -308,6 +311,14 @@ describe("current documentation pages", () => {
     expect(findings.map(formatDocsCheckFinding)).toStrictEqual([]);
   });
 });
+
+function requiredFinding(findings: DocsCheckFinding[]): DocsCheckFinding {
+  const finding = findings[0];
+  if (!finding) {
+    throw new Error("Expected a docs check finding.");
+  }
+  return finding;
+}
 
 function walk(directory: string): string[] {
   const files: string[] = [];
