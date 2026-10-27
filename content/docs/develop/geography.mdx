@@ -15,7 +15,7 @@ Atlas joins public records on geography identity. Identity is a type plus an id.
 | Field | Values |
 | --- | --- |
 | `geography_type` | `county` or `state` |
-| `geography_id` | FIPS string with leading zeros. Five digits for a county. Two digits for a state |
+| `geography_id` | <Term id="fips">FIPS</Term> string with leading zeros. Five digits for a county. Two digits for a state |
 
 `GeographyType` does not include tracts, ZCTAs, or other units. `geography_type=tract` on the observations query returned HTTP 400 `INVALID_REQUEST`.
 

@@ -3,17 +3,27 @@ title: Provenance and evidence
 description: Cite value state, source, methodology, release, and freshness together.
 ---
 
+import { EvidenceFlowDiagram } from "@/features/docs/evidence-flow-diagram";
 import {
   ProvenanceCitationSteps,
   ProvenanceFieldNames,
   ValueStateNullTable,
 } from "@/features/docs/provenance-evidence";
 
-Cite a row with its value, `value_state`, and provenance together. Leave a null timestamp null.
+Cite a row with its <Term id="value">value</Term>, <Term id="value_state">value_state</Term>, and <Term id="provenance_ref">provenance</Term> together. Leave a null timestamp null.
 
 `meta.response_at` is the response time. The response time shows when Atlas built the response. It does not show when the publisher last updated the data.
 
-Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. Published human values are privacy-protected floors, not complete incidence counts. See [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+<Callout title="Interpret with care" type="warn">
+  Atlas results are not a diagnosis. Atlas results are not an estimate of an
+  individual's risk. Published human values are privacy-protected floors, not
+  complete incidence counts. See [Evidence, provenance, and
+  uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
+
+## Follow a citation
+
+<EvidenceFlowDiagram />
 
 ## Keep fields with the value
 
@@ -26,15 +36,15 @@ Atlas results are not a diagnosis. Atlas results are not an estimate of an indiv
 | `value`, `value_state`, `unit`, `denominator` | One set. Null is not zero |
 | `source_id` | Public source key |
 | `lineage_source_id`, `dataset_id` | Not `source_id` |
-| `methodology_id` | Null when ungoverned |
+| <Term id="methodology_id">methodology_id</Term> | Null when ungoverned |
 | `methodology_version` | Transformation version |
 | `release_methodology_version` | On some rows |
 | `semantic_version` | Contract version |
 | `release_id` | Not comparable across releases |
 | `provenance_ref` | Not a literature citation |
-| `source_vintage`, `source_label`, `source_url` | Publisher context |
+| `source_vintage`, `source_label`, `source_url` | Publisher context, including <Term id="source_vintage">vintage</Term> |
 | `source_published_at`, `atlas_acquired_at`, `atlas_processed_at` | Observation clocks. Null is unknown |
-| `limitations` | Keep with the value |
+| `limitations` | Keep <Term id="limitations">limitations</Term> with the value |
 | `evidence` | Type, id, optional source, version, release, uri |
 | `surveillance_context` | Optional. Null has no comparability or lag claim |
 
@@ -48,7 +58,7 @@ Discover, observe one county, then resolve that row's ids. A null on the measure
 
 ## Read a null value
 
-`MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require null `value`. Keep `limitations`. `NO_COUNTY_LINKED_RECORD` is not evidence of absence. `NO_RECORDS` does not establish biological absence. States: [Indicators, measures, and observations](/docs/develop/resources).
+`MISSING`, `SUPPRESSED`, and `UNAVAILABLE` require null `value`. Keep `limitations`. `NO_COUNTY_LINKED_RECORD` is not evidence of absence. `NO_RECORDS` does not establish biological absence. States: [Errors and retries](/docs/develop/errors#value-states).
 
 <ValueStateNullTable />
 

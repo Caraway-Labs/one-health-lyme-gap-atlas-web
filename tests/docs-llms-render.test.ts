@@ -112,6 +112,7 @@ describe("rendered documentation markdown", () => {
 
   it("renders the published MCP interpretation guardrail", async () => {
     const markdown = await renderedPage("content/docs/develop/mcp-clients.mdx");
+    expect(markdown).toContain("Interpret with care");
     expect(markdown).toContain("Missing is not zero.");
     expect(markdown).toContain(
       "A gap or a review priority is not risk or a diagnosis."
@@ -126,6 +127,26 @@ describe("rendered documentation markdown", () => {
     expect(markdown).toContain("library(httr2)");
     expect(markdown).toContain("await fetch");
     expect(markdown).not.toContain("<HttpClientTabs");
+  });
+
+  it("renders quickstart steps and the labelled sample", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("### Make a request");
+    expect(markdown).toContain("#### Show example response");
+    expect(markdown).toContain("governed-2026-10-15-january-climate-prod");
+    expect(markdown).toContain(
+      "[Workflow guides](https://onehealthatlas.org/docs/develop/workflows)"
+    );
+    expect(markdown).not.toContain("On 12 October");
+  });
+
+  it("strips quickstart layout tags from the markdown export", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("Interpret with care");
+    expect(markdown).not.toContain("<Callout");
+    expect(markdown).not.toContain("<Card");
+    expect(markdown).not.toContain("<Steps");
+    expect(markdown).not.toContain("were checked");
   });
 
   it("renders the quickstart playground as an anonymous GET", async () => {
@@ -158,6 +179,24 @@ describe("rendered documentation markdown", () => {
     expect(value[3]).toBe(
       "The reported value. Read it with `value_state` and `unit`. `null` never means zero."
     );
+  });
+
+  it("finds the provenance value row after schema tables in the full export", async () => {
+    const schemas = await renderedPage(
+      "content/docs/api-reference/schemas.mdx"
+    );
+    const provenance = await renderedPage(
+      "content/docs/develop/provenance.mdx"
+    );
+    const { value } = provenanceUnionRows(`${schemas}\n\n${provenance}`);
+    expect(value).toStrictEqual([
+      "value",
+      "number | string | null",
+      "yes",
+      "The reported value. Read it with `value_state` and `unit`. `null` never means zero.",
+    ]);
+    expect(schemas).toContain("| Name | Type | Required | Description |");
+    expect(schemas).not.toContain("| Field | Type | Required | Description |");
   });
 
   it("keeps nullable timestamp rows in both provenance tables", async () => {

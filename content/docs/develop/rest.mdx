@@ -7,11 +7,18 @@ import { HttpClientPagination } from "@/features/docs/http-client-tabs";
 
 Send GET requests to `https://api.onehealthatlas.org` under `/v1`. No API key is used. See the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) and the [API reference](/docs/api-reference).
 
-Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. See [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+<Callout title="Interpret with care" type="warn">
+  Atlas results are not a diagnosis. Atlas results are not an estimate of an
+  individual's risk. See [Evidence, provenance, and
+  uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
 
 ## Read collections and resources
 
-Indicators, measures, observations, and sources return `data`, `meta`, and `links`. One indicator, measure, source, or methodology returns `data`. Legacy routes use their own schemas.
+<Term id="indicator">Indicators</Term>, measures, observations, and sources
+return `data`, `meta`, and `links`. One indicator, measure, source, or
+<Term id="methodology">methodology</Term> returns `data`. Legacy routes use
+their own schemas.
 
 ```json
 {
@@ -27,7 +34,7 @@ That JSON is the contract's illustrative empty page. A null `links.self` can app
 
 `page_size` defaults to 100, with a minimum of 1 and a maximum of 500. `page_size=0` on observations returns HTTP 400 `INVALID_REQUEST`. The `errors` entry says the value must be at least 1.
 
-Send `meta.next_page_token` back as `page_token` with the other parameters unchanged. The token is opaque, bound to the query and the release, and it can expire on restart. `null` means the collection is exhausted. A page token is not a citation and not a release id.
+Send `meta.next_page_token` back as <Term id="page_token">page_token</Term> with the other parameters unchanged. The token is opaque, bound to the query and the <Term id="release">release</Term>, and it can expire on restart. `null` means the collection is exhausted. A page token is not a citation and not a release id.
 
 A sample `GET /v1/indicators?page_size=2` returned two indicators, then the next two with that `page_token`. A sample `nclimgrid_tavg_county_day` query for county `36061`, year 2025, and `page_size` 2 returned 2025-01-01 and 2025-01-02, then 2025-01-03 and 2025-01-04. `page_token` alone returned HTTP 400 `INVALID_REQUEST` and detail `One or more request values are invalid.` because `measure_id`, `geography_type`, and `geography_id` were missing. Those three filters without a year returned detail `Supply a year or both start_date and end_date.`
 
@@ -40,25 +47,11 @@ Do not invent a token.
 
 ## Honor rate limits
 
-`429` and `503` declare `Retry-After` ("Seconds to wait before you retry. Wait that long when the header is present."). The illustrative `429` uses `RATE_LIMITED`. No numeric quota, concurrency cap, or fixed range is published. Wait the stated seconds, then retry. Keep `request_id`.
+`429` and `503` can include `Retry-After`. No numeric quota, concurrency cap, or fixed range is published. Wait, then retry. Keep `request_id`. Rules: [Errors and retries](/docs/develop/errors#retries).
 
 ## Handle errors
 
-Canonical errors use RFC 9457 `application/problem+json`. Required fields: `type`, `title`, `status`, `detail`, `instance`, `request_id`. Optional: `code`, and `errors` as objects.
-
-| HTTP status | `code` | When it applies |
-| --- | --- | --- |
-| 400 | `INVALID_REQUEST` | Incomplete query or a value that fails validation |
-| 400 | `UNSUPPORTED_FILTER` | Unknown parameters, `sort`, `aggregation`, or another filter V1 rejects |
-| 400 | `UNSUPPORTED_STRATIFICATION` | `stratification` is sent. This release has no strata |
-| 400 | `QUERY_TOO_BROAD` | Above 10,000 results. The API never truncates results |
-| 404 | `RESOURCE_NOT_FOUND` | Unknown canonical resource id |
-| 413 | `INVALID_REQUEST` | A GET request includes a body |
-| 414 | `INVALID_REQUEST` | The query string is too long |
-| 429 | `RATE_LIMITED` | Wait. Read `Retry-After` |
-| 503 | `SERVICE_UNAVAILABLE` | Data service unavailable. Read `Retry-After` when present. Geography identity pending is HTTP `200` `CANONICAL_GEOGRAPHY_UNPUBLISHED`, not `503` |
-
-Legacy routes keep existing statuses, including `422` and `404`. A sample `GET /v1/counties/00000` returned HTTP 404 `application/problem+json`, detail `County or dataset release not found`, and no `code`. Do not require `code` on every problem body.
+Canonical errors use RFC 9457 `application/problem+json`. Required fields: `type`, `title`, `status`, `detail`, `instance`, `request_id`. Optional: `code`, and `errors` as objects. Codes, HTTP 413, HTTP 414, HTTP 422, and retries: [Errors and retries](/docs/develop/errors).
 
 ## Tell versions apart
 

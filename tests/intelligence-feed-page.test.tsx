@@ -29,7 +29,10 @@ vi.mock(import("next/navigation"), async (importOriginal) => {
   };
 });
 
-import { publishedFromForPreset } from "@/features/ux-reset/feed/feed-filters";
+import {
+  FEED_PAGE_SIZE,
+  publishedFromForPreset,
+} from "@/features/ux-reset/feed/feed-filters";
 import { FeedItemCard } from "@/features/ux-reset/feed/feed-item-card";
 import {
   itemFeedCaveats,
@@ -47,12 +50,14 @@ import {
   intelligenceFeedEntry,
   intelligenceSourcesEnvelope,
   mixedIntelligenceFeedItems,
+  pubmedEntrezWithheldListEntry,
 } from "./fixtures/intelligence-feed-fixtures";
 
 const listIntelligenceFeed = vi.hoisted(() =>
   vi.fn<
     (
       params?: {
+        page_size?: number;
         page_token?: string;
         published_from?: string;
         source_id?: string;
@@ -215,7 +220,7 @@ function pageTokenCalls() {
 
 function loadedItemTitles(): (string | null)[] {
   return screen
-    .getAllByRole("heading", { level: 2 })
+    .getAllByTestId("feed-article-title")
     .map((heading) => heading.textContent);
 }
 
@@ -294,9 +299,35 @@ describe("intelligence feed page", () => {
       date: "March 2, 2026",
       notProvided: "Publication date not provided",
       published: expect.stringContaining("All dates"),
-      request: null,
+      request: { page_size: FEED_PAGE_SIZE },
       withheld: "Publication date withheld",
     });
+  });
+
+  it("renders a PubMed Entrez row with a null date and a withheld abstract", async () => {
+    succeed(intelligenceFeedEnvelope([pubmedEntrezWithheldListEntry]));
+    renderFeed();
+
+    await expect(
+      screen.findByRole("heading", {
+        name: /Tick-borne disease index record without a publisher date/,
+      })
+    ).resolves.toBeTruthy();
+    const feed = screen.getByTestId("intelligence-feed");
+    expect({
+      abstract: feed.querySelector("[data-testid='feed-abstract']"),
+      date: screen.getByText("Publication date not provided").textContent,
+      invalidDate: feed.textContent?.includes("Invalid Date") ?? false,
+      sourceFamily: screen.getByTestId("feed-source-family").textContent,
+      state: feed.dataset.feedState,
+    }).toStrictEqual({
+      abstract: null,
+      date: "Publication date not provided",
+      invalidDate: false,
+      sourceFamily: "PubMed",
+      state: "ready",
+    });
+    expect(feed.textContent?.includes("No abstract")).toBeFalsy();
   });
 
   it("opens publisher pages with the workspace external-link contract", async () => {
@@ -339,7 +370,7 @@ describe("intelligence feed page", () => {
       alert: null,
       body: true,
       failure: null,
-      request: null,
+      request: { page_size: FEED_PAGE_SIZE },
       showAllDates: null,
       state: "empty",
     });
@@ -411,6 +442,70 @@ describe("intelligence feed page", () => {
     );
   });
 
+  it("shows 25 items and appends the next page at the same page size", async () => {
+    const firstPage = Array.from({ length: FEED_PAGE_SIZE }, (_, index) =>
+      intelligenceFeedEntry(`page-a-${index}`, {
+        organization: "Centers for Disease Control and Prevention",
+        sourceId: "cdc-lyme",
+        title: `Page one item ${String(index + 1).padStart(2, "0")}`,
+        trust: BriefingSourceReviewedTrustClassification.official_public_health,
+      })
+    );
+    const secondPage = [
+      intelligenceFeedEntry("page-b-1", {
+        organization: "Centers for Disease Control and Prevention",
+        sourceId: "cdc-lyme",
+        title: "Page two item 01",
+        trust: BriefingSourceReviewedTrustClassification.official_public_health,
+      }),
+    ];
+    listIntelligenceFeed.mockImplementation(async (params) => ({
+      data: intelligenceFeedEnvelope(
+        params?.page_token ? secondPage : firstPage,
+        params?.page_token ? null : "next-25"
+      ),
+      headers: new Headers(),
+      status: 200,
+    }));
+    renderFeed();
+
+    await screen.findByText("Showing 25 items · more available");
+    expect({
+      firstRequest: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
+      showMore: Boolean(
+        screen.getByRole("button", { name: "Show more items" })
+      ),
+      titles: loadedItemTitles(),
+    }).toStrictEqual({
+      firstRequest: { page_size: FEED_PAGE_SIZE },
+      showMore: true,
+      titles: Array.from({ length: FEED_PAGE_SIZE }, (_, index) =>
+        expect.stringContaining(
+          `Page one item ${String(index + 1).padStart(2, "0")}`
+        )
+      ),
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Show more items" }));
+    await screen.findByText("Showing 26 items");
+    const titles = loadedItemTitles();
+    expect({
+      appended: titles[FEED_PAGE_SIZE],
+      first: titles[0],
+      lastOfFirstPage: titles[FEED_PAGE_SIZE - 1],
+      length: titles.length,
+      nextRequest: listIntelligenceFeed.mock.calls.at(-1)?.[0] ?? null,
+      showMore: screen.queryByRole("button", { name: "Show more items" }),
+    }).toStrictEqual({
+      appended: expect.stringContaining("Page two item 01"),
+      first: expect.stringContaining("Page one item 01"),
+      lastOfFirstPage: expect.stringContaining("Page one item 25"),
+      length: FEED_PAGE_SIZE + 1,
+      nextRequest: { page_size: FEED_PAGE_SIZE, page_token: "next-25" },
+      showMore: null,
+    });
+  });
+
   it("loads the next contract page without reordering items", async () => {
     const [first, second] = mixedIntelligenceFeedItems;
     listIntelligenceFeed.mockImplementation(
@@ -436,21 +531,20 @@ describe("intelligence feed page", () => {
         name: /County-level Lyme reporting, a review/,
       })
     ).resolves.toBeTruthy();
-    const titles = screen
-      .getAllByRole("heading", { level: 2 })
-      .map((heading) => heading.textContent);
+    const titles = loadedItemTitles();
     expect({
       first: titles[0],
       firstRequest: listIntelligenceFeed.mock.calls[0]?.[0] ?? null,
       nextPage: listIntelligenceFeed.mock.calls.some(
         (call) =>
+          call[0]?.page_size === FEED_PAGE_SIZE &&
           call[0]?.page_token === "page-2" &&
           call[0]?.published_from === undefined
       ),
       second: titles[1],
     }).toStrictEqual({
       first: expect.stringContaining("Lyme disease surveillance update"),
-      firstRequest: null,
+      firstRequest: { page_size: FEED_PAGE_SIZE },
       nextPage: true,
       second: expect.stringContaining("County-level Lyme reporting, a review"),
     });
@@ -654,6 +748,7 @@ describe("intelligence feed page", () => {
     await waitFor(() => {
       expect(listIntelligenceFeed).toHaveBeenCalledWith(
         {
+          page_size: FEED_PAGE_SIZE,
           published_from: publishedFromForPreset("7d", new Date()),
           source_id: "cdc-lyme",
         },
@@ -808,7 +903,22 @@ describe("intelligence feed page", () => {
         name: /Lyme disease surveillance update/,
       })
     ).toBeNull();
-    expect(bareCalls).toBe(2);
+    expect({
+      bareCalls,
+      pageSizes: listIntelligenceFeed.mock.calls.map(
+        (call) => call[0]?.page_size
+      ),
+      restartToken:
+        listIntelligenceFeed.mock.calls.at(-1)?.[0]?.page_token ?? null,
+      showMoreToken:
+        listIntelligenceFeed.mock.calls.find((call) => call[0]?.page_token)?.[0]
+          ?.page_token ?? null,
+    }).toStrictEqual({
+      bareCalls: 2,
+      pageSizes: [FEED_PAGE_SIZE, FEED_PAGE_SIZE, FEED_PAGE_SIZE],
+      restartToken: null,
+      showMoreToken: "page-2",
+    });
   });
 
   it("shows the next-page failure when a stale-token restart also fails", async () => {
@@ -976,7 +1086,7 @@ describe("intelligence feed page", () => {
     }).toStrictEqual({
       dateWindow: null,
       missingDate: "Publication date not available",
-      request: null,
+      request: { page_size: FEED_PAGE_SIZE },
       undated: expect.stringContaining("Undated surveillance note"),
     });
 
@@ -1870,14 +1980,18 @@ describe("feed item detail presentation", () => {
       ])
     );
     renderFeed();
-    await screen.findByRole("heading", {
+    const heading = await screen.findByRole("heading", {
       name: "Suppressed abstract (opens in a new tab)",
     });
+    const card = heading.closest("li");
+    if (!card) {
+      throw new Error("Missing suppressed abstract card");
+    }
     expect({
-      abstract: screen.queryByTestId("feed-abstract"),
-      author: screen.getByText("Doe J").textContent,
-      removed: screen.queryByText("removed"),
-      tag: screen.getByText("Lyme disease").textContent,
+      abstract: within(card).queryByTestId("feed-abstract"),
+      author: within(card).getByText("Doe J").textContent,
+      removed: within(card).queryByText("removed"),
+      tag: within(card).getByText("Lyme disease").textContent,
     }).toStrictEqual({
       abstract: null,
       author: "Doe J",

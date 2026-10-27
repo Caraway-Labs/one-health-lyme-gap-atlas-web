@@ -11,7 +11,6 @@ _openapi:
   structuredData:
     headings: []
     contents:
-      - content: 'Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.'
       - content: GET /v1/measures/{measure_id}
       - content: getMeasure
       - content: Get a measure
@@ -44,40 +43,32 @@ _openapi:
       - content: Shows `UNSUPPORTED_FILTER` when a request includes a parameter outside V1.
       - content: '{"type":"https://onehealthatlas.org/problems/unsupported-filter","title":"Invalid public query","status":400,"detail":"This query filter is not supported in V1.","instance":"/v1/measures/{measure_id}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"UNSUPPORTED_FILTER"}'
       - content: 404 The resource ID, or the selection you asked for, is not in the current release. The `code` is `RESOURCE_NOT_FOUND` and `detail` names what is missing. Check the ID against the list operation for that resource. Retrying the same request returns the same response.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Unknown resource ID
       - content: Shows `RESOURCE_NOT_FOUND` for a selection that is not in the current release.
       - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"Measure not found.","instance":"/v1/measures/{measure_id}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RESOURCE_NOT_FOUND"}'
       - content: 413 The request is a GET with a body. The `code` is `INVALID_REQUEST`. Send the request again without a body and put every value in the query string.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: GET request with a body
       - content: Shows `INVALID_REQUEST` when a GET request carries a body.
       - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"Payload too large","status":413,"detail":"GET request bodies are unsupported.","instance":"/v1/measures/{measure_id}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
       - content: 414 The query string is longer than the API accepts. The `code` is `INVALID_REQUEST`. Send fewer or shorter parameter values, then retry.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Query string over the length limit
       - content: Shows `INVALID_REQUEST` when the query string is too long.
       - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"URI too long","status":414,"detail":"Query string is too long.","instance":"/v1/measures/{measure_id}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
       - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
       - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
       - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Request limit reached
       - content: Shows `RATE_LIMITED`. The response also sets `Retry-After`.
       - content: '{"type":"https://onehealthatlas.org/problems/rate-limited","title":"Too many requests","status":429,"detail":"Public request limit reached.","instance":"/v1/measures/{measure_id}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RATE_LIMITED"}'
       - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
-      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
-      - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Data service unavailable
       - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/measures/{measure_id}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
 ---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [GeographyType](/docs/api-reference/schemas#schema-geographytype), [Measure](/docs/api-reference/schemas#schema-measure), [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails), [ResourceEnvelope_Measure_](/docs/api-reference/schemas#schema-resourceenvelope-measure), [StandardsMapping](/docs/api-reference/schemas#schema-standardsmapping), [ValueState](/docs/api-reference/schemas#schema-valuestate).
 
 export default function Layout(props) {
   const { OpenAPIPage } = props.components ?? {};

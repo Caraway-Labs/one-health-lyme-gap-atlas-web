@@ -7,22 +7,81 @@ Make an anonymous HTTPS GET to `https://api.onehealthatlas.org`. Public reads ne
 
 Send the URL and query string. A collection returns `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json`.
 
-Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. Read limits with the value in [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+<Callout title="Interpret with care" type="warn">
+  Atlas results are not a diagnosis. Atlas results are not an estimate of an
+  individual's risk. Read limits with the value in [Evidence, provenance, and
+  uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
 
 ## Choose a guide
 
-| Guide | Open it to |
-| --- | --- |
-| [Quickstart](/docs/develop/quickstart) | Finish one county observation read |
-| [REST API](/docs/develop/rest) | Page results, handle errors, and tell versions apart |
-| [Geography](/docs/develop/geography) | Identify a county and request display polygons |
-| [Indicators, measures, and observations](/docs/develop/resources) | Choose a measure and read `value` with `value_state` |
-| [Provenance and evidence](/docs/develop/provenance) | Cite source, methodology, release, and freshness |
-| [Workflow guides](/docs/develop/workflows) | Query, compare, read context, download a PDF, and cite |
-| [Observation queries](/docs/develop/observation-queries) | Choose a checked slice and its time parameters |
-| [Tier 1 availability](/docs/develop/tier1-availability) | Choose availability or the published priority read |
-| [MCP clients](/docs/develop/mcp-clients) | Connect a client and copy the interpretation guardrails |
-| [OpenAPI, GitHub, and support](/docs/develop/support) | Open the contract and report a `request_id` |
+<Cards>
+  <Card
+    title="Quickstart"
+    href="/docs/develop/quickstart"
+    description="Finish one county observation read"
+  />
+  <Card
+    title="Errors and retries"
+    href="/docs/develop/errors"
+    description="Look up an error code, a retry, or a value_state"
+  />
+  <Card
+    title="Integration recipes"
+    href="/docs/develop/recipes"
+    description="Load a table, page a collection, and retry"
+  />
+  <Card
+    title="REST API"
+    href="/docs/develop/rest"
+    description="Page results, handle errors, and tell versions apart"
+  />
+  <Card
+    title="Geography"
+    href="/docs/develop/geography"
+    description="Identify a county and request display polygons"
+  />
+  <Card
+    title="Indicators, measures, and observations"
+    href="/docs/develop/resources"
+    description="Choose a measure and read value with value_state"
+  />
+  <Card
+    title="Provenance and evidence"
+    href="/docs/develop/provenance"
+    description="Cite source, methodology, release, and freshness"
+  />
+  <Card
+    title="Workflow guides"
+    href="/docs/develop/workflows"
+    description="Query, compare, read context, download a PDF, and cite"
+  />
+  <Card
+    title="Observation queries"
+    href="/docs/develop/observation-queries"
+    description="Choose a checked slice and its time parameters"
+  />
+  <Card
+    title="Tier 1 availability"
+    href="/docs/develop/tier1-availability"
+    description="Choose availability or the published priority read"
+  />
+  <Card
+    title="MCP clients"
+    href="/docs/develop/mcp-clients"
+    description="Connect a client and copy the interpretation guardrails"
+  />
+  <Card
+    title="OpenAPI, GitHub, and support"
+    href="/docs/develop/support"
+    description="Open the contract and report a request_id"
+  />
+  <Card
+    title="Glossary"
+    href="/docs/glossary"
+    description="Read the shared definition for an API term"
+  />
+</Cards>
 
 For a screen, use [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty). MCP status is on [API, MCP, and access](/docs/api-mcp-and-access). Source design is in [Sources and canonical evidence](/docs/sources-and-canonical-evidence).
 

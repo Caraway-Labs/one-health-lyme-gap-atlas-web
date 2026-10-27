@@ -135,7 +135,7 @@ test("shows trusted-source items from workspace navigation", async ({
     .click();
   await expect(page).toHaveURL(/\/app\/feed$/);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Feed" })
+    page.getByRole("heading", { level: 1, name: "Research & News" })
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: /Lyme disease surveillance update/ })
@@ -334,7 +334,7 @@ test("filters the feed by source and publication date", async ({
     "All dates"
   );
   expectFeedParams(feedUrls[0], {
-    page_size: null,
+    page_size: "25",
     page_token: null,
     published_from: null,
     published_to: null,
@@ -353,6 +353,7 @@ test("filters the feed by source and publication date", async ({
     .poll(() => feedUrls.at(-1) ?? "")
     .toContain("source_id=cdc-lyme");
   expectFeedParams(feedUrls.at(-1) ?? "", {
+    page_size: "25",
     page_token: null,
     published_from: null,
     published_to: null,
@@ -373,6 +374,7 @@ test("filters the feed by source and publication date", async ({
     .poll(() => feedUrls.at(-1) ?? "")
     .toContain(`published_from=${localPublishedFrom(7)}`);
   expectFeedParams(feedUrls.at(-1) ?? "", {
+    page_size: "25",
     page_token: null,
     published_from: localPublishedFrom(7),
     published_to: null,
@@ -391,6 +393,7 @@ test("filters the feed by source and publication date", async ({
     .poll(() => feedUrls.at(-1) ?? "")
     .toContain("source_id=cdc-lyme");
   expectFeedParams(feedUrls.at(-1) ?? "", {
+    page_size: "25",
     page_token: null,
     published_from: null,
     published_to: null,
@@ -430,6 +433,7 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
     "All dates"
   );
   expectFeedParams(feedUrls[0] ?? "", {
+    page_size: "25",
     page_token: null,
     published_from: null,
     published_to: null,
@@ -457,6 +461,7 @@ test("restores feed filters with Back and a deep link", async ({ page }) => {
   await page.goto("/app/feed?source=cdc-lyme&published=90d");
   await expect.poll(() => feedUrls[0] ?? "").toContain("source_id=cdc-lyme");
   expectFeedParams(feedUrls[0] ?? "", {
+    page_size: "25",
     page_token: null,
     published_from: localPublishedFrom(90),
     published_to: null,
@@ -534,6 +539,7 @@ test("sends active filters with Show more and keeps empty, too-broad, and source
   const nextUrl = feedUrls.find((url) => url.includes("page_token=page-2"));
   expect(nextUrl).toBeTruthy();
   expectFeedParams(nextUrl ?? "", {
+    page_size: "25",
     page_token: "page-2",
     published_from: localPublishedFrom(7),
     published_to: null,
@@ -981,7 +987,7 @@ test("shows richer cards and a detail drawer", async ({ page }) => {
   );
   await expect(page).toHaveURL(new RegExp(`item=${described.item_id}`));
   const pageHeading = page.locator("#intelligence-feed-heading");
-  await expect(pageHeading).toHaveText("Feed");
+  await expect(pageHeading).toHaveText("Research & News");
   const headingBox = await pageHeading.boundingBox();
   expect(headingBox?.width ?? 0).toBeGreaterThan(0);
   const drawer = await dialog.boundingBox();

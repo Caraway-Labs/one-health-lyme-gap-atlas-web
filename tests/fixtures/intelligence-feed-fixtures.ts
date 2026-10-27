@@ -9,6 +9,7 @@ import type { FeedListEntrySourceFamily } from "@/generated/models/feedListEntry
 import type { FeedSource } from "@/generated/models/feedSource";
 import type { FeedSources } from "@/generated/models/feedSources";
 import type { MetadataFeed } from "@/generated/models/metadataFeed";
+import type { ProjectionProvenanceParserVersion } from "@/generated/models/projectionProvenanceParserVersion";
 
 const SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
@@ -29,6 +30,8 @@ type FeedFixtureItem = {
   description?: FeedDescription;
   limitations?: string[];
   organization: string;
+  fetchVersion?: string;
+  parserVersion?: ProjectionProvenanceParserVersion;
   pmid?: string | null;
   publicationDateState?: FeedListEntryPublicationDateState;
   publishedAt?: string | null;
@@ -112,9 +115,9 @@ export function intelligenceFeedEntry(
     provenance: {
       artifact_id: `artifact-${item.sourceId}`,
       artifact_sha256: SHA,
-      fetch_version: "fetch-v2",
+      fetch_version: item.fetchVersion ?? "fetch-v2",
       normalization_version: "intelligence-identity-v2",
-      parser_version: "rss-atom-native-v2",
+      parser_version: item.parserVersion ?? "rss-atom-native-v2",
       run_id: `run-${item.sourceId}`,
     },
     publication_date_state: publicationDateState,
@@ -160,6 +163,34 @@ export function intelligenceFeedDetail(
     abstract: item.abstract === undefined ? null : item.abstract,
   };
 }
+
+/**
+ * PubMed list row from the Entrez projection: withheld abstract, null preview,
+ * and an unknown publisher date. Parser version is entrez-efetch-v1.
+ */
+export const pubmedEntrezWithheldListEntry: FeedListEntry =
+  intelligenceFeedEntry("pubmed-entrez-withheld", {
+    abstractHasMore: false,
+    abstractPreview: null,
+    abstractState: "withheld",
+    attribution: "Courtesy of the U.S. National Library of Medicine",
+    canonicalUrl: "https://pubmed.ncbi.nlm.nih.gov/40000001/",
+    copyrightLine: null,
+    description: { state: "not_provided", text: null },
+    fetchVersion: "entrez-eutils-v1",
+    organization: "U.S. National Library of Medicine",
+    parserVersion: "entrez-efetch-v1",
+    pmid: "40000001",
+    publicationDateState: "not_provided",
+    publishedAt: null,
+    publisher: "U.S. National Library of Medicine",
+    pubmedUrl: "https://pubmed.ncbi.nlm.nih.gov/40000001/",
+    sourceFamily: "pubmed",
+    sourceFamilyLabel: "PubMed",
+    sourceId: "pubmed-tick-borne",
+    title: "Tick-borne disease index record without a publisher date",
+    trust: BriefingSourceReviewedTrustClassification.research_index,
+  });
 
 export const mixedIntelligenceFeedItems: FeedListEntry[] = [
   intelligenceFeedEntry("cdc", {

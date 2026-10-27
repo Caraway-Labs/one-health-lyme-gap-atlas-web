@@ -1,0 +1,9 @@
+{
+  "type": "https://onehealthatlas.org/problems/rate-limited",
+  "title": "Too many requests",
+  "status": 429,
+  "detail": "Public request limit reached.",
+  "instance": "/v1/observations",
+  "request_id": "3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93",
+  "code": "RATE_LIMITED"
+}

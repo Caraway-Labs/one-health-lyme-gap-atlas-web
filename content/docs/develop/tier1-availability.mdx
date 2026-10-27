@@ -3,18 +3,30 @@ title: Tier 1 availability
 description: Choose availability or the published priority read.
 ---
 
-Call availability before you render a Tier 1 result.
+Call <Term id="availability">availability</Term> before you render a Tier 1 result.
 
-This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. `LOW` is a scored tier. `INSUFFICIENT` records input sufficiency, not absence of disease. A null score is not zero, and a missing result is not low priority.
+<Callout title="Interpret with care" type="warn">
+  This is surveillance review priority, not Lyme disease risk, predicted
+  incidence, probability, clinical risk, or diagnosis. `LOW` is a scored tier.
+  `INSUFFICIENT` records input sufficiency, not absence of disease. A null score
+  is not zero, and a missing result is not low priority.
+</Callout>
 
 Samples are from `https://api.onehealthatlas.org`. Parameters: [priority](/docs/api-reference/counties#getCountyTier1Priority), [availability](/docs/api-reference/counties#checkCountyTier1Availability). Screens: [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
 
 ## When to call each route
 
-| You need | Call | Completed read |
-| --- | --- | --- |
-| Membership and a published model, or not | `GET /v1/counties/{fips}/tier1-surveillance-priority/availability` | HTTP 200. `AVAILABLE` fills `data`. `NO_PUBLISHED_MODEL` nulls `data`. HTTP 404: FIPS outside the release |
-| The object after the county is supported | `GET /v1/counties/{fips}/tier1-surveillance-priority` | HTTP 200 and the object. HTTP 404: no current result, not a geography answer |
+<Accordions>
+  <Accordion title="Membership and a published model, or not">
+    `GET /v1/counties/{fips}/tier1-surveillance-priority/availability`. HTTP
+    200. `AVAILABLE` fills `data`. `NO_PUBLISHED_MODEL` nulls `data`. HTTP 404:
+    FIPS outside the release.
+  </Accordion>
+  <Accordion title="The object after the county is supported">
+    `GET /v1/counties/{fips}/tier1-surveillance-priority`. HTTP 200 and the
+    object. HTTP 404: no current result, not a geography answer.
+  </Accordion>
+</Accordions>
 
 Use availability when the FIPS comes from outside Atlas. `09001` still fails. The release uses ids such as `09110`. Both routes use HTTP 422 for a bad FIPS, HTTP 429 with `Retry-After`, and HTTP 503 for a failed read. A 503 is not `UNAVAILABLE` and not a tier.
 
@@ -174,13 +186,13 @@ HTTP 404 is also used when no published result exists. This sample had no such c
 
 ## Keep these states apart
 
-| State | Do not say this |
+| State | What to do |
 | --- | --- |
-| `SUFFICIENT` `HIGH` | The county is high risk, or the percentile is a probability |
-| `INSUFFICIENT` `LOW` | Safe county, placeholder zero, or absence |
-| `NOT_ESTIMABLE` | Low priority, or no disease |
-| `NO_PUBLISHED_MODEL` | Null data is zero or a low tier |
-| Availability 404 | No Lyme activity |
-| Priority 404 | Geography failed, or the county is low priority |
-| HTTP 422 | The county was looked up and found missing |
-| HTTP 503 | The failure is an evidence tier |
+| `SUFFICIENT` `HIGH` | Do not say: The county is high risk, or the percentile is a probability |
+| `INSUFFICIENT` `LOW` | Do not say: Safe county, placeholder zero, or absence |
+| `NOT_ESTIMABLE` | Do not say: Low priority, or no disease |
+| `NO_PUBLISHED_MODEL` | Do not say: Null data is zero or a low tier |
+| Availability 404 | Do not say: No Lyme activity |
+| Priority 404 | Do not say: Geography failed, or the county is low priority |
+| HTTP 422 | Do not say: The county was looked up and found missing |
+| HTTP 503 | Do not say: The failure is an evidence tier |

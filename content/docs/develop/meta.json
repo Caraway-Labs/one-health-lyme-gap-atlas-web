@@ -6,6 +6,9 @@
   "pages": [
     "index",
     "quickstart",
+    "changelog",
+    "errors",
+    "recipes",
     "rest",
     "geography",
     "resources",

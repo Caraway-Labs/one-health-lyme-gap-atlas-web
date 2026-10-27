@@ -3,94 +3,94 @@ title: FAQ and troubleshooting
 description: Get practical answers about One Health Atlas interpretation, loading, filters, data availability, and the public HelpDocs experience.
 ---
 
+Epidemiologists use this page to answer a common interpretation or workspace question, then open the guide that owns the longer explanation.
+
 ## Product and interpretation
 
 ### What is One Health Atlas?
 
-Atlas is an **Epidemiologist Decision Intelligence Platform** for Lyme disease and other tick-borne diseases. It brings fragmented One Health evidence together to help epidemiologists understand what is happening, investigate why, and decide what deserves review.
-
-Start with [What is One Health Atlas?](/docs/what-is-atlas), then sign in and open [Atlas Explorer](/explore).
+Atlas is an **Epidemiologist Decision Intelligence Platform** for Lyme disease and other tick-borne diseases. It brings One Health evidence together so you can see what is happening and decide what deserves review. Start with [What is One Health Atlas?](/docs/what-is-atlas), then open [Atlas Explorer](/explore).
 
 ### Is the current Atlas score an AI prediction?
 
-No. The current score is a transparent, adjustable follow-up-priority calculation over released inputs. It is not a predictive model, diagnosis, disease-burden estimate, causal conclusion, or individual-risk prediction. Use [current capabilities](/docs/current-capabilities) and [evidence guidance](/docs/evidence-and-uncertainty) when interpreting it.
+No. It is a transparent, adjustable follow-up-priority calculation over released inputs. It is not a predictive model, diagnosis, disease-burden estimate, causal conclusion, or individual-risk prediction. See [evidence guidance](/docs/evidence-and-uncertainty).
 
 ### Does Atlas connect to an electronic health record or a clinical laboratory?
 
-No. The current release is open public data. Atlas is designed so a future governed source can be adapted into the same evidence model. That design is not a live EHR connection, a TEFCA connection, patient-level data, or a production clinical-laboratory feed. Read [sources and canonical evidence](/docs/sources-and-canonical-evidence).
+No. The current release is open public data. A future adapter is not a live EHR connection, a TEFCA connection, patient-level data, or a production clinical-laboratory feed. Read [sources and canonical evidence](/docs/sources-and-canonical-evidence).
 
 ### Does a high score mean that a county is high risk?
 
-No. It means the released inputs or evidence gaps made the county a candidate for closer review under the displayed methodology. Check the source, vintage, geography, method, completeness, limitations, and uncertainty before deciding what to investigate.
+No. The released inputs or evidence gaps made the county a review candidate under the displayed methodology. Check source, vintage, geography, method, completeness, limitations, and uncertainty first.
 
 ### Why does Atlas show a signal when evidence is missing?
 
-Missing evidence can be part of the reason a question deserves review, but missing is not zero and no record is not absence. A low observed value and insufficient surveillance are different states. Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty) before drawing a conclusion.
+Missing can be a reason to review a question. Missing is not zero, and no record is not absence. A low observed value and insufficient surveillance are different states. Read [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
 
 ### Can Atlas tell me whether an outbreak will happen?
 
-No. Atlas does not guarantee outbreak prediction, causation, individual risk, diagnosis, or automatic public-health action. It helps identify a bounded investigation question.
+No. Atlas does not guarantee outbreak prediction, causation, individual risk, diagnosis, or automatic public-health action. It helps you name a bounded investigation question.
 
 ### What does “AI-enabled” mean today?
 
-It describes the product direction: organizing, comparing, synthesizing, or explaining governed evidence with clear sources and limits. The current public score is deterministic. When literature chat is enabled, `/assistant` calls the model-backed literature service on the Atlas API and returns cited evidence. That route is not a local demo. When the feature is off, the assistant reports that the service is unavailable. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the approved [AI Ethics commitments](/ai-ethics).
+It is the direction: organize, compare, synthesize, or explain governed evidence with sources and limits. The public score is deterministic. When literature chat is enabled, `/assistant` calls the model-backed literature service and returns cited evidence. When it is off, the assistant says the service is unavailable. See [AI-enabled decision intelligence](/docs/ai-enabled-decision-intelligence) and the [AI Ethics commitments](/ai-ethics).
 
 ## Using Atlas
 
 ### The Atlas is loading or says it is temporarily unavailable. What should I do?
 
-The public application retrieves the current governed release through the public API. Use **Try again** or refresh once. If the problem continues, record the time, route, and any displayed release or request reference, then return later. Do not treat a loading or error state as evidence about a county.
+Use **Try again** or refresh once. If it continues, record the time, route, and any release or request reference. A loading or error state is not evidence about a county.
 
 ### No counties match my filters. Did Atlas find no risk?
 
-No. The current filters may simply exclude every county. Review the selected state, county name or FIPS search, evidence filter, view, and score controls, then use **Clear filters** if needed. An empty result set is not a public-health conclusion.
+No. The filters may exclude every county. Review state, name or FIPS search, evidence filter, view, and score controls, then use **Clear filters**. An empty result is not a public-health conclusion.
 
 ### The map is unavailable or difficult to use. Can I still review results?
 
-Yes. In [Atlas Explorer](/explore), use the county list and the text summaries. The list remains available when the map is not, and a map error says the list is still the non-map path.
+Yes. In [Atlas Explorer](/explore), use the county list and the text summaries. The list is the non-map path.
 
 ### How do I compare counties?
 
-In [Compare](/compare), choose two counties from the same release. [Atlas Explorer](/explore) can also open Compare for the county on screen. The comparison is descriptive; document why the counties were selected and do not treat differences as causation or individual risk. Atlas does not offer a five-county comparison page.
+In [Compare](/compare), choose two counties from the same release. The comparison is descriptive. Do not treat a difference as causation or individual risk. Atlas does not offer a five-county comparison page.
 
 ### Why is a county’s case value not shown as zero?
 
-The source may have no county-linked record, may have suppressed or unallocated records, or may not report that geography or period. Atlas preserves that distinction rather than converting missing evidence into zero. An explicitly published zero is still bounded by the source and method.
+The source may have no county-linked record, suppressed or unallocated records, or no report for that geography or period. Atlas does not convert missing evidence into zero. A published zero is still bounded by the source and method.
 
 ### Why can two signals point in different directions?
 
-Human, tick, pathogen, environmental, population, and scientific sources can use different boundaries, definitions, sampling designs, periods, publishers, and update schedules. Compare provenance and coverage first; make the disagreement a question for review. Do not average away the difference.
+Sources can differ in boundaries, definitions, sampling, periods, publishers, and update schedules. Compare provenance first. Do not average away the difference.
 
 ### How do I share what I reviewed?
 
-Use the supported URL handoff or export, and record the active release, methodology version, geography, filters, view, metric, score assumptions, evidence context, limitations, and follow-up question. A URL preserves supported analytical state, but it does not guarantee that a future release will contain identical data.
+Share the URL or export, and record the release, methodology version, geography, filters, and limitations. A URL preserves supported analytical state. A later release may differ.
 
 ## HelpDocs and policy
 
 ### How do I find the right documentation page?
 
-Open the [One Health Atlas documentation home](/docs), use the sidebar or search, and choose the page that matches your question: [current capabilities](/docs/current-capabilities), [the professional workspace](/docs/professional-workspace), [investigation workflows](/docs/investigation-workflows), [evidence guidance](/docs/evidence-and-uncertainty), or [sources and canonical evidence](/docs/sources-and-canonical-evidence). **Docs** in the public utility bar and **Docs** in the professional workspace both open this site in a new tab. The analytical page, including its URL, stays in the original tab. A heading link can be reloaded in the documentation tab without changing that workspace tab.
+Open the [documentation home](/docs) and search. **Docs** opens this site in a new tab and leaves the workspace URL on the original tab.
 
 ### I am in the professional workspace. Which page should I use?
 
-Use [Atlas Explorer](/explore) for a national or state picture, county evidence, and suggested follow-up. Use [Compare](/compare) for two counties. [Ask Atlas](/askatlas) asks reviewed-literature questions when that service is enabled. Saved chats stay in this browser. The request is a message plus optional conversation history. There is no Structured mode and no Both mode. Feed is in the navigation and does not yet list items. Settings saves a default jurisdiction and optional profile details. Older bookmarks open Atlas Explorer after sign-in. See [the professional workspace](/docs/professional-workspace).
+Use [Atlas Explorer](/explore), [Compare](/compare), and [Ask Atlas](/askatlas) for their own jobs. Saved chats stay in this browser. The request is a message plus optional conversation history. There is no Structured mode and no Both mode. Feed lists trusted-source items. An empty, disabled, or failed feed is its own state. Settings saves a default jurisdiction. See [the professional workspace](/docs/professional-workspace).
 
 ### Can I create an API key in Settings?
 
-No. Public API reads do not use an API key, and Settings does not generate one. Use [API, MCP, and access](/docs/api-mcp-and-access), the [developer quickstart](/docs/develop/quickstart), and the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json). Production MCP can read bounded public evidence without an API key. The September 2026 smoke-only development receipt is historical. That service is not a live EHR connection.
+No. Public reads do not use an API key, and Settings does not generate one. Use [API, MCP, and access](/docs/api-mcp-and-access), the [developer quickstart](/docs/develop/quickstart), and the [OpenAPI schema](https://api.onehealthatlas.org/openapi.json). Production MCP reads bounded public evidence without a key. The September 2026 smoke-only development receipt is historical. That service is not a live EHR connection.
 
 ### Why did my default jurisdiction not change the Review page I already had open?
 
-A saved United States or state default applies the next time Atlas Explorer opens without `scope` or `county` in the address. An open address that already names a scope or county stays as it is. You can still browse other states and counties. Optional role, organization, and job title can stay empty.
+A saved default applies the next time Atlas Explorer opens without `scope` or `county`. An address that already names a place stays as it is. Optional role, organization, and job title can stay empty.
 
 ### Where are privacy and AI policy commitments documented?
 
-Use the approved [Privacy page](/privacy) for privacy and data-use commitments and [AI Ethics commitments](/ai-ethics) for AI status, boundaries, and open decisions. HelpDocs links to those sources and does not replace or expand them.
+Use the [Privacy page](/privacy) and the [AI Ethics commitments](/ai-ethics). HelpDocs links to those sources. It does not replace or expand them.
 
 ### Can HelpDocs change a data value or score?
 
-No. HelpDocs explains the released experience; it does not edit source data, change methodology, or authorize an interpretation. Validate a concern against the source and responsible local or state program, and preserve the release and method in your review record.
+No. HelpDocs explains the release. It does not edit source data, change methodology, or authorize an interpretation.
 
 ### What if an AI or analytical explanation conflicts with the evidence panel?
 
-Pause the interpretation. Prefer the governed source and in-product provenance context, record the disagreement, and ask a qualified reviewer to validate it. Treat an unsupported or unavailable explanation as unavailable—not as a reason to fill the gap with confidence. Keep the [AI Ethics commitments](/ai-ethics) in view.
+Prefer the governed source and the in-product provenance. Record the disagreement and ask a qualified reviewer to validate it. Treat an unsupported explanation as unavailable. Keep the [AI Ethics commitments](/ai-ethics) in view.

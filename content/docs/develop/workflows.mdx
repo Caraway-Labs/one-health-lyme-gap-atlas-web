@@ -9,11 +9,15 @@ import { HttpClientTabs } from "@/features/docs/http-client-tabs";
 
 Each workflow is an anonymous GET for a county in the lower 48 states or the District of Columbia. Replace ids when discovery returns different ones.
 
-Atlas results are not a diagnosis. Atlas results are not an estimate of an individual's risk. See [Evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+<Callout title="Interpret with care" type="warn">
+  Atlas results are not a diagnosis. Atlas results are not an estimate of an
+  individual's risk. See [Evidence, provenance, and
+  uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
 
 ## Query a county
 
-Retrieve one county's current-release case-count floor.
+Retrieve one county's current-<Term id="release">release</Term> case-count floor.
 
 <HttpClientTabs
   path="/v1/observations"
@@ -29,7 +33,7 @@ Open `source_id` and `methodology_id` from that body:
   ]}
 />
 
-`GET /v1/counties/{fips}` is the legacy county document, including release metadata. A sample `GET /v1/counties/00000` returned HTTP 404, detail `County or dataset release not found`, and no `code`. Use observations for `value_state`. FIPS `36061`, `year=2023`, was `OBSERVED`. FIPS `99999` was HTTP 200 and `data: []`. FIPS `08001` was `MISSING` with `value` null.
+`GET /v1/counties/{fips}` is the legacy county document, including release metadata. A sample `GET /v1/counties/00000` returned HTTP 404, detail `County or dataset release not found`, and no `code`. Use observations for <Term id="value_state">value_state</Term>. FIPS `36061`, `year=2023`, was `OBSERVED`. FIPS `99999` was HTTP 200 and `data: []`. FIPS `08001` was `MISSING` with `value` null.
 
 ## Compare geographies
 
@@ -40,7 +44,7 @@ Repeat `geography_id` for one measure and period, up to 500 counties. There is n
   query="measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=36061&year=2023"
 />
 
-Order is measure id, county FIPS, period start, then observation id. A sample HTTP 200 page had FIPS `08001` `MISSING` with `value` null, then FIPS `36061` `OBSERVED` with a numeric `value`. Both shared `measure_id`, `unit` `cases`, year 2023, and `release_id`. Compare `value_state` before `value`. A county missing from `data` is not a zero. Follow `next_page_token` with the same filters. The checked 404 is an unknown measure path.
+Order is measure id, county <Term id="fips">FIPS</Term>, period start, then observation id. A sample HTTP 200 page had FIPS `08001` `MISSING` with `value` null, then FIPS `36061` `OBSERVED` with a numeric `value`. Both shared `measure_id`, `unit` `cases`, year 2023, and `release_id`. Compare `value_state` before `value`. A county missing from `data` is not a zero. Follow `next_page_token` with the same filters. The checked 404 is an unknown measure path.
 
 ## Retrieve environmental context
 
@@ -68,7 +72,7 @@ FIPS `08001` is outside the selected geographies. The request returned HTTP 200 
 
 ## Read common response states
 
-HTTP 200 can be a row, `data: []`, or a partial set. An absent county is not a zero. Read `value_state` first. HTTP 404 `RESOURCE_NOT_FOUND` is declared, and a legacy 404 can omit `code`. HTTP 400 is `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, or `QUERY_TOO_BROAD` above 10,000 results. The API never truncates results. HTTP 429 and 503 include `Retry-After`. Keep `request_id`. Limited rows stay `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`, with a null area or null context left null. `PARTIAL_COVERAGE`, `SOURCE_MISSING`, and `OUT_OF_SOURCE_COVERAGE` are coverage gaps.
+HTTP 200 can be a row, `data: []`, or a partial set. An absent county is not a zero. Read `value_state` first. HTTP 404 `RESOURCE_NOT_FOUND` is declared, and a legacy 404 can omit `code`. HTTP 400 is `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, or `QUERY_TOO_BROAD` above 10,000 results. The API never truncates results. HTTP 429 and 503 include `Retry-After`. Keep `request_id`. Codes and retries: [Errors and retries](/docs/develop/errors). Limited rows stay `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, or `NO_COUNTY_LINKED_RECORD`, with a null area or null context left null. `PARTIAL_COVERAGE`, `SOURCE_MISSING`, and `OUT_OF_SOURCE_COVERAGE` are coverage gaps.
 
 ## Reproduce and cite an observation
 

@@ -11,7 +11,6 @@ _openapi:
   structuredData:
     headings: []
     contents:
-      - content: PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
       - content: GET /v1/states/{state}/report.pdf
       - content: downloadStateReport
       - content: Download a state report
@@ -66,34 +65,26 @@ _openapi:
       - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
       - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"State or dataset release not found","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
       - content: 413 The report is larger than the API can render. Request a shorter period or fewer measures, then retry.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Error response
       - content: Shows the body the API returns for this status.
       - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"The report exceeds configured resource limits.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
       - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Path value has the wrong form
       - content: Shows HTTP 422 with an `errors` entry and no `code`.
       - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
       - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
       - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
       - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: General request limit reached
       - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
       - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
       - content: 503 The report renderer is busy or timed out. Wait the number of seconds in `Retry-After`, then retry. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
-      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
-      - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
-      - content: Error response
-      - content: Shows the body the API returns for this status.
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"Report rendering timed out. Please try again later.","instance":"/v1/states/{state}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
 ---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails).
 
 export default function Layout(props) {
   const { OpenAPIPage } = props.components ?? {};

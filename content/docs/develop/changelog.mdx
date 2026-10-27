@@ -1,0 +1,104 @@
+---
+title: What's new
+description: Changes to the public API, newest release first, matching the pinned contract.
+---
+
+Read what changed in the public API. The newest release is first. Each entry has a label: Added, Changed, Deprecated, Fixed, or Breaking. Added is an additive change. Deprecated is a deprecation. Breaking is a breaking change.
+
+Subscribe with the [changelog feed](/docs/changelog.xml).
+
+These notes match contract commit `4bc001bb6c03d16aef80762174691fdf9b898707` from `Caraway-Labs/one-health-lyme-gap-atlas-api` file `CHANGELOG.md`.
+
+## Unreleased
+
+No changes yet.
+
+## 2026-10-25
+
+Documentation and metadata release. Every change is `additive`. No route, status code, response shape, authentication rule, or data value changed. Generated clients keep working unchanged.
+
+- **Added** — **Landing page**: `info.description` now explains what Atlas is, how to start, how to page, how errors work, and how to read results. It restates the interpretation limits once: results are not a diagnosis and not an estimate of an individual's risk. Read [API reference](/docs/api-reference).
+
+- **Added** — **Tags and tag groups**: Operations are grouped under task-focused tags with descriptions, and shown in groups in the served reference. Summaries are shorter and start with a verb. Read [API reference](/docs/api-reference).
+
+- **Added** — **Parameters**: Every parameter has a description that states the accepted form, bounds, and defaults. Read [API reference](/docs/api-reference).
+
+- **Added** — **Schemas**: Every response schema and field has a description, including how to read `null` and each `value_state`. Read [Schemas](/docs/api-reference/schemas).
+
+- **Added** — **Operation descriptions**: Long descriptions are split into headed parts and tables, with the key parameters and common problems for each operation. Affected operations:
+  - [`GET /v1/atlas/geometry`](/docs/api-reference/atlas/getAtlasGeometry)
+  - [`GET /v1/atlas/map-values`](/docs/api-reference/atlas/getAtlasMapValues)
+  - [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/getAtlasMetadata)
+  - [`GET /v1/atlas/ranking.csv`](/docs/api-reference/atlas/downloadAtlasRanking)
+  - [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores)
+  - [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty)
+  - [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties/downloadCountyReport)
+  - [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations)
+  - [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/getCountyTier1Priority)
+  - [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability)
+  - [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography)
+  - [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/checkGeographyAvailability)
+  - [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators)
+  - [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator)
+  - [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures)
+  - [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure)
+  - [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/getMethodology)
+  - [`GET /v1/observations`](/docs/api-reference/observations/listObservations)
+  - [`GET /v1/sources`](/docs/api-reference/provenance/listSources)
+  - [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/getSource)
+  - [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states/downloadStateReport)
+  - [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview)
+
+- **Added** — **Examples**: Every operation has a real response example for its `200` response. Affected operations:
+  - [`GET /v1/atlas/geometry`](/docs/api-reference/atlas/getAtlasGeometry)
+  - [`GET /v1/atlas/map-values`](/docs/api-reference/atlas/getAtlasMapValues)
+  - [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/getAtlasMetadata)
+  - [`GET /v1/atlas/ranking.csv`](/docs/api-reference/atlas/downloadAtlasRanking)
+  - [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores)
+  - [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty)
+  - [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties/downloadCountyReport)
+  - [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations)
+  - [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/getCountyTier1Priority)
+  - [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability)
+  - [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography)
+  - [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/checkGeographyAvailability)
+  - [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators)
+  - [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator)
+  - [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures)
+  - [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure)
+  - [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/getMethodology)
+  - [`GET /v1/observations`](/docs/api-reference/observations/listObservations)
+  - [`GET /v1/sources`](/docs/api-reference/provenance/listSources)
+  - [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/getSource)
+  - [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states/downloadStateReport)
+  - [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview)
+
+- **Added** — **Error guidance**: Each error response says why it happens and what to change, and has an example of the Problem Details body for its `code`. Read [Errors and retries](/docs/develop/errors).
+
+- **Added** — **Response headers**: Each `200` response lists its headers, including `Cache-Control` and `X-Request-ID`, and `ETag` where the operation supports it. The reference explains rate limits and how to retry a `429` or `503` with `Retry-After`. Read [API reference](/docs/api-reference).
+
+- **Added** — **Code samples**: Every operation includes ready-to-run curl, Python, TypeScript, and R samples (`x-codeSamples`). Affected operations:
+  - [`GET /v1/atlas/geometry`](/docs/api-reference/atlas/getAtlasGeometry)
+  - [`GET /v1/atlas/map-values`](/docs/api-reference/atlas/getAtlasMapValues)
+  - [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/getAtlasMetadata)
+  - [`GET /v1/atlas/ranking.csv`](/docs/api-reference/atlas/downloadAtlasRanking)
+  - [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores)
+  - [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty)
+  - [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties/downloadCountyReport)
+  - [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations)
+  - [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/getCountyTier1Priority)
+  - [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability)
+  - [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography)
+  - [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/checkGeographyAvailability)
+  - [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators)
+  - [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator)
+  - [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures)
+  - [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure)
+  - [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/getMethodology)
+  - [`GET /v1/observations`](/docs/api-reference/observations/listObservations)
+  - [`GET /v1/sources`](/docs/api-reference/provenance/listSources)
+  - [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/getSource)
+  - [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states/downloadStateReport)
+  - [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview)
+
+- **Added** — **Quality checks**: A reviewed rule set now fails a pull request that adds an undescribed parameter or schema, a missing example, an over-long description, or a banned term. This protects the changes above.

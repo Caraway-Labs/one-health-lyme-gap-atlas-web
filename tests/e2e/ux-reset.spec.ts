@@ -125,7 +125,7 @@ const WORKSPACE_DESTINATIONS = [
     title: "Settings | One Health Lyme Gap Atlas",
   },
   {
-    heading: "Feed",
+    heading: "Research & News",
     path: "/app/feed",
     title: "Feed | One Health Lyme Gap Atlas",
   },

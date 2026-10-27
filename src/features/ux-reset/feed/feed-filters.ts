@@ -26,6 +26,12 @@ export const FEED_SOURCE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$/;
 
 export const INTELLIGENCE_SOURCE_PAGE_CAP = 10;
 
+/**
+ * Items requested from `/v1/intelligence/feed`. Continuation tokens are bound
+ * to this size, so every list request sends it, including page one.
+ */
+export const FEED_PAGE_SIZE = 25;
+
 const PUBLISHED_DAY_COUNTS = {
   "7d": 7,
   "30d": 30,
@@ -91,8 +97,10 @@ export function publishedFromForPreset(
 }
 
 /**
- * Params for one feed request. Page token is added by the caller. All sources
- * omits source_id. All dates omits both date params. published_to is never sent.
+ * Source and date filters for one feed request. All sources omits source_id.
+ * All dates omits both date params. published_to is never sent. Returns
+ * undefined for All sources + All dates so an unfiltered view stays unfiltered.
+ * Page size is added by `feedPageParams`.
  */
 export function buildFeedListParams(
   filters: FeedFilterState,
@@ -116,6 +124,26 @@ export function withFeedPageToken(
   params: ListIntelligenceFeedParams | undefined,
   pageToken?: string
 ): ListIntelligenceFeedParams | undefined {
+  if (!pageToken) {
+    return params;
+  }
+  return { ...params, page_token: pageToken };
+}
+
+/**
+ * List params actually sent to the feed. Always includes `page_size` so a
+ * continuation token from this page stays valid. Omitting a token keeps page
+ * one. Filter fields stay exactly what `buildFeedListParams` produced.
+ */
+export function feedPageParams(
+  filters: FeedFilterState,
+  now: Date,
+  pageToken?: string
+): ListIntelligenceFeedParams {
+  const params: ListIntelligenceFeedParams = {
+    ...buildFeedListParams(filters, now),
+    page_size: FEED_PAGE_SIZE,
+  };
   if (!pageToken) {
     return params;
   }

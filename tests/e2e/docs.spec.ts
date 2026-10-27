@@ -1,14 +1,25 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { docsCanonicalUrl } from "../../src/lib/docs-config";
+import {
+  docsGithubEditHref,
+  docsOpenGraphAlt,
+  docsOpenGraphImagePath,
+  docsSectionLabel,
+} from "../../src/lib/docs-social";
 import { fulfillCompletedStartingView } from "./completed-starting-view";
 
 const publicOpenApiManifest = JSON.parse(
   readFileSync("contracts/public-openapi.manifest.json", "utf8")
-) as { sourceCommit: string };
+) as { infoVersion: string; sha256: string; sourceCommit: string };
+
+const docsLastModifiedSnapshot = JSON.parse(
+  readFileSync("src/lib/docs-last-modified.json", "utf8")
+) as { contract: { committedAt: string } };
 
 const docsPages = [
   { path: "/docs", heading: "Start with One Health Atlas" },
@@ -84,8 +95,53 @@ const docsPages = [
     path: "/docs/faq-and-troubleshooting",
     heading: "FAQ and troubleshooting",
   },
+  { path: "/docs/glossary", heading: "Glossary" },
   ...generatedApiReferencePages(),
 ];
+
+function docsSourcePath(pagePath: string): string {
+  const slug = pagePath === "/docs" ? "index" : pagePath.slice("/docs/".length);
+  const direct = path.join("content", "docs", `${slug}.mdx`);
+  if (existsSync(direct)) return direct.split(path.sep).join("/");
+  const nested = path.join("content", "docs", slug, "index.mdx");
+  if (existsSync(nested)) return nested.split(path.sep).join("/");
+  throw new Error(`No docs source for ${pagePath}`);
+}
+
+async function expectDocsFreshness(
+  page: Page,
+  pagePath: string,
+  title: string
+): Promise<void> {
+  const lastUpdated = page.getByText(/Last updated on\s+\S/);
+  await expect(lastUpdated).toBeVisible();
+  if (
+    pagePath === "/docs/api-reference" ||
+    pagePath.startsWith("/docs/api-reference/")
+  ) {
+    const expected = await page.evaluate(
+      (iso) => new Date(iso).toLocaleDateString(),
+      docsLastModifiedSnapshot.contract.committedAt
+    );
+    await expect(lastUpdated).toContainText(expected);
+  }
+  await expect(
+    page.getByRole("link", { name: "Edit on GitHub" })
+  ).toHaveAttribute("href", docsGithubEditHref(docsSourcePath(pagePath)));
+  const imagePath = docsOpenGraphImagePath(pagePath);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+    "content",
+    docsCanonicalUrl(imagePath)
+  );
+  await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
+    "content",
+    docsOpenGraphAlt(title, docsSectionLabel(pagePath))
+  );
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
+    "content",
+    docsCanonicalUrl(pagePath)
+  );
+}
 
 function generatedApiReferencePages(): {
   heading: string;
@@ -226,6 +282,7 @@ test("keeps every HelpDocs route reachable and accessible", async ({
         `${docsPage.heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\| One Health Atlas documentation`
       )
     );
+    await expectDocsFreshness(page, docsPage.path, docsPage.heading);
 
     await page.waitForFunction(async () => {
       await document.fonts.ready;
@@ -409,6 +466,34 @@ async function expectVisibleRetryAfterHeader(page: Page) {
   ).toBeVisible();
 }
 
+test("serves a branded Open Graph image for product, developer, and reference pages", async ({
+  page,
+  request,
+}) => {
+  for (const pagePath of [
+    "/docs/glossary",
+    "/docs/develop/quickstart",
+    "/docs/api-reference",
+  ]) {
+    await page.goto(pagePath);
+    const imagePath = docsOpenGraphImagePath(pagePath);
+    const imageUrl = docsCanonicalUrl(imagePath);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      imageUrl
+    );
+    const response = await request.get(imagePath);
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("image/png");
+    const body = Buffer.from(await response.body());
+    expect(body.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    );
+    expect(body.readUInt32BE(16)).toBe(1200);
+    expect(body.readUInt32BE(20)).toBe(630);
+  }
+});
+
 test("renders the generated observations reference with version, source, and raw spec", async ({
   page,
 }, testInfo) => {
@@ -423,9 +508,19 @@ test("renders the generated observations reference with version, source, and raw
     page.getByText("Application version", { exact: true })
   ).toBeVisible();
   await expect(
+    page.getByRole("cell", { name: publicOpenApiManifest.infoVersion })
+  ).toBeVisible();
+  await expect(page.getByText("info.version")).toBeVisible();
+  await expect(
     page.getByRole("cell", { name: publicOpenApiManifest.sourceCommit })
   ).toBeVisible();
-  const rawSpec = page.getByRole("link", { name: "OpenAPI schema" });
+  await expect(
+    page.getByRole("cell", { name: publicOpenApiManifest.sha256 })
+  ).toBeVisible();
+  const rawSpec = page.getByRole("link", {
+    exact: true,
+    name: "OpenAPI schema",
+  });
   await expect(rawSpec).toHaveAttribute(
     "href",
     "https://api.onehealthatlas.org/openapi.json"
@@ -530,6 +625,38 @@ test("renders the generated observations reference with version, source, and raw
   await page.goto("/docs/api-reference/schemas#schema-problemdetails");
   await expect(
     page.getByRole("heading", { name: "ProblemDetails", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Type" }).first()
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "request_id", exact: true }).first()
+  ).toBeVisible();
+  await page.goto("/docs/api-reference/schemas#schema-valuestate");
+  await expect(
+    page.getByRole("heading", { name: "ValueState", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "OBSERVED", exact: true }).first()
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("cell", {
+        name: "a nonzero value the publisher reported. Use value as given.",
+      })
+      .first()
+  ).toBeVisible();
+  await page.goto("/docs/api-reference/schemas#schema-observation");
+  await expect(
+    page.getByRole("heading", { name: "Observation", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.locator('a[href="#schema-valuestate"]').first()
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("link", { name: "GET /v1/observations", exact: true })
+      .first()
   ).toBeVisible();
 
   const overflow = await page.evaluate(

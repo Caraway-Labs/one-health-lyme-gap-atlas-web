@@ -42,6 +42,7 @@ export function DocsHeader(props: ComponentProps<"header">) {
   const current = developersLinkCurrent(pathname);
   const SearchTrigger = slots.searchTrigger ? slots.searchTrigger.sm : null;
   const SidebarTrigger = slots.sidebar?.trigger;
+  const ThemeSwitch = slots.themeSwitch;
 
   return (
     <header
@@ -65,7 +66,8 @@ export function DocsHeader(props: ComponentProps<"header">) {
           Developers
         </Link>
       </nav>
-      <div className="ms-auto flex items-center">
+      <div className="ms-auto flex items-center gap-1">
+        {ThemeSwitch ? <ThemeSwitch /> : null}
         {SearchTrigger ? (
           <SearchTrigger className="p-2 md:hidden" hideIfDisabled />
         ) : null}

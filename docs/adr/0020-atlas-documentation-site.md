@@ -12,7 +12,7 @@ Use Fumadocs MDX (`fumadocs-core`, `fumadocs-mdx`, and `fumadocs-ui`) inside the
 
 Use `https://onehealthatlas.org/docs` as the canonical public URL. The Atlas app reads the site origin, docs URL, and API origin from `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_DOCS_URL`, and `NEXT_PUBLIC_API_BASE_URL`. Those values default to the onehealthatlas hosts, and a preview build supplies its own origins. Canonical HTML, MDX links, the OpenAPI document pointer, and `externalDocs` follow that configuration. Problem-type URIs published in OpenAPI examples stay unchanged. The Help/Docs control opens a new tab with `target="_blank"` and `rel="noopener noreferrer"`; the original route and query state remain intact.
 
-Use Fumadocs built-in navigation, heading anchors, code rendering, and static search backed by the local `/api/search` route. Disable the optional theme switch so the docs surface remains consistent with the current Atlas light-only design. Do not add analytics to docs by default.
+Use Fumadocs built-in navigation, heading anchors, code rendering, and static search backed by the local `/api/search` route. Do not add analytics to docs by default. The light-only docs choice in this ADR is superseded for the docs surface by [ADR 0023](./0023-docs-only-dark-theme.md). The signed-in app stays light.
 
 ## Alternatives considered
 

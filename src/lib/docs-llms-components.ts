@@ -3,6 +3,11 @@ import {
   playgroundProxyPath,
 } from "@/features/docs/api-playground-operations";
 import { displayGeometryCurl } from "@/features/docs/display-geometry-example";
+import { evidenceFlowMarkdown } from "@/features/docs/evidence-flow";
+import {
+  lookupGlossaryTerm,
+  renderGlossaryMarkdown,
+} from "@/features/docs/glossary-terms";
 import {
   type HttpClientBody,
   type HttpClientExamples,
@@ -106,6 +111,15 @@ function renderKnownComponent(
   attributes: ComponentAttributes
 ): string {
   switch (name) {
+    case "Card": {
+      return cardMarkdown(attributes);
+    }
+    case "GlossaryList": {
+      return renderGlossaryMarkdown();
+    }
+    case "Term": {
+      return lookupGlossaryTerm(requiredString(attributes, "id")).label;
+    }
     case "ApiPlayground": {
       const operation = API_PLAYGROUND_OPERATIONS[0];
       const example = operation?.examples[0];
@@ -123,6 +137,10 @@ function renderKnownComponent(
     }
     case "EndpointDeliveryBadge": {
       return `${PENDING_DELIVERY_BADGE_LABEL} ${PENDING_DELIVERY_NOTE}`;
+    }
+    case "EvidenceFlowDiagram":
+    case "Mermaid": {
+      return evidenceFlowMarkdown();
     }
     case "HttpClientPagination": {
       return clientExampleMarkdown(
@@ -145,7 +163,7 @@ function renderKnownComponent(
       );
     }
     case "InterpretationGuardrailCopy": {
-      return codeFence(ATLAS_INTERPRETATION_GUARDRAILS, "text");
+      return `#### Interpret with care\n\n${codeFence(ATLAS_INTERPRETATION_GUARDRAILS, "text")}`;
     }
     case "ObservationCurl": {
       return codeFence(observationCurl(requiredString(attributes, "query")));
@@ -225,6 +243,20 @@ function markdownTableRow(cells: readonly string[]): string {
   return `| ${cells.join(" | ")} |`;
 }
 
+function cardMarkdown(attributes: ComponentAttributes): string {
+  const title = requiredString(attributes, "title");
+  const href = optionalString(attributes.href);
+  const description = optionalString(attributes.description);
+  const heading = href ? `[${title}](${href})` : title;
+  return description ? `${heading}\n\n${description}` : heading;
+}
+
+function titledBlock(attributeSource: string, fallback: string): string {
+  const title = parseAttributes(attributeSource).title;
+  const heading = typeof title === "string" ? title : fallback;
+  return `\n\n#### ${heading}\n\n`;
+}
+
 function unwrapStructuralTags(markdown: string): string {
   return markdown
     .replaceAll(/<Tabs\b[^>]*>/g, "")
@@ -238,10 +270,34 @@ function unwrapStructuralTags(markdown: string): string {
       }
     )
     .replaceAll("</Tab>", "")
+    .replaceAll(
+      /<Callout\b(?<attributes>[^>]*)>/g,
+      (_match, attributeSource: string) => titledBlock(attributeSource, "Note")
+    )
+    .replaceAll("</Callout>", "")
+    .replaceAll(/<Accordions\b[^>]*>/g, "")
+    .replaceAll("</Accordions>", "")
+    .replaceAll(
+      /<Accordion\b(?<attributes>[^>]*)>/g,
+      (_match, attributeSource: string) =>
+        titledBlock(attributeSource, "Details")
+    )
+    .replaceAll("</Accordion>", "")
+    .replaceAll(/<Cards\b[^>]*>/g, "")
+    .replaceAll("</Cards>", "")
     .replaceAll(/<Steps\b[^>]*>/g, "")
     .replaceAll("</Steps>", "")
     .replaceAll(/<Step\b[^>]*>/g, "")
-    .replaceAll("</Step>", "");
+    .replaceAll("</Step>", "")
+    .replaceAll(
+      /<Term\b(?<attributes>[^>]*)>(?<label>[\s\S]*?)<\/Term>/g,
+      (_match, attributeSource: string, label: string) => {
+        lookupGlossaryTerm(
+          requiredString(parseAttributes(attributeSource), "id")
+        );
+        return label;
+      }
+    );
 }
 
 function codeFence(code: string, language = ""): string {

@@ -9,25 +9,12 @@ _openapi:
   webhook: false
   toc: []
   structuredData:
-    headings: []
+    headings:
+      - content: What you get back
+        id: what-you-get-back
+      - content: Common problems
+        id: common-problems
     contents:
-      - content: |-
-          Get both surveillance-situation classifications for one county: the primary `four_state` model, which includes human surveillance, and the secondary `tick_pathogen` model, which excludes it.
-
-          ### What you get back
-          - Reviewed labels and four membership probabilities per model. Each is between 0 and 1, and they sum to 1 within 1e-6.
-          - Model and batch lineage, source vintages, and interpretation limits.
-          - `Unknown` is an available class. `No records` does not establish absence.
-          - Membership is not disease risk, incidence, pathogen presence, causation, or Tier 1 priority.
-
-          A model variant can return HTTP 200 with `UNAVAILABLE` and `null` data, including when the release is incompatible. The API does not infer or fall back to another result. The response must not be cached.
-
-          ### Common problems
-          | Response | Cause and what to do |
-          | --- | --- |
-          | `404` | The county is unknown. |
-          | `422` | The FIPS code is malformed. |
-          | `503` | A dependency failed, stored data is malformed, or the release changed during the request. Retry later. |
       - content: GET /v1/counties/{fips}/surveillance-situations
       - content: getCountySurveillanceSituations
       - content: Get county surveillance situations
@@ -53,28 +40,24 @@ _openapi:
       - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
       - content: '{"type":"https://onehealthatlas.org/problems/resource-not-found","title":"Invalid public query","status":404,"detail":"County is not in the current geography release.","instance":"/v1/counties/{fips}/surveillance-situations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RESOURCE_NOT_FOUND"}'
       - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Path value has the wrong form
       - content: Shows HTTP 422 with an `errors` entry and no `code`.
       - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}/surveillance-situations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
       - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
       - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
       - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: General request limit reached
       - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
       - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/counties/{fips}/surveillance-situations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
       - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
-      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
-      - content: '"30"'
-      - content: application/problem+json
-      - content: '#/components/schemas/ProblemDetails'
       - content: Data service unavailable
       - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
       - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/counties/{fips}/surveillance-situations","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
 ---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [CountySurveillanceSituations](/docs/api-reference/schemas#schema-countysurveillancesituations), [MembershipProbability](/docs/api-reference/schemas#schema-membershipprobability), [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails), [SituationClassification](/docs/api-reference/schemas#schema-situationclassification), [SituationVariant](/docs/api-reference/schemas#schema-situationvariant).
 
 export default function Layout(props) {
   const { OpenAPIPage } = props.components ?? {};

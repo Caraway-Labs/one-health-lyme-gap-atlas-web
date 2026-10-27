@@ -24,6 +24,7 @@ test("serves a stable llms.txt index and the current full docs export", async ({
   expect(index).toContain(
     "](https://onehealthatlas.org/docs/releases-and-methodology)"
   );
+  expect(index).toContain("](https://onehealthatlas.org/docs/develop/errors)");
   expect(index).toContain("](https://onehealthatlas.org/llms-full.txt)");
   expect(index).toContain("Append `.md`");
   expect(index).not.toContain("PRIVATE KEY");

@@ -9,6 +9,8 @@ import { releaseViewportRuns } from "./release-phone-viewport";
 const developerPages = [
   { path: "/docs/develop", heading: "Developer overview" },
   { path: "/docs/develop/quickstart", heading: "Quickstart" },
+  { path: "/docs/develop/errors", heading: "Errors and retries" },
+  { path: "/docs/develop/recipes", heading: "Integration recipes" },
   { path: "/docs/develop/rest", heading: "REST API" },
   { path: "/docs/develop/geography", heading: "Geography" },
   {
@@ -57,8 +59,26 @@ test("publishes onehealthatlas canonical URLs and contract links", async ({
     "https://onehealthatlas.org/docs/api-reference"
   );
   await expect(
-    page.getByRole("link", { name: "OpenAPI schema" })
+    page.getByRole("link", { exact: true, name: "OpenAPI schema" })
   ).toHaveAttribute("href", "https://api.onehealthatlas.org/openapi.json");
+  await expect(
+    page.getByRole("link", { name: "Pinned contract" })
+  ).toHaveAttribute("href", "/downloads/atlas-public-openapi.json");
+  await expect(
+    page.getByRole("link", { name: "Checksum and commit" })
+  ).toHaveAttribute("href", "/downloads/atlas-public-openapi.provenance.json");
+  await expect(
+    page.getByRole("link", { name: "Postman collection" })
+  ).toHaveAttribute("href", "/downloads/atlas.postman_collection.json");
+  await expect(page.locator("main")).toContainText(/Commit\s+[0-9a-f]{40}/);
+  await expect(page.locator("main")).toContainText(/Checksum\s+[0-9a-f]{64}/);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page
+    .getByRole("heading", { exact: true, name: "Downloads" })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/after-api-reference-desktop.png",
+  });
   await expect(
     page.getByRole("link", {
       name: "Atlas documentation and developer guides",
@@ -85,7 +105,9 @@ test("follows the quickstart county request from the developer overview", async 
   await page.goto("/docs/develop");
   await page
     .locator("main")
-    .getByRole("link", { name: "Quickstart", exact: true })
+    .getByRole("link", {
+      name: "Quickstart Finish one county observation read",
+    })
     .click();
   await expect(page).toHaveURL(/\/docs\/develop\/quickstart\/?$/);
   await expect(
@@ -93,8 +115,15 @@ test("follows the quickstart county request from the developer overview", async 
       "https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=36061&year=2023"
     )
   ).toBeVisible();
+  await page
+    .locator("main")
+    .getByRole("link", { exact: true, name: "Errors and retries" })
+    .click();
+  await expect(page).toHaveURL(/\/docs\/develop\/errors\/?$/);
   await expect(page.getByText("RATE_LIMITED").first()).toBeVisible();
   await expect(page.getByText("Retry-After").first()).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/docs\/develop\/quickstart\/?$/);
 
   const citation = page
     .locator("main")
@@ -793,6 +822,60 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
     path: "/opt/cursor/artifacts/client-tabs-rest-typescript.png",
   });
 
+  await page.goto("/docs/develop/recipes");
+  await expect(
+    page.getByRole("heading", { name: "Integration recipes", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("tab", { exact: true, name: "TypeScript" }).first()
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("runCountyTable").first()).toBeVisible();
+  await expect(page.getByText("01001,null,MISSING").first()).toBeVisible();
+  const recipePython = page
+    .getByRole("tab", { exact: true, name: "Python" })
+    .first();
+  await recipePython.focus();
+  await expect(recipePython).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("tab", { exact: true, name: "R" }).first()
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("library(dplyr)").first()).toBeVisible();
+  await page
+    .getByRole("tab", { exact: true, name: "R" })
+    .first()
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: "/opt/cursor/artifacts/recipes-desktop.png",
+    fullPage: true,
+  });
+  await page
+    .locator("main")
+    .getByRole("link", { exact: true, name: "Errors and retries" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/docs\/develop\/errors\/?$/);
+  await page.goto("/docs/develop/recipes");
+  await page
+    .locator("main")
+    .getByRole("link", { exact: true, name: "Observations" })
+    .click();
+  await expect(page).toHaveURL(/\/docs\/api-reference\/observations\/?$/);
+  await page.goto("/docs/develop/recipes");
+  // The saved client is applied after the document loads. Until then the
+  // triggers still show the default Python tab, and a click does not change
+  // the saved choice. R is the choice from the keyboard step above.
+  const recipeR = page.getByRole("tab", { exact: true, name: "R" }).first();
+  await expect(recipeR).toHaveAttribute("aria-selected", "true");
+  const recipeTypeScript = page
+    .getByRole("tab", { exact: true, name: "TypeScript" })
+    .first();
+  await recipeTypeScript.click();
+  await expect(recipeTypeScript).toHaveAttribute("aria-selected", "true");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("atlas-http-client")))
+    .toBe("typescript");
+
   await page.goto("/docs/develop/quickstart");
   await expectClientLanguage(page, "TypeScript", "await fetch(url)");
   await page.screenshot({
@@ -809,19 +892,19 @@ test("persists the curl, Python, R, and TypeScript client across guides", async 
 test("renders contract value states and separate 413 and 414 rows", async ({
   page,
 }) => {
-  await page.goto("/docs/develop/resources");
+  await page.goto("/docs/develop/errors");
   await expect(
     page.getByRole("cell", { exact: true, name: "NO_COUNTY_LINKED_RECORD" })
   ).toBeVisible();
   await expect(
     page.getByRole("cell", { exact: true, name: "NO_RECORDS" })
   ).toBeVisible();
-
-  await page.goto("/docs/develop/rest");
   await expect(
     page.getByRole("row", { name: /413\s+INVALID_REQUEST/ })
   ).toBeVisible();
   await expect(
     page.getByRole("row", { name: /414\s+INVALID_REQUEST/ })
   ).toBeVisible();
+  await expect(page.locator("#unsupported_filter")).toBeVisible();
+  await expect(page.locator("#value-states")).toBeVisible();
 });
