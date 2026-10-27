@@ -1,5 +1,5 @@
-import { canonicalGeographyAvailability } from "@/generated/atlas";
-import { CanonicalGeographyAvailabilityResponse } from "@/generated/zod/atlas";
+import { checkGeographyAvailability } from "@/generated/atlas";
+import { CheckGeographyAvailabilityResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   ApiResponseValidationError,
@@ -60,7 +60,7 @@ export function shouldRetryCanonicalGeographyAvailability(
 }
 
 /** Server Retry-After is the wait. A missing header uses a short capped backoff. */
-export function canonicalGeographyAvailabilityRetryDelay(
+export function checkGeographyAvailabilityRetryDelay(
   failureCount: number,
   error: unknown,
   configured?: RetryDelaySetting
@@ -179,7 +179,7 @@ export async function fetchCanonicalGeographyAvailability(
       null
     );
   }
-  const response = await canonicalGeographyAvailability("county", fips, {
+  const response = await checkGeographyAvailability("county", fips, {
     signal,
   });
   if (response.status !== 200) {
@@ -192,7 +192,7 @@ export async function fetchCanonicalGeographyAvailability(
   }
   const parsed = validateApiResponse(
     "Canonical geography availability",
-    CanonicalGeographyAvailabilityResponse,
+    CheckGeographyAvailabilityResponse,
     response.data
   );
   if (parsed.data !== null) {

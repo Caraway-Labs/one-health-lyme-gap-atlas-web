@@ -10,7 +10,7 @@ import {
   type Tier1SurveillancePriorityView,
 } from "@/features/ux-reset/surveillance-priority/present-tier1-surveillance-priority";
 import type { Tier1CountyPriority } from "@/generated/models";
-import { CountyTier1SurveillancePriorityGetResponse } from "@/generated/zod/atlas";
+import { GetCountyTier1PriorityResponse } from "@/generated/zod/atlas";
 import { ProblemDetails } from "@/generated/zod/problemDetails.zod";
 import { validateApiResponse } from "@/lib/api-response-validation";
 
@@ -28,7 +28,7 @@ function captured(name: string): unknown {
 function verifiedTier1(name: string): Tier1CountyPriority {
   return validateApiResponse(
     "Tier 1 surveillance priority",
-    CountyTier1SurveillancePriorityGetResponse,
+    GetCountyTier1PriorityResponse,
     captured(name)
   );
 }

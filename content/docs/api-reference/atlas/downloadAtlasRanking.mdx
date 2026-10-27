@@ -1,0 +1,94 @@
+---
+title: Download county rankings as CSV
+description: Download county rankings as CSV
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: GET /v1/atlas/ranking.csv
+      - content: downloadAtlasRanking
+      - content: Download county rankings as CSV
+      - content: state query optional Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.
+      - content: Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.
+      - content: State
+      - content: '"CO"'
+      - content: q query optional Filter rows by text. Matching ignores case and keeps rows where the county name, state code, or county FIPS code contains the text. Use up to 100 characters; a longer value returns 422. The default is empty, which keeps every row.
+      - content: Filter rows by text. Matching ignores case and keeps rows where the county name, state code, or county FIPS code contains the text. Use up to 100 characters; a longer value returns 422. The default is empty, which keeps every row.
+      - content: Q
+      - content: '"boulder"'
+      - content: evidence query optional Limit rows by available evidence. `all` keeps every county. `ecological` keeps counties with a tick or pathogen signal. `human` keeps counties with a published human case count. `complete` keeps counties whose `evidence_completeness` is 5 or more. The default is `all`. Any other value returns 422.
+      - content: Limit rows by available evidence. `all` keeps every county. `ecological` keeps counties with a tick or pathogen signal. `human` keeps counties with a published human case count. `complete` keeps counties whose `evidence_completeness` is 5 or more. The default is `all`. Any other value returns 422.
+      - content: Evidence
+      - content: all
+      - content: ecological
+      - content: human
+      - content: complete
+      - content: '"all"'
+      - content: ecological_share query optional Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Ecological Share
+      - content: '65'
+      - content: 'smooth_k query optional Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: 'Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: Smooth K
+      - content: '50'
+      - content: missing_human_weakness query optional Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Missing Human Weakness
+      - content: '75'
+      - content: low_incidence_breakpoint query optional Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: low_incidence_breakpoint deprecated
+      - content: Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: Low Incidence Breakpoint
+      - content: 200 CSV attachment. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `text/csv`.'
+      - content: '"text/csv"'
+      - content: Cache-Control The API sets no `Cache-Control` header, so do not assume a cache lifetime.
+      - content: Content-Disposition Marks the body as a download and suggests the file name.
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: text/csv
+      - content: Header row and the first two data rows
+      - content: 'Response headers: `Content-Type: text/csv; charset=utf-8` and `Content-Disposition: attachment; filename="lyme-gap-atlas-ranking-all.csv"`. The body lists every county; this sample shows the header row and two data rows.'
+      - content: '"rank,fips,county,state,score,priority,human_status,tick_status,burgdorferi_status,evidence_completeness,scoring_methodology_version,smooth_k\n1,06037,Los Angeles County,CA,85.6,Priority 1 — Investigate,published_count_floor,Established,Present,100,surveillance-gap-score-v1.1,50\n2,18039,Elkhart County,IN,85.1,Priority 1 — Investigate,published_count_floor,Established,Present,100,surveillance-gap-score-v1.1,50\n"'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"Dataset release not found","instance":"/v1/atlas/ranking.csv","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/atlas/ranking.csv","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/atlas/ranking.csv","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/atlas/ranking.csv","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails).
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/ranking.csv","method":"get"}]} showDescription />
+    </>
+  );
+}

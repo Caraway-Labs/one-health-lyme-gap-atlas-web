@@ -9,17 +9,32 @@ import type { AtlasMetadataScoreDefaults } from './atlasMetadataScoreDefaults';
 import type { AtlasMetadataStatesItem } from './atlasMetadataStatesItem';
 import type { SourceMetadata } from './sourceMetadata';
 
+/**
+ * Describes the published data release behind the scores and county records.
+ */
 export interface AtlasMetadata {
+  /** Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. */
   scoring_methodology_version?: 'surveillance-gap-score-v1.1';
+  /** Identifies the published data release. Results from different releases are not directly comparable. */
   release_id: string;
+  /** Version of the release data layout. */
   schema_version: string;
+  /** When the release was built, with a UTC offset. It is not when the publishers last updated their data. */
   generated_at: string;
+  /** When Atlas loaded the release for serving, with a UTC offset. It is not when the publishers last updated their data. */
   loaded_at: string;
+  /** Geographic and time coverage of the release. */
   scope: string;
+  /** SHA-256 checksum of the release contents. Use it to confirm you are looking at the same release. */
   bundle_sha256: string;
+  /** Default settings the score uses when a request supplies none. */
   score_defaults: AtlasMetadataScoreDefaults;
+  /** Version of the release methodology that the scores follow. */
   methodology_version: string;
+  /** What the release does not show. Read it before you use a score. */
   limitations: string;
+  /** Source datasets used in the release. */
   sources: SourceMetadata[];
+  /** States and the District of Columbia in the release. Each entry has a `code` and a `name`. */
   states: AtlasMetadataStatesItem[];
 }

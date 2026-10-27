@@ -13,10 +13,7 @@ import {
   shouldRetryExploreObservation,
   splitExploreObservationBatches,
 } from "@/features/ux-reset/explore/load-explore-resources";
-import {
-  getMeasuresV1MeasuresGetUrl,
-  getObservationsV1ObservationsGetUrl,
-} from "@/generated/atlas";
+import { getListMeasuresUrl, getListObservationsUrl } from "@/generated/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 
 const YEAR_BOUND: ExploreTimeBound = {
@@ -35,14 +32,14 @@ function nationalFips(count: number): string[] {
 
 describe("Explore generated requests", () => {
   it("serializes a null page token and omits an absent one", () => {
-    const withNull = getObservationsV1ObservationsGetUrl({
+    const withNull = getListObservationsUrl({
       geography_id: ["08001"],
       geography_type: "county",
       measure_id: "reported-cases",
       page_token: null,
       year: 2023,
     });
-    const omitted = getObservationsV1ObservationsGetUrl(
+    const omitted = getListObservationsUrl(
       exploreObservationPageParams({
         fips: ["08001"],
         measureId: "reported-cases",
@@ -56,13 +53,13 @@ describe("Explore generated requests", () => {
   });
 
   it("requests each county discovery semantic instead of the observations enum", () => {
-    const published = getMeasuresV1MeasuresGetUrl(
+    const published = getListMeasuresUrl(
       exploreMeasuresPageParams({ geographySemantics: "COUNTY_FIPS_5" })
     );
-    const environmental = getMeasuresV1MeasuresGetUrl(
+    const environmental = getListMeasuresUrl(
       exploreMeasuresPageParams({ geographySemantics: "COUNTY" })
     );
-    const lowercase = getMeasuresV1MeasuresGetUrl({
+    const lowercase = getListMeasuresUrl({
       geography_type: "county",
       page_token: null,
     });
@@ -74,7 +71,7 @@ describe("Explore generated requests", () => {
   });
 
   it("sends a governed day as a date range and keeps a continuation token", () => {
-    const first = getObservationsV1ObservationsGetUrl(
+    const first = getListObservationsUrl(
       exploreObservationPageParams({
         fips: ["08001"],
         measureId: "nclimgrid_prcp_county_day",
@@ -85,7 +82,7 @@ describe("Explore generated requests", () => {
         },
       })
     );
-    const next = getObservationsV1ObservationsGetUrl(
+    const next = getListObservationsUrl(
       exploreObservationPageParams({
         fips: ["08001"],
         measureId: "nclimgrid_prcp_county_day",

@@ -1,0 +1,10 @@
+{
+  "name": "@faker-js/faker",
+  "version": "11.0.0-atlas.1",
+  "private": true,
+  "description": "Import stub for postman-collection. Atlas does not generate fake example values. The published @faker-js/faker releases through 10.4.0 fail npm audit (GHSA helpers.fake) and have no patched release.",
+  "exports": {
+    ".": "./index.js",
+    "./locale/en": "./index.js"
+  }
+}

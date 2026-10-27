@@ -132,7 +132,7 @@ type PublishedField = {
 /**
  * `AtlasMetadata.methodology_version` is a required string. Empty and
  * whitespace-only strings still validate, and they stay unset. A null or
- * omitted version fails `CountyV1CountiesFipsGetResponse` in
+ * omitted version fails `GetCountyResponse` in
  * `loadInvestigateCountyRecord` before this mapper runs.
  */
 function governedMethodologyVersion(version: string): string | null {

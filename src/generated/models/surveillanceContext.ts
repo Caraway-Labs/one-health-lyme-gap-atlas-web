@@ -9,8 +9,17 @@ import type { MethodologyComparisonContext } from './methodologyComparisonContex
 import type { SurveillanceEvidenceContext } from './surveillanceEvidenceContext';
 import type { TemporalAlignmentContext } from './temporalAlignmentContext';
 
+/**
+ * Optional surveillance evidence attached to an observation.
+ *
+ * A missing or `null` part supports no claim about evidence state, comparability, or lag.
+ * Comparison covers case definitions only. Alignment is descriptive, not causal.
+ */
 export interface SurveillanceContext {
+  /** County evidence state. `null` when none is supplied. */
   evidence?: SurveillanceEvidenceContext | null;
+  /** Comparability of case definitions. `null` when none is supplied. */
   methodology_comparison?: MethodologyComparisonContext | null;
+  /** Time alignment details. `null` when none is supplied. */
   temporal_alignment?: TemporalAlignmentContext | null;
 }

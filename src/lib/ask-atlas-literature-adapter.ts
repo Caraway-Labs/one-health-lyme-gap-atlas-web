@@ -1,4 +1,4 @@
-import { knowledgeGraphChatV1KnowledgeGraphChatPost } from "@/generated/atlas";
+import { askKnowledgeGraph } from "@/generated/atlas";
 import type { ChatHistoryTurn } from "@/generated/models";
 import { KnowledgeChatRequest as KnowledgeChatRequestSchema } from "@/generated/zod/knowledgeChatRequest.zod";
 
@@ -47,8 +47,8 @@ export function parseLiteratureChatRequest(
 
 export function postLiteratureChat(
   input: unknown,
-  options?: Parameters<typeof knowledgeGraphChatV1KnowledgeGraphChatPost>[1]
-): ReturnType<typeof knowledgeGraphChatV1KnowledgeGraphChatPost> {
+  options?: Parameters<typeof askKnowledgeGraph>[1]
+): ReturnType<typeof askKnowledgeGraph> {
   const request = parseLiteratureChatRequest(input);
-  return knowledgeGraphChatV1KnowledgeGraphChatPost(request, options);
+  return askKnowledgeGraph(request, options);
 }

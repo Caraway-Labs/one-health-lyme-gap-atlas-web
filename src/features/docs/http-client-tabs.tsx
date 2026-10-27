@@ -1,6 +1,7 @@
 "use client";
 
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import type { ReactNode } from "react";
 
 import {
   HTTP_CLIENT_GROUP_ID,
@@ -61,5 +62,21 @@ export function HttpClientPagination({
 }) {
   return (
     <ClientTabs examples={httpClientPaginationExamples({ path, query })} />
+  );
+}
+
+const RECIPE_CLIENT_LANGUAGES = ["Python", "R", "TypeScript"] as const;
+
+/** Recipe samples use the same saved client choice as the other guides. */
+export function RecipeLanguageTabs({ children }: { children: ReactNode }) {
+  return (
+    <Tabs
+      groupId={HTTP_CLIENT_GROUP_ID}
+      items={[...RECIPE_CLIENT_LANGUAGES]}
+      label="Client"
+      persist
+    >
+      {children}
+    </Tabs>
   );
 }

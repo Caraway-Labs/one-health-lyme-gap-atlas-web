@@ -11,14 +11,20 @@ import type { SituationVariant } from './situationVariant';
  * Two distinct model outputs; Unknown is a valid available classification.
  */
 export interface CountySurveillanceSituations {
-  /** @pattern ^[0-9]{5}$ */
+  /**
+     * Five-digit county FIPS code, with leading zeros.
+     * @pattern ^[0-9]{5}$
+     */
   county_fips: string;
   /**
-     * Active governed presentation release.
+     * Identifies the current data release.
      * @minLength 1
      */
   release_id: string;
-  /** @pattern ^[0-9a-f]{64}$ */
+  /**
+     * SHA-256 checksum of the current data release.
+     * @pattern ^[0-9a-f]{64}$
+     */
   bundle_sha256: string;
   /** Primary model, including human surveillance. */
   four_state: SituationVariant;

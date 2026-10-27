@@ -74,7 +74,7 @@ function mdxFiles(directory: string): string[] {
 describe("rendered documentation markdown", () => {
   it("renders the observations geography_id parameter from the pinned contract", async () => {
     const markdown = await renderedPage(
-      "content/docs/api-reference/observations/observations_v1_observations_get.mdx"
+      "content/docs/api-reference/observations/listObservations.mdx"
     );
     expect(markdown).toContain("#### geography_id");
     expect(markdown).toContain("query, required.");
@@ -84,7 +84,7 @@ describe("rendered documentation markdown", () => {
 
   it("renders the observations page_size default and bounds", async () => {
     const markdown = await renderedPage(
-      "content/docs/api-reference/observations/observations_v1_observations_get.mdx"
+      "content/docs/api-reference/observations/listObservations.mdx"
     );
     const tables = constraintTables(markdown);
     expect(markdown).toContain("#### page_size");
@@ -104,18 +104,19 @@ describe("rendered documentation markdown", () => {
 
   it("renders observations response media types and Retry-After", async () => {
     const markdown = await renderedPage(
-      "content/docs/api-reference/observations/observations_v1_observations_get.mdx"
+      "content/docs/api-reference/observations/listObservations.mdx"
     );
     expect(markdown).toContain("- Media type: `application/json`");
     expect(markdown).toContain("- Media type: `application/problem+json`");
     expect(markdown).toContain(
-      "- Header `Retry-After`: Seconds before retry when supplied by the service."
+      "- Header `Retry-After`: Seconds to wait before you retry. Wait that long when the header is present."
     );
     expect(markdown).toContain("CollectionEnvelope_CountyContextObservation_");
   });
 
   it("renders the published MCP interpretation guardrail", async () => {
     const markdown = await renderedPage("content/docs/develop/mcp-clients.mdx");
+    expect(markdown).toContain("Interpret with care");
     expect(markdown).toContain("Missing is not zero.");
     expect(markdown).toContain(
       "A gap or a review priority is not risk or a diagnosis."
@@ -130,6 +131,26 @@ describe("rendered documentation markdown", () => {
     expect(markdown).toContain("library(httr2)");
     expect(markdown).toContain("await fetch");
     expect(markdown).not.toContain("<HttpClientTabs");
+  });
+
+  it("renders quickstart steps and the labelled sample", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("### Make a request");
+    expect(markdown).toContain("#### Show example response");
+    expect(markdown).toContain("governed-2026-10-15-january-climate-prod");
+    expect(markdown).toContain(
+      "[Workflow guides](https://onehealthatlas.org/docs/develop/workflows)"
+    );
+    expect(markdown).not.toContain("On 12 October");
+  });
+
+  it("strips quickstart layout tags from the markdown export", async () => {
+    const markdown = await renderedPage("content/docs/develop/quickstart.mdx");
+    expect(markdown).toContain("Interpret with care");
+    expect(markdown).not.toContain("<Callout");
+    expect(markdown).not.toContain("<Card");
+    expect(markdown).not.toContain("<Steps");
+    expect(markdown).not.toContain("were checked");
   });
 
   it("renders the quickstart playground as an anonymous GET", async () => {
@@ -160,8 +181,26 @@ describe("rendered documentation markdown", () => {
     expect(value[1]).toBe("number | string | null");
     expect(value[2]).toBe("yes");
     expect(value[3]).toBe(
-      "Read with value_state and unit; null never means zero."
+      "The reported value. Read it with `value_state` and `unit`. `null` never means zero."
     );
+  });
+
+  it("finds the provenance value row after schema tables in the full export", async () => {
+    const schemas = await renderedPage(
+      "content/docs/api-reference/schemas.mdx"
+    );
+    const provenance = await renderedPage(
+      "content/docs/develop/provenance.mdx"
+    );
+    const { value } = provenanceUnionRows(`${schemas}\n\n${provenance}`);
+    expect(value).toStrictEqual([
+      "value",
+      "number | string | null",
+      "yes",
+      "The reported value. Read it with `value_state` and `unit`. `null` never means zero.",
+    ]);
+    expect(schemas).toContain("| Name | Type | Required | Description |");
+    expect(schemas).not.toContain("| Field | Type | Required | Description |");
   });
 
   it("keeps nullable timestamp rows in both provenance tables", async () => {
@@ -191,13 +230,13 @@ describe("rendered documentation markdown", () => {
       )
     ).toBeTruthy();
     expect(fiveTimestamps[0]?.[4]).toBe(
-      "Source field. Deprecated. The observation publisher timestamp is source_published_at."
+      "Deprecated. Use `upstream_updated_at`. When the publisher published the data. The observation publisher timestamp is source_published_at."
     );
   });
 
   it("keeps pinned schema constraints in two-cell rows", async () => {
     const markdown = await renderedPage(
-      "content/docs/api-reference/atlas/ranking_csv_v1_atlas_ranking_csv_get.mdx"
+      "content/docs/api-reference/atlas/downloadAtlasRanking.mdx"
     );
     const tables = constraintTables(markdown);
     expect(constraintRow(tables, "Pattern", "^(ALL|[A-Z]{2})$")).toStrictEqual([
@@ -227,18 +266,16 @@ describe("rendered documentation markdown", () => {
       "template"
     );
     const county = constraintTables(
-      await renderedPage(
-        "content/docs/api-reference/counties/county_v1_counties__fips__get.mdx"
-      )
+      await renderedPage("content/docs/api-reference/counties/getCounty.mdx")
     );
     const pdf = constraintTables(
       await renderedPage(
-        "content/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get.mdx"
+        "content/docs/api-reference/counties/downloadCountyReport.mdx"
       )
     );
     const tier1 = constraintTables(
       await renderedPage(
-        "content/docs/api-reference/counties/county_tier1_surveillance_priority_get.mdx"
+        "content/docs/api-reference/counties/getCountyTier1Priority.mdx"
       )
     );
     expect(constraintRow(county, "Pattern", fipsPattern)).toStrictEqual([
@@ -266,7 +303,7 @@ describe("rendered documentation markdown", () => {
     const observations =
       pages[
         files.indexOf(
-          "content/docs/api-reference/observations/observations_v1_observations_get.mdx"
+          "content/docs/api-reference/observations/listObservations.mdx"
         )
       ] ?? "";
     expect(full).toContain("#### geography_id");

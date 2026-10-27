@@ -7,15 +7,27 @@
  */
 import type { MethodologyComparisonContextComparisonState } from './methodologyComparisonContextComparisonState';
 
+/**
+ * Whether this observation can be compared with another across surveillance methods.
+ */
 export interface MethodologyComparisonContext {
+  /** Version of the contract that defines this object. */
   contract_version: 'atlas-lyme-surveillance-methodology-v1';
+  /** Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`. */
   comparison_state: MethodologyComparisonContextComparisonState;
+  /** Codes that explain the comparison state. */
   reason_codes: string[];
+  /** Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown. */
   methodology_era_ids: (string | null)[];
-  /** @nullable */
+  /**
+     * Group of jurisdictions that share a reporting approach. `null` when unknown.
+     * @nullable
+     */
   jurisdiction_class: string | null;
+  /** Public references that support the comparison. */
   references: string[];
+  /** Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. */
   limitations: string[];
-  /** Public ID of the comparison's left input. */
+  /** Identifier of the observation on the left side of the comparison. */
   left_observation_id: string;
 }

@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Score settings used for this response, such as `ecological_share`, `smooth_k`, and `missing_human_weakness`.
+ */
 export type ScoreCollectionSettings = {[key: string]: number};

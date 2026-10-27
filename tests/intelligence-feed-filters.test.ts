@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   activeFeedFilterCount,
   buildFeedListParams,
+  feedPageParams,
   feedRequestNarrows,
   collectIntelligenceSourcePages,
+  FEED_PAGE_SIZE,
   feedPublishedParser,
   feedResultSummary,
   feedSourceOptions,
@@ -76,6 +78,34 @@ describe("intelligence feed filters", () => {
     expect(params && "published_to" in params).toBeFalsy();
   });
 
+  it("sends page_size 25 for the default view, filters, and the next page", () => {
+    const now = new Date("2026-04-15T18:00:00.000Z");
+    const publishedFrom = publishedFromForPreset("30d", now);
+    expect({
+      dates: feedPageParams({ published: "30d", sourceId: null }, now),
+      defaultView: feedPageParams({ published: "all", sourceId: null }, now),
+      narrows: feedRequestNarrows({ published: "all", sourceId: null }),
+      nextPage: feedPageParams(
+        { published: "30d", sourceId: null },
+        now,
+        "page-2"
+      ),
+      pageSize: FEED_PAGE_SIZE,
+      source: feedPageParams({ published: "all", sourceId: "cdc-lyme" }, now),
+    }).toStrictEqual({
+      dates: { page_size: 25, published_from: publishedFrom },
+      defaultView: { page_size: 25 },
+      narrows: false,
+      nextPage: {
+        page_size: 25,
+        page_token: "page-2",
+        published_from: publishedFrom,
+      },
+      pageSize: 25,
+      source: { page_size: 25, source_id: "cdc-lyme" },
+    });
+  });
+
   it("parses shareable filter params and rejects invalid values", () => {
     expect({
       defaultPublished: feedPublishedParser.defaultValue,
@@ -87,7 +117,7 @@ describe("intelligence feed filters", () => {
       publishedWide: feedPublishedParser.parse("90d"),
       source: feedSourceParser.parse("cdc-lyme"),
     }).toStrictEqual({
-      defaultPublished: "30d",
+      defaultPublished: "all",
       emptySource: null,
       invalidPublished: null,
       invalidSource: null,
@@ -175,23 +205,31 @@ describe("intelligence feed filters", () => {
     expect(feedResultSummary(100, true)).toBe(
       "Showing 100 items · more available"
     );
-    expect(activeFeedFilterCount({ published: "30d", sourceId: null })).toBe(0);
-    expect(
-      activeFeedFilterCount({ published: "7d", sourceId: "cdc-lyme" })
-    ).toBe(2);
+    expect({
+      allDates: activeFeedFilterCount({ published: "all", sourceId: null }),
+      past30: activeFeedFilterCount({ published: "30d", sourceId: null }),
+      sourceAndWeek: activeFeedFilterCount({
+        published: "7d",
+        sourceId: "cdc-lyme",
+      }),
+    }).toStrictEqual({
+      allDates: 0,
+      past30: 1,
+      sourceAndWeek: 2,
+    });
   });
 
-  it("treats the default date window as a narrowed request", () => {
+  it("narrows only when a source or a shorter date window is selected", () => {
     expect({
       allDates: feedRequestNarrows({ published: "all", sourceId: null }),
-      defaultWindow: feedRequestNarrows({ published: "30d", sourceId: null }),
+      past30: feedRequestNarrows({ published: "30d", sourceId: null }),
       sourceOnly: feedRequestNarrows({
         published: "all",
         sourceId: "cdc-lyme",
       }),
     }).toStrictEqual({
       allDates: false,
-      defaultWindow: true,
+      past30: true,
       sourceOnly: true,
     });
   });
@@ -209,12 +247,12 @@ describe("intelligence feed filters", () => {
       }
     );
     const stale = new AtlasApiError(
-      "Projection changed; restart pagination.",
+      "Invalid page_token.",
       "/v1/intelligence/feed",
       400,
       "req-stale",
       null,
-      { detail: "Projection changed; restart pagination." }
+      { code: "INVALID_REQUEST", detail: "Invalid page_token." }
     );
     expect(isFeedQueryTooBroad(tooBroad)).toBeTruthy();
     expect(isStaleFeedPageToken(tooBroad)).toBeFalsy();

@@ -42,6 +42,21 @@ describe("public OpenAPI reference", () => {
     }
   });
 
+  it("marks the generated API reference folder as a sidebar tab root", async () => {
+    const pages = await renderPublicApiReference(
+      readAndLoadPublicOpenApiContract(process.cwd())
+    );
+    const navigation = JSON.parse(requiredFile(pages, "meta.json")) as {
+      root?: boolean;
+      title?: string;
+    };
+
+    expect(navigation).toMatchObject({
+      root: true,
+      title: "API reference",
+    });
+  });
+
   it("labels the pinned spec version, source, and raw schema", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const index = requiredFile(
@@ -67,19 +82,30 @@ describe("public OpenAPI reference", () => {
         contract.provenance.sourceCommit,
         contract.provenance.sha256,
         "[OpenAPI schema](https://api.onehealthatlas.org/openapi.json)",
+        "## Downloads",
+        "/downloads/atlas-public-openapi.json",
+        "/downloads/atlas-public-openapi.provenance.json",
+        "/downloads/atlas.postman_collection.json",
+        "Postman collection",
         "[Atlas documentation and developer guides](https://onehealthatlas.org/docs)",
+        "[API changelog](/docs/develop/changelog)",
+        "Atlas results are not a diagnosis.",
+        "an individual's risk.",
       ])
     ).toStrictEqual([]);
-    expect(index.includes("Alaska") || index.includes("Hawaii")).toBeFalsy();
+    expect({
+      githubChangelog: index.includes("blob/main/CHANGELOG.md"),
+      outsideLower48: index.includes("Alaska") || index.includes("Hawaii"),
+    }).toStrictEqual({
+      githubChangelog: false,
+      outsideLower48: false,
+    });
   });
 
   it("renders the observations operation once with its example, schema, and error", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const pages = await renderPublicApiReference(contract);
-    const observations = operationPage(
-      pages,
-      "observations_v1_observations_get"
-    );
+    const observations = operationPage(pages, "listObservations");
 
     expect(
       missingPhrases(observations, [
@@ -90,23 +116,64 @@ describe("public OpenAPI reference", () => {
         "application/problem+json",
         "measure_id",
         "#/components/schemas/ProblemDetails",
+        "Observation collection response",
       ])
     ).toStrictEqual([]);
+    expect(operationPage(pages, "getGeography")).toContain(
+      "Geography response"
+    );
+    const errorsLink = "](/docs/develop/errors)";
+    const operationsMissingErrorsLink = [...pages.entries()]
+      .filter(
+        ([file]) =>
+          file.endsWith(".mdx") &&
+          file !== "index.mdx" &&
+          file !== "schemas.mdx" &&
+          !file.endsWith("/index.mdx")
+      )
+      .filter(([, content]) => !content.includes(errorsLink))
+      .map(([file]) => file);
+    expect(operationsMissingErrorsLink).toStrictEqual([]);
     const schemaPage = requiredFile(pages, "schemas.mdx");
-    const schemaCount = schemaPage.match(/^## /gm)?.length ?? 0;
+    const schemaCount = schemaPage.match(/^## .+ \[#schema-/gm)?.length ?? 0;
     expect({
-      heading: headingCount(pages, "[#observations_v1_observations_get]"),
+      heading: headingCount(pages, "[#listObservations]"),
       index: requiredFile(pages, "index.mdx").includes(
         `Component schemas: [Schemas](/docs/api-reference/schemas) (${schemaCount}).`
       ),
-      indicators: operationPage(pages, "indicators_v1_indicators_get").includes(
+      indicators: operationPage(pages, "listIndicators").includes(
         "<OpenAPIPage"
       ),
       observationsIndex: requiredFile(pages, "observations/index.mdx").includes(
-        "[#observations_v1_observations_get]"
+        "[#listObservations]"
       ),
       problemDetails: schemaPage.includes("## ProblemDetails"),
       schemaCount: schemaCount > 0,
+      schemaPhrases: missingPhrases(schemaPage, [
+        "### Atlas evidence (V1 resources)",
+        "### Atlas analytics and reports",
+        "## Observation [#schema-observation]",
+        "## ValueState [#schema-valuestate]",
+        "## ProblemDetails [#schema-problemdetails]",
+        "| Name | Type | Required | Description |",
+        "| `code` | `string \\| null` | optional |",
+        "| `request_id` | `string` | required |",
+        "[ValueState](#schema-valuestate)",
+        "| `OBSERVED` | a nonzero value the publisher reported. Use `value` as given. |",
+        "| `MISSING_ASSIGNMENT` | No description yet |",
+        "| `EXACT_INPUT` | the model read the current release |",
+        "| `UNAVAILABLE` | not a finding about the county |",
+        "| `NO_PUBLISHED_MODEL` | no model result is published for the county |",
+        "| `NO_PUBLISHED_RESULTS` | the first query found no published results |",
+        "| `unknown` | supports no conclusion about biological absence |",
+        "| `candidates_found` | lists counties to review |",
+        "| `measure_id` | `string` | required | Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. | `case_count_floor_2023` |",
+        "| `vintage_year` | `integer` | required | Year of the source product or classification. It is not an annual date. | `2023` |",
+        "Never turn `null` into zero.",
+        "`number \\| string \\| null`",
+        "[`GET /v1/observations`](/docs/api-reference/observations/listObservations)",
+      ]),
+      stable: fileMap(pages),
     }).toStrictEqual({
       heading: 1,
       index: true,
@@ -114,10 +181,99 @@ describe("public OpenAPI reference", () => {
       observationsIndex: true,
       problemDetails: true,
       schemaCount: true,
+      schemaPhrases: [],
+      stable: fileMap(await renderPublicApiReference(contract)),
     });
-    expect(fileMap(pages)).toStrictEqual(
-      fileMap(await renderPublicApiReference(contract))
-    );
+    const preservedAnchors = [
+      "schema-problemdetails",
+      "schema-mapvaluescollection",
+      "schema-countymapvalues",
+      "schema-atlasmetadata",
+      "schema-sourcemetadata",
+      "schema-scorecollection",
+      "schema-countyscoresummary",
+      "schema-score",
+      "schema-countydetail",
+      "schema-countysurveillancesituations",
+      "schema-situationvariant",
+      "schema-situationclassification",
+      "schema-membershipprobability",
+      "schema-tier1countypriority",
+      "schema-priorityreason",
+      "schema-tier1countypriorityavailability",
+      "schema-geographytype",
+      "schema-resourceenvelope-geography",
+      "schema-geography",
+      "schema-geographyidentity",
+      "schema-geographyunavailable",
+      "schema-canonicalgeographyavailability",
+      "schema-collectionenvelope-indicator",
+      "schema-indicator",
+      "schema-standardsmapping",
+      "schema-collectionmeta",
+      "schema-collectionlinks",
+      "schema-resourceenvelope-indicator",
+      "schema-collectionenvelope-measure",
+      "schema-measure",
+      "schema-valuestate",
+      "schema-resourceenvelope-measure",
+      "schema-resourceenvelope-methodology",
+      "schema-methodology",
+      "schema-collectionenvelope-countycontextobservation",
+      "schema-countycontextobservation",
+      "schema-evidencereference",
+      "schema-environmentalcontext",
+      "schema-surveillancecontext",
+      "schema-surveillanceevidencecontext",
+      "schema-methodologycomparisoncontext",
+      "schema-temporalalignmentcontext",
+      "schema-temporalwindowcontext",
+      "schema-temporallagcontext",
+      "schema-temporalcoveragecontext",
+      "schema-temporalreferenceperiodcontext",
+      "schema-countycontext",
+      "schema-collectionenvelope-observation",
+      "schema-observation",
+      "schema-collectionenvelope-source",
+      "schema-source",
+      "schema-resourceenvelope-source",
+      "schema-statereview",
+      "schema-candidate",
+      "schema-publicreviewevidencereference",
+      "schema-datagap",
+      "schema-reviewcoverage",
+    ];
+    expect({
+      anchors: preservedAnchors.filter(
+        (anchor) => !schemaPage.includes(`[#${anchor}]`)
+      ),
+      assignedTrailingProse: schemaPage.includes(
+        "| `MISSING_ASSIGNMENT` | `null` when `availability` is `AVAILABLE` |"
+      ),
+      unknownTrailingSentence: schemaPage.includes(
+        "| `unknown` | supports no conclusion about biological absence. `null` means"
+      ),
+      comparisonLimit: schemaPage.includes("`UNKNOWN` is not `COMPARABLE`."),
+      observationBeforeScore:
+        schemaPage.indexOf("## Observation [#schema-observation]") <
+        schemaPage.indexOf("## Score [#schema-score]"),
+      observationLink: observations.includes(
+        "](/docs/api-reference/schemas#schema-observation)"
+      ),
+      problemLink: observations.includes(
+        "](/docs/api-reference/schemas#schema-problemdetails)"
+      ),
+      truncatedUnknown: schemaPage.includes("| `UNKNOWN` | not |"),
+    }).toStrictEqual({
+      anchors: [],
+      assignedTrailingProse: false,
+      comparisonLimit: true,
+      unknownTrailingSentence: false,
+      observationBeforeScore: true,
+      observationLink: true,
+      problemLink: true,
+      truncatedUnknown: false,
+    });
   });
 
   it("renders county report template tabs from the pinned contract", async () => {
@@ -162,21 +318,16 @@ describe("public OpenAPI reference", () => {
     const badge = "<EndpointDeliveryBadge />";
     const badgeImport =
       'import { EndpointDeliveryBadge } from "@/features/docs/endpoint-delivery-badge";';
-    const identity = operationPage(
-      pages,
-      "geography_v1_geographies__geography_type___geography_id__get"
-    );
+    const identity = operationPage(pages, "getGeography");
     const geographies = requiredFile(pages, "geographies/index.mdx");
     const index = requiredFile(pages, "index.mdx");
     expect({
-      atlas: requiredFile(
-        pages,
-        "atlas/geometry_v1_atlas_geometry_get.mdx"
-      ).includes("EndpointDeliveryBadge"),
-      availability: operationPage(
-        pages,
-        "canonicalGeographyAvailability"
-      ).includes(badge),
+      atlas: requiredFile(pages, "atlas/getAtlasGeometry.mdx").includes(
+        "EndpointDeliveryBadge"
+      ),
+      availability: operationPage(pages, "checkGeographyAvailability").includes(
+        badge
+      ),
       geographyBadge: geographies.includes(badge),
       geographyImport: geographies.includes(badgeImport),
       geographyRoute: geographies.includes(
@@ -194,10 +345,9 @@ describe("public OpenAPI reference", () => {
       indexBadge: index.includes(badge),
       indexImport: index.includes(badgeImport),
       indexTabs: index.includes("fumadocs-ui/components/tabs"),
-      provenance: requiredFile(
-        pages,
-        "provenance/source_v1_sources__source_id__get.mdx"
-      ).includes("EndpointDeliveryBadge"),
+      provenance: requiredFile(pages, "provenance/getSource.mdx").includes(
+        "EndpointDeliveryBadge"
+      ),
     }).toStrictEqual({
       atlas: false,
       availability: false,
@@ -230,7 +380,7 @@ describe("public OpenAPI reference", () => {
             contents.includes(`${status} `) &&
             [
               "Retry-After",
-              "Seconds before retry when supplied by the service.",
+              "Seconds to wait before you retry. Wait that long when the header is present.",
               "application/problem+json",
             ].some((phrase) => !contents.includes(phrase))
         )
@@ -244,7 +394,7 @@ describe("public OpenAPI reference", () => {
     expect(incomplete).toStrictEqual([]);
   });
 
-  it("keeps each operation description in page metadata and out of the native renderer", async () => {
+  it("uses each operation summary as the subtitle and omits the long description from search", async () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const pages = await renderPublicApiReference(contract);
     const problems: string[] = [];
@@ -264,15 +414,56 @@ describe("public OpenAPI reference", () => {
           typeof parsed.description === "string"
             ? parsed.description
             : undefined;
-        const expected = operation.description.replaceAll(/\s+/g, " ").trim();
-        const visibleCopies = expected ? body.split(expected).length - 1 : 0;
-        if (description !== expected) {
-          problems.push(`${operation.operationId} metadata`);
+        const summary = operation.summary.replaceAll(/\s+/g, " ").trim();
+        const longDescription = operation.description.trim();
+        const indexedCopies = indexedDescriptionCopies(parsed, longDescription);
+        if (description !== summary) {
+          problems.push(`${operation.operationId} subtitle`);
         }
-        if (body.includes("showDescription") || visibleCopies !== 0) {
+        if (!body.includes("showDescription")) {
           problems.push(
-            `${operation.operationId} rendered ${visibleCopies} time(s)`
+            `${operation.operationId} missing description renderer`
           );
+        }
+        if (longDescription && body.includes(longDescription)) {
+          problems.push(
+            `${operation.operationId} description copied into layout`
+          );
+        }
+        if (longDescription && indexedCopies !== 0) {
+          problems.push(
+            `${operation.operationId} indexed the long description ${String(indexedCopies)} time(s)`
+          );
+        }
+        const frontmatterRecord = isRecord(parsed) ? parsed : undefined;
+        const structured = isRecord(frontmatterRecord?._openapi)
+          ? frontmatterRecord._openapi.structuredData
+          : undefined;
+        const structuredRecord = isRecord(structured) ? structured : undefined;
+        const indexedText = JSON.stringify(structuredRecord?.contents ?? []);
+        if (summary && !indexedText.includes(summary)) {
+          problems.push(`${operation.operationId} summary is not indexed`);
+        }
+        for (const parameter of operation.parameters) {
+          if (!indexedText.includes(parameter.name)) {
+            problems.push(
+              `${operation.operationId} missing parameter ${parameter.name}`
+            );
+          }
+        }
+        const headingLine = /^#{1,6}\s+(?<text>.+?)\s*$/m.exec(
+          operation.description
+        );
+        const headingText = headingLine?.groups?.text
+          ?.replaceAll(/[*_`]/g, "")
+          .trim();
+        if (
+          headingText &&
+          !JSON.stringify(structuredRecord?.headings ?? []).includes(
+            headingText
+          )
+        ) {
+          problems.push(`${operation.operationId} missing heading`);
         }
       }
     }
@@ -430,7 +621,7 @@ describe("public OpenAPI reference", () => {
     const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const indicators = operationPage(pages, "indicators_v1_indicators_get");
+    const indicators = operationPage(pages, "listIndicators");
     const submitted = operationPage(pages, "indicators_post");
 
     expect(
@@ -524,6 +715,76 @@ describe("public OpenAPI reference", () => {
     expect(requiredFile(pages, "schemas.mdx")).toContain("[#schema-a-b-2]");
   });
 
+  it("renders schema types, enums, nullability, arrays, and operation links", async () => {
+    const pinned = pin(documentWithSchemaShapes());
+    const pages = await renderPublicApiReference(
+      loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
+    );
+    const schemas = requiredFile(pages, "schemas.mdx");
+    const readings = operationPage(pages, "listReadings");
+    const observationAt = schemas.indexOf("## Reading [#schema-reading]");
+    const scoreAt = schemas.indexOf("## Score [#schema-score]");
+
+    expect(
+      missingPhrases(schemas, [
+        "Read each field before writing a parser.",
+        "### Atlas evidence (V1 resources)",
+        "### Atlas analytics and reports",
+        "## Place [#schema-place]",
+        "## Reading [#schema-reading]",
+        "## ValueFlag [#schema-valueflag]",
+        "## Combined [#schema-combined]",
+        "## Score [#schema-score]",
+        "| Name | Type | Required | Description |",
+        "| Name | Type | Required | Description | Example |",
+        "| `note` | `string \\| null` | required |",
+        "| `flags` | array of [ValueFlag](#schema-valueflag) | required |",
+        "| `choice` | [ValueFlag](#schema-valueflag) \\| `null` | optional |",
+        "| `unlabeled` | `integer` | optional | No description yet |",
+        "| `geography_id` | `string` | required | Five-digit FIPS. |",
+        "| `label` | `string` | required | Short label. |",
+        "| `score` | `number` | required | A score. | `1` |",
+        "| Value | Meaning |",
+        "| `OBSERVED` | a nonzero value the publisher reported. |",
+        "| `MISSING` | no value was reported. |",
+        "| `county` | uses five-digit FIPS |",
+        "| `state` | uses two-digit FIPS |",
+        "| `measure_id` | `string` | optional | Stable identifier of the measure. | `case_count_floor_2023` |",
+        "| `vintage_year` | `integer` | optional | Year of the source product. | `2023` |",
+        "| `sample_note` | `string` | optional | A labelled example. | `lower-48` |",
+        "| `ONE` | No description yet |",
+        "| `TWO` | No description yet |",
+        "| `THREE` | No description yet |",
+        "| `EXACT` | the model read the current release |",
+        "[`GET /v1/readings`](/docs/api-reference/observations/listReadings)",
+        "[`GET /v1/counties/{fips}/score`](/docs/api-reference/counties/getScore)",
+        "No operation returns or accepts it.",
+      ])
+    ).toStrictEqual([]);
+    const scorePage = operationPage(pages, "getScore");
+    expect({
+      listedReasonMeaning: schemas.includes(
+        "| `THREE` | `null` when availability is AVAILABLE |"
+      ),
+      readingBeforeScore: observationAt > 0 && scoreAt > observationAt,
+      readingLinks: missingPhrases(readings, [
+        "](/docs/api-reference/schemas#schema-reading)",
+        "](/docs/api-reference/schemas#schema-place)",
+        "](/docs/api-reference/schemas#schema-valueflag)",
+        "](/docs/api-reference/schemas#schema-combined)",
+      ]),
+      scoreLinks: missingPhrases(scorePage, [
+        "](/docs/api-reference/schemas#schema-score)",
+        "](/docs/api-reference/schemas#schema-valueflag)",
+      ]),
+    }).toStrictEqual({
+      listedReasonMeaning: false,
+      readingBeforeScore: true,
+      readingLinks: [],
+      scoreLinks: [],
+    });
+  });
+
   it("checks the pinned contract from the command line", async () => {
     const registerTsExtension = path.join(
       process.cwd(),
@@ -576,7 +837,7 @@ describe("public OpenAPI reference", () => {
     const pagePath = path.join(
       root,
       API_REFERENCE_RELATIVE_DIR,
-      "discovery/indicators_v1_indicators_get.mdx"
+      "discovery/listIndicators.mdx"
     );
     const page = readFileSync(pagePath, "utf-8");
 
@@ -600,13 +861,13 @@ describe("public OpenAPI reference", () => {
     const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const indicators = operationPage(pages, "indicators_v1_indicators_get");
+    const indicators = operationPage(pages, "listIndicators");
     const health = operationPage(pages, "health_get");
     const measures = operationPage(pages, "measures_get");
 
     expect(
       missingPhrases(indicators, [
-        "indicators_v1_indicators_get",
+        "listIndicators",
         "Alias summary",
         "Alias path.",
         "Outer county.",
@@ -685,7 +946,7 @@ describe("public OpenAPI reference", () => {
 
     expect(page).toContain("outer_indicators_get");
     expect(page).toContain("Outer operation.");
-    expect(page.includes("indicators_v1_indicators_get")).toBeFalsy();
+    expect(page.includes("listIndicators")).toBeFalsy();
   });
 
   it("treats a dropped path-item operation as a stale reference", async () => {
@@ -712,11 +973,11 @@ describe("public OpenAPI reference", () => {
         async () => await syncPublicApiReference({ check: true, root })
       )
     ).resolves.toBe("did-not-fail");
-    expect(page).toContain("indicators_v1_indicators_get");
+    expect(page).toContain("listIndicators");
     expect(page).toContain("health_get");
     writeFileSync(
       pagePath,
-      page.replace("indicators_v1_indicators_get", "omitted_operation")
+      page.replace("listIndicators", "omitted_operation")
     );
     await expect(
       failureCode(
@@ -842,7 +1103,7 @@ describe("public OpenAPI reference", () => {
     const pages = await renderPublicApiReference(
       loadPublicOpenApiContract(pinned.specBytes, pinned.manifestText)
     );
-    const inherited = operationPage(pages, "indicators_v1_indicators_get");
+    const inherited = operationPage(pages, "listIndicators");
     const published = operationPage(pages, "indicators_post");
 
     expect(
@@ -926,6 +1187,22 @@ async function failureText(action: () => unknown): Promise<string> {
   return "did-not-fail";
 }
 
+function indexedDescriptionCopies(
+  frontmatter: unknown,
+  description: string
+): number {
+  if (!description || !isRecord(frontmatter)) return 0;
+  const openapi = frontmatter._openapi;
+  if (!isRecord(openapi)) return 0;
+  const structured = openapi.structuredData;
+  if (!isRecord(structured) || !Array.isArray(structured.contents)) return 0;
+  const expected = description.replaceAll(/\s+/g, " ").trim();
+  return structured.contents.filter((entry) => {
+    if (!isRecord(entry) || typeof entry.content !== "string") return false;
+    return entry.content.replaceAll(/\s+/g, " ").trim() === expected;
+  }).length;
+}
+
 function operationPage(
   files: Map<string, string>,
   operationId: string
@@ -940,7 +1217,13 @@ function operationPage(
 }
 
 function requiredFile(files: Map<string, string>, name: string): string {
-  const contents = files.get(name);
+  const direct = files.get(name);
+  if (typeof direct === "string") return direct;
+  const suffix = name.startsWith("/") ? name : `/${name}`;
+  const matches = [...files.entries()].filter(([fileName]) =>
+    fileName.endsWith(suffix)
+  );
+  const contents = matches.length === 1 ? matches[0]?.[1] : undefined;
   if (typeof contents !== "string") {
     throw new TypeError(`Missing generated API reference file ${name}.`);
   }
@@ -1062,7 +1345,7 @@ function documentWithReusableComponents(): Record<string, unknown> {
       links: {
         ReadIndicator: {
           description: "Read the indicator again.",
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
         },
       },
       parameters: {
@@ -1112,7 +1395,7 @@ function documentWithReusableComponents(): Record<string, unknown> {
     paths: {
       "/v1/indicators": {
         get: {
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           parameters: [{ $ref: "#/components/parameters/County" }],
           responses: {
             "200": { $ref: "#/components/responses/IndicatorAlias" },
@@ -1296,7 +1579,7 @@ function duplicateOperationIds(): Record<string, unknown> {
   const paths = document.paths as Record<string, unknown>;
   paths["/v1/measures"] = {
     get: {
-      operationId: "indicators_v1_indicators_get",
+      operationId: "listIndicators",
       responses: { "204": { description: "No content." } },
       summary: "Discover measures",
       tags: ["discovery"],
@@ -1342,6 +1625,179 @@ function externalSchemaRef(): Record<string, unknown> {
   return document;
 }
 
+function documentWithSchemaShapes(): Record<string, unknown> {
+  return {
+    ...minimalDocument(),
+    components: {
+      schemas: {
+        Combined: {
+          allOf: [
+            { $ref: "#/components/schemas/Place" },
+            {
+              properties: {
+                label: { description: "Short label.", type: "string" },
+              },
+              required: ["label"],
+              type: "object",
+            },
+          ],
+          description: "Place plus a label.",
+        },
+        Orphan: { type: "object" },
+        Place: {
+          description: "A county.",
+          properties: {
+            geography_id: {
+              description: "Five-digit FIPS.",
+              type: "string",
+            },
+          },
+          required: ["geography_id"],
+          type: "object",
+        },
+        PlaceKind: {
+          description:
+            "Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.",
+          enum: ["county", "state"],
+          type: "string",
+        },
+        Reading: {
+          description: "One reading.",
+          properties: {
+            choice: {
+              anyOf: [
+                { $ref: "#/components/schemas/ValueFlag" },
+                { type: "null" },
+              ],
+              description: "A flag or null.",
+            },
+            flags: {
+              description: "States for the reading.",
+              items: { $ref: "#/components/schemas/ValueFlag" },
+              type: "array",
+            },
+            defined_flag: {
+              description:
+                "`EXACT` means the model read the current release. `null` when absent.",
+              enum: ["EXACT", null],
+              type: ["string", "null"],
+            },
+            measure_id: {
+              description: "Stable identifier of the measure.",
+              examples: ["case_count_floor_2023"],
+              type: "string",
+            },
+            note: {
+              description: "Note that can be null.",
+              type: ["string", "null"],
+            },
+            sample_note: {
+              description: "A labelled example.",
+              examples: { sample: { value: "lower-48" } },
+              type: "string",
+            },
+            unavailable_reason: {
+              description:
+                "Why no classification is published: `ONE`, `TWO`, or `THREE`. `null` when availability is AVAILABLE.",
+              enum: ["ONE", "TWO", "THREE", null],
+              type: ["string", "null"],
+            },
+            vintage_year: {
+              description: "Year of the source product.",
+              examples: [2023],
+              type: "integer",
+            },
+            place: {
+              $ref: "#/components/schemas/Place",
+              description: "Where the reading applies.",
+            },
+            unlabeled: { type: "integer" },
+          },
+          required: ["place", "flags", "note"],
+          type: "object",
+        },
+        Score: {
+          description: "A county score.",
+          properties: {
+            score: {
+              description: "A score.",
+              example: 1,
+              type: "number",
+            },
+          },
+          required: ["score"],
+          type: "object",
+        },
+        ValueFlag: {
+          description:
+            "How to read the value.\n\n- `OBSERVED`: a nonzero value the publisher reported.\n- `MISSING`: no value was reported.",
+          enum: ["OBSERVED", "MISSING"],
+          type: "string",
+        },
+      },
+    },
+    paths: {
+      "/v1/counties/{fips}/score": {
+        get: {
+          operationId: "getScore",
+          parameters: [
+            {
+              in: "query",
+              name: "kind",
+              required: false,
+              schema: { $ref: "#/components/schemas/ValueFlag" },
+            },
+          ],
+          responses: {
+            "200": {
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/Score" },
+                },
+              },
+              description: "Score.",
+            },
+          },
+          summary: "Read a score",
+          tags: ["counties"],
+        },
+      },
+      "/v1/readings": {
+        get: {
+          operationId: "listReadings",
+          responses: {
+            "200": {
+              content: {
+                "application/json": {
+                  schema: {
+                    allOf: [
+                      { $ref: "#/components/schemas/Reading" },
+                      { $ref: "#/components/schemas/Combined" },
+                    ],
+                  },
+                },
+              },
+              description: "Readings.",
+            },
+          },
+          summary: "List readings",
+          tags: ["observations"],
+        },
+      },
+    },
+    "x-tagGroups": [
+      {
+        name: "Atlas evidence (V1 resources)",
+        tags: ["observations"],
+      },
+      {
+        name: "Atlas analytics and reports",
+        tags: ["counties"],
+      },
+    ],
+  };
+}
+
 function documentWithCollidingSchemas(): Record<string, unknown> {
   return {
     ...minimalDocument(),
@@ -1354,7 +1810,7 @@ function documentWithCollidingSchemas(): Record<string, unknown> {
     paths: {
       "/v1/indicators": {
         get: {
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           responses: {
             "200": {
               content: {
@@ -1444,7 +1900,7 @@ function documentWithPathItemReference(): Record<string, unknown> {
         },
         Indicators: {
           get: {
-            operationId: "indicators_v1_indicators_get",
+            operationId: "listIndicators",
             responses: {
               "200": {
                 $ref: "#/components/responses/IndicatorOk",
@@ -1810,7 +2266,7 @@ function documentWithInheritedSecurityAndContent(): Record<string, unknown> {
             description: "Indicator guide",
             url: "https://onehealthatlas.org/docs",
           },
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           parameters: [
             {
               allowEmptyValue: true,
@@ -1874,7 +2330,7 @@ function documentWithInheritedSecurityAndContent(): Record<string, unknown> {
               links: {
                 Again: {
                   description: "Read again.",
-                  operationId: "indicators_v1_indicators_get",
+                  operationId: "listIndicators",
                   server: {
                     description: "Link server",
                     url: "https://api.onehealthatlas.org",
@@ -2009,7 +2465,7 @@ function minimalDocument(): Record<string, unknown> {
     paths: {
       "/v1/indicators": {
         get: {
-          operationId: "indicators_v1_indicators_get",
+          operationId: "listIndicators",
           responses: {
             "200": {
               content: {
@@ -2065,10 +2521,7 @@ describe("public OpenAPI drift", () => {
     const contract = readAndLoadPublicOpenApiContract(process.cwd());
     const observations = contract.tags
       .flatMap((tag) => tag.operations)
-      .find(
-        (operation) =>
-          operation.operationId === "observations_v1_observations_get"
-      );
+      .find((operation) => operation.operationId === "listObservations");
     const year = observations?.parameters.find(
       (parameter) => parameter.name === "year"
     );
@@ -2156,8 +2609,8 @@ describe("public OpenAPI drift", () => {
       grainType: "string",
       noRecords: true,
       sha256:
-        "b26a2e6d9195d6ae3afe17e5db49ebbf4b6fc31808d221430b886ca53e7c55be",
-      sourceCommit: "f485d5ef756ac7ae3cebf864535a8e1c0e417f9e",
+        "c8e0b42feb019eabc4ee0033e7501d5134c946c74750432f7bd5a1ee32a44618",
+      sourceCommit: "4bc001bb6c03d16aef80762174691fdf9b898707",
     });
   });
 });

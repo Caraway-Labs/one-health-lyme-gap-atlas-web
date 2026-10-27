@@ -9,8 +9,14 @@ import type { CollectionLinks } from './collectionLinks';
 import type { CollectionMeta } from './collectionMeta';
 import type { Measure } from './measure';
 
+/**
+ * A page of measures, with paging details and links. Read `meta.next_page_token` to get the next page.
+ */
 export interface CollectionEnvelopeMeasure {
+  /** The items on this page. Empty when there are none. */
   data: Measure[];
+  /** Paging, release, and availability details. */
   meta: CollectionMeta;
+  /** Links related to this response. */
   links: CollectionLinks;
 }

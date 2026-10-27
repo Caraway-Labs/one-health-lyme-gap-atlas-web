@@ -8,12 +8,12 @@
 import * as zod from 'zod';
 
 export const StandardsMapping = zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')
 
 export type StandardsMapping = zod.input<typeof StandardsMapping>;
 export type StandardsMappingOutput = zod.output<typeof StandardsMapping>;

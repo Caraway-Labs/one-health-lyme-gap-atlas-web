@@ -346,6 +346,22 @@ async function installLegendApi(page: Page) {
       await route.fulfill({ json: scoresBody, status: 200 });
       return;
     }
+    if (url.includes("/v1/atlas/map-values")) {
+      await route.fulfill({
+        json: {
+          release_id: "alpha-2026",
+          counties: counties.map((county, index) => ({
+            fips: county.fips,
+            incidence_floor_2023: index === 1 ? null : index === 0 ? 0 : 12.4,
+            rucc_2023: (index % 9) + 1,
+            svi_percentile: index === 0 ? 0 : 0.55,
+            uninsured_percent: index === 0 ? 0 : 18.2,
+          })),
+        },
+        status: 200,
+      });
+      return;
+    }
     if (url.includes("/v1/atlas/geometry")) {
       await route.fulfill({ json: geometry, status: 200 });
       return;

@@ -1,0 +1,67 @@
+---
+title: Get map values by county
+description: Get map values by county
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: GET /v1/atlas/map-values
+      - content: getAtlasMapValues
+      - content: Get map values by county
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: 200 Successful response. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=300`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=300"'
+      - content: 'ETag Opaque validator for this representation. It is informational here: the operation does not answer `If-None-Match`.'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/MapValuesCollection'
+      - content: Map values for the first two counties
+      - content: '{"release_id":"governed-2026-10-15-january-climate-prod","counties":[{"fips":"01001","incidence_floor_2023":null,"svi_percentile":0.2663,"uninsured_percent":7.4,"rucc_2023":2},{"fips":"01003","incidence_floor_2023":2.14,"svi_percentile":0.3487,"uninsured_percent":9.3,"rucc_2023":3}]}'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"Dataset release not found","instance":"/v1/atlas/map-values","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/atlas/map-values","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/atlas/map-values","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/atlas/map-values","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [CountyMapValues](/docs/api-reference/schemas#schema-countymapvalues), [MapValuesCollection](/docs/api-reference/schemas#schema-mapvaluescollection), [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails).
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/atlas/map-values","method":"get"}]} showDescription />
+    </>
+  );
+}

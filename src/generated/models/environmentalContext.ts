@@ -8,41 +8,59 @@
 import type { EnvironmentalContextCoverageStatus } from './environmentalContextCoverageStatus';
 
 /**
- * Coverage independent of value state; numeric strings preserve exact DECIMAL.
+ * How completely the source covers a county and day. It is separate from `value_state`.
+ *
+ * Area values are square meters. Exact decimal quantities may be strings.
  */
 export interface EnvironmentalContext {
+  /** How much of the county the source covers for this day. */
   coverage_status: EnvironmentalContextCoverageStatus;
+  /** Whether the source supplied a time for this observation. */
   source_time_present: boolean;
   /**
-     * Publisher labeled 24-hour period, not a midnight calendar day.
+     * How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day.
      * @minLength 1
      */
   day_convention: string;
-  /** @nullable */
+  /**
+     * County area expected to be covered, in square meters. `null` when unknown.
+     * @nullable
+     */
   expected_area_m2: number | string | null;
-  /** @nullable */
+  /**
+     * County area that overlaps the source grid, in square meters. `null` when unknown.
+     * @nullable
+     */
   intersected_area_m2: number | string | null;
-  /** @nullable */
+  /**
+     * County area the source supports, in square meters. `null` when unknown.
+     * @nullable
+     */
   source_supported_area_m2: number | string | null;
-  /** @nullable */
+  /**
+     * County area with a valid source value for this day, in square meters. `null` when unknown.
+     * @nullable
+     */
   valid_area_m2: number | string | null;
   /**
-     * Monthly source-supported/legal county area; separate from daily completeness.
+     * Monthly share of the county area that the source supports. It is separate from daily completeness.
      * @nullable
      */
   source_coverage_fraction: number | string | null;
   /**
-     * Daily valid/source-supported area; completeness threshold 0.95.
+     * Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.
      * @nullable
      */
   valid_fraction_of_supported_area: number | string | null;
   /**
-     * Upstream modification metadata; never original publication or first availability.
+     * Modification date the source reports. It is not the original publication date or the date the data first became available.
      * @nullable
      */
   upstream_date_modified: string | null;
+  /** Version of the area weights used to combine grid cells into a county value. */
   weight_version: string;
-  /** Analysis geometry identity only; no polygons. */
+  /** Version of the county boundaries used for the calculation. The API returns no boundary geometry. */
   geometry_version: string;
+  /** Identifies the reviewed metadata revision that describes this context. */
   metadata_revision_id: string;
 }

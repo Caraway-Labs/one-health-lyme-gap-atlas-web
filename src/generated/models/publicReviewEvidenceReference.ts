@@ -6,16 +6,30 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * A source record that supports a review candidate.
+ */
 export interface PublicReviewEvidenceReference {
+  /** Kind of evidence, such as `county_pathogen_status`. */
   family: string;
+  /** Source product the record comes from. */
   source_product: string;
+  /** Version of the source product. */
   source_version: string;
+  /** Public reference to the source record, for finding it at the publisher. */
   public_record_ref: string;
+  /** Five-digit FIPS code of the county, with leading zeros. */
   county_fips: string;
+  /** Identifies the published data release the record came from. */
   release_id: string;
+  /** Date the source says its data was current, for example `2025-12-31`. */
   source_as_of: string;
+  /** When Atlas retrieved the record from the publisher, with a UTC offset. */
   retrieved_at: string;
+  /** Organism or taxon the record is about, such as a tick species or a pathogen. */
   target: string;
+  /** Status the publisher reports, such as `Present`, `Reported`, or `No records`. `No records` does not establish absence. */
   status: string;
+  /** Factual notes on what this record does not show. */
   limitations: string[];
 }

@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.
+ */
 export type GeographyType = typeof GeographyType[keyof typeof GeographyType];
 
 

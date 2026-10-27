@@ -15,6 +15,20 @@ import { parse, stringify } from "yaml";
 import { showsPendingDeliveryBadge } from "./endpoint-delivery";
 import { markdownTableCell } from "./markdown-table";
 import {
+  PINNED_OPENAPI_DOWNLOAD_NAME,
+  PINNED_OPENAPI_PROVENANCE_NAME,
+  POSTMAN_COLLECTION_DOWNLOAD_NAME,
+  PUBLIC_DOWNLOADS_RELATIVE_DIR,
+  renderPublicClientDownloads,
+} from "./public-openapi-downloads";
+import {
+  componentSchemaNames,
+  renderOperationSchemaLine,
+  renderSchemaCatalog,
+  schemaTagGroups,
+  type SchemaCatalogOperation,
+} from "./public-openapi-schema-catalog";
+import {
   getDocsUrl,
   getPublishedApiOrigin,
   getSiteOrigin,
@@ -343,13 +357,14 @@ export async function renderPublicApiReference(
   });
   const generated = await generateFilesOnly({
     addGeneratedComment: false,
-    frontmatter: (_title, description) => ({
-      description: flattenContractText(description ?? ""),
+    frontmatter: (title) => ({
+      description: flattenContractText(title),
     }),
     groupBy: "tag",
-    // DocsDescription already renders frontmatter description. Leave the
-    // native OpenAPI description off so each operation page shows it once.
-    includeDescription: false,
+    // DocsDescription renders the frontmatter description as the subtitle.
+    // That value is the short summary. The long description stays in the
+    // operation body, rendered once by the native OpenAPI Markdown renderer.
+    includeDescription: true,
     input: server,
     per: "operation",
   });
@@ -388,8 +403,27 @@ export async function syncPublicApiReference(options: {
   const directory = path.join(options.root, API_REFERENCE_RELATIVE_DIR);
   const actual = readGeneratedFiles(directory);
 
+  const specBytes = readFileSync(
+    path.join(options.root, PUBLIC_OPENAPI_RELATIVE_PATH)
+  );
+  const downloads = await renderPublicClientDownloads({
+    provenance: contract.provenance,
+    specBytes,
+  });
+  const downloadDirectory = path.join(
+    options.root,
+    PUBLIC_DOWNLOADS_RELATIVE_DIR
+  );
+  const downloadDifferences = compareGeneratedFiles(
+    downloads,
+    readGeneratedFiles(downloadDirectory)
+  );
+
   if (options.check) {
-    const differences = compareGeneratedFiles(expected, actual);
+    const differences = [
+      ...compareGeneratedFiles(expected, actual),
+      ...downloadDifferences.map((difference) => `downloads ${difference}`),
+    ];
     if (differences.length > 0) {
       throw new PublicOpenApiContractError(
         "stale_reference",
@@ -409,6 +443,10 @@ export async function syncPublicApiReference(options: {
     if (!expected.has(relativePath)) {
       rmSync(path.join(directory, relativePath));
     }
+  }
+  mkdirSync(downloadDirectory, { recursive: true });
+  for (const [relativePath, contents] of downloads) {
+    writeFileSync(path.join(downloadDirectory, relativePath), contents);
   }
 }
 
@@ -1109,8 +1147,7 @@ function externalDocsLink(docs: ExternalDocsView): string {
   return `[${escapeInline(label)}](${docs.url})`;
 }
 
-const COUNTY_REPORT_OPERATION_ID =
-  "county_report_pdf_v1_counties__fips__report_pdf_get";
+const COUNTY_REPORT_OPERATION_ID = "downloadCountyReport";
 const COUNTY_REPORT_TEMPLATE_TABS = ["county-v1 scoring", "county-v2 evidence"];
 const COUNTY_REPORT_SCORE_PARAMETERS = [
   "ecological_share",
@@ -1252,11 +1289,11 @@ function joinProseList(items: readonly string[]): string {
 
 function assertCountyReportContract(operation: OperationView): void {
   const requiredSentences = [
-    "Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id",
-    "county-v1 and county-v3 reject observation selectors with 422",
-    "V2 responses use no-store",
-    "published briefs use public cache TTL 300 seconds with revalidation",
-    "Unknown templates return 422",
+    "`county-v2` requires it",
+    "`county-v1` and `county-v3` reject them with 422",
+    "`county-v2` responses must not be cached",
+    "Published briefs can be cached for 300 seconds with revalidation",
+    "The template is unknown",
   ];
   const missing = requiredSentences.filter(
     (sentence) => !operation.description.includes(sentence)
@@ -1344,6 +1381,10 @@ function countyReportProblem(
 
 function documentForOpenApiPages(document: JsonRecord): JsonRecord {
   const copy = structuredClone(document);
+  // x-tagGroups become OpenAPI 3.2 tag parents. Their names include
+  // parentheses, and those characters terminate Markdown links. Pages stay
+  // grouped by the operation tag.
+  delete copy["x-tagGroups"];
   const paths = copy.paths;
   if (!isRecord(paths)) return copy;
   for (const [route, pathItem] of Object.entries(paths)) {
@@ -1375,6 +1416,7 @@ function assemblePublicApiReference(
   const files = new Map<string, string>();
   const located = operationsById(contract);
   const folderOperations = new Map<string, LocatedOperation[]>();
+  const schemaAnchors = schemaAnchorMap(contract.schemas);
 
   for (const file of generated) {
     const relativePath = file.path.split(path.sep).join("/");
@@ -1393,7 +1435,15 @@ function assemblePublicApiReference(
     const entries = folderOperations.get(folder) ?? [];
     entries.push(entry);
     folderOperations.set(folder, entries);
-    files.set(relativePath, enrichOperationPage(file.content, entry.operation));
+    files.set(
+      relativePath,
+      enrichOperationPage(
+        file.content,
+        entry.operation,
+        contract.schemas,
+        schemaAnchors
+      )
+    );
   }
 
   for (const operationId of located.keys()) {
@@ -1428,14 +1478,21 @@ function assemblePublicApiReference(
     );
   }
 
-  const schemaAnchors = schemaAnchorMap(contract.schemas);
   files.set(
     "index.mdx",
     renderReferenceIndex(contract, folderOperations, schemaAnchors)
   );
   files.set(
     "schemas.mdx",
-    renderSchemaCatalog(contract.schemas, schemaAnchors)
+    renderSchemaCatalog({
+      anchors: schemaAnchors,
+      groups: schemaTagGroups(
+        contract.document,
+        contract.tags.map((tag) => tag.name)
+      ),
+      operations: schemaCatalogOperations(contract, folderOperations),
+      schemas: contract.schemas,
+    })
   );
   files.set("meta.json", renderReferenceNavigation(folders));
   return files;
@@ -1503,7 +1560,7 @@ function renderReferenceNavigation(folders: string[]): string {
     ...remainder,
     "schemas",
   ];
-  return `${JSON.stringify({ pages, title: "API reference" }, null, 2)}\n`;
+  return `${JSON.stringify({ pages, root: true, title: "API reference" }, null, 2)}\n`;
 }
 
 function renderReferenceIndex(
@@ -1536,6 +1593,15 @@ function renderReferenceIndex(
     `Raw spec: [OpenAPI schema](${provenance.sourceUrl}).`,
     "",
     `Pinned source: [${provenance.sourceRepository}@${provenance.sourceCommit}](https://github.com/${provenance.sourceRepository}/blob/${provenance.sourceCommit}/${provenance.sourcePath}).`,
+    "",
+    "## Downloads",
+    "",
+    "Import the pinned contract into a client, or download the file the reference was generated from.",
+    "",
+    `- [Raw OpenAPI schema](${provenance.sourceUrl}).`,
+    `- [Pinned contract](/downloads/${PINNED_OPENAPI_DOWNLOAD_NAME}). Commit \`${escapeInline(provenance.sourceCommit)}\`. Checksum \`${escapeInline(provenance.sha256)}\`.`,
+    `- [Checksum and commit](/downloads/${PINNED_OPENAPI_PROVENANCE_NAME}).`,
+    `- [Postman collection](/downloads/${POSTMAN_COLLECTION_DOWNLOAD_NAME}). Generated from the pinned contract.${contract.servers[0]?.url ? ` The collection variable \`baseUrl\` is \`${escapeInline(contract.servers[0].url)}\`.` : ""}`,
   ];
   if (contract.servers.length > 0) {
     lines.push("", "## Servers", "");
@@ -1555,7 +1621,12 @@ function renderReferenceIndex(
     );
   }
   if (contract.summary) lines.push("", `**${escapeInline(contract.summary)}**`);
-  if (contract.description) lines.push("", escapeMdx(contract.description));
+  if (contract.description) {
+    lines.push(
+      "",
+      escapeMdx(descriptionWithDocsChangelog(contract.description))
+    );
+  }
 
   lines.push("", "## Operations", "");
   const canonical = new Set<string>(CANONICAL_EVIDENCE_TAGS);
@@ -1658,89 +1729,108 @@ function renderTagIndex(folder: string, entries: LocatedOperation[]): string {
   return `${lines.join("\n").trim()}\n`;
 }
 
-function renderSchemaCatalog(
-  schemas: JsonRecord,
-  schemaAnchors: Map<string, string>
-): string {
-  const names = Object.keys(schemas);
-  const lines = [
-    frontmatter(
-      "Schemas",
-      "Component schema names and descriptions from the pinned public Atlas OpenAPI contract."
-    ),
-    "These component schema descriptions are indexed from the public OpenAPI contract. Operation pages render the schema with the native OpenAPI reference.",
-    "",
-  ];
-  if (names.length === 0) {
-    lines.push("This contract does not declare component schemas.");
-  }
-  for (const name of names) {
-    const anchor = schemaAnchors.get(`#/components/schemas/${name}`);
-    if (!anchor) {
-      throw new PublicOpenApiContractError(
-        "malformed",
-        `Component schema ${name} is missing a stable heading.`
-      );
+function schemaCatalogOperations(
+  contract: LoadedPublicOpenApiContract,
+  folderOperations: Map<string, LocatedOperation[]>
+): SchemaCatalogOperation[] {
+  const folderByOperation = new Map<string, string>();
+  for (const [folder, entries] of folderOperations) {
+    for (const entry of entries) {
+      folderByOperation.set(entry.operation.operationId, folder);
     }
-    lines.push(`## ${escapeInline(name)} [#${anchor}]`, "");
-    lines.push(...schemaCatalogLines(schemas[name]), "");
   }
-  return `${lines.join("\n").trim()}\n`;
+  const operations: SchemaCatalogOperation[] = [];
+  for (const tag of contract.tags) {
+    for (const operation of tag.operations) {
+      const folder = folderByOperation.get(operation.operationId);
+      if (!folder) continue;
+      operations.push({
+        folder,
+        method: operation.method,
+        operationId: operation.operationId,
+        path: operation.path,
+        schemaNames: componentSchemaNames(
+          operationSchemaNodes(operation),
+          contract.schemas
+        ),
+        summary: operation.summary,
+        tag: tag.name,
+      });
+    }
+  }
+  return operations;
 }
 
-function schemaCatalogLines(schema: unknown): string[] {
-  const lines: string[] = [];
-  const seen = new Set<unknown>();
-  const descriptions: string[] = [];
-  const properties: string[] = [];
-  collectSchemaCatalog(schema, descriptions, properties, seen);
-  for (const description of descriptions) {
-    lines.push(escapeMdx(description), "");
+function operationSchemaNodes(operation: OperationView): unknown[] {
+  const nodes: unknown[] = [];
+  for (const parameter of operation.parameters) {
+    nodes.push(parameter.schema);
+    for (const media of parameter.content ?? []) nodes.push(media.schema);
   }
-  for (const property of properties) {
-    lines.push(`- \`${escapeInline(property)}\``);
+  for (const media of operation.requestBody ?? []) nodes.push(media.schema);
+  for (const response of operation.responses) {
+    for (const media of response.media) nodes.push(media.schema);
+    for (const header of response.headers) {
+      nodes.push(header.schema);
+      for (const media of header.content ?? []) nodes.push(media.schema);
+    }
   }
-  if (lines.length === 0)
-    lines.push("This schema does not declare a description.");
-  return lines;
+  return nodes;
 }
 
-function collectSchemaCatalog(
-  schema: unknown,
-  descriptions: string[],
-  properties: string[],
-  seen: Set<unknown>
-): void {
-  if (!isRecord(schema) || seen.has(schema)) return;
-  seen.add(schema);
-  if (typeof schema.description === "string" && schema.description.trim()) {
-    descriptions.push(schema.description.trim());
+const ERRORS_REFERENCE_LINK =
+  "Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).";
+
+function uniqueIndexContents(
+  entries: { content: string }[]
+): { content: string }[] {
+  const seen = new Set<string>();
+  const unique: { content: string }[] = [];
+  for (const entry of entries) {
+    const key = flattenContractText(entry.content);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push({ content: entry.content });
   }
-  if (isRecord(schema.properties)) {
-    for (const [name, property] of Object.entries(schema.properties)) {
-      properties.push(name);
-      collectSchemaCatalog(property, descriptions, properties, seen);
+  return unique;
+}
+
+function headingAnchor(value: string): string | undefined {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+  return slug || undefined;
+}
+
+function descriptionSearchHeadings(
+  description: string
+): { content: string; id: string }[] {
+  const headings: { content: string; id: string }[] = [];
+  const seen = new Set<string>();
+  for (const line of description.split("\n")) {
+    const match = /^#{1,6}\s+(?<text>.+?)\s*$/.exec(line);
+    const text = match?.groups?.text?.replaceAll(/[*_`]/g, "").trim();
+    const baseId = text ? headingAnchor(text) : undefined;
+    if (!text || !baseId) continue;
+    let id = baseId;
+    let suffix = 2;
+    while (seen.has(id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
     }
+    seen.add(id);
+    headings.push({ content: text, id });
   }
-  collectSchemaCatalog(schema.items, descriptions, properties, seen);
-  collectSchemaCatalog(
-    schema.additionalProperties,
-    descriptions,
-    properties,
-    seen
-  );
-  for (const combiner of ["allOf", "anyOf", "oneOf"] as const) {
-    const branches = schema[combiner];
-    if (!Array.isArray(branches)) continue;
-    for (const branch of branches) {
-      collectSchemaCatalog(branch, descriptions, properties, seen);
-    }
-  }
+  return headings;
 }
 
 function enrichOperationPage(
   content: string,
-  operation: OperationView
+  operation: OperationView,
+  schemas: JsonRecord,
+  schemaAnchors: Map<string, string>
 ): string {
   const document = splitGeneratedDocument(content);
   const openapi = isRecord(document.data._openapi)
@@ -1752,24 +1842,55 @@ function enrichOperationPage(
   const existing = Array.isArray(structured.contents)
     ? structured.contents.filter(isRecord)
     : [];
-  const contents = [
+  const described = flattenContractText(operation.description);
+  const summary = flattenContractText(
+    operation.summary || operation.operationId
+  );
+  const contents = uniqueIndexContents([
     ...existing.flatMap((entry) =>
-      typeof entry.content === "string" ? [{ content: entry.content }] : []
+      typeof entry.content === "string" &&
+      flattenContractText(entry.content) !== described
+        ? [{ content: entry.content }]
+        : []
     ),
-    ...operationIndexContents(operation).map((text) => ({ content: text })),
+    ...operationIndexContents(operation)
+      .filter((text) => flattenContractText(text) !== described)
+      .map((text) => ({ content: text })),
+    ...(summary ? [{ content: summary }] : []),
+  ]);
+  const priorHeadings = Array.isArray(structured.headings)
+    ? structured.headings
+    : [];
+  const priorHeadingText = new Set(
+    priorHeadings.flatMap((entry) =>
+      isRecord(entry) && typeof entry.content === "string"
+        ? [entry.content]
+        : []
+    )
+  );
+  const headings = [
+    ...priorHeadings,
+    ...descriptionSearchHeadings(operation.description).filter(
+      (heading) => !priorHeadingText.has(heading.content)
+    ),
   ];
-  openapi.structuredData = { ...structured, contents };
+  openapi.structuredData = { ...structured, contents, headings };
   document.data._openapi = openapi;
-  if (
-    typeof document.data.description !== "string" ||
-    document.data.description.trim() === ""
-  ) {
-    document.data.description = operation.summary || operation.operationId;
-  }
+  document.data.description = summary;
   const badge = pendingDeliveryBadgeMarkup(operation);
-  const body = badge
-    ? `${PENDING_DELIVERY_BADGE_IMPORT}\n\n${badge}\n\n${document.body.trim()}`
-    : document.body;
+  const schemaLine = renderOperationSchemaLine(
+    componentSchemaNames(operationSchemaNodes(operation), schemas),
+    schemaAnchors
+  );
+  const body = [
+    badge ? PENDING_DELIVERY_BADGE_IMPORT : "",
+    badge,
+    ERRORS_REFERENCE_LINK,
+    schemaLine,
+    document.body.trim(),
+  ]
+    .filter((part) => part.length > 0)
+    .join("\n\n");
   return joinGeneratedDocument(document.data, body);
 }
 
@@ -2306,6 +2427,20 @@ function slugify(value: string, label: string): string {
     );
   }
   return slug;
+}
+
+const DOCS_API_CHANGELOG_PATH = "/docs/develop/changelog";
+
+/** Point the reference index at the docs changelog for this contract pin. */
+function descriptionWithDocsChangelog(description: string): string {
+  const upstreamChangelog =
+    /https:\/\/github\.com\/Caraway-Labs\/one-health-lyme-gap-atlas-api\/blob\/[^)\s]+\/CHANGELOG\.md/g;
+  const linked = description.replaceAll(
+    upstreamChangelog,
+    DOCS_API_CHANGELOG_PATH
+  );
+  if (linked.includes(DOCS_API_CHANGELOG_PATH)) return linked;
+  return `${linked.trimEnd()}\n\nRelease notes: [API changelog](${DOCS_API_CHANGELOG_PATH}).`;
 }
 
 function escapeMdx(value: string): string {

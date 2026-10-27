@@ -104,9 +104,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    indicatorsV1IndicatorsGet: vi.fn<
-      typeof import("@/generated/atlas").indicatorsV1IndicatorsGet
-    >(
+    listIndicators: vi.fn<typeof import("@/generated/atlas").listIndicators>(
       async () =>
         ({
           data: {
@@ -118,44 +116,47 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 200,
         }) as never
     ),
-    measuresV1MeasuresGet: vi.fn<
-      typeof import("@/generated/atlas").measuresV1MeasuresGet
-    >(async (params) => {
-      if (controls.failMeasures) {
+    listMeasures: vi.fn<typeof import("@/generated/atlas").listMeasures>(
+      async (params) => {
+        if (controls.failMeasures) {
+          return {
+            data: { detail: "measures unavailable" },
+            headers: new Headers(),
+            status: 503,
+          } as never;
+        }
+        if (
+          params?.page_token === null ||
+          params?.geography_type === "county"
+        ) {
+          return {
+            data: { detail: "invalid catalog request" },
+            headers: new Headers(),
+            status: 400,
+          } as never;
+        }
         return {
-          data: { detail: "measures unavailable" },
+          data: {
+            data: investigateMeasuresFixture
+              .filter(
+                (measure) =>
+                  measure.geography_semantics === params?.geography_type
+              )
+              .map((measure) =>
+                controls.unsupportedPeriod
+                  ? { ...measure, temporal_semantics: "seasonal" }
+                  : measure
+              ),
+            links: { self: "/v1/measures" },
+            meta: {},
+          },
           headers: new Headers(),
-          status: 503,
+          status: 200,
         } as never;
       }
-      if (params?.page_token === null || params?.geography_type === "county") {
-        return {
-          data: { detail: "invalid catalog request" },
-          headers: new Headers(),
-          status: 400,
-        } as never;
-      }
-      return {
-        data: {
-          data: investigateMeasuresFixture
-            .filter(
-              (measure) =>
-                measure.geography_semantics === params?.geography_type
-            )
-            .map((measure) =>
-              controls.unsupportedPeriod
-                ? { ...measure, temporal_semantics: "seasonal" }
-                : measure
-            ),
-          links: { self: "/v1/measures" },
-          meta: {},
-        },
-        headers: new Headers(),
-        status: 200,
-      } as never;
-    }),
-    metadataV1AtlasMetadataGet: vi.fn<
-      typeof import("@/generated/atlas").metadataV1AtlasMetadataGet
+    ),
+    getAtlasMetadata: vi.fn<
+      typeof import("@/generated/atlas").getAtlasMetadata
     >(async () => {
       if (controls.holdMetadata) {
         await metadataGate.promise;
@@ -182,8 +183,8 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    observationsV1ObservationsGet: vi.fn<
-      typeof import("@/generated/atlas").observationsV1ObservationsGet
+    listObservations: vi.fn<
+      typeof import("@/generated/atlas").listObservations
     >(async (params) => {
       if (controls.holdObservations) {
         await observationGate.promise;
@@ -232,9 +233,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
         status: 200,
       } as never;
     }),
-    countyV1CountiesFipsGet: vi.fn<
-      typeof import("@/generated/atlas").countyV1CountiesFipsGet
-    >(
+    getCounty: vi.fn<typeof import("@/generated/atlas").getCounty>(
       async () =>
         ({
           data: { detail: "not found" },
@@ -242,9 +241,7 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
           status: 404,
         }) as never
     ),
-    scoresV1AtlasScoresGet: vi.fn<
-      typeof import("@/generated/atlas").scoresV1AtlasScoresGet
-    >(
+    getAtlasScores: vi.fn<typeof import("@/generated/atlas").getAtlasScores>(
       async () =>
         ({
           data: actionScoresFixture,

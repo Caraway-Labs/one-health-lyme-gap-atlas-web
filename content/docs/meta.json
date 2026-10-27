@@ -13,8 +13,10 @@
     "releases-and-methodology",
     "ai-enabled-decision-intelligence",
     "api-mcp-and-access",
-    "api-reference",
     "faq-and-troubleshooting",
-    "develop"
+    "---Resources---",
+    "glossary",
+    "develop",
+    "api-reference"
   ]
 }

@@ -1,19 +1,19 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useQueryStates } from "nuqs";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 
 import { AtlasStatusMessage } from "@/components/atlas-status-message";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { resetRouteById } from "@/features/ux-reset/paths";
-import type { FeedEntry } from "@/generated/models/feedEntry";
+import type { FeedListEntry } from "@/generated/models/feedListEntry";
 import {
+  analyticsControlAttributes,
   trackFeedFilterApplied,
   trackFeedFilterCleared,
+  trackFeedItemDetailOpened,
+  type FeedDetailEntrySurface,
 } from "@/lib/atlas-analytics";
 
 import {
@@ -30,20 +30,30 @@ import {
   type FeedFilterState,
   type FeedPublishedPreset,
 } from "./feed-filters";
+import { FeedItemCard } from "./feed-item-card";
+import { FeedItemDetailDialog, type FeedDetailView } from "./feed-item-detail";
 import {
+  FEED_FOOTER_NON_ENDORSEMENT,
+  FEED_FOOTER_PUBLIC_DOMAIN,
+  FEED_NCBI_COPYRIGHT_HREF,
   FEED_EXTERNAL_LINK_REL,
   FEED_EXTERNAL_LINK_TARGET,
-  feedItemTitle,
-  feedPublicationDate,
-  feedPublisherHref,
-  feedPublisherLabel,
+  feedItemLookupFailure,
   feedRequestFailure,
+  itemFeedCaveats,
+  sharedFeedCaveats,
 } from "./feed-presentation";
 import { IntelligenceFeedFilters } from "./intelligence-feed-filters";
+import {
+  RESEARCH_NEWS_HEADING,
+  RESEARCH_NEWS_IMAGERY_NOTE,
+  RESEARCH_NEWS_SUBTITLE,
+} from "./research-news-controls";
 import {
   resetIntelligenceFeedToFirstPage,
   useIntelligenceFeed,
 } from "./use-intelligence-feed";
+import { useIntelligenceFeedEntry } from "./use-intelligence-feed-entry";
 import { useIntelligenceSources } from "./use-intelligence-sources";
 
 const EMPTY_TITLE = "No new items";
@@ -52,7 +62,10 @@ const EMPTY_BODY =
 const FILTERED_EMPTY_TITLE = "No items match these filters";
 const FILTERED_EMPTY_BODY = "Try another source or a wider date range.";
 const DATE_WINDOW_EMPTY_TITLE = "No items in this date window";
-const DATE_WINDOW_EMPTY_BODY = `${FEED_PUBLISHED_LABELS[DEFAULT_FEED_PUBLISHED]} has no matching items. All dates includes older items and items without a publication date.`;
+
+function dateWindowEmptyBody(published: FeedPublishedPreset): string {
+  return `${FEED_PUBLISHED_LABELS[published]} has no matching items. All dates includes older items and items without a publication date.`;
+}
 const TOO_BROAD_TITLE = "Too many items to show at once";
 const TOO_BROAD_BODY = "Choose a source or a shorter date range.";
 
@@ -69,64 +82,30 @@ function FeedLimitations({ limitations }: { limitations: readonly string[] }) {
   );
 }
 
-function FeedPublicationDateText({ entry }: { entry: FeedEntry }) {
-  const date = feedPublicationDate(entry);
-  if (date.kind === "present") {
-    return <time dateTime={date.iso}>{date.text}</time>;
-  }
-  return date.text;
-}
-
-function FeedItem({ entry }: { entry: FeedEntry }) {
-  const title = feedItemTitle(entry);
-  const href = feedPublisherHref(entry.canonical_url);
-  const publisher = feedPublisherLabel(entry);
+function FeedFooter() {
   return (
-    <li>
-      <Card>
-        <CardHeader className="ux-reset-feed-item">
-          <h2 className="type-card">
-            {href ? (
-              <a
-                className="ux-reset-feed-title-link"
-                href={href}
-                rel={FEED_EXTERNAL_LINK_REL}
-                target={FEED_EXTERNAL_LINK_TARGET}
-              >
-                {title}
-                <ExternalLink aria-hidden="true" />
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
-            ) : (
-              title
-            )}
-          </h2>
-          <dl className="ux-reset-feed-meta">
-            <div>
-              <dt>Publisher</dt>
-              <dd>{publisher}</dd>
-            </div>
-            <div>
-              <dt>Publication date</dt>
-              <dd>
-                <FeedPublicationDateText entry={entry} />
-              </dd>
-            </div>
-          </dl>
-        </CardHeader>
-        {entry.limitations.length > 0 ? (
-          <CardContent>
-            <FeedLimitations limitations={entry.limitations} />
-          </CardContent>
-        ) : null}
-      </Card>
-    </li>
+    <footer className="ux-reset-feed-footer">
+      <p>
+        {FEED_FOOTER_PUBLIC_DOMAIN}{" "}
+        <a
+          {...analyticsControlAttributes("feed_ncbi_copyright_open")}
+          href={FEED_NCBI_COPYRIGHT_HREF}
+          rel={FEED_EXTERNAL_LINK_REL}
+          target={FEED_EXTERNAL_LINK_TARGET}
+        >
+          NCBI copyright and disclaimers
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
+      </p>
+      <p>{FEED_FOOTER_NON_ENDORSEMENT}</p>
+    </footer>
   );
 }
 
 function FeedRetry({ onRetry }: { onRetry: () => Promise<unknown> }) {
   return (
     <Button
+      {...analyticsControlAttributes("feed_retry")}
       onClick={() => {
         void onRetry();
       }}
@@ -139,7 +118,6 @@ function FeedRetry({ onRetry }: { onRetry: () => Promise<unknown> }) {
 }
 
 export function IntelligenceFeedExperience() {
-  const route = resetRouteById("feed");
   const queryClient = useQueryClient();
   const filterBarRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
@@ -199,6 +177,36 @@ export function IntelligenceFeedExperience() {
     items.length === 0 && feed.isError && !tooBroad
       ? feedRequestFailure(feed.error)
       : null;
+  const sharedCaveats = sharedFeedCaveats(items);
+  const itemId = urlState.item;
+  const itemLookup = useIntelligenceFeedEntry(itemId, itemId !== null);
+
+  const openDetail = (
+    entry: FeedListEntry,
+    surface: FeedDetailEntrySurface
+  ) => {
+    trackFeedItemDetailOpened(surface, entry.source_family);
+    void setUrlState(
+      { item: entry.item_id },
+      { history: "push", scroll: false }
+    );
+  };
+
+  const closeDetail = (open: boolean) => {
+    if (open || urlState.item === null) {
+      return;
+    }
+    void setUrlState({ item: null }, { history: "push", scroll: false });
+  };
+
+  let detailView: FeedDetailView = { status: "loading" };
+  if (itemLookup.isError && !itemLookup.isFetching) {
+    detailView = {
+      status: feedItemLookupFailure(itemLookup.error),
+    };
+  } else if (itemLookup.data) {
+    detailView = { entry: itemLookup.data, status: "ready" };
+  }
 
   const commitFilters = (next: FeedFilterState) => {
     void resetIntelligenceFeedToFirstPage(queryClient, next);
@@ -318,15 +326,17 @@ export function IntelligenceFeedExperience() {
       </>
     );
   } else if (items.length === 0) {
-    const defaultWindowOnly = activeFeedFilterCount(filters) === 0;
+    const dateWindowOnly =
+      filters.sourceId === null && filters.published !== "all";
     state = "filtered-empty";
     body = (
       <>
         <FeedLimitations limitations={limitations} />
         <AtlasStatusMessage
           action={
-            defaultWindowOnly ? (
+            dateWindowOnly ? (
               <Button
+                {...analyticsControlAttributes("feed_clear_filters")}
                 className="ux-reset-feed-clear"
                 onClick={() => {
                   applyPublished("all");
@@ -338,6 +348,7 @@ export function IntelligenceFeedExperience() {
               </Button>
             ) : (
               <Button
+                {...analyticsControlAttributes("feed_clear_filters")}
                 className="ux-reset-feed-clear"
                 onClick={clearFilters}
                 type="button"
@@ -348,12 +359,14 @@ export function IntelligenceFeedExperience() {
             )
           }
           title={
-            defaultWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
+            dateWindowOnly ? DATE_WINDOW_EMPTY_TITLE : FILTERED_EMPTY_TITLE
           }
           titleAs="h2"
           tone="empty"
         >
-          {defaultWindowOnly ? DATE_WINDOW_EMPTY_BODY : FILTERED_EMPTY_BODY}
+          {dateWindowOnly
+            ? dateWindowEmptyBody(filters.published)
+            : FILTERED_EMPTY_BODY}
         </AtlasStatusMessage>
       </>
     );
@@ -361,7 +374,6 @@ export function IntelligenceFeedExperience() {
     state = "ready";
     body = (
       <>
-        <FeedLimitations limitations={limitations} />
         {refreshFailure ? (
           <AtlasStatusMessage
             action={<FeedRetry onRetry={() => feed.refetch()} />}
@@ -378,14 +390,34 @@ export function IntelligenceFeedExperience() {
               : "The last loaded items are still shown."}
           </AtlasStatusMessage>
         ) : null}
-        <ul className="ux-reset-feed-list">
-          {items.map((entry) => (
-            <FeedItem
-              entry={entry}
-              key={`${entry.item_id}:${entry.revision_id}`}
-            />
-          ))}
-        </ul>
+        {items.length > 0 ? (
+          <ul className="ux-reset-feed-list">
+            {items.map((entry, index) => (
+              <FeedItemCard
+                eagerImage={index < 6}
+                entry={entry}
+                imageSlot={index}
+                itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
+                key={`${entry.item_id}:${entry.revision_id}:${index}`}
+                onOpen={openDetail}
+              />
+            ))}
+          </ul>
+        ) : null}
+        <p className="ux-reset-feed-imagery-note">
+          {RESEARCH_NEWS_IMAGERY_NOTE}
+        </p>
+        <FeedLimitations limitations={limitations} />
+        {sharedCaveats.length > 0 ? (
+          <ul
+            className="ux-reset-feed-limitations"
+            data-testid="feed-shared-caveats"
+          >
+            {sharedCaveats.map((limitation, index) => (
+              <li key={`${limitation}:${index}`}>{limitation}</li>
+            ))}
+          </ul>
+        ) : null}
         {nextPageFailure ? (
           <AtlasStatusMessage
             action={<FeedRetry onRetry={() => feed.fetchNextPage()} />}
@@ -433,8 +465,8 @@ export function IntelligenceFeedExperience() {
       data-testid="intelligence-feed"
     >
       <header className="ux-reset-page-header">
-        <h1 id="intelligence-feed-heading">{route.label}</h1>
-        <p className="type-body">{route.description}</p>
+        <h1 id="intelligence-feed-heading">{RESEARCH_NEWS_HEADING}</h1>
+        <p className="type-body">{RESEARCH_NEWS_SUBTITLE}</p>
       </header>
       <IntelligenceFeedFilters
         filterBarRef={filterBarRef}
@@ -447,17 +479,20 @@ export function IntelligenceFeedExperience() {
           void sources.refetch();
         }}
         onSourceChange={applySource}
+        resultSummary={summary}
         sourceOptions={sourceOptions}
         sourcesError={sources.isError}
       />
-      <p
-        aria-atomic="true"
-        aria-live="polite"
-        className="type-small ux-reset-feed-summary"
-      >
-        {summary}
-      </p>
       {body}
+      <FeedFooter />
+      <FeedItemDetailDialog
+        onOpenChange={closeDetail}
+        onRetry={() => {
+          void itemLookup.refetch();
+        }}
+        open={itemId !== null}
+        view={detailView}
+      />
     </section>
   );
 }

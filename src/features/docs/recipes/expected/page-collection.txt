@@ -1,0 +1,8 @@
+release_id: governed-2026-10-15-january-climate-prod
+pages: 2
+next_page_token: null
+period_start,geography_id,value,value_state,release_id
+2025-01-01,36061,7.744015461888341,OBSERVED,governed-2026-10-15-january-climate-prod
+2025-01-02,36061,6.788281929151528,OBSERVED,governed-2026-10-15-january-climate-prod
+2025-01-03,36061,3.995322054093146,OBSERVED,governed-2026-10-15-january-climate-prod
+2025-01-04,36061,1.6377173882177052,OBSERVED,governed-2026-10-15-january-climate-prod

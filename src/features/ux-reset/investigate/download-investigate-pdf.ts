@@ -3,12 +3,9 @@ import {
   type InvestigatePdfContext,
 } from "@/features/ux-reset/investigate/investigate-next-step";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
-import {
-  countyReportPdfV1CountiesFipsReportPdfGet,
-  observationsV1ObservationsGet,
-} from "@/generated/atlas";
+import { downloadCountyReport, listObservations } from "@/generated/atlas";
 import type { Observation } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import type { PdfDownloadOptions, PdfDownloadResult } from "@/lib/pdf-export";
 
@@ -51,7 +48,7 @@ export async function downloadInvestigatePdf(
     const fresh: Observation[] = [];
     // Match the backend's bounded, unpaginated read. Never reuse the query cache.
     for (const measureId of offer.measureIds) {
-      const response = await observationsV1ObservationsGet(
+      const response = await listObservations(
         {
           measure_id: measureId,
           geography_type: "county",
@@ -66,7 +63,7 @@ export async function downloadInvestigatePdf(
         throw new Error("Canonical evidence could not be checked.");
       const parsed = validateApiResponse(
         "Observations",
-        ObservationsV1ObservationsGetResponse,
+        ListObservationsResponse,
         response.data
       );
       if (parsed.meta.next_page_token || !parsed.data.length)
@@ -80,7 +77,7 @@ export async function downloadInvestigatePdf(
   };
   await verify();
   if (superseded()) return { committed: false };
-  const response = await countyReportPdfV1CountiesFipsReportPdfGet(
+  const response = await downloadCountyReport(
     context.countyFips,
     {
       template: "county-v2",

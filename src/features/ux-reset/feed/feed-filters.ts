@@ -9,7 +9,7 @@ export const FEED_PUBLISHED_PRESETS = ["7d", "30d", "90d", "all"] as const;
 
 export type FeedPublishedPreset = (typeof FEED_PUBLISHED_PRESETS)[number];
 
-export const DEFAULT_FEED_PUBLISHED: FeedPublishedPreset = "30d";
+export const DEFAULT_FEED_PUBLISHED: FeedPublishedPreset = "all";
 
 export const FEED_PUBLISHED_LABELS: Record<FeedPublishedPreset, string> = {
   "7d": "Past 7 days",
@@ -25,6 +25,12 @@ export const ALL_FEED_SOURCES_VALUE = "__all_sources__";
 export const FEED_SOURCE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$/;
 
 export const INTELLIGENCE_SOURCE_PAGE_CAP = 10;
+
+/**
+ * Items requested from `/v1/intelligence/feed`. Continuation tokens are bound
+ * to this size, so every list request sends it, including page one.
+ */
+export const FEED_PAGE_SIZE = 25;
 
 const PUBLISHED_DAY_COUNTS = {
   "7d": 7,
@@ -91,8 +97,10 @@ export function publishedFromForPreset(
 }
 
 /**
- * Params for one feed request. Page token is added by the caller. All sources
- * omits source_id. All dates omits both date params. published_to is never sent.
+ * Source and date filters for one feed request. All sources omits source_id.
+ * All dates omits both date params. published_to is never sent. Returns
+ * undefined for All sources + All dates so an unfiltered view stays unfiltered.
+ * Page size is added by `feedPageParams`.
  */
 export function buildFeedListParams(
   filters: FeedFilterState,
@@ -122,6 +130,26 @@ export function withFeedPageToken(
   return { ...params, page_token: pageToken };
 }
 
+/**
+ * List params actually sent to the feed. Always includes `page_size` so a
+ * continuation token from this page stays valid. Omitting a token keeps page
+ * one. Filter fields stay exactly what `buildFeedListParams` produced.
+ */
+export function feedPageParams(
+  filters: FeedFilterState,
+  now: Date,
+  pageToken?: string
+): ListIntelligenceFeedParams {
+  const params: ListIntelligenceFeedParams = {
+    ...buildFeedListParams(filters, now),
+    page_size: FEED_PAGE_SIZE,
+  };
+  if (!pageToken) {
+    return params;
+  }
+  return { ...params, page_token: pageToken };
+}
+
 export function activeFeedFilterCount(filters: FeedFilterState): number {
   let count = 0;
   if (filters.sourceId) {
@@ -135,8 +163,8 @@ export function activeFeedFilterCount(filters: FeedFilterState): number {
 
 /**
  * True when the feed request sends source_id or published_from.
- * The default Past 30 days control still narrows; only All dates with no
- * source is an unfiltered request. Chip count stays separate.
+ * All dates with no source sends neither. A shorter date window or a
+ * selected source still narrows.
  */
 export function feedRequestNarrows(filters: FeedFilterState): boolean {
   return buildFeedListParams(filters, new Date()) !== undefined;
@@ -243,7 +271,7 @@ export function isStaleFeedPageToken(error: unknown): boolean {
   if (isFeedQueryTooBroad(error)) {
     return false;
   }
-  return problemFields(error).detail.includes("Projection changed");
+  return problemFields(error).detail.includes("Invalid page_token");
 }
 
 export const feedSourceParser = createParser({
@@ -259,7 +287,18 @@ export const feedPublishedParser = parseAsStringEnum([
   ...FEED_PUBLISHED_PRESETS,
 ]).withDefault(DEFAULT_FEED_PUBLISHED);
 
+/** Any non-empty `item` value is kept so a malformed id can be looked up. */
+export const feedItemParser = createParser({
+  parse(value: string) {
+    return value.length > 0 ? value : null;
+  },
+  serialize(value: string) {
+    return value;
+  },
+});
+
 export const feedSearchParams = {
+  item: feedItemParser,
   published: feedPublishedParser,
   source: feedSourceParser,
 };

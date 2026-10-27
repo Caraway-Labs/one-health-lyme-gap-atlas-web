@@ -11,12 +11,9 @@ import { downloadInvestigatePdf } from "@/features/ux-reset/investigate/download
 import type { InvestigatePdfContext } from "@/features/ux-reset/investigate/investigate-next-step";
 import { InvestigatePdfExport } from "@/features/ux-reset/investigate/investigate-pdf-export";
 import { readDatedObservations } from "@/features/ux-reset/review/dated-observation-envelope";
-import {
-  countyReportPdfV1CountiesFipsReportPdfGet,
-  stateReportPdfV1StatesStateReportPdfGet,
-} from "@/generated/atlas";
+import { downloadCountyReport, downloadStateReport } from "@/generated/atlas";
 import type { Observation } from "@/generated/models";
-import { ObservationsV1ObservationsGetResponse } from "@/generated/zod/atlas";
+import { ListObservationsResponse } from "@/generated/zod/atlas";
 import { apiMutator } from "@/lib/api-mutator";
 import type { ScoreSettings } from "@/lib/atlas-ui";
 import { downloadPdfReport } from "@/lib/pdf-export";
@@ -173,7 +170,7 @@ function realmBlobResponse(response: Response): Response {
 }
 
 function adamsObservations() {
-  return ObservationsV1ObservationsGetResponse.parse({
+  return ListObservationsResponse.parse({
     data: investigateObservationsFor({
       fips: "08001",
       measureId: INVESTIGATE_TICK_MEASURE_ID,
@@ -743,10 +740,10 @@ async function runMutatorCase(transportCase: MutatorCase): Promise<unknown> {
       return await apiMutator(transportCase.path, { method: "GET" });
     }
     case "county": {
-      return await countyReportPdfV1CountiesFipsReportPdfGet("08001");
+      return await downloadCountyReport("08001");
     }
     case "state": {
-      return await stateReportPdfV1StatesStateReportPdfGet("CO");
+      return await downloadStateReport("CO");
     }
     default: {
       const unreachable: never = transportCase.entry;

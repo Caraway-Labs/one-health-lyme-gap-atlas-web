@@ -161,16 +161,14 @@ vi.mock(import("@/generated/atlas"), async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    scoresV1AtlasScoresGet: vi.fn<typeof actual.scoresV1AtlasScoresGet>(
-      async () => ({
-        data: {
-          ...reviewScopeScoresFixture,
-          counties: scoreCounties,
-        },
-        headers: new Headers(),
-        status: 200,
-      })
-    ),
+    getAtlasScores: vi.fn<typeof actual.getAtlasScores>(async () => ({
+      data: {
+        ...reviewScopeScoresFixture,
+        counties: scoreCounties,
+      },
+      headers: new Headers(),
+      status: 200,
+    })),
   };
 });
 

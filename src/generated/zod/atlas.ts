@@ -10,362 +10,410 @@ import * as zod from 'zod';
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover indicators
+ * @summary List indicators
  */
-export const indicatorsV1IndicatorsGetQueryPageSizeMax = 500;
+export const listIndicatorsQueryPageSizeMax = 500;
 
 
 
-export const IndicatorsV1IndicatorsGetQueryParams = zod.object({
-  "indicator_id": zod.string().nullish(),
-  "page_size": zod.int().min(1).max(indicatorsV1IndicatorsGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+export const ListIndicatorsQueryParams = zod.object({
+  "indicator_id": zod.string().nullish().describe('Return only the indicator with this exact ID. Omit it to list every indicator. An ID that matches nothing returns an empty list.'),
+  "page_size": zod.int().min(1).max(listIndicatorsQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
-export const IndicatorsV1IndicatorsGetResponse = zod.object({
+export const ListIndicatorsResponse = zod.object({
   "data": zod.array(zod.object({
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "measure_ids": zod.array(zod.string()),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "domain": zod.string().nullish(),
-  "category": zod.string().nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "indicator_id": zod.string().describe('Stable identifier of the indicator. Use it with `\/v1\/indicators\/{indicator_id}`.'),
+  "label": zod.string().describe('Short display name of the indicator.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the indicator. `null` when none is published.'),
+  "measure_ids": zod.array(zod.string()).describe('Identifiers of the measures that belong to this indicator, in sorted order.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "domain": zod.string().nullish().describe('Broad subject area the indicator belongs to, such as `climate`. `null` when none is published.'),
+  "category": zod.string().nullish().describe('Finer grouping inside the domain. `null` when none is published.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist. A mapping does not mean Atlas exchanges data with that standard.')
+}).describe('A public-health concept that groups related measures.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-})
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of indicators, with paging details and links. Read `meta.next_page_token` to get the next page.')
 
 
 /**
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get an indicator
  */
-export const IndicatorV1IndicatorsIndicatorIdGetParams = zod.object({
-  "indicator_id": zod.string()
+export const GetIndicatorParams = zod.object({
+  "indicator_id": zod.string().describe('Exact indicator ID from the indicator list. An unknown ID returns 404.')
 })
 
-export const IndicatorV1IndicatorsIndicatorIdGetResponse = zod.object({
+export const GetIndicatorResponse = zod.object({
   "data": zod.object({
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "measure_ids": zod.array(zod.string()),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "domain": zod.string().nullish(),
-  "category": zod.string().nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "indicator_id": zod.string().describe('Stable identifier of the indicator. Use it with `\/v1\/indicators\/{indicator_id}`.'),
+  "label": zod.string().describe('Short display name of the indicator.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the indicator. `null` when none is published.'),
+  "measure_ids": zod.array(zod.string()).describe('Identifiers of the measures that belong to this indicator, in sorted order.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "domain": zod.string().nullish().describe('Broad subject area the indicator belongs to, such as `climate`. `null` when none is published.'),
+  "category": zod.string().nullish().describe('Finer grouping inside the domain. `null` when none is published.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})
-})
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist. A mapping does not mean Atlas exchanges data with that standard.')
+}).describe('The requested resource.')
+}).describe('One indicator, wrapped in `data`.')
 
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover measures
+ * @summary List measures
  */
-export const measuresV1MeasuresGetQueryPageSizeMax = 500;
+export const listMeasuresQueryPageSizeMax = 500;
 
 
 
-export const MeasuresV1MeasuresGetQueryParams = zod.object({
-  "measure_id": zod.string().nullish(),
-  "indicator_id": zod.string().nullish(),
-  "geography_type": zod.string().nullish(),
-  "page_size": zod.int().min(1).max(measuresV1MeasuresGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+export const ListMeasuresQueryParams = zod.object({
+  "measure_id": zod.string().nullish().describe('Return only the measure with this exact ID. Omit it to list every measure. An ID that matches nothing returns an empty list.'),
+  "indicator_id": zod.string().nullish().describe('Return only measures that belong to this indicator ID. Omit it to list every measure.'),
+  "geography_type": zod.string().nullish().describe('Return only measures whose `geography_semantics` field equals this value exactly, for example `COUNTY_FIPS_5`. Omit it to list every measure.'),
+  "page_size": zod.int().min(1).max(listMeasuresQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
-export const MeasuresV1MeasuresGetResponse = zod.object({
+export const ListMeasuresResponse = zod.object({
   "data": zod.array(zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('One variable you can query, such as a case count. It belongs to one indicator.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-})
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of measures, with paging details and links. Read `meta.next_page_token` to get the next page.')
 
 
 /**
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a measure
  */
-export const MeasureV1MeasuresMeasureIdGetParams = zod.object({
-  "measure_id": zod.string()
+export const GetMeasureParams = zod.object({
+  "measure_id": zod.string().describe('Exact measure ID from the measure list. An unknown ID returns 404.')
 })
 
-export const MeasureV1MeasuresMeasureIdGetResponse = zod.object({
+export const GetMeasureResponse = zod.object({
   "data": zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})
-})
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('The requested resource.')
+}).describe('One measure, wrapped in `data`.')
 
 
 /**
  * Current-release discovery with optional documented filters. page_size defaults to 100 (maximum 500); reuse opaque page_token with the same filters and release. A null next_page_token ends traversal. Cache-Control: public, max-age=60, must-revalidate.
- * @summary Discover sources
+ * @summary List sources
  */
-export const sourcesV1SourcesGetQueryPageSizeMax = 500;
+export const listSourcesQueryPageSizeMax = 500;
 
 
 
-export const SourcesV1SourcesGetQueryParams = zod.object({
-  "page_size": zod.int().min(1).max(sourcesV1SourcesGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+export const ListSourcesQueryParams = zod.object({
+  "page_size": zod.int().min(1).max(listSourcesQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
-export const SourcesV1SourcesGetResponse = zod.object({
+export const ListSourcesResponse = zod.object({
   "data": zod.array(zod.object({
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "label": zod.string(),
-  "publisher": zod.string().nullable(),
-  "lineage_source_id": zod.string(),
-  "dataset_id": zod.string(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_version": zod.string().nullish(),
-  "published_at": zod.iso.datetime({"offset":true}).nullish(),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
-})),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "publisher": zod.string().nullable().describe('Organization that publishes the data. `null` when none is recorded.'),
+  "lineage_source_id": zod.string().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset. It is not an annual value.'),
+  "source_version": zod.string().nullish().describe('Version label the publisher gives the dataset, when it has one.'),
+  "published_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `upstream_updated_at`. When the publisher published the data.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas last retrieved the data from the publisher. `null` when unavailable.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.')
+}).describe('The organization and dataset a value came from.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-})
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of sources, with paging details and links. Read `meta.next_page_token` to get the next page.')
 
 
 /**
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a source
  */
-export const SourceV1SourcesSourceIdGetParams = zod.object({
-  "source_id": zod.string()
+export const GetSourceParams = zod.object({
+  "source_id": zod.string().describe('Exact source ID, as given in a `source_id` field. An unknown ID returns 404.')
 })
 
-export const SourceV1SourcesSourceIdGetResponse = zod.object({
+export const GetSourceResponse = zod.object({
   "data": zod.object({
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "label": zod.string(),
-  "publisher": zod.string().nullable(),
-  "lineage_source_id": zod.string(),
-  "dataset_id": zod.string(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_version": zod.string().nullish(),
-  "published_at": zod.iso.datetime({"offset":true}).nullish(),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
-})
-})
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "publisher": zod.string().nullable().describe('Organization that publishes the data. `null` when none is recorded.'),
+  "lineage_source_id": zod.string().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset. It is not an annual value.'),
+  "source_version": zod.string().nullish().describe('Version label the publisher gives the dataset, when it has one.'),
+  "published_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `upstream_updated_at`. When the publisher published the data.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas last retrieved the data from the publisher. `null` when unavailable.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.')
+}).describe('The requested resource.')
+}).describe('One source, wrapped in `data`.')
 
 
 /**
  * Resolve the exact governed public resource ID in the current release. Unknown IDs return 404 RESOURCE_NOT_FOUND. Preserve versions and limitations; null metadata is not inferred. Cache-Control: public, max-age=60, must-revalidate; ETag with matching If-None-Match returns an empty 304.
  * @summary Get a methodology
  */
-export const MethodologyV1MethodologiesMethodologyIdGetParams = zod.object({
-  "methodology_id": zod.string()
+export const GetMethodologyParams = zod.object({
+  "methodology_id": zod.string().describe('Exact methodology ID, as given in a `methodology_id` field. An unknown ID returns 404.')
 })
 
-export const MethodologyV1MethodologiesMethodologyIdGetResponse = zod.object({
+export const GetMethodologyResponse = zod.object({
   "data": zod.object({
-  "methodology_id": zod.string().describe('Exact governed methodology resource ID; null when not governed.'),
-  "measure_id": zod.string(),
-  "version": zod.string(),
-  "description": zod.string(),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.')
-})
-})
+  "methodology_id": zod.string().describe('Identifies the methodology. Use it with `\/v1\/methodologies\/{methodology_id}`.'),
+  "measure_id": zod.string().describe('Identifier of the measure the methodology applies to.'),
+  "version": zod.string().describe('Version of this methodology resource.'),
+  "description": zod.string().describe('Plain-language description of the method.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.')
+}).describe('The requested resource.')
+}).describe('One methodology, wrapped in `data`.')
 
 
 /**
- * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use Cache-Control: no-store.
- * @summary Get geography identity (delivery pending)
+ * Validated county/state FIPS identity. While canonical identity delivery is unpublished the response is HTTP 200 with availability UNAVAILABLE, reason CANONICAL_GEOGRAPHY_UNPUBLISHED and data null; the identity is validated for shape only. No geometry is returned. Responses use `Cache-Control: no-store`.
+ * @summary Get geography identity
  */
-export const GeographyV1GeographiesGeographyTypeGeographyIdGetParams = zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string()
+export const GetGeographyParams = zod.object({
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'),
+  "geography_id": zod.string().describe('FIPS code of the place, sent as a string with leading zeros kept: five digits for a county, two for a state. A code of the wrong length or with non-digits returns 400 `INVALID_REQUEST`. Connecticut counties use planning-region codes such as `09110`.')
 })
 
 
 
 
-export const GeographyV1GeographiesGeographyTypeGeographyIdGetResponse = zod.union([zod.object({
+export const GetGeographyResponse = zod.union([zod.object({
   "data": zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "label": zod.string(),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Type and FIPS code of the place.'),
+  "label": zod.string().describe('Display name of the place.'),
   "parent": zod.union([zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),zod.null()]).optional()
-}).describe('County\/state identity metadata; geometry is a separate display resource.')
-}),zod.object({
-  "availability": zod.literal("UNAVAILABLE"),
-  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
-  "data": zod.null().describe('No canonical geography resource or geometry is fabricated.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),zod.null()]).optional().describe('The state that contains a county. `null` for a state.')
+}).describe('The requested resource.')
+}).describe('One county or state identity, wrapped in `data`. The identity carries no geometry.'),zod.object({
+  "availability": zod.literal("UNAVAILABLE").describe('Always `UNAVAILABLE`: the geography data is not published.'),
+  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED").describe('Why the data is unavailable. The geography data has not been published.'),
+  "data": zod.null().describe('Always `null`. The API returns no geography data or geometry.'),
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('The validated identity that was requested, echoed back.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('The identity you requested, returned unchanged after a format check.'),
   "limitations": zod.array(zod.string()).min(1).describe('Publication and representation boundaries, not scientific absence.')
-}).describe('Typed, successful answer that canonical geography identity is not published yet.\n\nReturned with HTTP 200 by the legacy identity route (ADR 0021). It carries no release\nbecause answering must stay instant and independent of the governed directory.')])
+}).describe('HTTP 200 answer that canonical geography data is not published yet.\n\nThe API checks the shape of the requested identity only. It does not confirm that the place\nexists. Use the availability route for a county to confirm that.')])
 
 
 /**
- * Additive county-only operation. Confirms membership and release from the governed county directory before returning UNAVAILABLE/CANONICAL_GEOGRAPHY_UNPUBLISHED with null data. The canonical resource is identity metadata, not a polygon. No geometry is returned or inferred. State availability is unsupported (400). Malformed county IDs return 400; confirmed absent identities return 404. Unavailable, empty, duplicate or inconsistent directory authority remains 503. The directory uses the existing bounded snapshot cache, checked against a fresh current-release lookup; a mismatch remains 503. Responses use Cache-Control: no-store. The existing canonical resource route and county/map routes are unchanged.
- * @summary Check canonical county geography publication availability
+ * Check whether a county has published canonical geography data.
+ *
+ * ### When to use it
+ * The API confirms the county exists in the current release. It returns HTTP 200 with `availability` set to `UNAVAILABLE`, `reason` set to `CANONICAL_GEOGRAPHY_UNPUBLISHED`, and `data` set to `null`. The resource describes identity only, and the API returns no geometry. State availability is not supported.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `400` | The ID is malformed, or you asked for a state. Send a five-digit county FIPS code. |
+ * | `404` | The county is not in the current release. |
+ * | `503` | The county directory is unavailable, empty, duplicated, or inconsistent with the current release. Retry later. |
+ *
+ * The response must not be cached.
+ * @summary Check county geography availability
  */
-export const CanonicalGeographyAvailabilityParams = zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string()
+export const CheckGeographyAvailabilityParams = zod.object({
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'),
+  "geography_id": zod.string().describe('FIPS code of the place, sent as a string with leading zeros kept: five digits for a county, two for a state. A code of the wrong length or with non-digits returns 400 `INVALID_REQUEST`. Connecticut counties use planning-region codes such as `09110`.')
 })
 
 
 
 
 
-export const CanonicalGeographyAvailabilityResponse = zod.object({
-  "availability": zod.literal("UNAVAILABLE"),
-  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED"),
-  "data": zod.null().describe('No canonical geography resource or geometry is fabricated.'),
-  "release_id": zod.string().min(1).describe('Governed county directory release used to confirm identity.'),
+export const CheckGeographyAvailabilityResponse = zod.object({
+  "availability": zod.literal("UNAVAILABLE").describe('Always `UNAVAILABLE`: the county\'s geography data is not published.'),
+  "reason": zod.literal("CANONICAL_GEOGRAPHY_UNPUBLISHED").describe('Why the data is unavailable. The geography data has not been published.'),
+  "data": zod.null().describe('Always `null`. The API returns no geography data or geometry.'),
+  "release_id": zod.string().min(1).describe('Identifies the county directory release used to confirm the county.'),
   "limitations": zod.array(zod.string()).min(1).describe('Publication and representation boundaries, not scientific absence.')
-})
+}).describe('The county exists, but its canonical geography data is not published yet.')
 
 
 /**
- * Current published county observations only. Ordered by measure ID, county FIPS, period start, and observation ID. Opaque page tokens bind to filters and release. Annual surveillance uses 2023. Separately enabled, reviewed January 2025 environmental measures use labeled daily periods, carry environmental_context coverage, and have no supported strata. Environmental context is descriptive weather, with no causal, disease-risk or ML claim. Surveillance context is optional and requires an admitted Data delivery; normalized_state preserves Data semantics and the publisher value remains value. Separately enabled CDC status uses start_date=end_date=2025-12-31 and CUMULATIVE grain; scapularis_status and burgdorferi_status require exact Data record admission. Annual year and other date ranges return 400 UNSUPPORTED_FILTER before data access. Missing context does not establish absence or temporal comparability. County SVI/population/insurance context requires vintage_year=2022 and retains ACS 2018-2022 periods. RUCC requires vintage_year=2023 and returns categorical codes/labels with null period dates. These measures reject annual/day filters; absent rows are unavailable evidence, never zero. A measure and bounded county/time selection are required; no user sorting or aggregation. After successful release/measure/query reads, an initially empty non-CDC selection returns 200 with meta.availability=UNAVAILABLE and reason=NO_PUBLISHED_RESULTS. This does not establish source coverage or biological absence. Exhausted continuation pages remain AVAILABLE. CDC admission and operational errors remain non-2xx. Known unavailable collections use Cache-Control: no-store.
+ * Query published county observations for one measure and up to 500 counties.
+ *
+ * ### What it returns
+ * Observations from the current release, ordered by measure ID, county FIPS, period start, then observation ID. You cannot sort or aggregate. Each observation carries its `value_state`, source, methodology, and limitations.
+ *
+ * ### Required parameters
+ * Send `measure_id`, `geography_type=county`, one or more `geography_id` values, and the time parameter that the measure type accepts.
+ *
+ * ### Time parameters by measure type
+ * | Measure type | Send | Wrong choice returns |
+ * | --- | --- | --- |
+ * | Annual surveillance (data is for 2023) | `year`, or `start_date` and `end_date` | 400 `INVALID_REQUEST` if you send both `year` and dates, or neither. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+ * | Daily environmental (January 2025 weather measures, enabled separately) | `start_date` and `end_date`, or `year` | 400 `INVALID_REQUEST` if you send only one date, or both `year` and dates. 400 `UNSUPPORTED_FILTER` if you send `vintage_year`. |
+ * | CDC cumulative status (`scapularis_status`, `burgdorferi_status`) | `start_date=2025-12-31` and `end_date=2025-12-31` (grain `CUMULATIVE`) | 400 `UNSUPPORTED_FILTER` for `year` or any other date range. The API rejects it before it reads data. |
+ * | County context vintages (SVI, population, insurance) | `vintage_year=2022` (periods are ACS 2018-2022) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+ * | RUCC (`rucc_2023`) | `vintage_year=2023` (categorical codes and labels, with `null` period dates) | 400 `INVALID_REQUEST` if `vintage_year` is missing. 400 `UNSUPPORTED_FILTER` for another vintage, `year`, `start_date`, or `end_date`. |
+ *
+ * ### Value states
+ * | Case | How to read it |
+ * | --- | --- |
+ * | Environmental measures | Descriptive weather with labeled daily periods and `environmental_context` coverage. They have no strata and make no causal, disease-risk, or machine-learning claim. |
+ * | Surveillance context | Optional, and it needs a published delivery. `normalized_state` preserves the publisher's meaning, and the publisher's value stays in `value`. |
+ * | Missing context | It does not establish absence or temporal comparability. |
+ * | Absent county context rows | They are unavailable evidence, never zero. |
+ *
+ * ### Empty versus unavailable results
+ * | Situation | Response |
+ * | --- | --- |
+ * | An initial query finds no published results (any measure except CDC status) | HTTP 200 with `meta.availability` `UNAVAILABLE` and `reason` `NO_PUBLISHED_RESULTS`. This does not establish source coverage or biological absence. |
+ * | You page past the last result | HTTP 200 with `meta.availability` `AVAILABLE`. |
+ * | CDC status is not published for the county, or a service error occurs | A non-2xx error response, not a 200. |
+ *
+ * ### Paging
+ * Send `next_page_token` unchanged with the same filters. Page tokens are tied to the filters and the release.
+ *
+ * ### Caching
+ * An `UNAVAILABLE` collection must not be cached.
  * @summary Query county observations
  */
 
-export const observationsV1ObservationsGetQueryGeographyIdMax = 500;
+export const listObservationsQueryGeographyIdMax = 500;
 
-export const observationsV1ObservationsGetQueryVintageYearMin = 1900;
-export const observationsV1ObservationsGetQueryVintageYearMax = 2100;
+export const listObservationsQueryVintageYearMin = 1900;
+export const listObservationsQueryVintageYearMax = 2100;
 
-export const observationsV1ObservationsGetQueryYearMin = 1900;
-export const observationsV1ObservationsGetQueryYearMax = 2100;
+export const listObservationsQueryYearMin = 1900;
+export const listObservationsQueryYearMax = 2100;
 
-export const observationsV1ObservationsGetQueryPageSizeMax = 500;
+export const listObservationsQueryPageSizeMax = 500;
 
 
 
-export const ObservationsV1ObservationsGetQueryParams = zod.object({
+export const ListObservationsQueryParams = zod.object({
   "measure_id": zod.string().min(1).describe('Exact discovery measure ID.'),
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.array(zod.string()).min(1).max(observationsV1ObservationsGetQueryGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
-  "vintage_year": zod.int().min(observationsV1ObservationsGetQueryVintageYearMin).max(observationsV1ObservationsGetQueryVintageYearMax).nullish().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
-  "year": zod.int().min(observationsV1ObservationsGetQueryYearMin).max(observationsV1ObservationsGetQueryYearMax).nullish().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place. Only `county` is supported; `state` returns 400 `UNSUPPORTED_FILTER`.'),
+  "geography_id": zod.array(zod.string()).min(1).max(listObservationsQueryGeographyIdMax).describe('Repeat for 1-500 county FIPS strings; preserve leading zeros.'),
+  "vintage_year": zod.int().min(listObservationsQueryVintageYearMin).max(listObservationsQueryVintageYearMax).nullish().describe('Required for county context: 2022 for SVI\/ACS, 2023 for RUCC. Excludes year\/date filters.'),
+  "year": zod.int().min(listObservationsQueryYearMin).max(listObservationsQueryYearMax).nullish().describe('Annual year or complete date range, not both. CDC cumulative status rejects year; use start_date=end_date=2025-12-31.'),
   "start_date": zod.iso.date().nullish().describe('Inclusive period start; requires end_date and excludes year.'),
   "end_date": zod.iso.date().nullish().describe('Inclusive period end; requires start_date and excludes year.'),
   "stratification": zod.array(zod.string()).nullish().describe('Current release has no strata; unsupported selections fail explicitly.'),
-  "page_size": zod.int().min(1).max(observationsV1ObservationsGetQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
+  "page_size": zod.int().min(1).max(listObservationsQueryPageSizeMax).nullish().describe('Items per page; defaults to 100, configured maximum at most 500.'),
   "page_token": zod.string().nullish().describe('Opaque next_page_token; retain query filters and release.')
 })
 
@@ -377,297 +425,297 @@ export const ObservationsV1ObservationsGetQueryParams = zod.object({
 
 
 
-export const ObservationsV1ObservationsGetResponse = zod.union([zod.object({
+export const ListObservationsResponse = zod.union([zod.object({
   "data": zod.array(zod.object({
-  "metadata_revision_id": zod.string().nullish().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
-  "observation_id": zod.string().describe('Stable observation identity and compact provenance reference.'),
-  "measure_id": zod.string(),
+  "metadata_revision_id": zod.string().nullish().describe('Identifies the reviewed metadata revision that describes this observation. `null` when none applies.'),
+  "observation_id": zod.string().describe('Stable identifier of the observation. It also serves as the provenance reference.'),
+  "measure_id": zod.string().describe('Identifier of the measure. See `\/v1\/measures\/{measure_id}`.'),
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.enum(['PERIOD', 'VINTAGE_YEAR']),
-  "value": zod.union([zod.int().describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.'),zod.string().describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.')]).nullable().describe('Integer population\/category or exact nonzero decimal text; ZERO is integer 0.'),
-  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
-  "unit": zod.string(),
-  "denominator": zod.string().nullable().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "strata": zod.record(zod.string(), zod.string()).optional(),
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "lineage_source_id": zod.string().nullish(),
-  "dataset_id": zod.string().nullish(),
-  "methodology_id": zod.string().nullable().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "release_methodology_version": zod.string().nullish(),
-  "methodology_version": zod.string().describe('Transformation version, distinct from methodology resource version.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_id": zod.string().describe('Governed release identity for reproducibility.'),
-  "provenance_ref": zod.string().describe('Structured observation provenance identity; not a literature citation.'),
-  "source_label": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_url": zod.string().nullish(),
-  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('Publisher timestamp when governed; null is not inferred freshness.'),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas processing time when governed; distinct from response time.'),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('The place the value describes.'),
+  "temporal_grain": zod.enum(['PERIOD', 'VINTAGE_YEAR']).describe('`PERIOD` for a dated reference period. `VINTAGE_YEAR` for a classification that has no dates.'),
+  "value": zod.union([zod.int().describe('An integer for a population or category, or exact decimal text. `ZERO` is the integer 0. Read it with `value_state`.'),zod.string().describe('An integer for a population or category, or exact decimal text. `ZERO` is the integer 0. Read it with `value_state`.')]).nullable().describe('An integer for a population or category, or exact decimal text. `ZERO` is the integer 0. Read it with `value_state`.'),
+  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero.'),
+  "unit": zod.string().describe('Unit of `value`, such as `count` or `mm`.'),
+  "denominator": zod.string().nullable().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "strata": zod.record(zod.string(), zod.string()).optional().describe('Breakdown the value applies to, such as an age group. Empty when the release has no strata.'),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "lineage_source_id": zod.string().nullish().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().nullish().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "methodology_id": zod.string().nullable().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produced the value.'),
+  "release_methodology_version": zod.string().nullish().describe('Version of the methodology as published in this release. `null` when none.'),
+  "methodology_version": zod.string().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_id": zod.string().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "provenance_ref": zod.string().describe('Identifies the provenance record for this observation. It is not a literature citation.'),
+  "source_label": zod.string().nullish().describe('Display name of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.'),
+  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "evidence": zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-}),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs this observation.'),
   "environmental_context": zod.union([zod.object({
-  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']),
-  "source_time_present": zod.boolean(),
-  "day_convention": zod.string().min(1).describe('Publisher labeled 24-hour period, not a midnight calendar day.'),
-  "expected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "intersected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_supported_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "valid_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_coverage_fraction": zod.union([zod.number().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),zod.string().describe('Monthly source-supported\/legal county area; separate from daily completeness.')]).nullable().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
-  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),zod.string().describe('Daily valid\/source-supported area; completeness threshold 0.95.')]).nullable().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
-  "upstream_date_modified": zod.string().nullable().describe('Upstream modification metadata; never original publication or first availability.'),
-  "weight_version": zod.string(),
-  "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
-  "metadata_revision_id": zod.string()
-}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.'),zod.null()]).optional().describe('Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.'),
+  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']).describe('How much of the county the source covers for this day.'),
+  "source_time_present": zod.boolean().describe('Whether the source supplied a time for this observation.'),
+  "day_convention": zod.string().min(1).describe('How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day.'),
+  "expected_area_m2": zod.union([zod.number().describe('County area expected to be covered, in square meters. `null` when unknown.'),zod.string().describe('County area expected to be covered, in square meters. `null` when unknown.')]).nullable().describe('County area expected to be covered, in square meters. `null` when unknown.'),
+  "intersected_area_m2": zod.union([zod.number().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),zod.string().describe('County area that overlaps the source grid, in square meters. `null` when unknown.')]).nullable().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),
+  "source_supported_area_m2": zod.union([zod.number().describe('County area the source supports, in square meters. `null` when unknown.'),zod.string().describe('County area the source supports, in square meters. `null` when unknown.')]).nullable().describe('County area the source supports, in square meters. `null` when unknown.'),
+  "valid_area_m2": zod.union([zod.number().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),zod.string().describe('County area with a valid source value for this day, in square meters. `null` when unknown.')]).nullable().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),
+  "source_coverage_fraction": zod.union([zod.number().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),zod.string().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.')]).nullable().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),
+  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),zod.string().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.')]).nullable().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),
+  "upstream_date_modified": zod.string().nullable().describe('Modification date the source reports. It is not the original publication date or the date the data first became available.'),
+  "weight_version": zod.string().describe('Version of the area weights used to combine grid cells into a county value.'),
+  "geometry_version": zod.string().describe('Version of the county boundaries used for the calculation. The API returns no boundary geometry.'),
+  "metadata_revision_id": zod.string().describe('Identifies the reviewed metadata revision that describes this context.')
+}).describe('How completely the source covers a county and day. It is separate from `value_state`.\n\nArea values are square meters. Exact decimal quantities may be strings.'),zod.null()]).optional().describe('Coverage details. Present only for environmental measures. Exact decimal quantities may be strings.'),
   "surveillance_context": zod.union([zod.object({
   "evidence": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
-  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
-  "reason_codes": zod.array(zod.string()).min(1),
-  "evidence_tier": zod.literal("GOVERNED_MAPPING"),
-  "observation_key": zod.string(),
-  "revision_id": zod.string(),
-  "value_state": zod.string(),
-  "source_rule_id": zod.string(),
-  "limitations": zod.array(zod.string()).min(1),
-  "evidence_revision_id": zod.string()
-}).describe('Data-projector evidence, never an API classification.'),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-surveillance-evidence-v3").describe('Version of the contract that defines this object.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher\'s original value stays in the observation `value`.'),
+  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']).describe('Evidence state for the county. None of these values proves absence.'),
+  "reason_codes": zod.array(zod.string()).min(1).describe('Codes that explain why the state applies.'),
+  "evidence_tier": zod.literal("GOVERNED_MAPPING").describe('How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping.'),
+  "observation_key": zod.string().describe('Identifies the observation this state describes.'),
+  "revision_id": zod.string().describe('Identifies the revision of the evidence record.'),
+  "value_state": zod.string().describe('The `value_state` of the observation this state describes.'),
+  "source_rule_id": zod.string().describe('Identifies the rule that mapped the source value.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "evidence_revision_id": zod.string().describe('Identifies the revision of the evidence set.')
+}).describe('Evidence state for a county as supplied with the data. Atlas adds no classification.'),zod.null()]).optional().describe('County evidence state. `null` when none is supplied.'),
   "methodology_comparison": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
-  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
-  "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.string().nullable()),
-  "jurisdiction_class": zod.string().nullable(),
-  "references": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
-  "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
-}),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1").describe('Version of the contract that defines this object.'),
+  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']).describe('Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the comparison state.'),
+  "methodology_era_ids": zod.array(zod.string().nullable()).describe('Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown.'),
+  "jurisdiction_class": zod.string().nullable().describe('Group of jurisdictions that share a reporting approach. `null` when unknown.'),
+  "references": zod.array(zod.string()).describe('Public references that support the comparison.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "left_observation_id": zod.string().describe('Identifier of the observation on the left side of the comparison.')
+}).describe('Whether this observation can be compared with another across surveillance methods.'),zod.null()]).optional().describe('Comparability of case definitions. `null` when none is supplied.'),
   "temporal_alignment": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-temporal-alignment-v1"),
-  "method_id": zod.string(),
-  "method_version": zod.string(),
-  "source_id": zod.string(),
-  "measure_id": zod.string(),
-  "aggregation_rule": zod.string(),
-  "coverage_denominator": zod.string(),
-  "decision_cutoff": zod.iso.datetime({"offset":true}),
-  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']),
-  "reason_codes": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
+  "contract_version": zod.literal("atlas-temporal-alignment-v1").describe('Version of the contract that defines this object.'),
+  "method_id": zod.string().describe('Identifies the alignment method.'),
+  "method_version": zod.string().describe('Version of the alignment method.'),
+  "source_id": zod.string().describe('Identifies the source of the aligned observation.'),
+  "measure_id": zod.string().describe('Identifies the measure that was aligned.'),
+  "aggregation_rule": zod.string().describe('Rule used to combine values inside the observation window.'),
+  "coverage_denominator": zod.string().describe('What the coverage is counted against, such as days in the window.'),
+  "decision_cutoff": zod.iso.datetime({"offset":true}).describe('Time after which new data is not used for the alignment. Includes a UTC offset.'),
+  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']).describe('Whether the observation can be used for the target window.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the disposition.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "observation_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span the observation covers.'),
   "target_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span being compared against.'),
   "lag": zod.object({
-  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
-  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
-  "offset_days": zod.int(),
-  "window_days": zod.int().nullish(),
-  "season_id": zod.string().nullish()
-}),
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']).describe('Type of lag rule that applies.'),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']).describe('Edge of the target window that the lag is measured from.'),
+  "offset_days": zod.int().describe('Number of days between the anchor and the window.'),
+  "window_days": zod.int().nullish().describe('Length of a rolling window in days. `null` for other kinds.'),
+  "season_id": zod.string().nullish().describe('Identifies the season for a seasonal lag. `null` otherwise.')
+}).describe('Lag between the two windows.'),
   "coverage": zod.object({
-  "expected": zod.union([zod.int(),zod.number()]),
-  "observed": zod.union([zod.int(),zod.number()]),
-  "unit": zod.string(),
-  "partial_allowed": zod.boolean()
-}),
+  "expected": zod.union([zod.int(),zod.number()]).describe('Amount of coverage expected, in `unit`.'),
+  "observed": zod.union([zod.int(),zod.number()]).describe('Amount of coverage present, in `unit`.'),
+  "unit": zod.string().describe('Unit of `expected` and `observed`, such as `day`.'),
+  "partial_allowed": zod.boolean().describe('Whether the method accepts less than the expected coverage.')
+}).describe('Expected and observed coverage of the observation window.'),
   "reference_period": zod.union([zod.object({
-  "id": zod.string(),
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "source_vintage": zod.string()
-}),zod.null()]).optional()
-}),zod.null()]).optional()
-}),zod.null()]).optional().describe('Only supplied through an admitted Data release\/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.'),
-  "period_start": zod.iso.date().nullable().describe('ACS reference-period start; null for RUCC vintage.'),
-  "period_end": zod.iso.date().nullable().describe('ACS reference-period end; null for RUCC vintage.'),
+  "id": zod.string().describe('Identifies the reference period.'),
+  "start": zod.iso.date().describe('First date in the reference period.'),
+  "end_exclusive": zod.iso.date().describe('First date after the reference period. It is not in the period.'),
+  "source_vintage": zod.string().describe('Reference year or period of the source dataset. It is not an annual value.')
+}).describe('The reference period of a source dataset.'),zod.null()]).optional().describe('Reference period of the source dataset. `null` when none applies.')
+}).describe('Describes how an observation\'s time span lines up with a target time span.\n\nThe alignment is descriptive. It does not show cause.'),zod.null()]).optional().describe('Time alignment details. `null` when none is supplied.')
+}).describe('Optional surveillance evidence attached to an observation.\n\nA missing or `null` part supports no claim about evidence state, comparability, or lag.\nComparison covers case definitions only. Alignment is descriptive, not causal.'),zod.null()]).optional().describe('Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag.'),
+  "period_start": zod.iso.date().nullable().describe('First date of the reference period. `null` for a classification vintage.'),
+  "period_end": zod.iso.date().nullable().describe('Last date of the reference period. `null` for a classification vintage.'),
   "county_context": zod.object({
-  "contract_version": zod.literal("atlas-county-context-consumer/1"),
-  "vintage_year": zod.int().describe('Source product\/classification vintage, not an annual date.'),
-  "source_field": zod.string(),
-  "value_type": zod.enum(['integer', 'number']),
-  "category_label": zod.string().nullable().describe('Authoritative category label; null for quantities.'),
-  "definition": zod.string(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')),
-  "metadata_methodology_version": zod.string()
-})
-})),
+  "contract_version": zod.literal("atlas-county-context-consumer/1").describe('Version of the contract that defines this object.'),
+  "vintage_year": zod.int().describe('Year of the source product or classification. It is not an annual date.'),
+  "source_field": zod.string().describe('Name of the field in the source product.'),
+  "value_type": zod.enum(['integer', 'number']).describe('Whether `value` is an integer or a decimal number.'),
+  "category_label": zod.string().nullable().describe('Official label of the category. `null` for quantities.'),
+  "definition": zod.string().describe('Plain-language definition of the field.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).describe('The `value_state` values this field can return.'),
+  "metadata_methodology_version": zod.string().describe('Version of the methodology metadata that describes this field.')
+}).describe('Describes the field the value came from.')
+}).describe('A county population or rurality value, reported for a reference period or a vintage.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-}),zod.object({
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of county population or rurality observations, with paging details and links. Read `meta.availability` and `meta.next_page_token` before you use `data`.'),zod.object({
   "data": zod.array(zod.object({
-  "metadata_revision_id": zod.string().nullish().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
-  "observation_id": zod.string().describe('Stable observation identity and compact provenance reference.'),
-  "measure_id": zod.string(),
+  "metadata_revision_id": zod.string().nullish().describe('Identifies the reviewed metadata revision that describes this observation. `null` when none applies.'),
+  "observation_id": zod.string().describe('Stable identifier of the observation. It also serves as the provenance reference.'),
+  "measure_id": zod.string().describe('Identifier of the measure. See `\/v1\/measures\/{measure_id}`.'),
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string(),
-  "value": zod.union([zod.number().describe('Read with value_state and unit; null never means zero.'),zod.string().describe('Read with value_state and unit; null never means zero.')]).nullable().describe('Read with value_state and unit; null never means zero.'),
-  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
-  "unit": zod.string(),
-  "denominator": zod.string().nullable().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "strata": zod.record(zod.string(), zod.string()).optional(),
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "lineage_source_id": zod.string().nullish(),
-  "dataset_id": zod.string().nullish(),
-  "methodology_id": zod.string().nullable().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "release_methodology_version": zod.string().nullish(),
-  "methodology_version": zod.string().describe('Transformation version, distinct from methodology resource version.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_id": zod.string().describe('Governed release identity for reproducibility.'),
-  "provenance_ref": zod.string().describe('Structured observation provenance identity; not a literature citation.'),
-  "source_label": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_url": zod.string().nullish(),
-  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('Publisher timestamp when governed; null is not inferred freshness.'),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas processing time when governed; distinct from response time.'),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('The place the value describes.'),
+  "temporal_grain": zod.string().describe('Time interval the value covers, such as `YEAR` or `DAY`.'),
+  "value": zod.union([zod.number().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.'),zod.string().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.')]).nullable().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.'),
+  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero.'),
+  "unit": zod.string().describe('Unit of `value`, such as `count` or `mm`.'),
+  "denominator": zod.string().nullable().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "strata": zod.record(zod.string(), zod.string()).optional().describe('Breakdown the value applies to, such as an age group. Empty when the release has no strata.'),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "lineage_source_id": zod.string().nullish().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().nullish().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "methodology_id": zod.string().nullable().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produced the value.'),
+  "release_methodology_version": zod.string().nullish().describe('Version of the methodology as published in this release. `null` when none.'),
+  "methodology_version": zod.string().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_id": zod.string().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "provenance_ref": zod.string().describe('Identifies the provenance record for this observation. It is not a literature citation.'),
+  "source_label": zod.string().nullish().describe('Display name of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.'),
+  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "evidence": zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-}),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs this observation.'),
   "environmental_context": zod.union([zod.object({
-  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']),
-  "source_time_present": zod.boolean(),
-  "day_convention": zod.string().min(1).describe('Publisher labeled 24-hour period, not a midnight calendar day.'),
-  "expected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "intersected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_supported_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "valid_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_coverage_fraction": zod.union([zod.number().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),zod.string().describe('Monthly source-supported\/legal county area; separate from daily completeness.')]).nullable().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
-  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),zod.string().describe('Daily valid\/source-supported area; completeness threshold 0.95.')]).nullable().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
-  "upstream_date_modified": zod.string().nullable().describe('Upstream modification metadata; never original publication or first availability.'),
-  "weight_version": zod.string(),
-  "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
-  "metadata_revision_id": zod.string()
-}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.'),zod.null()]).optional().describe('Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.'),
+  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']).describe('How much of the county the source covers for this day.'),
+  "source_time_present": zod.boolean().describe('Whether the source supplied a time for this observation.'),
+  "day_convention": zod.string().min(1).describe('How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day.'),
+  "expected_area_m2": zod.union([zod.number().describe('County area expected to be covered, in square meters. `null` when unknown.'),zod.string().describe('County area expected to be covered, in square meters. `null` when unknown.')]).nullable().describe('County area expected to be covered, in square meters. `null` when unknown.'),
+  "intersected_area_m2": zod.union([zod.number().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),zod.string().describe('County area that overlaps the source grid, in square meters. `null` when unknown.')]).nullable().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),
+  "source_supported_area_m2": zod.union([zod.number().describe('County area the source supports, in square meters. `null` when unknown.'),zod.string().describe('County area the source supports, in square meters. `null` when unknown.')]).nullable().describe('County area the source supports, in square meters. `null` when unknown.'),
+  "valid_area_m2": zod.union([zod.number().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),zod.string().describe('County area with a valid source value for this day, in square meters. `null` when unknown.')]).nullable().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),
+  "source_coverage_fraction": zod.union([zod.number().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),zod.string().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.')]).nullable().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),
+  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),zod.string().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.')]).nullable().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),
+  "upstream_date_modified": zod.string().nullable().describe('Modification date the source reports. It is not the original publication date or the date the data first became available.'),
+  "weight_version": zod.string().describe('Version of the area weights used to combine grid cells into a county value.'),
+  "geometry_version": zod.string().describe('Version of the county boundaries used for the calculation. The API returns no boundary geometry.'),
+  "metadata_revision_id": zod.string().describe('Identifies the reviewed metadata revision that describes this context.')
+}).describe('How completely the source covers a county and day. It is separate from `value_state`.\n\nArea values are square meters. Exact decimal quantities may be strings.'),zod.null()]).optional().describe('Coverage details. Present only for environmental measures. Exact decimal quantities may be strings.'),
   "surveillance_context": zod.union([zod.object({
   "evidence": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
-  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
-  "reason_codes": zod.array(zod.string()).min(1),
-  "evidence_tier": zod.literal("GOVERNED_MAPPING"),
-  "observation_key": zod.string(),
-  "revision_id": zod.string(),
-  "value_state": zod.string(),
-  "source_rule_id": zod.string(),
-  "limitations": zod.array(zod.string()).min(1),
-  "evidence_revision_id": zod.string()
-}).describe('Data-projector evidence, never an API classification.'),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-surveillance-evidence-v3").describe('Version of the contract that defines this object.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher\'s original value stays in the observation `value`.'),
+  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']).describe('Evidence state for the county. None of these values proves absence.'),
+  "reason_codes": zod.array(zod.string()).min(1).describe('Codes that explain why the state applies.'),
+  "evidence_tier": zod.literal("GOVERNED_MAPPING").describe('How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping.'),
+  "observation_key": zod.string().describe('Identifies the observation this state describes.'),
+  "revision_id": zod.string().describe('Identifies the revision of the evidence record.'),
+  "value_state": zod.string().describe('The `value_state` of the observation this state describes.'),
+  "source_rule_id": zod.string().describe('Identifies the rule that mapped the source value.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "evidence_revision_id": zod.string().describe('Identifies the revision of the evidence set.')
+}).describe('Evidence state for a county as supplied with the data. Atlas adds no classification.'),zod.null()]).optional().describe('County evidence state. `null` when none is supplied.'),
   "methodology_comparison": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
-  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
-  "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.string().nullable()),
-  "jurisdiction_class": zod.string().nullable(),
-  "references": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
-  "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
-}),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1").describe('Version of the contract that defines this object.'),
+  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']).describe('Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the comparison state.'),
+  "methodology_era_ids": zod.array(zod.string().nullable()).describe('Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown.'),
+  "jurisdiction_class": zod.string().nullable().describe('Group of jurisdictions that share a reporting approach. `null` when unknown.'),
+  "references": zod.array(zod.string()).describe('Public references that support the comparison.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "left_observation_id": zod.string().describe('Identifier of the observation on the left side of the comparison.')
+}).describe('Whether this observation can be compared with another across surveillance methods.'),zod.null()]).optional().describe('Comparability of case definitions. `null` when none is supplied.'),
   "temporal_alignment": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-temporal-alignment-v1"),
-  "method_id": zod.string(),
-  "method_version": zod.string(),
-  "source_id": zod.string(),
-  "measure_id": zod.string(),
-  "aggregation_rule": zod.string(),
-  "coverage_denominator": zod.string(),
-  "decision_cutoff": zod.iso.datetime({"offset":true}),
-  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']),
-  "reason_codes": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
+  "contract_version": zod.literal("atlas-temporal-alignment-v1").describe('Version of the contract that defines this object.'),
+  "method_id": zod.string().describe('Identifies the alignment method.'),
+  "method_version": zod.string().describe('Version of the alignment method.'),
+  "source_id": zod.string().describe('Identifies the source of the aligned observation.'),
+  "measure_id": zod.string().describe('Identifies the measure that was aligned.'),
+  "aggregation_rule": zod.string().describe('Rule used to combine values inside the observation window.'),
+  "coverage_denominator": zod.string().describe('What the coverage is counted against, such as days in the window.'),
+  "decision_cutoff": zod.iso.datetime({"offset":true}).describe('Time after which new data is not used for the alignment. Includes a UTC offset.'),
+  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']).describe('Whether the observation can be used for the target window.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the disposition.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "observation_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span the observation covers.'),
   "target_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span being compared against.'),
   "lag": zod.object({
-  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
-  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
-  "offset_days": zod.int(),
-  "window_days": zod.int().nullish(),
-  "season_id": zod.string().nullish()
-}),
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']).describe('Type of lag rule that applies.'),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']).describe('Edge of the target window that the lag is measured from.'),
+  "offset_days": zod.int().describe('Number of days between the anchor and the window.'),
+  "window_days": zod.int().nullish().describe('Length of a rolling window in days. `null` for other kinds.'),
+  "season_id": zod.string().nullish().describe('Identifies the season for a seasonal lag. `null` otherwise.')
+}).describe('Lag between the two windows.'),
   "coverage": zod.object({
-  "expected": zod.union([zod.int(),zod.number()]),
-  "observed": zod.union([zod.int(),zod.number()]),
-  "unit": zod.string(),
-  "partial_allowed": zod.boolean()
-}),
+  "expected": zod.union([zod.int(),zod.number()]).describe('Amount of coverage expected, in `unit`.'),
+  "observed": zod.union([zod.int(),zod.number()]).describe('Amount of coverage present, in `unit`.'),
+  "unit": zod.string().describe('Unit of `expected` and `observed`, such as `day`.'),
+  "partial_allowed": zod.boolean().describe('Whether the method accepts less than the expected coverage.')
+}).describe('Expected and observed coverage of the observation window.'),
   "reference_period": zod.union([zod.object({
-  "id": zod.string(),
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "source_vintage": zod.string()
-}),zod.null()]).optional()
-}),zod.null()]).optional()
-}),zod.null()]).optional().describe('Only supplied through an admitted Data release\/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.'),
-  "period_start": zod.iso.date().describe('Inclusive start of the governed observation period.'),
-  "period_end": zod.iso.date().describe('Inclusive end of the governed observation period.')
-})),
+  "id": zod.string().describe('Identifies the reference period.'),
+  "start": zod.iso.date().describe('First date in the reference period.'),
+  "end_exclusive": zod.iso.date().describe('First date after the reference period. It is not in the period.'),
+  "source_vintage": zod.string().describe('Reference year or period of the source dataset. It is not an annual value.')
+}).describe('The reference period of a source dataset.'),zod.null()]).optional().describe('Reference period of the source dataset. `null` when none applies.')
+}).describe('Describes how an observation\'s time span lines up with a target time span.\n\nThe alignment is descriptive. It does not show cause.'),zod.null()]).optional().describe('Time alignment details. `null` when none is supplied.')
+}).describe('Optional surveillance evidence attached to an observation.\n\nA missing or `null` part supports no claim about evidence state, comparability, or lag.\nComparison covers case definitions only. Alignment is descriptive, not causal.'),zod.null()]).optional().describe('Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag.'),
+  "period_start": zod.iso.date().describe('First date the observation covers (inclusive).'),
+  "period_end": zod.iso.date().describe('Last date the observation covers (inclusive).')
+}).describe('One value for a measure, a county, and a period, with its state and provenance.')).describe('The items on this page. Empty when there are none.'),
   "meta": zod.object({
-  "next_page_token": zod.string().nullish().describe('Opaque query\/release-bound continuation. Null means exhaustion; tokens may expire on restart.'),
-  "response_at": zod.iso.datetime({"offset":true}).optional().describe('UTC response construction time; not source freshness or observation time.'),
-  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('No published rows after a successful initial non-CDC query; otherwise omitted.'),
-  "release_id": zod.string().nullish().describe('Current governed release actually read for this query.'),
-  "limitations": zod.array(zod.string()).nullish().describe('Selection availability caveats; observations only.')
-}),
+  "next_page_token": zod.string().nullish().describe('Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart.'),
+  "response_at": zod.iso.datetime({"offset":true}).optional().describe('When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made.'),
+  "availability": zod.union([zod.literal('AVAILABLE'),zod.literal('UNAVAILABLE'),zod.literal(null)]).nullish().describe('Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_RESULTS'),zod.literal(null)]).nullish().describe('Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release this query read. Results from different releases are not directly comparable.'),
+  "limitations": zod.array(zod.string()).nullish().describe('Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere.')
+}).describe('Paging, release, and availability details.'),
   "links": zod.object({
-  "self": zod.string().nullish()
-})
-})])
+  "self": zod.string().nullish().describe('Link to this page of results. `null` when the API supplies none.')
+}).describe('Links related to this response.')
+}).describe('A page of observations, with paging details and links. Read `meta.availability` and `meta.next_page_token` before you use `data`.')])
 
 
 /**
@@ -917,7 +965,7 @@ export const ListIntelligenceItemsResponse = zod.object({
   "run_id": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(listIntelligenceItemsResponseDataItemItemTwoProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 }),
@@ -960,7 +1008,7 @@ export const ListIntelligenceItemsResponse = zod.object({
 
 
 /**
- * First-party read only. Source catalog covers represented item sources, not the private registry or all active sources. Health is explicitly unavailable until DATA publishes it. No freshness thresholds are inferred. page_size 1–500, state-bound tokens, no-store. No ingestion.
+ * First-party read only. Each source_id appears once, with its highest registry_version. The catalog lists sources represented by published items, not the private registry or every registered source. operational_state is healthy, stale, or failing from PRESENTATION.INTELLIGENCE_SOURCE_HEALTH_V1, and unavailable with diagnostic SOURCE_HEALTH_NOT_PUBLISHED when that source has no health row or the health projection cannot be read. last_completed_at and last_error_code come from that projection. Run identifiers and free text are omitted. The health read is cached for 5 minutes. page_size is 1–500 with state-bound tokens. The response must not be cached. No ingestion.
  * @summary Read source identities represented by published intelligence
  */
 export const listIntelligenceSourcesQueryPageSizeDefault = 100;
@@ -983,9 +1031,11 @@ export const listIntelligenceSourcesResponseDataItemOrganizationMax = 1000;
 export const listIntelligenceSourcesResponseDataItemOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
 export const listIntelligenceSourcesResponseDataItemOperationalStateDefault = `unavailable`;
 export const listIntelligenceSourcesResponseDataItemDiagnosticDefault = `SOURCE_HEALTH_NOT_PUBLISHED`;
+export const listIntelligenceSourcesResponseDataItemLastCompletedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const listIntelligenceSourcesResponseDataItemLastErrorCodeRegExp = new RegExp('^(?:INTELLIGENCE_[A-Z0-9_]{3,80}|FEED_[A-Z0-9_]{1,64}|MALFORMED_FEED|UNCLASSIFIED_[A-Za-z][A-Za-z0-9]{0,80})$');
 export const listIntelligenceSourcesResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const listIntelligenceSourcesResponseMetaSourceHealthAvailableDefault = false;
-export const listIntelligenceSourcesResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
+export const listIntelligenceSourcesResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Operational state is healthy, stale, or failing when the source-health projection has a row for that source. Otherwise it is unavailable with diagnostic SOURCE_HEALTH_NOT_PUBLISHED. Fetch timestamps are not operational health.`];
 export const listIntelligenceSourcesResponseSourceCatalogCompleteDefault = false;
 
 export const ListIntelligenceSourcesResponse = zod.object({
@@ -994,13 +1044,15 @@ export const ListIntelligenceSourcesResponse = zod.object({
   "registry_version": zod.int().min(1),
   "organization": zod.string().min(1).max(listIntelligenceSourcesResponseDataItemOrganizationMax).regex(listIntelligenceSourcesResponseDataItemOrganizationRegExp),
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other']),
-  "operational_state": zod.literal("unavailable").default(listIntelligenceSourcesResponseDataItemOperationalStateDefault),
-  "diagnostic": zod.literal("SOURCE_HEALTH_NOT_PUBLISHED").default(listIntelligenceSourcesResponseDataItemDiagnosticDefault)
+  "operational_state": zod.enum(['healthy', 'stale', 'failing', 'unavailable']).default(listIntelligenceSourcesResponseDataItemOperationalStateDefault).describe('healthy, stale, or failing when the source-health projection has a row for this source. unavailable when it does not, or when that projection cannot be read.'),
+  "diagnostic": zod.union([zod.literal('SOURCE_HEALTH_NOT_PUBLISHED'),zod.literal(null)]).nullish().default(listIntelligenceSourcesResponseDataItemDiagnosticDefault).describe('SOURCE_HEALTH_NOT_PUBLISHED when operational_state is unavailable. Null when a health row supplies the operational state.'),
+  "last_completed_at": zod.string().regex(listIntelligenceSourcesResponseDataItemLastCompletedAtRegExp).nullish().describe('UTC completion time from the source-health projection. Null when unavailable or absent on that row.'),
+  "last_error_code": zod.string().regex(listIntelligenceSourcesResponseDataItemLastErrorCodeRegExp).nullish().describe('Allowlisted error code from the source-health projection. Free text and run identifiers are omitted.')
 })),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(listIntelligenceSourcesResponseMetaProjectionVersionDefault),
-  "source_health_available": zod.literal(false).default(listIntelligenceSourcesResponseMetaSourceHealthAvailableDefault),
+  "source_health_available": zod.boolean().default(listIntelligenceSourcesResponseMetaSourceHealthAvailableDefault).describe('True when this response applied a source-health snapshot. False when that snapshot could not be read; every source is then unavailable.'),
   "limitations": zod.array(zod.string()).default(listIntelligenceSourcesResponseMetaLimitationsDefault)
 }),
   "source_catalog_complete": zod.literal(false).default(listIntelligenceSourcesResponseSourceCatalogCompleteDefault)
@@ -1008,7 +1060,7 @@ export const ListIntelligenceSourcesResponse = zod.object({
 
 
 /**
- * Read only from governed INTELLIGENCE_FEED_V2. No excerpts, article bodies or media. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Stable identity/revision ordering, bounded state/filter-bound pagination, no-store. Disabled or unavailable returns 503; an available empty projection returns 200.
+ * Read only from governed INTELLIGENCE_FEED_V2. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. Each list entry includes abstract_preview, abstract_has_more, abstract_state, copyright_line, pubmed_url, and attribution. abstract_preview is at most 1000 characters, cut at a word boundary, and is null when abstract_state is not present. The list does not include the full abstract text. Publisher dates remain null when unknown; inclusive date filters exclude unknown dates. Entries with a publisher date are newest first. Entries with an unknown publisher date are last. Matching publisher dates use a stable tie-break of item id, revision id, source id, and registry version. Bounded state/filter-bound pagination. The response must not be cached. Disabled or unavailable returns 503; an available empty projection returns 200.
  * @summary Read source-attributed publication metadata
  */
 export const listIntelligenceFeedQuerySourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
@@ -1057,6 +1109,43 @@ export const listIntelligenceFeedResponseDataItemSourceOrganizationMax = 1000;
 
 
 export const listIntelligenceFeedResponseDataItemSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const listIntelligenceFeedResponseDataItemSourceFamilyLabelMax = 200;
+
+
+export const listIntelligenceFeedResponseDataItemSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemDescriptionTextMax = 4096;
+
+
+export const listIntelligenceFeedResponseDataItemDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemTagsItemMax = 200;
+
+
+export const listIntelligenceFeedResponseDataItemTagsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemTagsMax = 100;
+
+export const listIntelligenceFeedResponseDataItemAuthorsItemMax = 300;
+
+
+export const listIntelligenceFeedResponseDataItemAuthorsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemAuthorsMax = 20;
+
+export const listIntelligenceFeedResponseDataItemPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const listIntelligenceFeedResponseDataItemPubmedUrlMax = 80;
+
+
+export const listIntelligenceFeedResponseDataItemPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemAttributionMax = 200;
+
+
+export const listIntelligenceFeedResponseDataItemAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemAbstractPreviewMax = 1000;
+
+
+export const listIntelligenceFeedResponseDataItemAbstractPreviewRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const listIntelligenceFeedResponseDataItemCopyrightLineMax = 1000;
+
+
+export const listIntelligenceFeedResponseDataItemCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
 export const listIntelligenceFeedResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
 export const listIntelligenceFeedResponseMetaSourceHealthAvailableDefault = false;
 export const listIntelligenceFeedResponseMetaLimitationsDefault = [`Publication intelligence, not disease occurrence or a public-health alert.`, `Source health is not published; item fetch timestamps are not health evidence.`];
@@ -1073,7 +1162,7 @@ export const ListIntelligenceFeedResponse = zod.object({
   "run_id": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceRunIdRegExp),
   "artifact_id": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceArtifactIdRegExp),
   "artifact_sha256": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceArtifactSha256RegExp),
-  "parser_version": zod.literal("rss-atom-native-v2"),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
   "fetch_version": zod.string().regex(listIntelligenceFeedResponseDataItemProvenanceFetchVersionRegExp),
   "normalization_version": zod.literal("intelligence-identity-v2")
 }),
@@ -1086,8 +1175,23 @@ export const ListIntelligenceFeedResponse = zod.object({
   "registry_version": zod.int().min(1),
   "organization": zod.string().min(1).max(listIntelligenceFeedResponseDataItemSourceOrganizationMax).regex(listIntelligenceFeedResponseDataItemSourceOrganizationRegExp),
   "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
-})
-})),
+}),
+  "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(listIntelligenceFeedResponseDataItemSourceFamilyLabelMax).regex(listIntelligenceFeedResponseDataItemSourceFamilyLabelRegExp).describe('Display label for source_family.'),
+  "description": zod.object({
+  "text": zod.string().max(listIntelligenceFeedResponseDataItemDescriptionTextMax).regex(listIntelligenceFeedResponseDataItemDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
+}).describe('Publisher summary for this entry.'),
+  "tags": zod.array(zod.string().max(listIntelligenceFeedResponseDataItemTagsItemMax).regex(listIntelligenceFeedResponseDataItemTagsItemRegExp)).max(listIntelligenceFeedResponseDataItemTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
+  "authors": zod.array(zod.string().max(listIntelligenceFeedResponseDataItemAuthorsItemMax).regex(listIntelligenceFeedResponseDataItemAuthorsItemRegExp)).max(listIntelligenceFeedResponseDataItemAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
+  "pmid": zod.string().regex(listIntelligenceFeedResponseDataItemPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
+  "pubmed_url": zod.string().max(listIntelligenceFeedResponseDataItemPubmedUrlMax).regex(listIntelligenceFeedResponseDataItemPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(listIntelligenceFeedResponseDataItemAttributionMax).regex(listIntelligenceFeedResponseDataItemAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract_preview": zod.string().max(listIntelligenceFeedResponseDataItemAbstractPreviewMax).regex(listIntelligenceFeedResponseDataItemAbstractPreviewRegExp).nullable().describe('Plain-text preview of a present PubMed abstract, cut at a word boundary. At most 1000 characters. The whole abstract when it is shorter. An empty string when the abstract is present and no complete word fits. Null when abstract_state is not present. No ellipsis is added.'),
+  "abstract_has_more": zod.boolean().describe('True when abstract_preview omits part of a present abstract. False when the preview is the whole abstract, or when abstract_state is not present.'),
+  "abstract_state": zod.union([zod.literal('present'),zod.literal('empty'),zod.literal('not_provided'),zod.literal('withheld'),zod.literal('suppressed'),zod.literal(null)]).nullable().describe('present: the abstract text is non-empty. empty: the abstract element is blank. not_provided: the PubMed record has no abstract. withheld: the abstract is not shown. suppressed: the abstract is not shown. Null when the entry is not PubMed, matching a null abstract on the by-id route.'),
+  "copyright_line": zod.string().max(listIntelligenceFeedResponseDataItemCopyrightLineMax).regex(listIntelligenceFeedResponseDataItemCopyrightLineRegExp).nullable().describe('Copyright line from the record, verbatim. Present only when abstract_state is present and the record has one; otherwise null.')
+}).describe('One feed list row. The full abstract text is omitted.')),
   "meta": zod.object({
   "next_page_token": zod.string().nullable().describe('Opaque filter\/state-bound continuation.'),
   "projection_version": zod.literal("intelligence-feed-read-v2").default(listIntelligenceFeedResponseMetaProjectionVersionDefault),
@@ -1098,18 +1202,147 @@ export const ListIntelligenceFeedResponse = zod.object({
 
 
 /**
+ * Read one current entry from governed INTELLIGENCE_FEED_V2 by its 64-character item id. The feed returns publisher summaries and, for PubMed, abstracts with their copyright line. An abstract longer than 6000 characters is withheld. It returns no article bodies or media. The entry includes the full abstract as abstract.text, abstract.state, and abstract.copyright_line, plus pubmed_url and attribution. The response must not be cached. A malformed id returns 422. An id that is not in the feed returns 404. Disabled or unavailable returns 503.
+ * @summary Read one source-attributed publication
+ */
+export const getIntelligenceFeedEntryPathItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
+export const GetIntelligenceFeedEntryParams = zod.object({
+  "item_id": zod.string().regex(getIntelligenceFeedEntryPathItemIdRegExp)
+})
+
+export const getIntelligenceFeedEntryResponseDataItemIdRegExp = new RegExp('^[a-f0-9]{64}$');
+export const getIntelligenceFeedEntryResponseDataRevisionIdRegExp = new RegExp('^[a-f0-9]{64}$');
+export const getIntelligenceFeedEntryResponseDataTitleMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataTitleRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const getIntelligenceFeedEntryResponseDataCanonicalUrlMax = 4096;
+
+export const getIntelligenceFeedEntryResponseDataPublishedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const getIntelligenceFeedEntryResponseDataFetchedAtRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$');
+export const getIntelligenceFeedEntryResponseDataProvenanceRunIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const getIntelligenceFeedEntryResponseDataProvenanceArtifactIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const getIntelligenceFeedEntryResponseDataProvenanceArtifactSha256RegExp = new RegExp('^[a-f0-9]{64}$');
+export const getIntelligenceFeedEntryResponseDataProvenanceFetchVersionRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+export const getIntelligenceFeedEntryResponseDataLimitationsItemMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataLimitationsItemRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const getIntelligenceFeedEntryResponseDataLimitationsMax = 100;
+
+export const getIntelligenceFeedEntryResponseDataPublisherMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataPublisherRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const getIntelligenceFeedEntryResponseDataSourceSourceIdRegExp = new RegExp('^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,199}$');
+
+export const getIntelligenceFeedEntryResponseDataSourceOrganizationMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataSourceOrganizationRegExp = new RegExp('^[^<>\\x00-\\x1f]*$');
+export const getIntelligenceFeedEntryResponseDataSourceFamilyLabelMax = 200;
+
+
+export const getIntelligenceFeedEntryResponseDataSourceFamilyLabelRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataDescriptionTextMax = 4096;
+
+
+export const getIntelligenceFeedEntryResponseDataDescriptionTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataTagsItemMax = 200;
+
+
+export const getIntelligenceFeedEntryResponseDataTagsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataTagsMax = 100;
+
+export const getIntelligenceFeedEntryResponseDataAuthorsItemMax = 300;
+
+
+export const getIntelligenceFeedEntryResponseDataAuthorsItemRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAuthorsMax = 20;
+
+export const getIntelligenceFeedEntryResponseDataPmidRegExp = new RegExp('^[1-9][0-9]{0,9}$');
+export const getIntelligenceFeedEntryResponseDataPubmedUrlMax = 80;
+
+
+export const getIntelligenceFeedEntryResponseDataPubmedUrlRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAttributionMax = 200;
+
+
+export const getIntelligenceFeedEntryResponseDataAttributionRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAbstractOneTextMax = 6000;
+
+
+export const getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax = 1000;
+
+
+export const getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp = new RegExp('^[^<>\\x00-\\x1f\\x7f]*$');
+export const getIntelligenceFeedEntryResponseMetaProjectionVersionDefault = `intelligence-feed-read-v2`;
+
+export const GetIntelligenceFeedEntryResponse = zod.object({
+  "data": zod.object({
+  "item_id": zod.string().regex(getIntelligenceFeedEntryResponseDataItemIdRegExp),
+  "revision_id": zod.string().regex(getIntelligenceFeedEntryResponseDataRevisionIdRegExp),
+  "title": zod.string().min(1).max(getIntelligenceFeedEntryResponseDataTitleMax).regex(getIntelligenceFeedEntryResponseDataTitleRegExp).nullable(),
+  "canonical_url": zod.string().max(getIntelligenceFeedEntryResponseDataCanonicalUrlMax).nullable(),
+  "published_at": zod.string().regex(getIntelligenceFeedEntryResponseDataPublishedAtRegExp).nullable(),
+  "fetched_at": zod.string().regex(getIntelligenceFeedEntryResponseDataFetchedAtRegExp),
+  "provenance": zod.object({
+  "run_id": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceRunIdRegExp),
+  "artifact_id": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceArtifactIdRegExp),
+  "artifact_sha256": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceArtifactSha256RegExp),
+  "parser_version": zod.enum(['rss-atom-native-v2', 'entrez-efetch-v1']),
+  "fetch_version": zod.string().regex(getIntelligenceFeedEntryResponseDataProvenanceFetchVersionRegExp),
+  "normalization_version": zod.literal("intelligence-identity-v2")
+}),
+  "limitations": zod.array(zod.string().min(1).max(getIntelligenceFeedEntryResponseDataLimitationsItemMax).regex(getIntelligenceFeedEntryResponseDataLimitationsItemRegExp)).max(getIntelligenceFeedEntryResponseDataLimitationsMax),
+  "contract_version": zod.literal("2.0.0"),
+  "publication_date_state": zod.enum(['present', 'not_provided', 'withheld', 'invalid']),
+  "publisher": zod.string().min(1).max(getIntelligenceFeedEntryResponseDataPublisherMax).regex(getIntelligenceFeedEntryResponseDataPublisherRegExp).nullable(),
+  "source": zod.object({
+  "source_id": zod.string().regex(getIntelligenceFeedEntryResponseDataSourceSourceIdRegExp),
+  "registry_version": zod.int().min(1),
+  "organization": zod.string().min(1).max(getIntelligenceFeedEntryResponseDataSourceOrganizationMax).regex(getIntelligenceFeedEntryResponseDataSourceOrganizationRegExp),
+  "reviewed_trust_classification": zod.enum(['official_public_health', 'research_index', 'reviewed_other'])
+}),
+  "source_family": zod.enum(['cdc_mmwr', 'cdc_eid', 'cdc_other', 'nih_niaid', 'pubmed', 'state_local', 'other']).describe('Publisher family. One of cdc_mmwr, cdc_eid, cdc_other, nih_niaid, pubmed, state_local, or other.'),
+  "source_family_label": zod.string().max(getIntelligenceFeedEntryResponseDataSourceFamilyLabelMax).regex(getIntelligenceFeedEntryResponseDataSourceFamilyLabelRegExp).describe('Display label for source_family.'),
+  "description": zod.object({
+  "text": zod.string().max(getIntelligenceFeedEntryResponseDataDescriptionTextMax).regex(getIntelligenceFeedEntryResponseDataDescriptionTextRegExp).nullable().describe('Plain text of the publisher summary. Non-empty when state is present, an empty string when state is empty, and null otherwise.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld']).describe('present: text is non-empty. empty: the summary element is blank and text is an empty string. not_provided: the record has no summary and text is null. withheld: text is null.')
+}).describe('Publisher summary for this entry.'),
+  "tags": zod.array(zod.string().max(getIntelligenceFeedEntryResponseDataTagsItemMax).regex(getIntelligenceFeedEntryResponseDataTagsItemRegExp)).max(getIntelligenceFeedEntryResponseDataTagsMax).describe('Publisher category labels in publisher order. PubMed entries use author keywords. The MMWR series labels MMWR and Morbidity & Mortality Weekly Report are omitted. Duplicate labels that differ only by case are omitted. Empty when the entry has none.'),
+  "authors": zod.array(zod.string().max(getIntelligenceFeedEntryResponseDataAuthorsItemMax).regex(getIntelligenceFeedEntryResponseDataAuthorsItemRegExp)).max(getIntelligenceFeedEntryResponseDataAuthorsMax).describe('Structured author names in record order. Empty when the entry has none.'),
+  "pmid": zod.string().regex(getIntelligenceFeedEntryResponseDataPmidRegExp).nullable().describe('PubMed identifier. Null when the entry is not a PubMed record.'),
+  "pubmed_url": zod.string().max(getIntelligenceFeedEntryResponseDataPubmedUrlMax).regex(getIntelligenceFeedEntryResponseDataPubmedUrlRegExp).nullable().describe('PubMed article URL derived from pmid: https:\/\/pubmed.ncbi.nlm.nih.gov\/<pmid>\/. Null when pmid is null.'),
+  "attribution": zod.string().max(getIntelligenceFeedEntryResponseDataAttributionMax).regex(getIntelligenceFeedEntryResponseDataAttributionRegExp).describe('Credit line shown with the entry.'),
+  "abstract": zod.union([zod.object({
+  "text": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneTextMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneTextRegExp).nullable().describe('Plain text of the PubMed abstract. Non-empty when state is present, an empty string when state is empty, and null otherwise. The text is complete. An abstract longer than 6000 characters is withheld.'),
+  "state": zod.enum(['present', 'empty', 'not_provided', 'withheld', 'suppressed']).describe('present: text is non-empty. empty: the abstract element is blank and text is an empty string. not_provided: the record has no abstract and text is null. withheld: text is null. suppressed: text is null and the abstract is not shown.'),
+  "copyright_line": zod.string().max(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineMax).regex(getIntelligenceFeedEntryResponseDataAbstractOneCopyrightLineRegExp).nullable().describe('Copyright line from the record. Present only when state is present and the record has one; otherwise null.')
+}).describe('PubMed abstract for one feed entry.'),zod.null()]).describe('PubMed abstract for this entry, including its copyright line. Null when the entry is not PubMed. The text is the complete abstract.')
+}).describe('One source-attributed publication, including the full PubMed abstract.'),
+  "meta": zod.object({
+  "projection_version": zod.literal("intelligence-feed-read-v2").default(getIntelligenceFeedEntryResponseMetaProjectionVersionDefault)
+}).optional().describe('Projection identity for one feed entry.')
+}).describe('One current intelligence feed entry.')
+
+
+/**
  * @summary Live
  */
-export const LiveHealthLiveGetResponse = zod.record(zod.string(), zod.string())
+export const CheckLivenessResponse = zod.record(zod.string(), zod.string())
 
 
 /**
  * @summary Ready
  */
-export const readyHealthReadyGetResponseStatusDefault = `ready`;
+export const checkReadinessResponseStatusDefault = `ready`;
 
-export const ReadyHealthReadyGetResponse = zod.object({
-  "status": zod.literal("ready").default(readyHealthReadyGetResponseStatusDefault),
+export const CheckReadinessResponse = zod.object({
+  "status": zod.literal("ready").default(checkReadinessResponseStatusDefault),
   "dependencies": zod.object({
   "snowflake": zod.enum(['ok', 'degraded'])
 })
@@ -1119,24 +1352,24 @@ export const ReadyHealthReadyGetResponse = zod.object({
 /**
  * @summary Get Profile
  */
-export const GetProfileV1MeProfileGetHeader = zod.object({
+export const GetProfileHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const getProfileV1MeProfileGetResponseProfileOneStateCodeMax = 2;
+export const getProfileResponseProfileOneStateCodeMax = 2;
 
-export const getProfileV1MeProfileGetResponseProfileOneOrganizationMax = 120;
+export const getProfileResponseProfileOneOrganizationMax = 120;
 
-export const getProfileV1MeProfileGetResponseProfileOneJobTitleMax = 120;
+export const getProfileResponseProfileOneJobTitleMax = 120;
 
 
 
-export const GetProfileV1MeProfileGetResponse = zod.object({
+export const GetProfileResponse = zod.object({
   "profile": zod.union([zod.object({
   "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
-  "state_code": zod.string().max(getProfileV1MeProfileGetResponseProfileOneStateCodeMax).nullish(),
-  "organization": zod.string().max(getProfileV1MeProfileGetResponseProfileOneOrganizationMax).nullish(),
-  "job_title": zod.string().max(getProfileV1MeProfileGetResponseProfileOneJobTitleMax).nullish(),
+  "state_code": zod.string().max(getProfileResponseProfileOneStateCodeMax).nullish(),
+  "organization": zod.string().max(getProfileResponseProfileOneOrganizationMax).nullish(),
+  "job_title": zod.string().max(getProfileResponseProfileOneJobTitleMax).nullish(),
   "starting_view_version": zod.union([zod.literal(1),zod.literal(null)]).nullish().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
@@ -1145,40 +1378,40 @@ export const GetProfileV1MeProfileGetResponse = zod.object({
 /**
  * @summary Save Profile
  */
-export const SaveProfileV1MeProfilePutHeader = zod.object({
+export const UpdateProfileHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const saveProfileV1MeProfilePutBodyStateCodeMax = 2;
+export const updateProfileBodyStateCodeMax = 2;
 
-export const saveProfileV1MeProfilePutBodyOrganizationMax = 120;
+export const updateProfileBodyOrganizationMax = 120;
 
-export const saveProfileV1MeProfilePutBodyJobTitleMax = 120;
+export const updateProfileBodyJobTitleMax = 120;
 
 
 
-export const SaveProfileV1MeProfilePutBody = zod.object({
+export const UpdateProfileBody = zod.object({
   "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
-  "state_code": zod.string().max(saveProfileV1MeProfilePutBodyStateCodeMax).nullish(),
-  "organization": zod.string().max(saveProfileV1MeProfilePutBodyOrganizationMax).nullish(),
-  "job_title": zod.string().max(saveProfileV1MeProfilePutBodyJobTitleMax).nullish(),
+  "state_code": zod.string().max(updateProfileBodyStateCodeMax).nullish(),
+  "organization": zod.string().max(updateProfileBodyOrganizationMax).nullish(),
+  "job_title": zod.string().max(updateProfileBodyJobTitleMax).nullish(),
   "complete_starting_view": zod.literal(true).optional().describe('Explicit onboarding-completion action. When supplied, the value must be JSON boolean true. That validates state_code and stores starting_view_version 1 with that jurisdiction in the same write. Omit this field on an ordinary Settings or profile save so the stored marker is left unchanged. Null, false, numbers, and strings are rejected. Clients cannot choose the version.')
 })
 
-export const saveProfileV1MeProfilePutResponseProfileOneStateCodeMax = 2;
+export const updateProfileResponseProfileOneStateCodeMax = 2;
 
-export const saveProfileV1MeProfilePutResponseProfileOneOrganizationMax = 120;
+export const updateProfileResponseProfileOneOrganizationMax = 120;
 
-export const saveProfileV1MeProfilePutResponseProfileOneJobTitleMax = 120;
+export const updateProfileResponseProfileOneJobTitleMax = 120;
 
 
 
-export const SaveProfileV1MeProfilePutResponse = zod.object({
+export const UpdateProfileResponse = zod.object({
   "profile": zod.union([zod.object({
   "role": zod.union([zod.literal('general_public_citizen'),zod.literal('district_level_epidemiologist'),zod.literal('state_level_epidemiologist'),zod.literal('state_director_level_epidemiologist'),zod.literal('national_level_epidemiologist'),zod.literal(null)]).nullish(),
-  "state_code": zod.string().max(saveProfileV1MeProfilePutResponseProfileOneStateCodeMax).nullish(),
-  "organization": zod.string().max(saveProfileV1MeProfilePutResponseProfileOneOrganizationMax).nullish(),
-  "job_title": zod.string().max(saveProfileV1MeProfilePutResponseProfileOneJobTitleMax).nullish(),
+  "state_code": zod.string().max(updateProfileResponseProfileOneStateCodeMax).nullish(),
+  "organization": zod.string().max(updateProfileResponseProfileOneOrganizationMax).nullish(),
+  "job_title": zod.string().max(updateProfileResponseProfileOneJobTitleMax).nullish(),
   "starting_view_version": zod.union([zod.literal(1),zod.literal(null)]).nullish().describe('Server-owned starting-view onboarding marker. Null means this profile has not completed onboarding, including every profile saved before the marker existed. 1 means onboarding was completed with the stored state_code; a null state_code is United States. A later read that shows 1 and the requested state_code confirms that completion write. This is not a profile revision or an idempotency key.')
 }),zod.null()])
 })
@@ -1187,23 +1420,23 @@ export const SaveProfileV1MeProfilePutResponse = zod.object({
 /**
  * @summary Create Privacy Request
  */
-export const CreatePrivacyRequestV1MePrivacyRequestsPostHeader = zod.object({
+export const CreatePrivacyRequestHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const CreatePrivacyRequestV1MePrivacyRequestsPostBody = zod.object({
+export const CreatePrivacyRequestBody = zod.object({
   "action": zod.enum(['export', 'deletion'])
 })
 
-export const createPrivacyRequestV1MePrivacyRequestsPostResponseDownloadAvailableDefault = false;
+export const createPrivacyRequestResponseDownloadAvailableDefault = false;
 
-export const CreatePrivacyRequestV1MePrivacyRequestsPostResponse = zod.object({
+export const CreatePrivacyRequestResponse = zod.object({
   "request_id": zod.string(),
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
   "completed_at": zod.iso.datetime({"offset":true}).nullish(),
-  "download_available": zod.boolean().default(createPrivacyRequestV1MePrivacyRequestsPostResponseDownloadAvailableDefault),
+  "download_available": zod.boolean().default(createPrivacyRequestResponseDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
@@ -1218,32 +1451,32 @@ export const CreatePrivacyRequestV1MePrivacyRequestsPostResponse = zod.object({
 /**
  * @summary Confirm Privacy Request
  */
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostParams = zod.object({
+export const ConfirmPrivacyRequestParams = zod.object({
   "request_id": zod.uuid()
 })
 
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostHeader = zod.object({
+export const ConfirmPrivacyRequestHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMin = 16;
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMax = 128;
+export const confirmPrivacyRequestBodyNonceMin = 16;
+export const confirmPrivacyRequestBodyNonceMax = 128;
 
 
 
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBody = zod.object({
-  "nonce": zod.string().min(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMin).max(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostBodyNonceMax)
+export const ConfirmPrivacyRequestBody = zod.object({
+  "nonce": zod.string().min(confirmPrivacyRequestBodyNonceMin).max(confirmPrivacyRequestBodyNonceMax)
 })
 
-export const confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseDownloadAvailableDefault = false;
+export const confirmPrivacyRequestResponseDownloadAvailableDefault = false;
 
-export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponse = zod.object({
+export const ConfirmPrivacyRequestResponse = zod.object({
   "request_id": zod.string(),
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
   "completed_at": zod.iso.datetime({"offset":true}).nullish(),
-  "download_available": zod.boolean().default(confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostResponseDownloadAvailableDefault),
+  "download_available": zod.boolean().default(confirmPrivacyRequestResponseDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
@@ -1257,23 +1490,23 @@ export const ConfirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPostRespons
 /**
  * @summary Get Privacy Request
  */
-export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetParams = zod.object({
+export const GetPrivacyRequestParams = zod.object({
   "request_id": zod.uuid()
 })
 
-export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetHeader = zod.object({
+export const GetPrivacyRequestHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseDownloadAvailableDefault = false;
+export const getPrivacyRequestResponseDownloadAvailableDefault = false;
 
-export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = zod.object({
+export const GetPrivacyRequestResponse = zod.object({
   "request_id": zod.string(),
   "action": zod.enum(['export', 'deletion']),
   "state": zod.enum(['requested', 'verified', 'confirmed', 'in_progress', 'completed', 'needs_support']),
   "created_at": zod.iso.datetime({"offset":true}),
   "completed_at": zod.iso.datetime({"offset":true}).nullish(),
-  "download_available": zod.boolean().default(getPrivacyRequestV1MePrivacyRequestsRequestIdGetResponseDownloadAvailableDefault),
+  "download_available": zod.boolean().default(getPrivacyRequestResponseDownloadAvailableDefault),
   "omissions": zod.array(zod.object({
   "system": zod.string(),
   "reason": zod.enum(['not_connected', 'not_account_linked', 'browser_only']),
@@ -1287,131 +1520,131 @@ export const GetPrivacyRequestV1MePrivacyRequestsRequestIdGetResponse = zod.obje
 /**
  * @summary Download Privacy Export
  */
-export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetParams = zod.object({
+export const DownloadPrivacyExportParams = zod.object({
   "request_id": zod.uuid()
 })
 
-export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetHeader = zod.object({
+export const DownloadPrivacyExportHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const DownloadPrivacyExportV1MePrivacyRequestsRequestIdExportGetResponse = zod.unknown()
+export const DownloadPrivacyExportResponse = zod.unknown()
 
 
 /**
  * Versioned county Review result. Current rules are disabled. Lineage gaps are separate. Public cache TTL is 60 seconds.
  * @summary Review a state's county evidence
  */
-export const stateReviewV1StatesStateReviewGetPathStateRegExp = new RegExp('^[A-Z]{2}$');
+export const getStateReviewPathStateRegExp = new RegExp('^[A-Z]{2}$');
 
 
-export const StateReviewV1StatesStateReviewGetParams = zod.object({
-  "state": zod.string().regex(stateReviewV1StatesStateReviewGetPathStateRegExp)
+export const GetStateReviewParams = zod.object({
+  "state": zod.string().regex(getStateReviewPathStateRegExp).describe('Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.')
 })
 
-export const stateReviewV1StatesStateReviewGetQueryObservationContextMax = 80;
+export const getStateReviewQueryObservationContextMax = 80;
 
 
 
-export const StateReviewV1StatesStateReviewGetQueryParams = zod.object({
-  "observation_context": zod.string().max(stateReviewV1StatesStateReviewGetQueryObservationContextMax).nullish(),
-  "dataset_version": zod.string().nullish()
+export const GetStateReviewQueryParams = zod.object({
+  "observation_context": zod.string().max(getStateReviewQueryObservationContextMax).nullish().describe('Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.'),
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const stateReviewV1StatesStateReviewGetResponseReviewCandidatesItemCompletenessDefault = `limited`;
+export const getStateReviewResponseReviewCandidatesItemCompletenessDefault = `limited`;
 
-export const StateReviewV1StatesStateReviewGetResponse = zod.object({
-  "requested_state": zod.string(),
-  "methodology_id": zod.string(),
-  "methodology_version": zod.string(),
-  "configuration_sha256": zod.string(),
-  "data_release_version": zod.string(),
-  "evaluated_at": zod.iso.datetime({"offset":true}),
-  "requested_observation_context": zod.string().nullable(),
-  "effective_observation_context": zod.string(),
-  "result_state": zod.enum(['candidates_found', 'insufficient_evidence', 'unsupported', 'none_stand_out']),
+export const GetStateReviewResponse = zod.object({
+  "requested_state": zod.string().describe('Two-letter state or District of Columbia code.'),
+  "methodology_id": zod.string().describe('Identifies the review methodology.'),
+  "methodology_version": zod.string().describe('Version of the review methodology.'),
+  "configuration_sha256": zod.string().describe('SHA-256 checksum of the review configuration. Use it to confirm which rules ran.'),
+  "data_release_version": zod.string().describe('Identifies the published data release the review read.'),
+  "evaluated_at": zod.iso.datetime({"offset":true}).describe('When Atlas ran the review, with a UTC offset. It is not when the publishers last updated their data.'),
+  "requested_observation_context": zod.string().nullable().describe('Observation context the request asked for. `null` when none was asked for.'),
+  "effective_observation_context": zod.string().describe('Observation context the review used.'),
+  "result_state": zod.enum(['candidates_found', 'insufficient_evidence', 'unsupported', 'none_stand_out']).describe('Overall outcome. `candidates_found` lists counties to review. `insufficient_evidence` means the evidence could not be evaluated. `unsupported` means no review rule is approved. `none_stand_out` means no evaluated county stood out; it does not show that nothing needs attention.'),
   "review_candidates": zod.array(zod.object({
-  "county_fips": zod.string(),
-  "county_name": zod.string(),
-  "county_url": zod.string(),
-  "reason_codes": zod.array(zod.string()),
-  "reason_text": zod.string(),
-  "evidence_families": zod.array(zod.string()),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "county_name": zod.string().describe('County name.'),
+  "county_url": zod.string().describe('Path of the county resource in this API.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain why the county is listed.'),
+  "reason_text": zod.string().describe('Plain-language explanation of why the county is listed.'),
+  "evidence_families": zod.array(zod.string()).describe('Kinds of evidence the reason draws on, such as `county_vector_status`.'),
   "evidence_references": zod.array(zod.object({
-  "family": zod.string(),
-  "source_product": zod.string(),
-  "source_version": zod.string(),
-  "public_record_ref": zod.string(),
-  "county_fips": zod.string(),
-  "release_id": zod.string(),
-  "source_as_of": zod.string(),
-  "retrieved_at": zod.iso.datetime({"offset":true}),
-  "target": zod.string(),
-  "status": zod.string(),
-  "limitations": zod.array(zod.string())
-})),
-  "completeness": zod.literal("limited").default(stateReviewV1StatesStateReviewGetResponseReviewCandidatesItemCompletenessDefault),
-  "limitations": zod.array(zod.string()),
-  "freshness_comparability": zod.string(),
-  "suggested_next_check": zod.string()
-})),
+  "family": zod.string().describe('Kind of evidence, such as `county_pathogen_status`.'),
+  "source_product": zod.string().describe('Source product the record comes from.'),
+  "source_version": zod.string().describe('Version of the source product.'),
+  "public_record_ref": zod.string().describe('Public reference to the source record, for finding it at the publisher.'),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "release_id": zod.string().describe('Identifies the published data release the record came from.'),
+  "source_as_of": zod.string().describe('Date the source says its data was current, for example `2025-12-31`.'),
+  "retrieved_at": zod.iso.datetime({"offset":true}).describe('When Atlas retrieved the record from the publisher, with a UTC offset.'),
+  "target": zod.string().describe('Organism or taxon the record is about, such as a tick species or a pathogen.'),
+  "status": zod.string().describe('Status the publisher reports, such as `Present`, `Reported`, or `No records`. `No records` does not establish absence.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what this record does not show.')
+}).describe('A source record that supports a review candidate.')).describe('Source records that support the reason.'),
+  "completeness": zod.literal("limited").default(getStateReviewResponseReviewCandidatesItemCompletenessDefault).describe('How complete the supporting evidence is. It is always `limited`.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the candidate does not show. Keep them with it.'),
+  "freshness_comparability": zod.string().describe('What is known about how current and comparable the evidence is.'),
+  "suggested_next_check": zod.string().describe('A step a reviewer can take to check the evidence further.')
+}).describe('A county that merits a closer look. It is a prompt to review records, not a finding.')).describe('Counties that merit a closer look.'),
   "data_gaps": zod.array(zod.object({
-  "county_fips": zod.string(),
-  "code": zod.string(),
-  "detail": zod.string()
-})),
+  "county_fips": zod.string().describe('Five-digit FIPS code of the county, with leading zeros.'),
+  "code": zod.string().describe('Stable code for the kind of gap, such as `OUT_OF_SCOPE`.'),
+  "detail": zod.string().describe('Plain-language explanation of the gap.')
+}).describe('A reason Atlas could not evaluate a county. A gap is not evidence of absence.')).describe('Counties Atlas could not evaluate, with the reason.'),
   "coverage": zod.object({
-  "assessed_counties": zod.int(),
-  "eligible_counties": zod.int(),
-  "abstained_counties": zod.int(),
-  "evaluated_counties": zod.int(),
-  "rule_coverage": zod.record(zod.string(), zod.string())
-}),
-  "limitations": zod.array(zod.string())
-})
+  "assessed_counties": zod.int().describe('Counties in the requested state that were checked.'),
+  "eligible_counties": zod.int().describe('Counties that met the rule\'s eligibility checks.'),
+  "abstained_counties": zod.int().describe('Counties where the evidence could not be safely evaluated.'),
+  "evaluated_counties": zod.int().describe('Counties that were fully evaluated.'),
+  "rule_coverage": zod.record(zod.string(), zod.string()).describe('Each review rule by name, marked `enabled` or `disabled`.')
+}).describe('How many counties were assessed.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the review does not show.')
+}).describe('Counties in a state that merit a closer look, with gaps and coverage.\n\nA review is not a diagnosis and not a disease-risk estimate. An empty result does not\nshow that no county needs attention.')
 
 
 /**
  * Release metadata, source freshness and methodology; dataset_version selects an existing release. Cached publicly for 300 seconds with ETag. ETag is informational here; this route does not implement conditional 304.
- * @summary Get Atlas release metadata
+ * @summary Get release metadata
  */
-export const MetadataV1AtlasMetadataGetQueryParams = zod.object({
-  "dataset_version": zod.string().nullish()
+export const GetAtlasMetadataQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const metadataV1AtlasMetadataGetResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getAtlasMetadataResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 
-export const MetadataV1AtlasMetadataGetResponse = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(metadataV1AtlasMetadataGetResponseScoringMethodologyVersionDefault),
-  "release_id": zod.string(),
-  "schema_version": zod.string(),
-  "generated_at": zod.iso.datetime({"offset":true}),
-  "loaded_at": zod.iso.datetime({"offset":true}),
-  "scope": zod.string(),
-  "bundle_sha256": zod.string(),
-  "score_defaults": zod.record(zod.string(), zod.unknown()),
-  "methodology_version": zod.string(),
-  "limitations": zod.string(),
+export const GetAtlasMetadataResponse = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getAtlasMetadataResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
+  "schema_version": zod.string().describe('Version of the release data layout.'),
+  "generated_at": zod.iso.datetime({"offset":true}).describe('When the release was built, with a UTC offset. It is not when the publishers last updated their data.'),
+  "loaded_at": zod.iso.datetime({"offset":true}).describe('When Atlas loaded the release for serving, with a UTC offset. It is not when the publishers last updated their data.'),
+  "scope": zod.string().describe('Geographic and time coverage of the release.'),
+  "bundle_sha256": zod.string().describe('SHA-256 checksum of the release contents. Use it to confirm you are looking at the same release.'),
+  "score_defaults": zod.record(zod.string(), zod.unknown()).describe('Default settings the score uses when a request supplies none.'),
+  "methodology_version": zod.string().describe('Version of the release methodology that the scores follow.'),
+  "limitations": zod.string().describe('What the release does not show. Read it before you use a score.'),
   "sources": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "vintage": zod.string(),
-  "url": zod.string(),
-  "note": zod.string()
-})),
-  "states": zod.array(zod.record(zod.string(), zod.string()))
-})
+  "key": zod.string().describe('Stable key of the source within this release.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "vintage": zod.string().describe('Reference year or period of the source dataset.'),
+  "url": zod.string().describe('Web address of the source.'),
+  "note": zod.string().describe('How Atlas uses the source and any limit on that use.')
+}).describe('A source dataset listed in the release metadata.')).describe('Source datasets used in the release.'),
+  "states": zod.array(zod.record(zod.string(), zod.string())).describe('States and the District of Columbia in the release. Each entry has a `code` and a `name`.')
+}).describe('Describes the published data release behind the scores and county records.')
 
 
 /**
  * Existing generalized CDC/ATSDR SVI 2022 display geometry in EPSG:4326, identified by stable five-digit county FIPS. This resource never returns internal 2025 TIGER/Line analysis polygons used for raster aggregation.
- * @summary Get county display geometry
+ * @summary Get county map geometry
  */
-export const GeometryV1AtlasGeometryGetQueryParams = zod.object({
-  "dataset_version": zod.string().nullish()
+export const GetAtlasGeometryQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
 
-export const GeometryV1AtlasGeometryGetResponse = zod.looseObject({
+export const GetAtlasGeometryResponse = zod.looseObject({
 
 })
 
@@ -1420,257 +1653,295 @@ export const GeometryV1AtlasGeometryGetResponse = zod.looseObject({
  * Existing surveillance-gap scores and settings for an optional dataset_version. Scores are not individual risk estimates or diagnoses. Public cache TTL 300 seconds with informational ETag; no conditional 304.
  * @summary Get county gap scores
  */
-export const scoresV1AtlasScoresGetQueryEcologicalShareDefault = 65;
-export const scoresV1AtlasScoresGetQueryEcologicalShareMin = 40;
-export const scoresV1AtlasScoresGetQueryEcologicalShareMax = 85;
-export const scoresV1AtlasScoresGetQueryEcologicalShareMultipleOf = 5;
+export const getAtlasScoresQueryEcologicalShareDefault = 65;
+export const getAtlasScoresQueryEcologicalShareMin = 40;
+export const getAtlasScoresQueryEcologicalShareMax = 85;
+export const getAtlasScoresQueryEcologicalShareMultipleOf = 5;
 
-export const scoresV1AtlasScoresGetQuerySmoothKDefault = 50;
-export const scoresV1AtlasScoresGetQuerySmoothKMin = 5;
-export const scoresV1AtlasScoresGetQuerySmoothKMax = 200;
+export const getAtlasScoresQuerySmoothKDefault = 50;
+export const getAtlasScoresQuerySmoothKMin = 5;
+export const getAtlasScoresQuerySmoothKMax = 200;
 
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessDefault = 75;
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessMin = 40;
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessMax = 90;
-export const scoresV1AtlasScoresGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const getAtlasScoresQueryMissingHumanWeaknessDefault = 75;
+export const getAtlasScoresQueryMissingHumanWeaknessMin = 40;
+export const getAtlasScoresQueryMissingHumanWeaknessMax = 90;
+export const getAtlasScoresQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const ScoresV1AtlasScoresGetQueryParams = zod.object({
-  "dataset_version": zod.string().nullish(),
-  "ecological_share": zod.int().min(scoresV1AtlasScoresGetQueryEcologicalShareMin).max(scoresV1AtlasScoresGetQueryEcologicalShareMax).multipleOf(scoresV1AtlasScoresGetQueryEcologicalShareMultipleOf).default(scoresV1AtlasScoresGetQueryEcologicalShareDefault),
-  "smooth_k": zod.int().min(scoresV1AtlasScoresGetQuerySmoothKMin).max(scoresV1AtlasScoresGetQuerySmoothKMax).default(scoresV1AtlasScoresGetQuerySmoothKDefault),
-  "missing_human_weakness": zod.int().min(scoresV1AtlasScoresGetQueryMissingHumanWeaknessMin).max(scoresV1AtlasScoresGetQueryMissingHumanWeaknessMax).multipleOf(scoresV1AtlasScoresGetQueryMissingHumanWeaknessMultipleOf).default(scoresV1AtlasScoresGetQueryMissingHumanWeaknessDefault),
-  "low_incidence_breakpoint": zod.int().nullish()
+export const GetAtlasScoresQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
+  "ecological_share": zod.int().min(getAtlasScoresQueryEcologicalShareMin).max(getAtlasScoresQueryEcologicalShareMax).multipleOf(getAtlasScoresQueryEcologicalShareMultipleOf).default(getAtlasScoresQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(getAtlasScoresQuerySmoothKMin).max(getAtlasScoresQuerySmoothKMax).default(getAtlasScoresQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(getAtlasScoresQueryMissingHumanWeaknessMin).max(getAtlasScoresQueryMissingHumanWeaknessMax).multipleOf(getAtlasScoresQueryMissingHumanWeaknessMultipleOf).default(getAtlasScoresQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const scoresV1AtlasScoresGetResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
-export const scoresV1AtlasScoresGetResponseCountiesItemIncidenceFloor2023Min = 0;
+export const getAtlasScoresResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getAtlasScoresResponseCountiesItemScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getAtlasScoresResponseCountiesItemIncidenceFloor2023Min = 0;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreScoreMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreScoreMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreHumanWeaknessMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreHumanWeaknessMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreEcologicalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreEcologicalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreCommunityMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreCommunityMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreTickSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreTickSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScorePathogenSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScorePathogenSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreSviSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreSviSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreAccessSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreAccessSignalMax = 100;
 
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMin = 0;
-export const scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMax = 100;
+export const getAtlasScoresResponseCountiesItemScoreRuralSignalMin = 0;
+export const getAtlasScoresResponseCountiesItemScoreRuralSignalMax = 100;
 
 
 
-export const ScoresV1AtlasScoresGetResponse = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(scoresV1AtlasScoresGetResponseScoringMethodologyVersionDefault),
-  "release_id": zod.string(),
-  "methodology_version": zod.string(),
-  "settings": zod.record(zod.string(), zod.int()),
+export const GetAtlasScoresResponse = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getAtlasScoresResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
+  "methodology_version": zod.string().describe('Version of the release methodology that the scores follow.'),
+  "settings": zod.record(zod.string(), zod.int()).describe('Score settings used for this response, such as `ecological_share`, `smooth_k`, and `missing_human_weakness`.'),
   "counties": zod.array(zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(scoresV1AtlasScoresGetResponseCountiesItemScoringMethodologyVersionDefault),
-  "incidence_floor_2023": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000; null is not zero.'),
-  "svi_percentile": zod.number().nullish(),
-  "uninsured_percentile": zod.number().nullish(),
-  "rucc_2023": zod.int().nullish(),
-  "fips": zod.string(),
-  "county": zod.string(),
-  "state": zod.string(),
-  "state_name": zod.string(),
-  "in_contiguous_tick_scope": zod.boolean(),
-  "human_status": zod.string(),
-  "tick_status": zod.string(),
-  "burgdorferi_status": zod.string(),
-  "evidence_completeness": zod.int(),
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getAtlasScoresResponseCountiesItemScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "incidence_floor_2023": zod.number().min(getAtlasScoresResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
+  "svi_percentile": zod.number().nullish().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "uninsured_percentile": zod.number().nullish().describe('Percentile of the county\'s uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "rucc_2023": zod.int().nullish().describe('2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.'),
+  "fips": zod.string().describe('Five-digit county FIPS code, with leading zeros.'),
+  "county": zod.string().describe('County name.'),
+  "state": zod.string().describe('Two-letter state or District of Columbia code.'),
+  "state_name": zod.string().describe('Full state name.'),
+  "in_contiguous_tick_scope": zod.boolean().describe('Whether the county is inside the contiguous area the tick data covers.'),
+  "human_status": zod.string().describe('State of the human-case data for the county. `published_count_floor` means a published case-count floor exists. `no_county_linked_record` means no record is linked to the county; it is neither null nor zero.'),
+  "tick_status": zod.string().describe('Tick evidence status the publisher reports: `Established`, `Reported`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
+  "burgdorferi_status": zod.string().describe('Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
+  "evidence_completeness": zod.int().describe('Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality.'),
   "score": zod.object({
-  "score": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreScoreMax),
-  "human_weakness": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreHumanWeaknessMax),
-  "ecological": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreEcologicalMax),
-  "community": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreCommunityMax),
-  "tick_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreTickSignalMax),
-  "pathogen_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScorePathogenSignalMax),
-  "svi_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreSviSignalMax),
-  "access_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreAccessSignalMax),
-  "rural_signal": zod.number().min(scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMin).max(scoresV1AtlasScoresGetResponseCountiesItemScoreRuralSignalMax)
-}),
-  "priority": zod.string(),
-  "color": zod.string()
-}))
+  "score": zod.number().min(getAtlasScoresResponseCountiesItemScoreScoreMin).max(getAtlasScoresResponseCountiesItemScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
+  "human_weakness": zod.number().min(getAtlasScoresResponseCountiesItemScoreHumanWeaknessMin).max(getAtlasScoresResponseCountiesItemScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
+  "ecological": zod.number().min(getAtlasScoresResponseCountiesItemScoreEcologicalMin).max(getAtlasScoresResponseCountiesItemScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
+  "community": zod.number().min(getAtlasScoresResponseCountiesItemScoreCommunityMin).max(getAtlasScoresResponseCountiesItemScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
+  "tick_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreTickSignalMin).max(getAtlasScoresResponseCountiesItemScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
+  "pathogen_signal": zod.number().min(getAtlasScoresResponseCountiesItemScorePathogenSignalMin).max(getAtlasScoresResponseCountiesItemScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
+  "svi_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreSviSignalMin).max(getAtlasScoresResponseCountiesItemScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
+  "access_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreAccessSignalMin).max(getAtlasScoresResponseCountiesItemScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
+  "rural_signal": zod.number().min(getAtlasScoresResponseCountiesItemScoreRuralSignalMin).max(getAtlasScoresResponseCountiesItemScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
+}).describe('The score and the signals it combines.'),
+  "priority": zod.string().describe('Review-priority label for the score band. A lower label is not a safety finding.'),
+  "color": zod.string().describe('Hex color for the score band, for use in a map or legend.')
+}).describe('A county\'s Surveillance Gap Score with the evidence signals behind it.\n\nThe score is a review aid. Atlas results are not a diagnosis. Atlas results are not an\nestimate of an individual\'s risk.')).describe('One entry for each county.')
+}).describe('Surveillance Gap Scores for every county in the release, for one set of settings.')
+
+
+/**
+ * Published incidence floor, social vulnerability percentile, uninsured percent, and rural-urban continuum code for every county in the current snapshot. Optional dataset_version selects an existing release. Public cache TTL 300 seconds with informational ETag; no conditional 304.
+ * @summary Get map values by county
+ */
+export const GetAtlasMapValuesQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.')
 })
+
+export const getAtlasMapValuesResponseCountiesItemFipsRegExp = new RegExp('^\\d{5}$');
+export const getAtlasMapValuesResponseCountiesItemIncidenceFloor2023Min = 0;
+
+
+
+export const GetAtlasMapValuesResponse = zod.object({
+  "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
+  "counties": zod.array(zod.object({
+  "fips": zod.string().regex(getAtlasMapValuesResponseCountiesItemFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
+  "incidence_floor_2023": zod.number().min(getAtlasMapValuesResponseCountiesItemIncidenceFloor2023Min).nullish().describe('Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero.'),
+  "svi_percentile": zod.number().nullish().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "uninsured_percent": zod.number().nullish().describe('Share of the county population without health insurance, as a percent. `null` when none is published.'),
+  "rucc_2023": zod.int().nullish().describe('2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.')
+}).describe('The county values a map needs to color its shapes, without the full score record.')).describe('One entry for each county.')
+}).describe('County values for drawing a map. Show the same values in a table for non-map users.')
 
 
 /**
  * Five-digit county FIPS with leading zeros retained. Includes release/source metadata and limitations. Optional dataset_version and score settings retain existing meanings. Public cache TTL 300 seconds with informational ETag; no conditional 304.
- * @summary Get county analytics and provenance
+ * @summary Get county detail and provenance
  */
-export const countyV1CountiesFipsGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const getCountyPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyV1CountiesFipsGetParams = zod.object({
-  "fips": zod.string().regex(countyV1CountiesFipsGetPathFipsRegExp)
+export const GetCountyParams = zod.object({
+  "fips": zod.string().regex(getCountyPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countyV1CountiesFipsGetQueryEcologicalShareDefault = 65;
-export const countyV1CountiesFipsGetQueryEcologicalShareMin = 40;
-export const countyV1CountiesFipsGetQueryEcologicalShareMax = 85;
-export const countyV1CountiesFipsGetQueryEcologicalShareMultipleOf = 5;
+export const getCountyQueryEcologicalShareDefault = 65;
+export const getCountyQueryEcologicalShareMin = 40;
+export const getCountyQueryEcologicalShareMax = 85;
+export const getCountyQueryEcologicalShareMultipleOf = 5;
 
-export const countyV1CountiesFipsGetQuerySmoothKDefault = 50;
-export const countyV1CountiesFipsGetQuerySmoothKMin = 5;
-export const countyV1CountiesFipsGetQuerySmoothKMax = 200;
+export const getCountyQuerySmoothKDefault = 50;
+export const getCountyQuerySmoothKMin = 5;
+export const getCountyQuerySmoothKMax = 200;
 
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessDefault = 75;
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessMin = 40;
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessMax = 90;
-export const countyV1CountiesFipsGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const getCountyQueryMissingHumanWeaknessDefault = 75;
+export const getCountyQueryMissingHumanWeaknessMin = 40;
+export const getCountyQueryMissingHumanWeaknessMax = 90;
+export const getCountyQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const CountyV1CountiesFipsGetQueryParams = zod.object({
-  "dataset_version": zod.string().nullish(),
-  "ecological_share": zod.int().min(countyV1CountiesFipsGetQueryEcologicalShareMin).max(countyV1CountiesFipsGetQueryEcologicalShareMax).multipleOf(countyV1CountiesFipsGetQueryEcologicalShareMultipleOf).default(countyV1CountiesFipsGetQueryEcologicalShareDefault),
-  "smooth_k": zod.int().min(countyV1CountiesFipsGetQuerySmoothKMin).max(countyV1CountiesFipsGetQuerySmoothKMax).default(countyV1CountiesFipsGetQuerySmoothKDefault),
-  "missing_human_weakness": zod.int().min(countyV1CountiesFipsGetQueryMissingHumanWeaknessMin).max(countyV1CountiesFipsGetQueryMissingHumanWeaknessMax).multipleOf(countyV1CountiesFipsGetQueryMissingHumanWeaknessMultipleOf).default(countyV1CountiesFipsGetQueryMissingHumanWeaknessDefault),
-  "low_incidence_breakpoint": zod.int().nullish()
+export const GetCountyQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
+  "ecological_share": zod.int().min(getCountyQueryEcologicalShareMin).max(getCountyQueryEcologicalShareMax).multipleOf(getCountyQueryEcologicalShareMultipleOf).default(getCountyQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(getCountyQuerySmoothKMin).max(getCountyQuerySmoothKMax).default(getCountyQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(getCountyQueryMissingHumanWeaknessMin).max(getCountyQueryMissingHumanWeaknessMax).multipleOf(getCountyQueryMissingHumanWeaknessMultipleOf).default(getCountyQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const countyV1CountiesFipsGetResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
-export const countyV1CountiesFipsGetResponseScoreScoreMin = 0;
-export const countyV1CountiesFipsGetResponseScoreScoreMax = 100;
+export const getCountyResponseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getCountyResponseScoreScoreMin = 0;
+export const getCountyResponseScoreScoreMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreHumanWeaknessMin = 0;
-export const countyV1CountiesFipsGetResponseScoreHumanWeaknessMax = 100;
+export const getCountyResponseScoreHumanWeaknessMin = 0;
+export const getCountyResponseScoreHumanWeaknessMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreEcologicalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreEcologicalMax = 100;
+export const getCountyResponseScoreEcologicalMin = 0;
+export const getCountyResponseScoreEcologicalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreCommunityMin = 0;
-export const countyV1CountiesFipsGetResponseScoreCommunityMax = 100;
+export const getCountyResponseScoreCommunityMin = 0;
+export const getCountyResponseScoreCommunityMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreTickSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreTickSignalMax = 100;
+export const getCountyResponseScoreTickSignalMin = 0;
+export const getCountyResponseScoreTickSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScorePathogenSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScorePathogenSignalMax = 100;
+export const getCountyResponseScorePathogenSignalMin = 0;
+export const getCountyResponseScorePathogenSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreSviSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreSviSignalMax = 100;
+export const getCountyResponseScoreSviSignalMin = 0;
+export const getCountyResponseScoreSviSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreAccessSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreAccessSignalMax = 100;
+export const getCountyResponseScoreAccessSignalMin = 0;
+export const getCountyResponseScoreAccessSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseScoreRuralSignalMin = 0;
-export const countyV1CountiesFipsGetResponseScoreRuralSignalMax = 100;
+export const getCountyResponseScoreRuralSignalMin = 0;
+export const getCountyResponseScoreRuralSignalMax = 100;
 
-export const countyV1CountiesFipsGetResponseReleaseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
+export const getCountyResponseReleaseScoringMethodologyVersionDefault = `surveillance-gap-score-v1.1`;
 
-export const CountyV1CountiesFipsGetResponse = zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyV1CountiesFipsGetResponseScoringMethodologyVersionDefault),
-  "incidence_floor_2023": zod.number().nullable(),
-  "svi_percentile": zod.number().nullable(),
-  "uninsured_percentile": zod.number().nullable(),
-  "rucc_2023": zod.int().nullable(),
-  "fips": zod.string(),
-  "county": zod.string(),
-  "state": zod.string(),
-  "state_name": zod.string(),
-  "in_contiguous_tick_scope": zod.boolean(),
-  "human_status": zod.string(),
-  "tick_status": zod.string(),
-  "burgdorferi_status": zod.string(),
-  "evidence_completeness": zod.int(),
+export const GetCountyResponse = zod.object({
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getCountyResponseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "incidence_floor_2023": zod.number().nullable().describe('Published 2023 minimum reported incidence per 100,000 people. `null` is not zero.'),
+  "svi_percentile": zod.number().nullable().describe('Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "uninsured_percentile": zod.number().nullable().describe('Percentile of the county\'s uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero.'),
+  "rucc_2023": zod.int().nullable().describe('2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published.'),
+  "fips": zod.string().describe('Five-digit county FIPS code, with leading zeros.'),
+  "county": zod.string().describe('County name.'),
+  "state": zod.string().describe('Two-letter state or District of Columbia code.'),
+  "state_name": zod.string().describe('Full state name.'),
+  "in_contiguous_tick_scope": zod.boolean().describe('Whether the county is inside the contiguous area the tick data covers.'),
+  "human_status": zod.string().describe('State of the human-case data for the county. `published_count_floor` means a published case-count floor exists. `no_county_linked_record` means no record is linked to the county; it is neither null nor zero.'),
+  "tick_status": zod.string().describe('Tick evidence status the publisher reports: `Established`, `Reported`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
+  "burgdorferi_status": zod.string().describe('Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence.'),
+  "evidence_completeness": zod.int().describe('Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality.'),
   "score": zod.object({
-  "score": zod.number().min(countyV1CountiesFipsGetResponseScoreScoreMin).max(countyV1CountiesFipsGetResponseScoreScoreMax),
-  "human_weakness": zod.number().min(countyV1CountiesFipsGetResponseScoreHumanWeaknessMin).max(countyV1CountiesFipsGetResponseScoreHumanWeaknessMax),
-  "ecological": zod.number().min(countyV1CountiesFipsGetResponseScoreEcologicalMin).max(countyV1CountiesFipsGetResponseScoreEcologicalMax),
-  "community": zod.number().min(countyV1CountiesFipsGetResponseScoreCommunityMin).max(countyV1CountiesFipsGetResponseScoreCommunityMax),
-  "tick_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreTickSignalMin).max(countyV1CountiesFipsGetResponseScoreTickSignalMax),
-  "pathogen_signal": zod.number().min(countyV1CountiesFipsGetResponseScorePathogenSignalMin).max(countyV1CountiesFipsGetResponseScorePathogenSignalMax),
-  "svi_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreSviSignalMin).max(countyV1CountiesFipsGetResponseScoreSviSignalMax),
-  "access_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreAccessSignalMin).max(countyV1CountiesFipsGetResponseScoreAccessSignalMax),
-  "rural_signal": zod.number().min(countyV1CountiesFipsGetResponseScoreRuralSignalMin).max(countyV1CountiesFipsGetResponseScoreRuralSignalMax)
-}),
-  "priority": zod.string(),
-  "color": zod.string(),
-  "population": zod.int().nullable(),
-  "case_count_floor_2023": zod.int().nullable(),
-  "state_unallocated_records_2023": zod.int().nullable(),
-  "scapularis_status": zod.string().nullable(),
-  "pacificus_status": zod.string().nullable(),
-  "uninsured_percent": zod.number().nullable(),
+  "score": zod.number().min(getCountyResponseScoreScoreMin).max(getCountyResponseScoreScoreMax).describe('Overall Surveillance Gap Score. A higher value means a higher review priority.'),
+  "human_weakness": zod.number().min(getCountyResponseScoreHumanWeaknessMin).max(getCountyResponseScoreHumanWeaknessMax).describe('How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness.'),
+  "ecological": zod.number().min(getCountyResponseScoreEcologicalMin).max(getCountyResponseScoreEcologicalMax).describe('Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`.'),
+  "community": zod.number().min(getCountyResponseScoreCommunityMin).max(getCountyResponseScoreCommunityMax).describe('Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`.'),
+  "tick_signal": zod.number().min(getCountyResponseScoreTickSignalMin).max(getCountyResponseScoreTickSignalMax).describe('Signal from the publisher\'s tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence.'),
+  "pathogen_signal": zod.number().min(getCountyResponseScorePathogenSignalMin).max(getCountyResponseScorePathogenSignalMax).describe('100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence.'),
+  "svi_signal": zod.number().min(getCountyResponseScoreSviSignalMin).max(getCountyResponseScoreSviSignalMax).describe('Social Vulnerability Index percentile of the county, scaled to 0 to 100.'),
+  "access_signal": zod.number().min(getCountyResponseScoreAccessSignalMin).max(getCountyResponseScoreAccessSignalMax).describe('Percentile of the county\'s uninsured share among counties, scaled to 0 to 100.'),
+  "rural_signal": zod.number().min(getCountyResponseScoreRuralSignalMin).max(getCountyResponseScoreRuralSignalMax).describe('Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100.')
+}).describe('The score and the signals it combines.'),
+  "priority": zod.string().describe('Review-priority label for the score band. A lower label is not a safety finding.'),
+  "color": zod.string().describe('Hex color for the score band, for use in a map or legend.'),
+  "population": zod.int().nullable().describe('County population. `null` when none is published.'),
+  "case_count_floor_2023": zod.int().nullable().describe('Published 2023 minimum count of reported human cases. A floor is a minimum, not a complete count. `null` is not zero.'),
+  "state_unallocated_records_2023": zod.int().nullable().describe('2023 state-level records the publisher did not assign to a county. The count belongs to the state, not this county. `null` when none is published.'),
+  "scapularis_status": zod.string().nullable().describe('Publisher status for the tick Ixodes scapularis. `null` when none is published.'),
+  "pacificus_status": zod.string().nullable().describe('Publisher status for the tick Ixodes pacificus. `null` when none is published.'),
+  "uninsured_percent": zod.number().nullable().describe('Share of the county population without health insurance, as a percent. `null` when none is published.'),
   "release": zod.object({
-  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(countyV1CountiesFipsGetResponseReleaseScoringMethodologyVersionDefault),
-  "release_id": zod.string(),
-  "schema_version": zod.string(),
-  "generated_at": zod.iso.datetime({"offset":true}),
-  "loaded_at": zod.iso.datetime({"offset":true}),
-  "scope": zod.string(),
-  "bundle_sha256": zod.string(),
-  "score_defaults": zod.record(zod.string(), zod.unknown()),
-  "methodology_version": zod.string(),
-  "limitations": zod.string(),
+  "scoring_methodology_version": zod.literal("surveillance-gap-score-v1.1").default(getCountyResponseReleaseScoringMethodologyVersionDefault).describe('Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable.'),
+  "release_id": zod.string().describe('Identifies the published data release. Results from different releases are not directly comparable.'),
+  "schema_version": zod.string().describe('Version of the release data layout.'),
+  "generated_at": zod.iso.datetime({"offset":true}).describe('When the release was built, with a UTC offset. It is not when the publishers last updated their data.'),
+  "loaded_at": zod.iso.datetime({"offset":true}).describe('When Atlas loaded the release for serving, with a UTC offset. It is not when the publishers last updated their data.'),
+  "scope": zod.string().describe('Geographic and time coverage of the release.'),
+  "bundle_sha256": zod.string().describe('SHA-256 checksum of the release contents. Use it to confirm you are looking at the same release.'),
+  "score_defaults": zod.record(zod.string(), zod.unknown()).describe('Default settings the score uses when a request supplies none.'),
+  "methodology_version": zod.string().describe('Version of the release methodology that the scores follow.'),
+  "limitations": zod.string().describe('What the release does not show. Read it before you use a score.'),
   "sources": zod.array(zod.object({
-  "key": zod.string(),
-  "label": zod.string(),
-  "vintage": zod.string(),
-  "url": zod.string(),
-  "note": zod.string()
-})),
-  "states": zod.array(zod.record(zod.string(), zod.string()))
-})
-})
+  "key": zod.string().describe('Stable key of the source within this release.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "vintage": zod.string().describe('Reference year or period of the source dataset.'),
+  "url": zod.string().describe('Web address of the source.'),
+  "note": zod.string().describe('How Atlas uses the source and any limit on that use.')
+}).describe('A source dataset listed in the release metadata.')).describe('Source datasets used in the release.'),
+  "states": zod.array(zod.record(zod.string(), zod.string())).describe('States and the District of Columbia in the release. Each entry has a `code` and a `name`.')
+}).describe('The data release this record came from.')
+}).describe('A county\'s score plus the release facts behind it.')
 
 
 /**
- * Primary four_state includes human surveillance; secondary tick_pathogen excludes it. Returns reviewed labels, four membership probabilities per model (0-1, sum 1 within 1e-6), immutable model/batch lineage, source vintages and interpretation limits. Unknown is an available class; No records does not establish absence. Membership is not disease risk, incidence, pathogen presence, causation or Tier 1 priority. HTTP 200 can contain typed UNAVAILABLE variants with null data, including an incompatible release. Unknown county 404; malformed FIPS 422; dependency, malformed persisted data or changing release 503. Cache-Control: no-store; no fallback or inference.
- * @summary Get both persisted county surveillance-situation classifications
+ * Get both surveillance-situation classifications for one county: the primary `four_state` model, which includes human surveillance, and the secondary `tick_pathogen` model, which excludes it.
+ *
+ * ### What you get back
+ * - Reviewed labels and four membership probabilities per model. Each is between 0 and 1, and they sum to 1 within 1e-6.
+ * - Model and batch lineage, source vintages, and interpretation limits.
+ * - `Unknown` is an available class. `No records` does not establish absence.
+ * - Membership is not disease risk, incidence, pathogen presence, causation, or Tier 1 priority.
+ *
+ * A model variant can return HTTP 200 with `UNAVAILABLE` and `null` data, including when the release is incompatible. The API does not infer or fall back to another result. The response must not be cached.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county is unknown. |
+ * | `422` | The FIPS code is malformed. |
+ * | `503` | A dependency failed, stored data is malformed, or the release changed during the request. Retry later. |
+ * @summary Get county surveillance situations
  */
-export const countySurveillanceSituationsGetPathFipsRegExp = new RegExp('^[0-9]{5}$');
+export const getCountySurveillanceSituationsPathFipsRegExp = new RegExp('^[0-9]{5}$');
 
 
-export const CountySurveillanceSituationsGetParams = zod.object({
-  "fips": zod.string().regex(countySurveillanceSituationsGetPathFipsRegExp)
+export const GetCountySurveillanceSituationsParams = zod.object({
+  "fips": zod.string().regex(getCountySurveillanceSituationsPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countySurveillanceSituationsGetResponseCountyFipsRegExp = new RegExp('^[0-9]{5}$');
+export const getCountySurveillanceSituationsResponseCountyFipsRegExp = new RegExp('^[0-9]{5}$');
 
-export const countySurveillanceSituationsGetResponseBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
-
-
+export const getCountySurveillanceSituationsResponseBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
 
 
 
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMin = 0;
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMax = 1;
-
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMin = 4;
-export const countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMax = 4;
 
 
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMin = 0;
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMax = 1;
+
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMin = 4;
+export const getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMax = 4;
 
 
-export const countySurveillanceSituationsGetResponseFourStateDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-export const countySurveillanceSituationsGetResponseFourStateDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-
-export const countySurveillanceSituationsGetResponseFourStateDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
 
+export const getCountySurveillanceSituationsResponseFourStateDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const getCountySurveillanceSituationsResponseFourStateDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+export const getCountySurveillanceSituationsResponseFourStateDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
 
 
@@ -1678,117 +1949,133 @@ export const countySurveillanceSituationsGetResponseFourStateDataOneInputBundleS
 
 
 
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMin = 0;
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMax = 1;
-
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMin = 4;
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMax = 4;
 
 
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMin = 0;
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMax = 1;
 
-
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
-
-export const countySurveillanceSituationsGetResponseTickPathogenDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMin = 4;
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMax = 4;
 
 
 
 
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneCountySha256RegExp = new RegExp('^[0-9a-f]{64}$');
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneDictionarySha256RegExp = new RegExp('^[0-9a-f]{64}$');
 
-export const CountySurveillanceSituationsGetResponse = zod.object({
-  "county_fips": zod.string().regex(countySurveillanceSituationsGetResponseCountyFipsRegExp),
-  "release_id": zod.string().min(1).describe('Active governed presentation release.'),
-  "bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseBundleSha256RegExp),
+export const getCountySurveillanceSituationsResponseTickPathogenDataOneInputBundleSha256RegExp = new RegExp('^[0-9a-f]{64}$');
+
+
+
+
+
+export const GetCountySurveillanceSituationsResponse = zod.object({
+  "county_fips": zod.string().regex(getCountySurveillanceSituationsResponseCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
+  "release_id": zod.string().min(1).describe('Identifies the current data release.'),
+  "bundle_sha256": zod.string().regex(getCountySurveillanceSituationsResponseBundleSha256RegExp).describe('SHA-256 checksum of the current data release.'),
   "four_state": zod.object({
-  "model_id": zod.string(),
-  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']),
-  "unavailable_reason": zod.union([zod.literal('DEACTIVATED'),zod.literal('NOT_PUBLISHED'),zod.literal('UNAPPROVED_BATCH'),zod.literal('INCOMPATIBLE_RELEASE'),zod.literal('MISSING_ASSIGNMENT'),zod.literal(null)]).nullable(),
-  "compatibility": zod.enum(['EXACT_INPUT', 'ADMITTED_CARRY_FORWARD', 'UNAVAILABLE']),
-  "batch_id": zod.string().nullable(),
-  "batch_version": zod.string().nullable(),
-  "input_release_id": zod.string().nullable(),
+  "model_id": zod.string().describe('Identifies the situation model.'),
+  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a published classification exists. `UNAVAILABLE` is not a finding about the county.'),
+  "unavailable_reason": zod.union([zod.literal('DEACTIVATED'),zod.literal('NOT_PUBLISHED'),zod.literal('UNAPPROVED_BATCH'),zod.literal('INCOMPATIBLE_RELEASE'),zod.literal('MISSING_ASSIGNMENT'),zod.literal(null)]).nullable().describe('Why no classification is published: `NOT_PUBLISHED`, `DEACTIVATED`, `UNAPPROVED_BATCH`, `INCOMPATIBLE_RELEASE`, or `MISSING_ASSIGNMENT`. `null` when `availability` is `AVAILABLE`.'),
+  "compatibility": zod.enum(['EXACT_INPUT', 'ADMITTED_CARRY_FORWARD', 'UNAVAILABLE']).describe('How the classification relates to the current data release. `EXACT_INPUT` means the model read the current release. `ADMITTED_CARRY_FORWARD` means a reviewed result computed from an earlier release is published for the current one. `UNAVAILABLE` means there is no classification.'),
+  "batch_id": zod.string().nullable().describe('Identifies the batch of results. `null` when unavailable.'),
+  "batch_version": zod.string().nullable().describe('Version of the batch. `null` when unavailable.'),
+  "input_release_id": zod.string().nullable().describe('Identifies the data release the model read. `null` when unavailable.'),
   "data": zod.union([zod.object({
-  "model_id": zod.string().min(1),
-  "model_version": zod.string().min(1),
-  "class_id": zod.string().min(1),
-  "class_name": zod.string().min(1).describe('Reviewed persisted display label, verbatim.'),
-  "class_description": zod.string().min(1).describe('Reviewed persisted explanation, verbatim.'),
+  "model_id": zod.string().min(1).describe('Identifies the model that assigned the class.'),
+  "model_version": zod.string().min(1).describe('Version of the model.'),
+  "class_id": zod.string().min(1).describe('Identifies the assigned class.'),
+  "class_name": zod.string().min(1).describe('Display label of the class, exactly as reviewed.'),
+  "class_description": zod.string().min(1).describe('Explanation of the class, exactly as reviewed.'),
   "probabilities": zod.array(zod.object({
-  "class_id": zod.string().min(1).describe('Version-scoped persisted class identity.'),
-  "probability": zod.number().min(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMin).max(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesItemProbabilityMax).describe('Latent-class membership on 0–1 scale; never disease risk.')
-})).min(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMin).max(countySurveillanceSituationsGetResponseFourStateDataOneProbabilitiesMax),
-  "limitations": zod.array(zod.string()).min(1).describe('Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.'),
-  "batch_id": zod.string().min(1),
-  "batch_version": zod.string().min(1),
-  "county_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneCountySha256RegExp),
-  "dictionary_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneDictionarySha256RegExp),
-  "input_release_id": zod.string().min(1),
-  "input_bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseFourStateDataOneInputBundleSha256RegExp),
-  "fit_git_sha": zod.string().min(1),
-  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('Persisted feature\/config contract.'),
-  "model_provenance": zod.record(zod.string(), zod.unknown()),
-  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Persisted sources and source vintages.'),
-  "handoff_approval": zod.record(zod.string(), zod.unknown()),
-  "data_publication_authorization": zod.record(zod.string(), zod.unknown()),
-  "data_authorization_id": zod.string().min(1),
-  "staging_attempt": zod.string().min(1),
-  "activated_at": zod.iso.datetime({"offset":true}).describe('Data activation time, not source vintage or request time.')
-}),zod.null()])
+  "class_id": zod.string().min(1).describe('Identifies the class. It is specific to a model version.'),
+  "probability": zod.number().min(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMin).max(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
+}).describe('The model\'s membership probability for one situation class.')).min(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMin).max(getCountySurveillanceSituationsResponseFourStateDataOneProbabilitiesMax).describe('Membership probability for each of the four classes.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Readings of the class that are not supported. They list what not to conclude, not outcomes.'),
+  "batch_id": zod.string().min(1).describe('Identifies the batch of results.'),
+  "batch_version": zod.string().min(1).describe('Version of the batch.'),
+  "county_sha256": zod.string().regex(getCountySurveillanceSituationsResponseFourStateDataOneCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
+  "dictionary_sha256": zod.string().regex(getCountySurveillanceSituationsResponseFourStateDataOneDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
+  "input_release_id": zod.string().min(1).describe('Identifies the data release the model read.'),
+  "input_bundle_sha256": zod.string().regex(getCountySurveillanceSituationsResponseFourStateDataOneInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
+  "fit_git_sha": zod.string().min(1).describe('Commit of the code that fitted the model, for reproducibility.'),
+  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('The input features and settings the model used.'),
+  "model_provenance": zod.record(zod.string(), zod.unknown()).describe('Records of how the model was fitted and reviewed.'),
+  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Sources and source vintages the model used.'),
+  "handoff_approval": zod.record(zod.string(), zod.unknown()).describe('Record of the review that approved the model output for use.'),
+  "data_publication_authorization": zod.record(zod.string(), zod.unknown()).describe('Record of the approval to publish the batch.'),
+  "data_authorization_id": zod.string().min(1).describe('Identifies the approval to publish the batch.'),
+  "staging_attempt": zod.string().min(1).describe('Identifies the staging run that prepared the batch.'),
+  "activated_at": zod.iso.datetime({"offset":true}).describe('When the batch became active. It is not the source vintage or the request time.')
+}).describe('The surveillance situation class assigned to a county, with how it was produced.\n\nA class describes the pattern of surveillance evidence. It is not a diagnosis and not an\nestimate of an individual\'s risk.'),zod.null()]).describe('The classification. `null` when unavailable.')
 }).describe('Primary model, including human surveillance.'),
   "tick_pathogen": zod.object({
-  "model_id": zod.string(),
-  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']),
-  "unavailable_reason": zod.union([zod.literal('DEACTIVATED'),zod.literal('NOT_PUBLISHED'),zod.literal('UNAPPROVED_BATCH'),zod.literal('INCOMPATIBLE_RELEASE'),zod.literal('MISSING_ASSIGNMENT'),zod.literal(null)]).nullable(),
-  "compatibility": zod.enum(['EXACT_INPUT', 'ADMITTED_CARRY_FORWARD', 'UNAVAILABLE']),
-  "batch_id": zod.string().nullable(),
-  "batch_version": zod.string().nullable(),
-  "input_release_id": zod.string().nullable(),
+  "model_id": zod.string().describe('Identifies the situation model.'),
+  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a published classification exists. `UNAVAILABLE` is not a finding about the county.'),
+  "unavailable_reason": zod.union([zod.literal('DEACTIVATED'),zod.literal('NOT_PUBLISHED'),zod.literal('UNAPPROVED_BATCH'),zod.literal('INCOMPATIBLE_RELEASE'),zod.literal('MISSING_ASSIGNMENT'),zod.literal(null)]).nullable().describe('Why no classification is published: `NOT_PUBLISHED`, `DEACTIVATED`, `UNAPPROVED_BATCH`, `INCOMPATIBLE_RELEASE`, or `MISSING_ASSIGNMENT`. `null` when `availability` is `AVAILABLE`.'),
+  "compatibility": zod.enum(['EXACT_INPUT', 'ADMITTED_CARRY_FORWARD', 'UNAVAILABLE']).describe('How the classification relates to the current data release. `EXACT_INPUT` means the model read the current release. `ADMITTED_CARRY_FORWARD` means a reviewed result computed from an earlier release is published for the current one. `UNAVAILABLE` means there is no classification.'),
+  "batch_id": zod.string().nullable().describe('Identifies the batch of results. `null` when unavailable.'),
+  "batch_version": zod.string().nullable().describe('Version of the batch. `null` when unavailable.'),
+  "input_release_id": zod.string().nullable().describe('Identifies the data release the model read. `null` when unavailable.'),
   "data": zod.union([zod.object({
-  "model_id": zod.string().min(1),
-  "model_version": zod.string().min(1),
-  "class_id": zod.string().min(1),
-  "class_name": zod.string().min(1).describe('Reviewed persisted display label, verbatim.'),
-  "class_description": zod.string().min(1).describe('Reviewed persisted explanation, verbatim.'),
+  "model_id": zod.string().min(1).describe('Identifies the model that assigned the class.'),
+  "model_version": zod.string().min(1).describe('Version of the model.'),
+  "class_id": zod.string().min(1).describe('Identifies the assigned class.'),
+  "class_name": zod.string().min(1).describe('Display label of the class, exactly as reviewed.'),
+  "class_description": zod.string().min(1).describe('Explanation of the class, exactly as reviewed.'),
   "probabilities": zod.array(zod.object({
-  "class_id": zod.string().min(1).describe('Version-scoped persisted class identity.'),
-  "probability": zod.number().min(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMin).max(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesItemProbabilityMax).describe('Latent-class membership on 0–1 scale; never disease risk.')
-})).min(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMin).max(countySurveillanceSituationsGetResponseTickPathogenDataOneProbabilitiesMax),
-  "limitations": zod.array(zod.string()).min(1).describe('Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.'),
-  "batch_id": zod.string().min(1),
-  "batch_version": zod.string().min(1),
-  "county_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneCountySha256RegExp),
-  "dictionary_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneDictionarySha256RegExp),
-  "input_release_id": zod.string().min(1),
-  "input_bundle_sha256": zod.string().regex(countySurveillanceSituationsGetResponseTickPathogenDataOneInputBundleSha256RegExp),
-  "fit_git_sha": zod.string().min(1),
-  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('Persisted feature\/config contract.'),
-  "model_provenance": zod.record(zod.string(), zod.unknown()),
-  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Persisted sources and source vintages.'),
-  "handoff_approval": zod.record(zod.string(), zod.unknown()),
-  "data_publication_authorization": zod.record(zod.string(), zod.unknown()),
-  "data_authorization_id": zod.string().min(1),
-  "staging_attempt": zod.string().min(1),
-  "activated_at": zod.iso.datetime({"offset":true}).describe('Data activation time, not source vintage or request time.')
-}),zod.null()])
+  "class_id": zod.string().min(1).describe('Identifies the class. It is specific to a model version.'),
+  "probability": zod.number().min(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMin).max(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesItemProbabilityMax).describe('Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk.')
+}).describe('The model\'s membership probability for one situation class.')).min(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMin).max(getCountySurveillanceSituationsResponseTickPathogenDataOneProbabilitiesMax).describe('Membership probability for each of the four classes.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Readings of the class that are not supported. They list what not to conclude, not outcomes.'),
+  "batch_id": zod.string().min(1).describe('Identifies the batch of results.'),
+  "batch_version": zod.string().min(1).describe('Version of the batch.'),
+  "county_sha256": zod.string().regex(getCountySurveillanceSituationsResponseTickPathogenDataOneCountySha256RegExp).describe('SHA-256 checksum of this county\'s input record.'),
+  "dictionary_sha256": zod.string().regex(getCountySurveillanceSituationsResponseTickPathogenDataOneDictionarySha256RegExp).describe('SHA-256 checksum of the class dictionary the model used.'),
+  "input_release_id": zod.string().min(1).describe('Identifies the data release the model read.'),
+  "input_bundle_sha256": zod.string().regex(getCountySurveillanceSituationsResponseTickPathogenDataOneInputBundleSha256RegExp).describe('SHA-256 checksum of the data release the model read.'),
+  "fit_git_sha": zod.string().min(1).describe('Commit of the code that fitted the model, for reproducibility.'),
+  "feature_contract": zod.record(zod.string(), zod.unknown()).describe('The input features and settings the model used.'),
+  "model_provenance": zod.record(zod.string(), zod.unknown()).describe('Records of how the model was fitted and reviewed.'),
+  "source_provenance": zod.record(zod.string(), zod.unknown()).describe('Sources and source vintages the model used.'),
+  "handoff_approval": zod.record(zod.string(), zod.unknown()).describe('Record of the review that approved the model output for use.'),
+  "data_publication_authorization": zod.record(zod.string(), zod.unknown()).describe('Record of the approval to publish the batch.'),
+  "data_authorization_id": zod.string().min(1).describe('Identifies the approval to publish the batch.'),
+  "staging_attempt": zod.string().min(1).describe('Identifies the staging run that prepared the batch.'),
+  "activated_at": zod.iso.datetime({"offset":true}).describe('When the batch became active. It is not the source vintage or the request time.')
+}).describe('The surveillance situation class assigned to a county, with how it was produced.\n\nA class describes the pattern of surveillance evidence. It is not a diagnosis and not an\nestimate of an individual\'s risk.'),zod.null()]).describe('The classification. `null` when unavailable.')
 }).describe('Secondary model, excluding human surveillance.')
 }).describe('Two distinct model outputs; Unknown is a valid available classification.')
 
 
 /**
- * Returns the approved persisted county result from the current Tier 1 batch. This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis. LOW is a scored tier; evidence sufficiency is separate. Percentile is relative to the scored batch and population. A county without a persisted result returns 404; an unavailable current view or malformed result returns 503. Public cache TTL 60 seconds; generated_at_utc is the model batch time, not request time.
- * @summary Get persisted Tier 1 model-assisted surveillance review priority
+ * Get the approved Tier 1 surveillance review priority for one county from the current batch.
+ *
+ * ### How to read it
+ * - This is surveillance review priority, not Lyme disease risk, predicted incidence, probability, clinical risk, or diagnosis.
+ * - LOW is a scored tier. Evidence sufficiency is separate.
+ * - Percentile is relative to the scored batch and population.
+ * - `generated_at_utc` is the model batch time, not the request time.
+ *
+ * Responses can be cached for 60 seconds.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county has no published result. |
+ * | `503` | The current view is unavailable or the stored result is malformed. Retry later. |
+ * @summary Get county surveillance review priority
  */
-export const countyTier1SurveillancePriorityGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const getCountyTier1PriorityPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyTier1SurveillancePriorityGetParams = zod.object({
-  "fips": zod.string().regex(countyTier1SurveillancePriorityGetPathFipsRegExp)
+export const GetCountyTier1PriorityParams = zod.object({
+  "fips": zod.string().regex(getCountyTier1PriorityPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countyTier1SurveillancePriorityGetResponseCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const countyTier1SurveillancePriorityGetResponsePriorityPercentileMin = 0;
-export const countyTier1SurveillancePriorityGetResponsePriorityPercentileMax = 100;
+export const getCountyTier1PriorityResponseCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const getCountyTier1PriorityResponsePriorityPercentileMin = 0;
+export const getCountyTier1PriorityResponsePriorityPercentileMax = 100;
 
 
 
@@ -1797,46 +2084,60 @@ export const countyTier1SurveillancePriorityGetResponsePriorityPercentileMax = 1
 
 
 
-export const countyTier1SurveillancePriorityGetResponseReasonsMax = 3;
+export const getCountyTier1PriorityResponseReasonsMax = 3;
 
 
 
 
-export const CountyTier1SurveillancePriorityGetResponse = zod.object({
-  "county_fips": zod.string().regex(countyTier1SurveillancePriorityGetResponseCountyFipsRegExp).describe('Five-digit county FIPS for this persisted result.'),
+export const GetCountyTier1PriorityResponse = zod.object({
+  "county_fips": zod.string().regex(getCountyTier1PriorityResponseCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
   "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
-  "priority_percentile": zod.number().min(countyTier1SurveillancePriorityGetResponsePriorityPercentileMin).max(countyTier1SurveillancePriorityGetResponsePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
+  "priority_percentile": zod.number().min(getCountyTier1PriorityResponsePriorityPercentileMin).max(getCountyTier1PriorityResponsePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
   "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
-  "release_id": zod.string().min(1).describe('Governed source release for this batch.'),
-  "source_commit": zod.string().min(1).describe('ML source commit for reproducibility.'),
+  "release_id": zod.string().min(1).describe('Identifies the published data release the batch used.'),
+  "source_commit": zod.string().min(1).describe('Commit of the model code that produced the result, for reproducibility.'),
   "prediction_batch_version": zod.string().min(1).describe('Inference batch identity defining the percentile comparison population.'),
   "tier_policy_version": zod.string().min(1).describe('Version of the policy assigning review tiers from scored results.'),
   "generated_at_utc": zod.iso.datetime({"offset":true}).describe('UTC batch generation time, not the request time or source observation date.'),
   "reasons": zod.array(zod.object({
-  "code": zod.string().min(1),
-  "text": zod.string().min(1)
-})).max(countyTier1SurveillancePriorityGetResponseReasonsMax),
-  "limitation_ref": zod.string().min(1)
-}).describe('Model-assisted surveillance review priority; never disease or clinical risk.')
+  "code": zod.string().min(1).describe('Stable code for the reason.'),
+  "text": zod.string().min(1).describe('Plain-language statement of the reason.')
+}).describe('One reason a county received its review priority.')).max(getCountyTier1PriorityResponseReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
+  "limitation_ref": zod.string().min(1).describe('Reference to the document that lists what this result does not show.')
+}).describe('Model-assisted surveillance review priority for one county.\n\nThe priority helps decide where to look first. It is not a measure of disease or clinical\nrisk, and it is not a diagnosis.')
 
 
 /**
- * Additive availability contract for current supported county geographies. A successful lookup returns AVAILABLE with the exact persisted result, or UNAVAILABLE with reason NO_PUBLISHED_MODEL and null data after the current geography release and Tier 1 projection have both been read successfully. geography_release_id identifies the release used to validate the FIPS. This endpoint does not turn null into zero or synthesize model output. NOT_ESTIMABLE is a persisted result state and is distinct from no published model result. Malformed FIPS returns 422; an identity outside the current geography release returns typed 404; dependency or malformed-data failures return 503. Public cache TTL 60 seconds.
- * @summary Get Tier 1 result availability and persisted data
+ * Check whether a county has a published Tier 1 result, and get it when it does.
+ *
+ * ### What you get back
+ * - `AVAILABLE` with the published result in `data`.
+ * - `UNAVAILABLE` with `reason` `NO_PUBLISHED_MODEL` and `data` set to `null`.
+ * - `geography_release_id` names the release used to validate the FIPS code.
+ *
+ * `NOT_ESTIMABLE` is a published result state. It is different from no published model result. The API never turns `null` into zero or creates model output. Responses can be cached for 60 seconds.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | The county is outside the current geography release. |
+ * | `422` | The FIPS code is malformed. |
+ * | `503` | A dependency failed or stored data is malformed. Retry later. |
+ * @summary Check surveillance priority availability
  */
-export const countyTier1SurveillancePriorityAvailabilityGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const checkCountyTier1AvailabilityPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyTier1SurveillancePriorityAvailabilityGetParams = zod.object({
-  "fips": zod.string().regex(countyTier1SurveillancePriorityAvailabilityGetPathFipsRegExp)
+export const CheckCountyTier1AvailabilityParams = zod.object({
+  "fips": zod.string().regex(checkCountyTier1AvailabilityPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
 
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOneCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMin = 0;
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMax = 100;
+export const checkCountyTier1AvailabilityResponseDataOneCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMin = 0;
+export const checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMax = 100;
 
 
 
@@ -1845,232 +2146,256 @@ export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriori
 
 
 
-export const countyTier1SurveillancePriorityAvailabilityGetResponseDataOneReasonsMax = 3;
+export const checkCountyTier1AvailabilityResponseDataOneReasonsMax = 3;
 
 
 
 
-export const CountyTier1SurveillancePriorityAvailabilityGetResponse = zod.object({
-  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a persisted Tier 1 result exists for this supported current geography.'),
-  "geography_release_id": zod.string().min(1).describe('Current governed geography release used to validate the requested FIPS.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_MODEL'),zod.literal(null)]).nullable().describe('Stable reason when no persisted result is published; null when data is available.'),
+export const CheckCountyTier1AvailabilityResponse = zod.object({
+  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a published Tier 1 result exists for this county.'),
+  "geography_release_id": zod.string().min(1).describe('Identifies the geography release used to confirm the county exists.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_MODEL'),zod.literal(null)]).nullable().describe('Why no result is published. `NO_PUBLISHED_MODEL` means no model result is published for the county. `null` when a result is available.'),
   "data": zod.union([zod.object({
-  "county_fips": zod.string().regex(countyTier1SurveillancePriorityAvailabilityGetResponseDataOneCountyFipsRegExp).describe('Five-digit county FIPS for this persisted result.'),
+  "county_fips": zod.string().regex(checkCountyTier1AvailabilityResponseDataOneCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
   "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
-  "priority_percentile": zod.number().min(countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMin).max(countyTier1SurveillancePriorityAvailabilityGetResponseDataOnePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
+  "priority_percentile": zod.number().min(checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMin).max(checkCountyTier1AvailabilityResponseDataOnePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
   "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
-  "release_id": zod.string().min(1).describe('Governed source release for this batch.'),
-  "source_commit": zod.string().min(1).describe('ML source commit for reproducibility.'),
+  "release_id": zod.string().min(1).describe('Identifies the published data release the batch used.'),
+  "source_commit": zod.string().min(1).describe('Commit of the model code that produced the result, for reproducibility.'),
   "prediction_batch_version": zod.string().min(1).describe('Inference batch identity defining the percentile comparison population.'),
   "tier_policy_version": zod.string().min(1).describe('Version of the policy assigning review tiers from scored results.'),
   "generated_at_utc": zod.iso.datetime({"offset":true}).describe('UTC batch generation time, not the request time or source observation date.'),
   "reasons": zod.array(zod.object({
-  "code": zod.string().min(1),
-  "text": zod.string().min(1)
-})).max(countyTier1SurveillancePriorityAvailabilityGetResponseDataOneReasonsMax),
-  "limitation_ref": zod.string().min(1)
-}).describe('Model-assisted surveillance review priority; never disease or clinical risk.'),zod.null()]).describe('The exact persisted Tier 1 result, or null when none is published.')
-}).describe('Availability lookup that separates confirmed absence from request failure.')
+  "code": zod.string().min(1).describe('Stable code for the reason.'),
+  "text": zod.string().min(1).describe('Plain-language statement of the reason.')
+}).describe('One reason a county received its review priority.')).max(checkCountyTier1AvailabilityResponseDataOneReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
+  "limitation_ref": zod.string().min(1).describe('Reference to the document that lists what this result does not show.')
+}).describe('Model-assisted surveillance review priority for one county.\n\nThe priority helps decide where to look first. It is not a measure of disease or clinical\nrisk, and it is not a diagnosis.'),zod.null()]).describe('The published Tier 1 result, or `null` when none is published.')
+}).describe('Whether a Tier 1 result is published for a county, with the result when it is.\n\n`UNAVAILABLE` means no result is published. It is not a finding about the county.')
 
 
 /**
- * PDF attachment. The default template is county-v3, the two-page County Data Brief for the published gap score and Explorer follow-up. county-v3 ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. Explicit county-v1 remains the immutable legacy county report and still binds score settings. Optional dataset_version selects a release. Opt-in county-v2 requires dataset_version, period_start, period_end and repeated measure_id (1–20, repeated or comma-separated); reads canonical evidence, lineage, value states and limitations. Missing or mismatched provenance returns 503; unknown observations return 404. county-v1 and county-v3 reject observation selectors with 422. V2 responses use no-store and revalidate authoritative context before cache/304. ETag/If-None-Match supports 304; published briefs use public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
+ * Download a PDF report for one county.
+ *
+ * ### Templates
+ * | `template` | What it returns |
+ * | --- | --- |
+ * | `county-v3` (default) | The two-page County Data Brief for the published gap score and Explorer follow-up. It ignores score-setting overrides, so a What-if request cannot change the published score, response category, recommendations, or questions. |
+ * | `county-v1` | The immutable earlier county report. It still binds score settings. |
+ * | `county-v2` | An opt-in report for selected observations. It reads canonical evidence, lineage, value states, and limitations. |
+ *
+ * ### Key parameters
+ * | Parameter | What to send |
+ * | --- | --- |
+ * | `dataset_version` | Optional release to report on. `county-v2` requires it. |
+ * | `period_start`, `period_end`, `measure_id` | `county-v2` only. Send both dates and 1 to 20 measure IDs, repeated or comma-separated. `county-v1` and `county-v3` reject them with 422. |
+ *
+ * ### Caching
+ * `ETag` and `If-None-Match` support 304. Published briefs can be cached for 300 seconds with revalidation. `county-v2` responses must not be cached, and the API revalidates authoritative context before it answers 304.
+ *
+ * ### Common problems
+ * | Response | Cause and what to do |
+ * | --- | --- |
+ * | `404` | A `county-v2` observation is unknown. |
+ * | `413` | The report exceeds the resource limits. Narrow the selection. |
+ * | `422` | The template is unknown, or observation selectors were sent to `county-v1` or `county-v3`. |
+ * | `503` | `county-v2` provenance is missing or mismatched, or the renderer failed or timed out. Retry later. |
  * @summary Download a county report
  */
-export const countyReportPdfV1CountiesFipsReportPdfGetPathFipsRegExp = new RegExp('^\\d{5}$');
+export const downloadCountyReportPathFipsRegExp = new RegExp('^\\d{5}$');
 
 
-export const CountyReportPdfV1CountiesFipsReportPdfGetParams = zod.object({
-  "fips": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetPathFipsRegExp)
+export const DownloadCountyReportParams = zod.object({
+  "fips": zod.string().regex(downloadCountyReportPathFipsRegExp).describe('County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.')
 })
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMeasureIdMax = 20;
+export const downloadCountyReportQueryMeasureIdMax = 20;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateDefault = `county-v3`;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareDefault = 65;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMin = 40;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMax = 85;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMultipleOf = 5;
+export const downloadCountyReportQueryTemplateDefault = `county-v3`;
+export const downloadCountyReportQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
+export const downloadCountyReportQueryEcologicalShareDefault = 65;
+export const downloadCountyReportQueryEcologicalShareMin = 40;
+export const downloadCountyReportQueryEcologicalShareMax = 85;
+export const downloadCountyReportQueryEcologicalShareMultipleOf = 5;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKDefault = 50;
-export const countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMin = 5;
-export const countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMax = 200;
+export const downloadCountyReportQuerySmoothKDefault = 50;
+export const downloadCountyReportQuerySmoothKMin = 5;
+export const downloadCountyReportQuerySmoothKMax = 200;
 
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessDefault = 75;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMin = 40;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMax = 90;
-export const countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const downloadCountyReportQueryMissingHumanWeaknessDefault = 75;
+export const downloadCountyReportQueryMissingHumanWeaknessMin = 40;
+export const downloadCountyReportQueryMissingHumanWeaknessMax = 90;
+export const downloadCountyReportQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const CountyReportPdfV1CountiesFipsReportPdfGetQueryParams = zod.object({
-  "dataset_version": zod.string().nullish(),
+export const DownloadCountyReportQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
   "period_start": zod.iso.date().nullish().describe('Exact inclusive observation start for county-v2.'),
   "period_end": zod.iso.date().nullish().describe('Exact inclusive observation end for county-v2.'),
-  "measure_id": zod.array(zod.string()).max(countyReportPdfV1CountiesFipsReportPdfGetQueryMeasureIdMax).nullish().describe('1–20 measure IDs; repeated or comma-separated for county-v2.'),
-  "template": zod.string().regex(countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateRegExp).default(countyReportPdfV1CountiesFipsReportPdfGetQueryTemplateDefault),
-  "ecological_share": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetQueryEcologicalShareDefault),
-  "smooth_k": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMin).max(countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKMax).default(countyReportPdfV1CountiesFipsReportPdfGetQuerySmoothKDefault),
-  "missing_human_weakness": zod.int().min(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMin).max(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMax).multipleOf(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessMultipleOf).default(countyReportPdfV1CountiesFipsReportPdfGetQueryMissingHumanWeaknessDefault),
-  "low_incidence_breakpoint": zod.int().nullish()
+  "measure_id": zod.array(zod.string()).max(downloadCountyReportQueryMeasureIdMax).nullish().describe('1–20 measure IDs; repeated or comma-separated for county-v2.'),
+  "template": zod.string().regex(downloadCountyReportQueryTemplateRegExp).default(downloadCountyReportQueryTemplateDefault).describe('County report template. Accepted values are `county-v3` (default; the two-page County Data Brief, which ignores score settings), `county-v1`, and `county-v2` (requires `dataset_version`, `period_start`, `period_end`, and `measure_id`). A well-formed value that is not accepted returns 422.'),
+  "ecological_share": zod.int().min(downloadCountyReportQueryEcologicalShareMin).max(downloadCountyReportQueryEcologicalShareMax).multipleOf(downloadCountyReportQueryEcologicalShareMultipleOf).default(downloadCountyReportQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(downloadCountyReportQuerySmoothKMin).max(downloadCountyReportQuerySmoothKMax).default(downloadCountyReportQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(downloadCountyReportQueryMissingHumanWeaknessMin).max(downloadCountyReportQueryMissingHumanWeaknessMax).multipleOf(downloadCountyReportQueryMissingHumanWeaknessMultipleOf).default(downloadCountyReportQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const CountyReportPdfV1CountiesFipsReportPdfGetResponse = zod.unknown()
+export const DownloadCountyReportResponse = zod.unknown()
 
 
 /**
  * PDF attachment using the immutable state-v1 registered template by default. State is a two-letter code. Optional dataset_version and score settings bind report inputs. ETag/If-None-Match supports 304; public cache TTL 300 seconds with revalidation. Unknown templates return 422; resource limits 413; renderer failure/timeout 503.
  * @summary Download a state report
  */
-export const stateReportPdfV1StatesStateReportPdfGetPathStateRegExp = new RegExp('^[A-Z]{2}$');
+export const downloadStateReportPathStateRegExp = new RegExp('^[A-Z]{2}$');
 
 
-export const StateReportPdfV1StatesStateReportPdfGetParams = zod.object({
-  "state": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetPathStateRegExp)
+export const DownloadStateReportParams = zod.object({
+  "state": zod.string().regex(downloadStateReportPathStateRegExp).describe('Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.')
 })
 
-export const stateReportPdfV1StatesStateReportPdfGetQueryTemplateDefault = `state-v1`;
-export const stateReportPdfV1StatesStateReportPdfGetQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareDefault = 65;
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMin = 40;
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMax = 85;
-export const stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMultipleOf = 5;
+export const downloadStateReportQueryTemplateDefault = `state-v1`;
+export const downloadStateReportQueryTemplateRegExp = new RegExp('^[a-z]+-v\\d+$');
+export const downloadStateReportQueryEcologicalShareDefault = 65;
+export const downloadStateReportQueryEcologicalShareMin = 40;
+export const downloadStateReportQueryEcologicalShareMax = 85;
+export const downloadStateReportQueryEcologicalShareMultipleOf = 5;
 
-export const stateReportPdfV1StatesStateReportPdfGetQuerySmoothKDefault = 50;
-export const stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMin = 5;
-export const stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMax = 200;
+export const downloadStateReportQuerySmoothKDefault = 50;
+export const downloadStateReportQuerySmoothKMin = 5;
+export const downloadStateReportQuerySmoothKMax = 200;
 
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessDefault = 75;
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMin = 40;
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMax = 90;
-export const stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const downloadStateReportQueryMissingHumanWeaknessDefault = 75;
+export const downloadStateReportQueryMissingHumanWeaknessMin = 40;
+export const downloadStateReportQueryMissingHumanWeaknessMax = 90;
+export const downloadStateReportQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const StateReportPdfV1StatesStateReportPdfGetQueryParams = zod.object({
-  "dataset_version": zod.string().nullish(),
-  "template": zod.string().regex(stateReportPdfV1StatesStateReportPdfGetQueryTemplateRegExp).default(stateReportPdfV1StatesStateReportPdfGetQueryTemplateDefault),
-  "ecological_share": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMin).max(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetQueryEcologicalShareDefault),
-  "smooth_k": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMin).max(stateReportPdfV1StatesStateReportPdfGetQuerySmoothKMax).default(stateReportPdfV1StatesStateReportPdfGetQuerySmoothKDefault),
-  "missing_human_weakness": zod.int().min(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMin).max(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMax).multipleOf(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessMultipleOf).default(stateReportPdfV1StatesStateReportPdfGetQueryMissingHumanWeaknessDefault),
-  "low_incidence_breakpoint": zod.int().nullish()
+export const DownloadStateReportQueryParams = zod.object({
+  "dataset_version": zod.string().nullish().describe('Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.'),
+  "template": zod.string().regex(downloadStateReportQueryTemplateRegExp).default(downloadStateReportQueryTemplateDefault).describe('State report template. The only accepted value is `state-v1`, which is also the default. Any other value returns 422.'),
+  "ecological_share": zod.int().min(downloadStateReportQueryEcologicalShareMin).max(downloadStateReportQueryEcologicalShareMax).multipleOf(downloadStateReportQueryEcologicalShareMultipleOf).default(downloadStateReportQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(downloadStateReportQuerySmoothKMin).max(downloadStateReportQuerySmoothKMax).default(downloadStateReportQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(downloadStateReportQueryMissingHumanWeaknessMin).max(downloadStateReportQueryMissingHumanWeaknessMax).multipleOf(downloadStateReportQueryMissingHumanWeaknessMultipleOf).default(downloadStateReportQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const StateReportPdfV1StatesStateReportPdfGetResponse = zod.unknown()
+export const DownloadStateReportResponse = zod.unknown()
 
 
 /**
  * Filtered CSV attachment for current county rankings. Existing state, text and evidence filters and score settings apply; no pagination. This route does not declare a public cache TTL.
- * @summary Download filtered county rankings
+ * @summary Download county rankings as CSV
  */
-export const rankingCsvV1AtlasRankingCsvGetQueryStateDefault = `ALL`;
-export const rankingCsvV1AtlasRankingCsvGetQueryStateRegExp = new RegExp('^(ALL|[A-Z]{2})$');
-export const rankingCsvV1AtlasRankingCsvGetQueryQDefault = ``;
-export const rankingCsvV1AtlasRankingCsvGetQueryQMax = 100;
+export const downloadAtlasRankingQueryStateDefault = `ALL`;
+export const downloadAtlasRankingQueryStateRegExp = new RegExp('^(ALL|[A-Z]{2})$');
+export const downloadAtlasRankingQueryQDefault = ``;
+export const downloadAtlasRankingQueryQMax = 100;
 
-export const rankingCsvV1AtlasRankingCsvGetQueryEvidenceDefault = `all`;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareDefault = 65;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMin = 40;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMax = 85;
-export const rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMultipleOf = 5;
+export const downloadAtlasRankingQueryEvidenceDefault = `all`;
+export const downloadAtlasRankingQueryEcologicalShareDefault = 65;
+export const downloadAtlasRankingQueryEcologicalShareMin = 40;
+export const downloadAtlasRankingQueryEcologicalShareMax = 85;
+export const downloadAtlasRankingQueryEcologicalShareMultipleOf = 5;
 
-export const rankingCsvV1AtlasRankingCsvGetQuerySmoothKDefault = 50;
-export const rankingCsvV1AtlasRankingCsvGetQuerySmoothKMin = 5;
-export const rankingCsvV1AtlasRankingCsvGetQuerySmoothKMax = 200;
+export const downloadAtlasRankingQuerySmoothKDefault = 50;
+export const downloadAtlasRankingQuerySmoothKMin = 5;
+export const downloadAtlasRankingQuerySmoothKMax = 200;
 
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessDefault = 75;
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMin = 40;
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMax = 90;
-export const rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMultipleOf = 5;
+export const downloadAtlasRankingQueryMissingHumanWeaknessDefault = 75;
+export const downloadAtlasRankingQueryMissingHumanWeaknessMin = 40;
+export const downloadAtlasRankingQueryMissingHumanWeaknessMax = 90;
+export const downloadAtlasRankingQueryMissingHumanWeaknessMultipleOf = 5;
 
 
 
-export const RankingCsvV1AtlasRankingCsvGetQueryParams = zod.object({
-  "state": zod.string().regex(rankingCsvV1AtlasRankingCsvGetQueryStateRegExp).default(rankingCsvV1AtlasRankingCsvGetQueryStateDefault),
-  "q": zod.string().max(rankingCsvV1AtlasRankingCsvGetQueryQMax).default(rankingCsvV1AtlasRankingCsvGetQueryQDefault),
-  "evidence": zod.enum(['all', 'ecological', 'human', 'complete']).default(rankingCsvV1AtlasRankingCsvGetQueryEvidenceDefault),
-  "ecological_share": zod.int().min(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMin).max(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMax).multipleOf(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareMultipleOf).default(rankingCsvV1AtlasRankingCsvGetQueryEcologicalShareDefault),
-  "smooth_k": zod.int().min(rankingCsvV1AtlasRankingCsvGetQuerySmoothKMin).max(rankingCsvV1AtlasRankingCsvGetQuerySmoothKMax).default(rankingCsvV1AtlasRankingCsvGetQuerySmoothKDefault),
-  "missing_human_weakness": zod.int().min(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMin).max(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMax).multipleOf(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessMultipleOf).default(rankingCsvV1AtlasRankingCsvGetQueryMissingHumanWeaknessDefault),
-  "low_incidence_breakpoint": zod.int().nullish()
+export const DownloadAtlasRankingQueryParams = zod.object({
+  "state": zod.string().regex(downloadAtlasRankingQueryStateRegExp).default(downloadAtlasRankingQueryStateDefault).describe('Limit rows to one state. Use a two-letter uppercase USPS state code, or `ALL` for every state. The default is `ALL`. Any other value returns 422.'),
+  "q": zod.string().max(downloadAtlasRankingQueryQMax).default(downloadAtlasRankingQueryQDefault).describe('Filter rows by text. Matching ignores case and keeps rows where the county name, state code, or county FIPS code contains the text. Use up to 100 characters; a longer value returns 422. The default is empty, which keeps every row.'),
+  "evidence": zod.enum(['all', 'ecological', 'human', 'complete']).default(downloadAtlasRankingQueryEvidenceDefault).describe('Limit rows by available evidence. `all` keeps every county. `ecological` keeps counties with a tick or pathogen signal. `human` keeps counties with a published human case count. `complete` keeps counties whose `evidence_completeness` is 5 or more. The default is `all`. Any other value returns 422.'),
+  "ecological_share": zod.int().min(downloadAtlasRankingQueryEcologicalShareMin).max(downloadAtlasRankingQueryEcologicalShareMax).multipleOf(downloadAtlasRankingQueryEcologicalShareMultipleOf).default(downloadAtlasRankingQueryEcologicalShareDefault).describe('Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "smooth_k": zod.int().min(downloadAtlasRankingQuerySmoothKMin).max(downloadAtlasRankingQuerySmoothKMax).default(downloadAtlasRankingQuerySmoothKDefault).describe('Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "missing_human_weakness": zod.int().min(downloadAtlasRankingQueryMissingHumanWeaknessMin).max(downloadAtlasRankingQueryMissingHumanWeaknessMax).multipleOf(downloadAtlasRankingQueryMissingHumanWeaknessMultipleOf).default(downloadAtlasRankingQueryMissingHumanWeaknessDefault).describe('Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'),
+  "low_incidence_breakpoint": zod.int().nullish().describe('Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.')
 })
 
-export const RankingCsvV1AtlasRankingCsvGetResponse = zod.unknown()
+export const DownloadAtlasRankingResponse = zod.unknown()
 
 
 /**
  * @summary Submit Feedback
  */
-export const SubmitFeedbackV1FeedbackPostHeader = zod.object({
+export const SubmitFeedbackHeader = zod.object({
   "authorization": zod.string().nullish()
 })
 
-export const submitFeedbackV1FeedbackPostBodyMessageMin = 10;
-export const submitFeedbackV1FeedbackPostBodyMessageMax = 2000;
+export const submitFeedbackBodyMessageMin = 10;
+export const submitFeedbackBodyMessageMax = 2000;
 
-export const submitFeedbackV1FeedbackPostBodyContactEmailMax = 254;
+export const submitFeedbackBodyContactEmailMax = 254;
 
-export const submitFeedbackV1FeedbackPostBodyContextOneCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const submitFeedbackV1FeedbackPostBodyContextOneCompareCountyFipsRegExp = new RegExp('^\\d{5}$');
-export const submitFeedbackV1FeedbackPostBodyContextOneSelectedCountyFipsMax = 5;
+export const submitFeedbackBodyContextOneCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const submitFeedbackBodyContextOneCompareCountyFipsRegExp = new RegExp('^\\d{5}$');
+export const submitFeedbackBodyContextOneSelectedCountyFipsMax = 5;
 
-export const submitFeedbackV1FeedbackPostBodyContextOneDatasetMax = 64;
-
-
-export const submitFeedbackV1FeedbackPostBodyContextOneDatasetRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
-export const submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMin = 40;
-export const submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMax = 85;
-export const submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMultipleOf = 5;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMin = 5;
-export const submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMax = 25;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneSmoothKMin = 5;
-export const submitFeedbackV1FeedbackPostBodyContextOneSmoothKMax = 200;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMin = 40;
-export const submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMax = 90;
-export const submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMultipleOf = 5;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneSourceIdsMax = 8;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneEvidenceItemIdsMax = 8;
-
-export const submitFeedbackV1FeedbackPostBodyContextOneItemIdsMax = 8;
-
-export const submitFeedbackV1FeedbackPostBodyAppVersionRegExp = new RegExp('^atlas-web/[A-Za-z0-9._-]{1,32}$');
+export const submitFeedbackBodyContextOneDatasetMax = 64;
 
 
-export const SubmitFeedbackV1FeedbackPostBody = zod.object({
+export const submitFeedbackBodyContextOneDatasetRegExp = new RegExp('^[A-Za-z0-9._-]{1,64}$');
+export const submitFeedbackBodyContextOneEcologicalShareMin = 40;
+export const submitFeedbackBodyContextOneEcologicalShareMax = 85;
+export const submitFeedbackBodyContextOneEcologicalShareMultipleOf = 5;
+
+export const submitFeedbackBodyContextOneLowIncidenceBreakpointMin = 5;
+export const submitFeedbackBodyContextOneLowIncidenceBreakpointMax = 25;
+
+export const submitFeedbackBodyContextOneSmoothKMin = 5;
+export const submitFeedbackBodyContextOneSmoothKMax = 200;
+
+export const submitFeedbackBodyContextOneMissingHumanWeaknessMin = 40;
+export const submitFeedbackBodyContextOneMissingHumanWeaknessMax = 90;
+export const submitFeedbackBodyContextOneMissingHumanWeaknessMultipleOf = 5;
+
+export const submitFeedbackBodyContextOneSourceIdsMax = 8;
+
+export const submitFeedbackBodyContextOneEvidenceItemIdsMax = 8;
+
+export const submitFeedbackBodyContextOneItemIdsMax = 8;
+
+export const submitFeedbackBodyAppVersionRegExp = new RegExp('^atlas-web/[A-Za-z0-9._-]{1,32}$');
+
+
+export const SubmitFeedbackBody = zod.object({
   "submission_token": zod.uuid(),
   "category": zod.enum(['data_issue', 'usability', 'bug', 'feature_idea', 'general']),
-  "message": zod.string().min(submitFeedbackV1FeedbackPostBodyMessageMin).max(submitFeedbackV1FeedbackPostBodyMessageMax),
-  "contact_email": zod.string().max(submitFeedbackV1FeedbackPostBodyContactEmailMax).nullish(),
+  "message": zod.string().min(submitFeedbackBodyMessageMin).max(submitFeedbackBodyMessageMax),
+  "contact_email": zod.string().max(submitFeedbackBodyContactEmailMax).nullish(),
   "route_id": zod.enum(['overview', 'geographic_explorer', 'evidence_library', 'assistant', 'account', 'privacy', 'ai_ethics']),
   "context": zod.union([zod.object({
   "state": zod.string().nullish(),
-  "county_fips": zod.string().regex(submitFeedbackV1FeedbackPostBodyContextOneCountyFipsRegExp).nullish(),
-  "compare_county_fips": zod.string().regex(submitFeedbackV1FeedbackPostBodyContextOneCompareCountyFipsRegExp).nullish(),
-  "selected_county_fips": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneSelectedCountyFipsMax).nullish(),
-  "dataset": zod.string().max(submitFeedbackV1FeedbackPostBodyContextOneDatasetMax).regex(submitFeedbackV1FeedbackPostBodyContextOneDatasetRegExp).nullish(),
+  "county_fips": zod.string().regex(submitFeedbackBodyContextOneCountyFipsRegExp).nullish(),
+  "compare_county_fips": zod.string().regex(submitFeedbackBodyContextOneCompareCountyFipsRegExp).nullish(),
+  "selected_county_fips": zod.array(zod.string()).max(submitFeedbackBodyContextOneSelectedCountyFipsMax).nullish(),
+  "dataset": zod.string().max(submitFeedbackBodyContextOneDatasetMax).regex(submitFeedbackBodyContextOneDatasetRegExp).nullish(),
   "evidence_view": zod.union([zod.literal('all'),zod.literal('ecological'),zod.literal('human'),zod.literal('complete'),zod.literal(null)]).nullish(),
   "explorer_view": zod.union([zod.literal('tiles'),zod.literal('multiples'),zod.literal('matrix'),zod.literal('ranking'),zod.literal('maps'),zod.literal('scatter'),zod.literal('compare'),zod.literal('trends'),zod.literal(null)]).nullish(),
   "explorer_metric": zod.union([zod.literal('score'),zod.literal('completeness'),zod.literal(null)]).nullish(),
-  "ecological_share": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMin).max(submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMax).multipleOf(submitFeedbackV1FeedbackPostBodyContextOneEcologicalShareMultipleOf).nullish(),
-  "low_incidence_breakpoint": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMin).max(submitFeedbackV1FeedbackPostBodyContextOneLowIncidenceBreakpointMax).nullish(),
-  "smooth_k": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneSmoothKMin).max(submitFeedbackV1FeedbackPostBodyContextOneSmoothKMax).nullish(),
-  "missing_human_weakness": zod.int().min(submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMin).max(submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMax).multipleOf(submitFeedbackV1FeedbackPostBodyContextOneMissingHumanWeaknessMultipleOf).nullish(),
-  "source_ids": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneSourceIdsMax).nullish(),
-  "evidence_item_ids": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneEvidenceItemIdsMax).nullish(),
-  "item_ids": zod.array(zod.string()).max(submitFeedbackV1FeedbackPostBodyContextOneItemIdsMax).nullish()
+  "ecological_share": zod.int().min(submitFeedbackBodyContextOneEcologicalShareMin).max(submitFeedbackBodyContextOneEcologicalShareMax).multipleOf(submitFeedbackBodyContextOneEcologicalShareMultipleOf).nullish(),
+  "low_incidence_breakpoint": zod.int().min(submitFeedbackBodyContextOneLowIncidenceBreakpointMin).max(submitFeedbackBodyContextOneLowIncidenceBreakpointMax).nullish(),
+  "smooth_k": zod.int().min(submitFeedbackBodyContextOneSmoothKMin).max(submitFeedbackBodyContextOneSmoothKMax).nullish(),
+  "missing_human_weakness": zod.int().min(submitFeedbackBodyContextOneMissingHumanWeaknessMin).max(submitFeedbackBodyContextOneMissingHumanWeaknessMax).multipleOf(submitFeedbackBodyContextOneMissingHumanWeaknessMultipleOf).nullish(),
+  "source_ids": zod.array(zod.string()).max(submitFeedbackBodyContextOneSourceIdsMax).nullish(),
+  "evidence_item_ids": zod.array(zod.string()).max(submitFeedbackBodyContextOneEvidenceItemIdsMax).nullish(),
+  "item_ids": zod.array(zod.string()).max(submitFeedbackBodyContextOneItemIdsMax).nullish()
 }).describe('Closed geography and view context for a feedback submission.'),zod.null()]).optional(),
-  "app_version": zod.string().regex(submitFeedbackV1FeedbackPostBodyAppVersionRegExp)
+  "app_version": zod.string().regex(submitFeedbackBodyAppVersionRegExp)
 })
 
-export const SubmitFeedbackV1FeedbackPostResponse = zod.object({
+export const SubmitFeedbackResponse = zod.object({
   "feedback_id": zod.uuid(),
   "received_at": zod.iso.datetime({"offset":true}),
   "replayed": zod.boolean()
@@ -2149,30 +2474,30 @@ export const AskAtlasStructuredResponse = zod.object({
   "claim_id": zod.string(),
   "text": zod.string().min(1),
   "structured_refs": zod.array(zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-})).optional(),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs a result.')).optional(),
   "measure_ids": zod.array(zod.string()).optional(),
   "coverage_ids": zod.array(zod.string()).optional(),
   "literature_citation_ids": zod.array(zod.string()).optional(),
   "role": zod.enum(['finding', 'comparison_limitation']).default(askAtlasStructuredResponseAnswerClaimsItemRoleDefault)
 })).optional(),
   "structured_evidence_refs": zod.array(zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-})).optional(),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs a result.')).optional(),
   "literature_citations": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "cross_source_state": zod.null().optional(),
   "freshness": zod.array(zod.object({
@@ -2195,39 +2520,39 @@ export const AskAtlasStructuredResponse = zod.object({
   "literature_retrieval_configuration_version": zod.string().nullish()
 }).optional(),
   "structured_measures": zod.array(zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})).optional(),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('One variable you can query, such as a case count. It belongs to one indicator.')).optional(),
   "structured_coverage": zod.array(zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),
@@ -2244,167 +2569,167 @@ export const AskAtlasStructuredResponse = zod.object({
   "status": zod.enum(['ok', 'error']),
   "release_id": zod.string().nullish(),
   "measures": zod.array(zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})).max(askAtlasStructuredResponseToolEvidenceItemMeasuresMax).optional(),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('One variable you can query, such as a case count. It belongs to one indicator.')).max(askAtlasStructuredResponseToolEvidenceItemMeasuresMax).optional(),
   "observations": zod.array(zod.object({
-  "metadata_revision_id": zod.string().nullish().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
-  "observation_id": zod.string().describe('Stable observation identity and compact provenance reference.'),
-  "measure_id": zod.string(),
+  "metadata_revision_id": zod.string().nullish().describe('Identifies the reviewed metadata revision that describes this observation. `null` when none applies.'),
+  "observation_id": zod.string().describe('Stable identifier of the observation. It also serves as the provenance reference.'),
+  "measure_id": zod.string().describe('Identifier of the measure. See `\/v1\/measures\/{measure_id}`.'),
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string(),
-  "value": zod.union([zod.number().describe('Read with value_state and unit; null never means zero.'),zod.string().describe('Read with value_state and unit; null never means zero.')]).nullable().describe('Read with value_state and unit; null never means zero.'),
-  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
-  "unit": zod.string(),
-  "denominator": zod.string().nullable().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "strata": zod.record(zod.string(), zod.string()).optional(),
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "lineage_source_id": zod.string().nullish(),
-  "dataset_id": zod.string().nullish(),
-  "methodology_id": zod.string().nullable().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "release_methodology_version": zod.string().nullish(),
-  "methodology_version": zod.string().describe('Transformation version, distinct from methodology resource version.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_id": zod.string().describe('Governed release identity for reproducibility.'),
-  "provenance_ref": zod.string().describe('Structured observation provenance identity; not a literature citation.'),
-  "source_label": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_url": zod.string().nullish(),
-  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('Publisher timestamp when governed; null is not inferred freshness.'),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas processing time when governed; distinct from response time.'),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('The place the value describes.'),
+  "temporal_grain": zod.string().describe('Time interval the value covers, such as `YEAR` or `DAY`.'),
+  "value": zod.union([zod.number().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.'),zod.string().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.')]).nullable().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.'),
+  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero.'),
+  "unit": zod.string().describe('Unit of `value`, such as `count` or `mm`.'),
+  "denominator": zod.string().nullable().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "strata": zod.record(zod.string(), zod.string()).optional().describe('Breakdown the value applies to, such as an age group. Empty when the release has no strata.'),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "lineage_source_id": zod.string().nullish().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().nullish().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "methodology_id": zod.string().nullable().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produced the value.'),
+  "release_methodology_version": zod.string().nullish().describe('Version of the methodology as published in this release. `null` when none.'),
+  "methodology_version": zod.string().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_id": zod.string().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "provenance_ref": zod.string().describe('Identifies the provenance record for this observation. It is not a literature citation.'),
+  "source_label": zod.string().nullish().describe('Display name of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.'),
+  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "evidence": zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-}),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs this observation.'),
   "environmental_context": zod.union([zod.object({
-  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']),
-  "source_time_present": zod.boolean(),
-  "day_convention": zod.string().min(1).describe('Publisher labeled 24-hour period, not a midnight calendar day.'),
-  "expected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "intersected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_supported_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "valid_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_coverage_fraction": zod.union([zod.number().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),zod.string().describe('Monthly source-supported\/legal county area; separate from daily completeness.')]).nullable().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
-  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),zod.string().describe('Daily valid\/source-supported area; completeness threshold 0.95.')]).nullable().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
-  "upstream_date_modified": zod.string().nullable().describe('Upstream modification metadata; never original publication or first availability.'),
-  "weight_version": zod.string(),
-  "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
-  "metadata_revision_id": zod.string()
-}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.'),zod.null()]).optional().describe('Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.'),
+  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']).describe('How much of the county the source covers for this day.'),
+  "source_time_present": zod.boolean().describe('Whether the source supplied a time for this observation.'),
+  "day_convention": zod.string().min(1).describe('How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day.'),
+  "expected_area_m2": zod.union([zod.number().describe('County area expected to be covered, in square meters. `null` when unknown.'),zod.string().describe('County area expected to be covered, in square meters. `null` when unknown.')]).nullable().describe('County area expected to be covered, in square meters. `null` when unknown.'),
+  "intersected_area_m2": zod.union([zod.number().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),zod.string().describe('County area that overlaps the source grid, in square meters. `null` when unknown.')]).nullable().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),
+  "source_supported_area_m2": zod.union([zod.number().describe('County area the source supports, in square meters. `null` when unknown.'),zod.string().describe('County area the source supports, in square meters. `null` when unknown.')]).nullable().describe('County area the source supports, in square meters. `null` when unknown.'),
+  "valid_area_m2": zod.union([zod.number().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),zod.string().describe('County area with a valid source value for this day, in square meters. `null` when unknown.')]).nullable().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),
+  "source_coverage_fraction": zod.union([zod.number().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),zod.string().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.')]).nullable().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),
+  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),zod.string().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.')]).nullable().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),
+  "upstream_date_modified": zod.string().nullable().describe('Modification date the source reports. It is not the original publication date or the date the data first became available.'),
+  "weight_version": zod.string().describe('Version of the area weights used to combine grid cells into a county value.'),
+  "geometry_version": zod.string().describe('Version of the county boundaries used for the calculation. The API returns no boundary geometry.'),
+  "metadata_revision_id": zod.string().describe('Identifies the reviewed metadata revision that describes this context.')
+}).describe('How completely the source covers a county and day. It is separate from `value_state`.\n\nArea values are square meters. Exact decimal quantities may be strings.'),zod.null()]).optional().describe('Coverage details. Present only for environmental measures. Exact decimal quantities may be strings.'),
   "surveillance_context": zod.union([zod.object({
   "evidence": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
-  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
-  "reason_codes": zod.array(zod.string()).min(1),
-  "evidence_tier": zod.literal("GOVERNED_MAPPING"),
-  "observation_key": zod.string(),
-  "revision_id": zod.string(),
-  "value_state": zod.string(),
-  "source_rule_id": zod.string(),
-  "limitations": zod.array(zod.string()).min(1),
-  "evidence_revision_id": zod.string()
-}).describe('Data-projector evidence, never an API classification.'),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-surveillance-evidence-v3").describe('Version of the contract that defines this object.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher\'s original value stays in the observation `value`.'),
+  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']).describe('Evidence state for the county. None of these values proves absence.'),
+  "reason_codes": zod.array(zod.string()).min(1).describe('Codes that explain why the state applies.'),
+  "evidence_tier": zod.literal("GOVERNED_MAPPING").describe('How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping.'),
+  "observation_key": zod.string().describe('Identifies the observation this state describes.'),
+  "revision_id": zod.string().describe('Identifies the revision of the evidence record.'),
+  "value_state": zod.string().describe('The `value_state` of the observation this state describes.'),
+  "source_rule_id": zod.string().describe('Identifies the rule that mapped the source value.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "evidence_revision_id": zod.string().describe('Identifies the revision of the evidence set.')
+}).describe('Evidence state for a county as supplied with the data. Atlas adds no classification.'),zod.null()]).optional().describe('County evidence state. `null` when none is supplied.'),
   "methodology_comparison": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
-  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
-  "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.string().nullable()),
-  "jurisdiction_class": zod.string().nullable(),
-  "references": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
-  "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
-}),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1").describe('Version of the contract that defines this object.'),
+  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']).describe('Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the comparison state.'),
+  "methodology_era_ids": zod.array(zod.string().nullable()).describe('Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown.'),
+  "jurisdiction_class": zod.string().nullable().describe('Group of jurisdictions that share a reporting approach. `null` when unknown.'),
+  "references": zod.array(zod.string()).describe('Public references that support the comparison.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "left_observation_id": zod.string().describe('Identifier of the observation on the left side of the comparison.')
+}).describe('Whether this observation can be compared with another across surveillance methods.'),zod.null()]).optional().describe('Comparability of case definitions. `null` when none is supplied.'),
   "temporal_alignment": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-temporal-alignment-v1"),
-  "method_id": zod.string(),
-  "method_version": zod.string(),
-  "source_id": zod.string(),
-  "measure_id": zod.string(),
-  "aggregation_rule": zod.string(),
-  "coverage_denominator": zod.string(),
-  "decision_cutoff": zod.iso.datetime({"offset":true}),
-  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']),
-  "reason_codes": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
+  "contract_version": zod.literal("atlas-temporal-alignment-v1").describe('Version of the contract that defines this object.'),
+  "method_id": zod.string().describe('Identifies the alignment method.'),
+  "method_version": zod.string().describe('Version of the alignment method.'),
+  "source_id": zod.string().describe('Identifies the source of the aligned observation.'),
+  "measure_id": zod.string().describe('Identifies the measure that was aligned.'),
+  "aggregation_rule": zod.string().describe('Rule used to combine values inside the observation window.'),
+  "coverage_denominator": zod.string().describe('What the coverage is counted against, such as days in the window.'),
+  "decision_cutoff": zod.iso.datetime({"offset":true}).describe('Time after which new data is not used for the alignment. Includes a UTC offset.'),
+  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']).describe('Whether the observation can be used for the target window.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the disposition.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "observation_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span the observation covers.'),
   "target_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span being compared against.'),
   "lag": zod.object({
-  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
-  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
-  "offset_days": zod.int(),
-  "window_days": zod.int().nullish(),
-  "season_id": zod.string().nullish()
-}),
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']).describe('Type of lag rule that applies.'),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']).describe('Edge of the target window that the lag is measured from.'),
+  "offset_days": zod.int().describe('Number of days between the anchor and the window.'),
+  "window_days": zod.int().nullish().describe('Length of a rolling window in days. `null` for other kinds.'),
+  "season_id": zod.string().nullish().describe('Identifies the season for a seasonal lag. `null` otherwise.')
+}).describe('Lag between the two windows.'),
   "coverage": zod.object({
-  "expected": zod.union([zod.int(),zod.number()]),
-  "observed": zod.union([zod.int(),zod.number()]),
-  "unit": zod.string(),
-  "partial_allowed": zod.boolean()
-}),
+  "expected": zod.union([zod.int(),zod.number()]).describe('Amount of coverage expected, in `unit`.'),
+  "observed": zod.union([zod.int(),zod.number()]).describe('Amount of coverage present, in `unit`.'),
+  "unit": zod.string().describe('Unit of `expected` and `observed`, such as `day`.'),
+  "partial_allowed": zod.boolean().describe('Whether the method accepts less than the expected coverage.')
+}).describe('Expected and observed coverage of the observation window.'),
   "reference_period": zod.union([zod.object({
-  "id": zod.string(),
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "source_vintage": zod.string()
-}),zod.null()]).optional()
-}),zod.null()]).optional()
-}),zod.null()]).optional().describe('Only supplied through an admitted Data release\/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.'),
-  "period_start": zod.iso.date().describe('Inclusive start of the governed observation period.'),
-  "period_end": zod.iso.date().describe('Inclusive end of the governed observation period.')
-})).max(askAtlasStructuredResponseToolEvidenceItemObservationsMax).optional(),
+  "id": zod.string().describe('Identifies the reference period.'),
+  "start": zod.iso.date().describe('First date in the reference period.'),
+  "end_exclusive": zod.iso.date().describe('First date after the reference period. It is not in the period.'),
+  "source_vintage": zod.string().describe('Reference year or period of the source dataset. It is not an annual value.')
+}).describe('The reference period of a source dataset.'),zod.null()]).optional().describe('Reference period of the source dataset. `null` when none applies.')
+}).describe('Describes how an observation\'s time span lines up with a target time span.\n\nThe alignment is descriptive. It does not show cause.'),zod.null()]).optional().describe('Time alignment details. `null` when none is supplied.')
+}).describe('Optional surveillance evidence attached to an observation.\n\nA missing or `null` part supports no claim about evidence state, comparability, or lag.\nComparison covers case definitions only. Alignment is descriptive, not causal.'),zod.null()]).optional().describe('Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag.'),
+  "period_start": zod.iso.date().describe('First date the observation covers (inclusive).'),
+  "period_end": zod.iso.date().describe('Last date the observation covers (inclusive).')
+}).describe('One value for a measure, a county, and a period, with its state and provenance.')).max(askAtlasStructuredResponseToolEvidenceItemObservationsMax).optional(),
   "coverage": zod.array(zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),
@@ -2416,31 +2741,31 @@ export const AskAtlasStructuredResponse = zod.object({
   "metadata": zod.array(zod.object({
   "observation_id": zod.string(),
   "source": zod.object({
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "label": zod.string(),
-  "publisher": zod.string().nullable(),
-  "lineage_source_id": zod.string(),
-  "dataset_id": zod.string(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_version": zod.string().nullish(),
-  "published_at": zod.iso.datetime({"offset":true}).nullish(),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
-}),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "publisher": zod.string().nullable().describe('Organization that publishes the data. `null` when none is recorded.'),
+  "lineage_source_id": zod.string().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset. It is not an annual value.'),
+  "source_version": zod.string().nullish().describe('Version label the publisher gives the dataset, when it has one.'),
+  "published_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `upstream_updated_at`. When the publisher published the data.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas last retrieved the data from the publisher. `null` when unavailable.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.')
+}).describe('The organization and dataset a value came from.'),
   "methodology": zod.union([zod.object({
-  "methodology_id": zod.string().describe('Exact governed methodology resource ID; null when not governed.'),
-  "measure_id": zod.string(),
-  "version": zod.string(),
-  "description": zod.string(),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.')
-}),zod.null()])
+  "methodology_id": zod.string().describe('Identifies the methodology. Use it with `\/v1\/methodologies\/{methodology_id}`.'),
+  "measure_id": zod.string().describe('Identifier of the measure the methodology applies to.'),
+  "version": zod.string().describe('Version of this methodology resource.'),
+  "description": zod.string().describe('Plain-language description of the method.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.')
+}).describe('The method Atlas used to produce or interpret a measure\'s values.'),zod.null()])
 })).max(askAtlasStructuredResponseToolEvidenceItemMetadataMax).optional(),
   "error_code": zod.string().nullish()
 })).max(askAtlasStructuredResponseToolEvidenceMax).optional()
@@ -2530,30 +2855,30 @@ export const AskAtlasMixedResponse = zod.object({
   "claim_id": zod.string(),
   "text": zod.string().min(1),
   "structured_refs": zod.array(zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-})).optional(),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs a result.')).optional(),
   "measure_ids": zod.array(zod.string()).optional(),
   "coverage_ids": zod.array(zod.string()).optional(),
   "literature_citation_ids": zod.array(zod.string()).optional(),
   "role": zod.enum(['finding', 'comparison_limitation']).default(askAtlasMixedResponseStructuredOneAnswerClaimsItemRoleDefault)
 })).optional(),
   "structured_evidence_refs": zod.array(zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-})).optional(),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs a result.')).optional(),
   "literature_citations": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
   "cross_source_state": zod.null().optional(),
   "freshness": zod.array(zod.object({
@@ -2576,39 +2901,39 @@ export const AskAtlasMixedResponse = zod.object({
   "literature_retrieval_configuration_version": zod.string().nullish()
 }).optional(),
   "structured_measures": zod.array(zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})).optional(),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('One variable you can query, such as a case count. It belongs to one indicator.')).optional(),
   "structured_coverage": zod.array(zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),
@@ -2625,167 +2950,167 @@ export const AskAtlasMixedResponse = zod.object({
   "status": zod.enum(['ok', 'error']),
   "release_id": zod.string().nullish(),
   "measures": zod.array(zod.object({
-  "measure_id": zod.string(),
-  "indicator_id": zod.string(),
-  "label": zod.string(),
-  "definition": zod.string().nullable(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().nullish().describe('Governed current-release relationship version.'),
-  "measure_type": zod.string().nullish(),
-  "unit": zod.string().nullish(),
-  "denominator": zod.string().nullish().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "geography_types": zod.array(zod.enum(['county', 'state'])).nullish(),
-  "temporal_grains": zod.array(zod.string()).nullish(),
-  "geography_semantics": zod.string().nullish(),
-  "temporal_semantics": zod.string().nullish(),
-  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('Public V1 states, including the governed county status added by API #54.')).nullish(),
-  "allowed_strata": zod.array(zod.string()).nullish(),
-  "missingness_semantics": zod.string().nullish(),
-  "methodology_id": zod.string().nullish().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "source_ids": zod.array(zod.string()).nullish(),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "measure_id": zod.string().describe('Stable identifier of the measure. Pass it as `measure_id` to `\/v1\/observations`.'),
+  "indicator_id": zod.string().describe('Identifier of the indicator this measure belongs to.'),
+  "label": zod.string().describe('Short display name of the measure.'),
+  "definition": zod.string().nullable().describe('Plain-language definition of the measure. `null` when none is published.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().nullish().describe('Identifies the published data release this record belongs to.'),
+  "measure_type": zod.string().nullish().describe('How the value is produced, such as `DERIVED`. `null` when none is published.'),
+  "unit": zod.string().nullish().describe('Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit.'),
+  "denominator": zod.string().nullish().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "geography_types": zod.array(zod.enum(['county', 'state']).describe('Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.')).nullish().describe('Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period.'),
+  "temporal_grains": zod.array(zod.string()).nullish().describe('Time intervals the measure is reported in, such as `DAY`. `null` when not listed.'),
+  "geography_semantics": zod.string().nullish().describe('What the place dimension means for this measure. `null` when not published.'),
+  "temporal_semantics": zod.string().nullish().describe('What the time dimension means for this measure. `null` when not published.'),
+  "allowed_value_states": zod.array(zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read an observation\'s `value`. Check it before you use the value.\n\n- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.\n- `ZERO`: a reported numeric zero. It is different from a missing value.\n- `MISSING`: no value was reported and `value` is `null`. It is not zero.\n- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.\n- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.\n- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.\n- `NO_RECORDS`: the publisher\'s literal \"No records\" result. `value` is the text `No records`. It does not establish biological absence.\n\nShow these states differently from each other. Never turn `null` into zero.')).nullish().describe('The `value_state` values this measure can return. `null` when not listed.'),
+  "allowed_strata": zod.array(zod.string()).nullish().describe('Breakdowns, such as age group, that the measure supports. `null` when it has none.'),
+  "missingness_semantics": zod.string().nullish().describe('How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding.'),
+  "methodology_id": zod.string().nullish().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produces the value.'),
+  "source_ids": zod.array(zod.string()).nullish().describe('Identifiers of the sources the measure draws on. `null` when not listed.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "standards_mappings": zod.array(zod.object({
-  "standard": zod.string(),
-  "version": zod.string(),
-  "target": zod.string(),
-  "relationship": zod.string(),
-  "mapping_reference": zod.string().nullish()
-})).nullish()
-})).max(askAtlasMixedResponseStructuredOneToolEvidenceItemMeasuresMax).optional(),
+  "standard": zod.string().describe('Name of the external standard, such as `LOINC`.'),
+  "version": zod.string().describe('Version of the external standard that the mapping targets.'),
+  "target": zod.string().describe('Code or element in the external standard.'),
+  "relationship": zod.string().describe('How the Atlas concept relates to the target, such as `exact` or `broader`.'),
+  "mapping_reference": zod.string().nullish().describe('Reference to the reviewed mapping record. `null` when none.')
+}).describe('Optional reviewed link from a public-health concept to an external standard.')).nullish().describe('Optional reviewed links to external standards. `null` when none exist.')
+}).describe('One variable you can query, such as a case count. It belongs to one indicator.')).max(askAtlasMixedResponseStructuredOneToolEvidenceItemMeasuresMax).optional(),
   "observations": zod.array(zod.object({
-  "metadata_revision_id": zod.string().nullish().describe('Reviewed consumer-safe metadata revision; not private lineage.'),
-  "observation_id": zod.string().describe('Stable observation identity and compact provenance reference.'),
-  "measure_id": zod.string(),
+  "metadata_revision_id": zod.string().nullish().describe('Identifies the reviewed metadata revision that describes this observation. `null` when none applies.'),
+  "observation_id": zod.string().describe('Stable identifier of the observation. It also serves as the provenance reference.'),
+  "measure_id": zod.string().describe('Identifier of the measure. See `\/v1\/measures\/{measure_id}`.'),
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
-  "temporal_grain": zod.string(),
-  "value": zod.union([zod.number().describe('Read with value_state and unit; null never means zero.'),zod.string().describe('Read with value_state and unit; null never means zero.')]).nullable().describe('Read with value_state and unit; null never means zero.'),
-  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('OBSERVED is nonzero; ZERO is numeric zero; MISSING\/SUPPRESSED\/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC\'s No records. Neither establishes biological absence.'),
-  "unit": zod.string(),
-  "denominator": zod.string().nullable().describe('Governed denominator; null means it is not supplied and must not be inferred.'),
-  "strata": zod.record(zod.string(), zod.string()).optional(),
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "lineage_source_id": zod.string().nullish(),
-  "dataset_id": zod.string().nullish(),
-  "methodology_id": zod.string().nullable().describe('Exact governed methodology resource ID; null when not governed.'),
-  "methodology": zod.string().nullish(),
-  "release_methodology_version": zod.string().nullish(),
-  "methodology_version": zod.string().describe('Transformation version, distinct from methodology resource version.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_id": zod.string().describe('Governed release identity for reproducibility.'),
-  "provenance_ref": zod.string().describe('Structured observation provenance identity; not a literature citation.'),
-  "source_label": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_url": zod.string().nullish(),
-  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('Publisher timestamp when governed; null is not inferred freshness.'),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas processing time when governed; distinct from response time.'),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('The place the value describes.'),
+  "temporal_grain": zod.string().describe('Time interval the value covers, such as `YEAR` or `DAY`.'),
+  "value": zod.union([zod.number().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.'),zod.string().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.')]).nullable().describe('The reported value. Read it with `value_state` and `unit`. `null` never means zero.'),
+  "value_state": zod.enum(['OBSERVED', 'ZERO', 'MISSING', 'SUPPRESSED', 'UNAVAILABLE', 'NO_COUNTY_LINKED_RECORD', 'NO_RECORDS']).describe('How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero.'),
+  "unit": zod.string().describe('Unit of `value`, such as `count` or `mm`.'),
+  "denominator": zod.string().nullable().describe('What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one.'),
+  "strata": zod.record(zod.string(), zod.string()).optional().describe('Breakdown the value applies to, such as an age group. Empty when the release has no strata.'),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "lineage_source_id": zod.string().nullish().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().nullish().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "methodology_id": zod.string().nullable().describe('Identifies the methodology resource. Use it with `\/v1\/methodologies\/{methodology_id}`. `null` when no methodology resource applies.'),
+  "methodology": zod.string().nullish().describe('Short name of the method that produced the value.'),
+  "release_methodology_version": zod.string().nullish().describe('Version of the methodology as published in this release. `null` when none.'),
+  "methodology_version": zod.string().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_id": zod.string().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "provenance_ref": zod.string().describe('Identifies the provenance record for this observation. It is not a literature citation.'),
+  "source_label": zod.string().nullish().describe('Display name of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_published_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.'),
+  "atlas_processed_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "evidence": zod.object({
-  "resource_type": zod.string(),
-  "resource_id": zod.string(),
-  "source_id": zod.string().nullish().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "provenance_ref": zod.string().nullish().describe('Structured observation provenance identity; not a literature citation.'),
-  "semantic_version": zod.string().nullish().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "methodology_version": zod.string().nullish().describe('Transformation version, distinct from methodology resource version.'),
-  "release_id": zod.string().nullish().describe('Governed release identity for reproducibility.'),
-  "uri": zod.string().nullish()
-}),
+  "resource_type": zod.string().describe('Kind of Atlas resource the reference points to, such as `observation`.'),
+  "resource_id": zod.string().describe('Identifier of that resource.'),
+  "source_id": zod.string().nullish().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "provenance_ref": zod.string().nullish().describe('Identifies the provenance record for the observation. It is not a literature citation.'),
+  "semantic_version": zod.string().nullish().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "methodology_version": zod.string().nullish().describe('Version of the transformation applied to this observation. It is separate from the version of the methodology resource.'),
+  "release_id": zod.string().nullish().describe('Identifies the published data release the result came from. Results from different releases are not directly comparable.'),
+  "uri": zod.string().nullish().describe('Web address of the referenced resource, when one exists.')
+}).describe('Compact pointer to the Atlas resource that backs this observation.'),
   "environmental_context": zod.union([zod.object({
-  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']),
-  "source_time_present": zod.boolean(),
-  "day_convention": zod.string().min(1).describe('Publisher labeled 24-hour period, not a midnight calendar day.'),
-  "expected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "intersected_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_supported_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "valid_area_m2": zod.union([zod.number(),zod.string()]).nullable(),
-  "source_coverage_fraction": zod.union([zod.number().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),zod.string().describe('Monthly source-supported\/legal county area; separate from daily completeness.')]).nullable().describe('Monthly source-supported\/legal county area; separate from daily completeness.'),
-  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),zod.string().describe('Daily valid\/source-supported area; completeness threshold 0.95.')]).nullable().describe('Daily valid\/source-supported area; completeness threshold 0.95.'),
-  "upstream_date_modified": zod.string().nullable().describe('Upstream modification metadata; never original publication or first availability.'),
-  "weight_version": zod.string(),
-  "geometry_version": zod.string().describe('Analysis geometry identity only; no polygons.'),
-  "metadata_revision_id": zod.string()
-}).describe('Coverage independent of value state; numeric strings preserve exact DECIMAL.'),zod.null()]).optional().describe('Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.'),
+  "coverage_status": zod.enum(['COMPLETE', 'PARTIAL_COVERAGE', 'SOURCE_MISSING', 'OUT_OF_SOURCE_COVERAGE']).describe('How much of the county the source covers for this day.'),
+  "source_time_present": zod.boolean().describe('Whether the source supplied a time for this observation.'),
+  "day_convention": zod.string().min(1).describe('How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day.'),
+  "expected_area_m2": zod.union([zod.number().describe('County area expected to be covered, in square meters. `null` when unknown.'),zod.string().describe('County area expected to be covered, in square meters. `null` when unknown.')]).nullable().describe('County area expected to be covered, in square meters. `null` when unknown.'),
+  "intersected_area_m2": zod.union([zod.number().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),zod.string().describe('County area that overlaps the source grid, in square meters. `null` when unknown.')]).nullable().describe('County area that overlaps the source grid, in square meters. `null` when unknown.'),
+  "source_supported_area_m2": zod.union([zod.number().describe('County area the source supports, in square meters. `null` when unknown.'),zod.string().describe('County area the source supports, in square meters. `null` when unknown.')]).nullable().describe('County area the source supports, in square meters. `null` when unknown.'),
+  "valid_area_m2": zod.union([zod.number().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),zod.string().describe('County area with a valid source value for this day, in square meters. `null` when unknown.')]).nullable().describe('County area with a valid source value for this day, in square meters. `null` when unknown.'),
+  "source_coverage_fraction": zod.union([zod.number().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),zod.string().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.')]).nullable().describe('Monthly share of the county area that the source supports. It is separate from daily completeness.'),
+  "valid_fraction_of_supported_area": zod.union([zod.number().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),zod.string().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.')]).nullable().describe('Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold.'),
+  "upstream_date_modified": zod.string().nullable().describe('Modification date the source reports. It is not the original publication date or the date the data first became available.'),
+  "weight_version": zod.string().describe('Version of the area weights used to combine grid cells into a county value.'),
+  "geometry_version": zod.string().describe('Version of the county boundaries used for the calculation. The API returns no boundary geometry.'),
+  "metadata_revision_id": zod.string().describe('Identifies the reviewed metadata revision that describes this context.')
+}).describe('How completely the source covers a county and day. It is separate from `value_state`.\n\nArea values are square meters. Exact decimal quantities may be strings.'),zod.null()]).optional().describe('Coverage details. Present only for environmental measures. Exact decimal quantities may be strings.'),
   "surveillance_context": zod.union([zod.object({
   "evidence": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-surveillance-evidence-v3"),
-  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.'),
-  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']),
-  "reason_codes": zod.array(zod.string()).min(1),
-  "evidence_tier": zod.literal("GOVERNED_MAPPING"),
-  "observation_key": zod.string(),
-  "revision_id": zod.string(),
-  "value_state": zod.string(),
-  "source_rule_id": zod.string(),
-  "limitations": zod.array(zod.string()).min(1),
-  "evidence_revision_id": zod.string()
-}).describe('Data-projector evidence, never an API classification.'),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-surveillance-evidence-v3").describe('Version of the contract that defines this object.'),
+  "normalized_state": zod.union([zod.literal('established'),zod.literal('detected'),zod.literal('unknown'),zod.literal(null)]).nullish().describe('County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher\'s original value stays in the observation `value`.'),
+  "state": zod.enum(['established', 'detected_below_establishment', 'sampled_not_detected', 'no_qualifying_record', 'unknown']).describe('Evidence state for the county. None of these values proves absence.'),
+  "reason_codes": zod.array(zod.string()).min(1).describe('Codes that explain why the state applies.'),
+  "evidence_tier": zod.literal("GOVERNED_MAPPING").describe('How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping.'),
+  "observation_key": zod.string().describe('Identifies the observation this state describes.'),
+  "revision_id": zod.string().describe('Identifies the revision of the evidence record.'),
+  "value_state": zod.string().describe('The `value_state` of the observation this state describes.'),
+  "source_rule_id": zod.string().describe('Identifies the rule that mapped the source value.'),
+  "limitations": zod.array(zod.string()).min(1).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "evidence_revision_id": zod.string().describe('Identifies the revision of the evidence set.')
+}).describe('Evidence state for a county as supplied with the data. Atlas adds no classification.'),zod.null()]).optional().describe('County evidence state. `null` when none is supplied.'),
   "methodology_comparison": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1"),
-  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']),
-  "reason_codes": zod.array(zod.string()),
-  "methodology_era_ids": zod.array(zod.string().nullable()),
-  "jurisdiction_class": zod.string().nullable(),
-  "references": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
-  "left_observation_id": zod.string().describe('Public ID of the comparison\'s left input.')
-}),zod.null()]).optional(),
+  "contract_version": zod.literal("atlas-lyme-surveillance-methodology-v1").describe('Version of the contract that defines this object.'),
+  "comparison_state": zod.enum(['COMPARABLE', 'CAUTION_REQUIRED', 'NOT_COMPARABLE', 'UNKNOWN']).describe('Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the comparison state.'),
+  "methodology_era_ids": zod.array(zod.string().nullable()).describe('Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown.'),
+  "jurisdiction_class": zod.string().nullable().describe('Group of jurisdictions that share a reporting approach. `null` when unknown.'),
+  "references": zod.array(zod.string()).describe('Public references that support the comparison.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "left_observation_id": zod.string().describe('Identifier of the observation on the left side of the comparison.')
+}).describe('Whether this observation can be compared with another across surveillance methods.'),zod.null()]).optional().describe('Comparability of case definitions. `null` when none is supplied.'),
   "temporal_alignment": zod.union([zod.object({
-  "contract_version": zod.literal("atlas-temporal-alignment-v1"),
-  "method_id": zod.string(),
-  "method_version": zod.string(),
-  "source_id": zod.string(),
-  "measure_id": zod.string(),
-  "aggregation_rule": zod.string(),
-  "coverage_denominator": zod.string(),
-  "decision_cutoff": zod.iso.datetime({"offset":true}),
-  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']),
-  "reason_codes": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
+  "contract_version": zod.literal("atlas-temporal-alignment-v1").describe('Version of the contract that defines this object.'),
+  "method_id": zod.string().describe('Identifies the alignment method.'),
+  "method_version": zod.string().describe('Version of the alignment method.'),
+  "source_id": zod.string().describe('Identifies the source of the aligned observation.'),
+  "measure_id": zod.string().describe('Identifies the measure that was aligned.'),
+  "aggregation_rule": zod.string().describe('Rule used to combine values inside the observation window.'),
+  "coverage_denominator": zod.string().describe('What the coverage is counted against, such as days in the window.'),
+  "decision_cutoff": zod.iso.datetime({"offset":true}).describe('Time after which new data is not used for the alignment. Includes a UTC offset.'),
+  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']).describe('Whether the observation can be used for the target window.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the disposition.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "observation_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span the observation covers.'),
   "target_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span being compared against.'),
   "lag": zod.object({
-  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
-  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
-  "offset_days": zod.int(),
-  "window_days": zod.int().nullish(),
-  "season_id": zod.string().nullish()
-}),
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']).describe('Type of lag rule that applies.'),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']).describe('Edge of the target window that the lag is measured from.'),
+  "offset_days": zod.int().describe('Number of days between the anchor and the window.'),
+  "window_days": zod.int().nullish().describe('Length of a rolling window in days. `null` for other kinds.'),
+  "season_id": zod.string().nullish().describe('Identifies the season for a seasonal lag. `null` otherwise.')
+}).describe('Lag between the two windows.'),
   "coverage": zod.object({
-  "expected": zod.union([zod.int(),zod.number()]),
-  "observed": zod.union([zod.int(),zod.number()]),
-  "unit": zod.string(),
-  "partial_allowed": zod.boolean()
-}),
+  "expected": zod.union([zod.int(),zod.number()]).describe('Amount of coverage expected, in `unit`.'),
+  "observed": zod.union([zod.int(),zod.number()]).describe('Amount of coverage present, in `unit`.'),
+  "unit": zod.string().describe('Unit of `expected` and `observed`, such as `day`.'),
+  "partial_allowed": zod.boolean().describe('Whether the method accepts less than the expected coverage.')
+}).describe('Expected and observed coverage of the observation window.'),
   "reference_period": zod.union([zod.object({
-  "id": zod.string(),
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "source_vintage": zod.string()
-}),zod.null()]).optional()
-}),zod.null()]).optional()
-}),zod.null()]).optional().describe('Only supplied through an admitted Data release\/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.'),
-  "period_start": zod.iso.date().describe('Inclusive start of the governed observation period.'),
-  "period_end": zod.iso.date().describe('Inclusive end of the governed observation period.')
-})).max(askAtlasMixedResponseStructuredOneToolEvidenceItemObservationsMax).optional(),
+  "id": zod.string().describe('Identifies the reference period.'),
+  "start": zod.iso.date().describe('First date in the reference period.'),
+  "end_exclusive": zod.iso.date().describe('First date after the reference period. It is not in the period.'),
+  "source_vintage": zod.string().describe('Reference year or period of the source dataset. It is not an annual value.')
+}).describe('The reference period of a source dataset.'),zod.null()]).optional().describe('Reference period of the source dataset. `null` when none applies.')
+}).describe('Describes how an observation\'s time span lines up with a target time span.\n\nThe alignment is descriptive. It does not show cause.'),zod.null()]).optional().describe('Time alignment details. `null` when none is supplied.')
+}).describe('Optional surveillance evidence attached to an observation.\n\nA missing or `null` part supports no claim about evidence state, comparability, or lag.\nComparison covers case definitions only. Alignment is descriptive, not causal.'),zod.null()]).optional().describe('Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag.'),
+  "period_start": zod.iso.date().describe('First date the observation covers (inclusive).'),
+  "period_end": zod.iso.date().describe('Last date the observation covers (inclusive).')
+}).describe('One value for a measure, a county, and a period, with its state and provenance.')).max(askAtlasMixedResponseStructuredOneToolEvidenceItemObservationsMax).optional(),
   "coverage": zod.array(zod.object({
   "geography": zod.object({
-  "geography_type": zod.enum(['county', 'state']),
-  "geography_id": zod.string().describe('FIPS string with leading zeros: five digits for counties, two for states.')
-}).describe('Stable FIPS join identity, independent of display or analysis polygons.'),
+  "geography_type": zod.enum(['county', 'state']).describe('Kind of place: `county` or `state`. It sets how long `geography_id` is.'),
+  "geography_id": zod.string().describe('FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`.')
+}).describe('Identifies one place by type and FIPS code. It carries no geometry.'),
   "period_start": zod.iso.date(),
   "period_end": zod.iso.date(),
   "state": zod.enum(['present', 'absent']),
@@ -2797,31 +3122,31 @@ export const AskAtlasMixedResponse = zod.object({
   "metadata": zod.array(zod.object({
   "observation_id": zod.string(),
   "source": zod.object({
-  "source_id": zod.string().describe('Public source resource key; distinct from lineage_source_id and dataset_id.'),
-  "label": zod.string(),
-  "publisher": zod.string().nullable(),
-  "lineage_source_id": zod.string(),
-  "dataset_id": zod.string(),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.'),
-  "source_url": zod.string().nullish(),
-  "source_vintage": zod.string().nullish(),
-  "source_version": zod.string().nullish(),
-  "published_at": zod.iso.datetime({"offset":true}).nullish(),
-  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Atlas acquisition time when governed; distinct from source publication and processing.'),
-  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed publisher update time; null when unavailable.'),
-  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('Governed source retrieval time; null when unavailable.'),
-  "limitations": zod.array(zod.string()).optional().describe('Governed interpretation limitations; preserve alongside values and versions.')
-}),
+  "source_id": zod.string().describe('Public key of the source resource. Use it with `\/v1\/sources\/{source_id}`. It differs from `lineage_source_id` and `dataset_id`.'),
+  "label": zod.string().describe('Display name of the source.'),
+  "publisher": zod.string().nullable().describe('Organization that publishes the data. `null` when none is recorded.'),
+  "lineage_source_id": zod.string().describe('Identifies the source in Atlas lineage records. It differs from `source_id`.'),
+  "dataset_id": zod.string().describe('Identifies the publisher\'s dataset. It differs from `source_id`.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.'),
+  "source_url": zod.string().nullish().describe('Web address of the source. `null` when none is published.'),
+  "source_vintage": zod.string().nullish().describe('Reference year or period of the source dataset. It is not an annual value.'),
+  "source_version": zod.string().nullish().describe('Version label the publisher gives the dataset, when it has one.'),
+  "published_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `upstream_updated_at`. When the publisher published the data.'),
+  "atlas_acquired_at": zod.iso.datetime({"offset":true}).nullish().describe('Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data.'),
+  "upstream_updated_at": zod.iso.datetime({"offset":true}).nullish().describe('When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place.'),
+  "source_retrieved_at": zod.iso.datetime({"offset":true}).nullish().describe('When Atlas last retrieved the data from the publisher. `null` when unavailable.'),
+  "limitations": zod.array(zod.string()).optional().describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.')
+}).describe('The organization and dataset a value came from.'),
   "methodology": zod.union([zod.object({
-  "methodology_id": zod.string().describe('Exact governed methodology resource ID; null when not governed.'),
-  "measure_id": zod.string(),
-  "version": zod.string(),
-  "description": zod.string(),
-  "limitations": zod.array(zod.string()).describe('Governed interpretation limitations; preserve alongside values and versions.'),
-  "semantic_version": zod.string().describe('Governed semantic contract version, separate from HTTP V1 and application version.'),
-  "release_version": zod.string().describe('Governed current-release relationship version.')
-}),zod.null()])
+  "methodology_id": zod.string().describe('Identifies the methodology. Use it with `\/v1\/methodologies\/{methodology_id}`.'),
+  "measure_id": zod.string().describe('Identifier of the measure the methodology applies to.'),
+  "version": zod.string().describe('Version of this methodology resource.'),
+  "description": zod.string().describe('Plain-language description of the method.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
+  "semantic_version": zod.string().describe('Version of the data contract the value follows. It is separate from the API version and the application version.'),
+  "release_version": zod.string().describe('Identifies the published data release this record belongs to.')
+}).describe('The method Atlas used to produce or interpret a measure\'s values.'),zod.null()])
 })).max(askAtlasMixedResponseStructuredOneToolEvidenceItemMetadataMax).optional(),
   "error_code": zod.string().nullish()
 })).max(askAtlasMixedResponseStructuredOneToolEvidenceMax).optional()
@@ -2866,35 +3191,35 @@ export const AskAtlasMixedResponse = zod.object({
 /**
  * @summary Knowledge Graph Chat
  */
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax = 1000;
+export const askKnowledgeGraphBodyMessageMax = 1000;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdMax = 100;
+export const askKnowledgeGraphBodyConversationIdMax = 100;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenMax = 200;
+export const askKnowledgeGraphBodyConversationTokenMax = 200;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryItemContentMax = 5000;
+export const askKnowledgeGraphBodyHistoryItemContentMax = 5000;
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryMax = 12;
+export const askKnowledgeGraphBodyHistoryMax = 12;
 
 
 
-export const KnowledgeGraphChatV1KnowledgeGraphChatPostBody = zod.object({
-  "message": zod.string().min(1).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyMessageMax),
-  "conversation_id": zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationIdMax).nullish(),
-  "conversation_token": zod.string().max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyConversationTokenMax).nullish(),
+export const AskKnowledgeGraphBody = zod.object({
+  "message": zod.string().min(1).max(askKnowledgeGraphBodyMessageMax),
+  "conversation_id": zod.string().max(askKnowledgeGraphBodyConversationIdMax).nullish(),
+  "conversation_token": zod.string().max(askKnowledgeGraphBodyConversationTokenMax).nullish(),
   "history": zod.array(zod.object({
   "role": zod.enum(['user', 'assistant']),
-  "content": zod.string().min(1).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryItemContentMax)
-})).max(knowledgeGraphChatV1KnowledgeGraphChatPostBodyHistoryMax).optional()
+  "content": zod.string().min(1).max(askKnowledgeGraphBodyHistoryItemContentMax)
+})).max(askKnowledgeGraphBodyHistoryMax).optional()
 })
 
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemPmidRegExp = new RegExp('^\\d{1,10}$');
+export const askKnowledgeGraphResponseCitationsItemPmidRegExp = new RegExp('^\\d{1,10}$');
 
 
-export const knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemSourceLabelDefault = `PubMed / PMC Open Access`;
+export const askKnowledgeGraphResponseCitationsItemSourceLabelDefault = `PubMed / PMC Open Access`;
 
-export const KnowledgeGraphChatV1KnowledgeGraphChatPostResponse = zod.object({
+export const AskKnowledgeGraphResponse = zod.object({
   "request_id": zod.string(),
   "conversation_id": zod.string(),
   "conversation_token": zod.string().nullish(),
@@ -2912,12 +3237,12 @@ export const KnowledgeGraphChatV1KnowledgeGraphChatPostResponse = zod.object({
 })).optional(),
   "citations": zod.array(zod.object({
   "citation_id": zod.string(),
-  "pmid": zod.string().regex(knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemPmidRegExp),
+  "pmid": zod.string().regex(askKnowledgeGraphResponseCitationsItemPmidRegExp),
   "title": zod.string(),
   "pubmed_url": zod.string(),
   "claim_ids": zod.array(zod.string()).min(1),
   "passage_ids": zod.array(zod.string()).min(1),
-  "source_label": zod.string().default(knowledgeGraphChatV1KnowledgeGraphChatPostResponseCitationsItemSourceLabelDefault),
+  "source_label": zod.string().default(askKnowledgeGraphResponseCitationsItemSourceLabelDefault),
   "pmcid": zod.string().nullish(),
   "corpus_unit_ids": zod.array(zod.string()).nullish(),
   "section_labels": zod.array(zod.string()).nullish(),

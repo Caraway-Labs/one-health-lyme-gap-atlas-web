@@ -8,12 +8,24 @@
 import type { TemporalLagContextAnchor } from './temporalLagContextAnchor';
 import type { TemporalLagContextKind } from './temporalLagContextKind';
 
+/**
+ * How far an observation window sits before its target window.
+ */
 export interface TemporalLagContext {
+  /** Type of lag rule that applies. */
   kind: TemporalLagContextKind;
+  /** Edge of the target window that the lag is measured from. */
   anchor: TemporalLagContextAnchor;
+  /** Number of days between the anchor and the window. */
   offset_days: number;
-  /** @nullable */
+  /**
+     * Length of a rolling window in days. `null` for other kinds.
+     * @nullable
+     */
   window_days?: number | null;
-  /** @nullable */
+  /**
+     * Identifies the season for a seasonal lag. `null` otherwise.
+     * @nullable
+     */
   season_id?: string | null;
 }

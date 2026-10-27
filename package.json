@@ -14,7 +14,8 @@
     "docs:api": "node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs src/lib/public-openapi-reference.ts",
     "docs:api:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs src/lib/public-openapi-reference.ts --check",
     "docs:api:drift": "node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs src/lib/public-openapi-reference.ts --drift",
-    "docs:check": "node scripts/check-docs.mjs",
+    "docs:check": "node scripts/check-docs.mjs && node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs scripts/check-docs-warning-callouts.ts && node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs scripts/check-docs-glossary.ts && node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs scripts/check-docs-last-modified.ts",
+    "docs:last-modified": "node --experimental-strip-types --disable-warning=ExperimentalWarning --import ./scripts/register-ts-extension.mjs scripts/write-docs-last-modified.ts",
     "docs:generate": "fumadocs-mdx",
     "lint": "ultracite check",
     "check:design-system": "node scripts/check-design-system.mjs",
@@ -74,6 +75,8 @@
     "@vitest/coverage-v8": "^4.1.12",
     "braces": "file:vendor/braces",
     "jsdom": "^26.0.0",
+    "mermaid": "12.2.0",
+    "openapi-to-postmanv2": "6.4.2",
     "orval": "^8.2.0",
     "oxfmt": "0.72.0",
     "oxlint": "^1.80.0",
@@ -88,11 +91,20 @@
     "body-parser": "2.4.0",
     "braces": "$braces",
     "fast-uri": "3.1.9",
+    "js-yaml": "4.3.2",
     "minimatch@3": {
       "brace-expansion": "1.1.21"
     },
+    "openapi-to-postmanv2": {
+      "js-yaml": "4.3.2",
+      "yaml": "1.10.3"
+    },
     "orval": {
       "js-yaml": "4.3.2"
+    },
+    "postman-collection": {
+      "@faker-js/faker": "file:../../vendor/postman-faker-shim",
+      "uuid": "11.1.1"
     },
     "undici": "7.30.1",
     "zod": "$zod"

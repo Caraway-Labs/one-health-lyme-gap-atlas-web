@@ -7,6 +7,10 @@
  */
 import type { Methodology } from './methodology';
 
+/**
+ * One methodology, wrapped in `data`.
+ */
 export interface ResourceEnvelopeMethodology {
+  /** The requested resource. */
   data: Methodology;
 }

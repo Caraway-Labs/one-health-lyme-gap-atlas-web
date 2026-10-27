@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 import type { StateListStatus } from "@/features/ux-reset/profile/default-jurisdiction-contract";
-import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
-import { MetadataV1AtlasMetadataGetResponse } from "@/generated/zod/atlas";
+import { getAtlasMetadata } from "@/generated/atlas";
+import { GetAtlasMetadataResponse } from "@/generated/zod/atlas";
 import { validateApiResponse } from "@/lib/api-response-validation";
 import {
   type AtlasStateOption,
@@ -18,8 +18,8 @@ export function useSettingsStateOptions() {
     queryFn: async () =>
       validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
-        (await metadataV1AtlasMetadataGet()).data
+        GetAtlasMetadataResponse,
+        (await getAtlasMetadata()).data
       ),
     queryKey: settingsMetadataQueryKey,
     retry: false,

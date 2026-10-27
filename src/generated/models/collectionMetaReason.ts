@@ -7,7 +7,7 @@
  */
 
 /**
- * No published rows after a successful initial non-CDC query; otherwise omitted.
+ * Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise.
  * @nullable
  */
 export type CollectionMetaReason = typeof CollectionMetaReason[keyof typeof CollectionMetaReason] | null;

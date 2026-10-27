@@ -20,7 +20,7 @@ import {
   scrollToSuggestedFollowUp,
 } from "@/features/ux-reset/review/scroll-to-suggested-follow-up";
 import * as atlasClient from "@/generated/atlas";
-import { CountyV1CountiesFipsGetResponse } from "@/generated/zod/atlas";
+import { GetCountyResponse } from "@/generated/zod/atlas";
 
 import autauga from "./fixtures/review-al-v11-01001.json";
 import baldwin from "./fixtures/review-al-v11-01003.json";
@@ -44,7 +44,7 @@ const county = {
 
 function renderPublished(detail: unknown) {
   vi.mocked(loadInvestigateCountyRecord).mockResolvedValue(
-    CountyV1CountiesFipsGetResponse.parse(detail)
+    GetCountyResponse.parse(detail)
   );
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -89,10 +89,7 @@ describe("selected county preview", () => {
   });
 
   it("keeps six rows in order and only the two approved actions", async () => {
-    const availability = vi.spyOn(
-      atlasClient,
-      "canonicalGeographyAvailability"
-    );
+    const availability = vi.spyOn(atlasClient, "checkGeographyAvailability");
     renderPublished(baldwin);
     await expect(
       screen.findByText("At least 5", { exact: false })
@@ -322,10 +319,7 @@ describe("selected county preview", () => {
   });
 
   it("does not request canonical geography for the review-candidate preview", () => {
-    const availability = vi.spyOn(
-      atlasClient,
-      "canonicalGeographyAvailability"
-    );
+    const availability = vi.spyOn(atlasClient, "checkGeographyAvailability");
     const score = reviewScopeScoresFixture.counties[0];
     if (!score) {
       throw new Error("Missing score fixture");
@@ -400,7 +394,7 @@ describe("selected county preview", () => {
       cleanup();
       render(
         <ReviewRationalePanel
-          detail={CountyV1CountiesFipsGetResponse.parse({
+          detail={GetCountyResponse.parse({
             ...autauga,
             case_count_floor_2023: count,
             scoring_methodology_version: "surveillance-gap-score-v1.1" as const,

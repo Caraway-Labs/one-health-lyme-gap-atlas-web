@@ -6,9 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * One reason a county received its review priority.
+ */
 export interface PriorityReason {
-  /** @minLength 1 */
+  /**
+     * Stable code for the reason.
+     * @minLength 1
+     */
   code: string;
-  /** @minLength 1 */
+  /**
+     * Plain-language statement of the reason.
+     * @minLength 1
+     */
   text: string;
 }

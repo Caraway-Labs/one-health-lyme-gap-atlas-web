@@ -1,0 +1,74 @@
+---
+title: Review a state's county evidence
+description: Review a state's county evidence
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: GET /v1/states/{state}/review
+      - content: getStateReview
+      - content: Review a state's county evidence
+      - content: state path required Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
+      - content: Two-letter uppercase USPS state code, for example `CO`. A malformed value returns 422. A state not in the current release returns 404.
+      - content: State
+      - content: '"CO"'
+      - content: observation_context query optional Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.
+      - content: Optional label for the observation context you are reviewing. Atlas echoes it in the response and does not use it to change the result, which always reflects the current cumulative county status. Use up to 80 characters; a longer value returns 422.
+      - content: Observation Context
+      - content: '"Current cumulative county status"'
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: 200 Successful response. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=60, must-revalidate`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=60, must-revalidate"'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/StateReview'
+      - content: County review for Colorado, trimmed to two data gaps
+      - content: '{"requested_state":"CO","methodology_id":"atlas-county-review","methodology_version":"1.0.0","configuration_sha256":"db6df73f7bce474000165fb2b0bad9767390c21aed160a1377be6a4893004d99","data_release_version":"governed-2026-10-15-january-climate-prod","evaluated_at":"2026-10-25T02:46:14.482274Z","requested_observation_context":null,"effective_observation_context":"Current cumulative county status; human snapshot 2023","result_state":"unsupported","review_candidates":[],"data_gaps":[{"county_fips":"08001","code":"SOURCE_NATIVE_LINEAGE_UNAVAILABLE","detail":"Summary statuses lack exact source rows and revisions."},{"county_fips":"08003","code":"SOURCE_NATIVE_LINEAGE_UNAVAILABLE","detail":"Summary statuses lack exact source rows and revisions."}],"coverage":{"assessed_counties":64,"eligible_counties":0,"abstained_counties":0,"evaluated_counties":0,"rule_coverage":{"human_emerging":"disabled","vector_transition":"disabled","human_vector_discordance":"disabled","pathogen_present_vector_reported":"disabled"}},"limitations":["Review is not disease risk; no candidate rule is approved in 1.0.0."]}'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"State not found in current release","instance":"/v1/states/{state}/review","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/states/{state}/review","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/states/{state}/review","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/states/{state}/review","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [Candidate](/docs/api-reference/schemas#schema-candidate), [DataGap](/docs/api-reference/schemas#schema-datagap), [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails), [PublicReviewEvidenceReference](/docs/api-reference/schemas#schema-publicreviewevidencereference), [ReviewCoverage](/docs/api-reference/schemas#schema-reviewcoverage), [StateReview](/docs/api-reference/schemas#schema-statereview).
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/states/{state}/review","method":"get"}]} showDescription />
+    </>
+  );
+}

@@ -24,28 +24,28 @@ export const tier1CountyPriorityAvailabilityDataOneReasonsMax = 3;
 
 
 export const Tier1CountyPriorityAvailability = zod.object({
-  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a persisted Tier 1 result exists for this supported current geography.'),
-  "geography_release_id": zod.string().min(1).describe('Current governed geography release used to validate the requested FIPS.'),
-  "reason": zod.union([zod.literal('NO_PUBLISHED_MODEL'),zod.literal(null)]).nullable().describe('Stable reason when no persisted result is published; null when data is available.'),
+  "availability": zod.enum(['AVAILABLE', 'UNAVAILABLE']).describe('Whether a published Tier 1 result exists for this county.'),
+  "geography_release_id": zod.string().min(1).describe('Identifies the geography release used to confirm the county exists.'),
+  "reason": zod.union([zod.literal('NO_PUBLISHED_MODEL'),zod.literal(null)]).nullable().describe('Why no result is published. `NO_PUBLISHED_MODEL` means no model result is published for the county. `null` when a result is available.'),
   "data": zod.union([zod.object({
-  "county_fips": zod.string().regex(tier1CountyPriorityAvailabilityDataOneCountyFipsRegExp).describe('Five-digit county FIPS for this persisted result.'),
+  "county_fips": zod.string().regex(tier1CountyPriorityAvailabilityDataOneCountyFipsRegExp).describe('Five-digit county FIPS code, with leading zeros.'),
   "priority_tier": zod.union([zod.literal('HIGH'),zod.literal('MEDIUM'),zod.literal('LOW'),zod.literal(null)]).nullable().describe('HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.'),
   "priority_percentile": zod.number().min(tier1CountyPriorityAvailabilityDataOnePriorityPercentileMin).max(tier1CountyPriorityAvailabilityDataOnePriorityPercentileMax).nullable().describe('Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.'),
   "raw_model_score": zod.number().nullable().describe('Model-native anomaly score; not a probability, incidence estimate, or clinical\/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.'),
   "evidence_sufficiency": zod.enum(['SUFFICIENT', 'INSUFFICIENT', 'NOT_ESTIMABLE']).describe('Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.'),
   "model_version": zod.string().min(1).describe('Version of the model that generated this result.'),
-  "release_id": zod.string().min(1).describe('Governed source release for this batch.'),
-  "source_commit": zod.string().min(1).describe('ML source commit for reproducibility.'),
+  "release_id": zod.string().min(1).describe('Identifies the published data release the batch used.'),
+  "source_commit": zod.string().min(1).describe('Commit of the model code that produced the result, for reproducibility.'),
   "prediction_batch_version": zod.string().min(1).describe('Inference batch identity defining the percentile comparison population.'),
   "tier_policy_version": zod.string().min(1).describe('Version of the policy assigning review tiers from scored results.'),
   "generated_at_utc": zod.iso.datetime({"offset":true}).describe('UTC batch generation time, not the request time or source observation date.'),
   "reasons": zod.array(zod.object({
-  "code": zod.string().min(1),
-  "text": zod.string().min(1)
-})).max(tier1CountyPriorityAvailabilityDataOneReasonsMax),
-  "limitation_ref": zod.string().min(1)
-}).describe('Model-assisted surveillance review priority; never disease or clinical risk.'),zod.null()]).describe('The exact persisted Tier 1 result, or null when none is published.')
-}).describe('Availability lookup that separates confirmed absence from request failure.')
+  "code": zod.string().min(1).describe('Stable code for the reason.'),
+  "text": zod.string().min(1).describe('Plain-language statement of the reason.')
+}).describe('One reason a county received its review priority.')).max(tier1CountyPriorityAvailabilityDataOneReasonsMax).describe('Up to three reasons for the priority. Empty when none apply.'),
+  "limitation_ref": zod.string().min(1).describe('Reference to the document that lists what this result does not show.')
+}).describe('Model-assisted surveillance review priority for one county.\n\nThe priority helps decide where to look first. It is not a measure of disease or clinical\nrisk, and it is not a diagnosis.'),zod.null()]).describe('The published Tier 1 result, or `null` when none is published.')
+}).describe('Whether a Tier 1 result is published for a county, with the result when it is.\n\n`UNAVAILABLE` means no result is published. It is not a finding about the county.')
 
 export type Tier1CountyPriorityAvailability = zod.input<typeof Tier1CountyPriorityAvailability>;
 export type Tier1CountyPriorityAvailabilityOutput = zod.output<typeof Tier1CountyPriorityAvailability>;

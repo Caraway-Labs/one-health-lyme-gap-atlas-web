@@ -47,19 +47,15 @@ vi.mock(import("@/lib/supabase/client"), () => ({
 }));
 
 vi.mock(import("@/generated/atlas"), () => ({
-  getProfileV1MeProfileGet: vi.fn<() => Promise<never>>(),
-  metadataV1AtlasMetadataGet: vi.fn<() => Promise<never>>(),
-  saveProfileV1MeProfilePut: vi.fn<() => Promise<never>>(),
+  getProfile: vi.fn<() => Promise<never>>(),
+  getAtlasMetadata: vi.fn<() => Promise<never>>(),
+  updateProfile: vi.fn<() => Promise<never>>(),
 }));
 
 import StartingViewPage from "@/app/auth/starting-view/page";
 import { resetProfileSessionGenerationForTests } from "@/features/ux-reset/profile/profile-session";
 import { resetSavedProfileCoordinationForTests } from "@/features/ux-reset/profile/saved-profile-client";
-import {
-  getProfileV1MeProfileGet,
-  metadataV1AtlasMetadataGet,
-  saveProfileV1MeProfilePut,
-} from "@/generated/atlas";
+import { getProfile, getAtlasMetadata, updateProfile } from "@/generated/atlas";
 
 const authClient = {
   auth: {
@@ -155,10 +151,10 @@ describe("starting view account switch", () => {
     resetProfileSessionGenerationForTests();
     auth.listeners.clear();
     auth.session = { access_token: "token-user-a", user: { id: "user-a" } };
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+    vi.mocked(getAtlasMetadata).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
-    vi.mocked(getProfileV1MeProfileGet).mockImplementation(
+    vi.mocked(getProfile).mockImplementation(
       asResponse(async (init: { headers?: { Authorization?: string } }) => {
         if (authorizationOf(init) === "Bearer token-user-b") {
           await releaseAccountBRead.promise;
@@ -167,7 +163,7 @@ describe("starting view account switch", () => {
         return { data: { profile: accountAProfile }, status: 200 };
       })
     );
-    vi.mocked(saveProfileV1MeProfilePut).mockImplementation(
+    vi.mocked(updateProfile).mockImplementation(
       asResponse(async () => {
         await releaseAccountAWrite.promise;
         return {
@@ -196,7 +192,7 @@ describe("starting view account switch", () => {
       screen.getByRole("button", { name: "Continue to Atlas Explorer" })
     );
     await vi.waitFor(() =>
-      expect(saveProfileV1MeProfilePut).toHaveBeenCalledWith(
+      expect(updateProfile).toHaveBeenCalledWith(
         expect.objectContaining({
           job_title: "Analyst",
           organization: "Account A lab",
@@ -224,7 +220,7 @@ describe("starting view account switch", () => {
     const unitedStates = await screen.findByRole("radio", {
       name: "United States",
     });
-    const calls = vi.mocked(saveProfileV1MeProfilePut).mock.calls;
+    const calls = vi.mocked(updateProfile).mock.calls;
     const sentAccountAFieldsAsAccountB = calls.some(([body, init]) => {
       const profile = body as { job_title?: string; organization?: string };
       return (

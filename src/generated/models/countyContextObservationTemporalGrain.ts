@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * `PERIOD` for a dated reference period. `VINTAGE_YEAR` for a classification that has no dates.
+ */
 export type CountyContextObservationTemporalGrain = typeof CountyContextObservationTemporalGrain[keyof typeof CountyContextObservationTemporalGrain];
 
 

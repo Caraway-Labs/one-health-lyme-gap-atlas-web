@@ -15,7 +15,7 @@ Atlas joins public records on geography identity. Identity is a type plus an id.
 | Field | Values |
 | --- | --- |
 | `geography_type` | `county` or `state` |
-| `geography_id` | FIPS string with leading zeros. Five digits for a county. Two digits for a state |
+| `geography_id` | <Term id="fips">FIPS</Term> string with leading zeros. Five digits for a county. Two digits for a state |
 
 `GeographyType` does not include tracts, ZCTAs, or other units. `geography_type=tract` on the observations query returned HTTP 400 `INVALID_REQUEST`.
 
@@ -100,7 +100,7 @@ GET /v1/atlas/geometry
 
 <DisplayGeometryCurl />
 
-On 18 October 2026 that request returned HTTP 200 `application/geo+json`. The response used `Cache-Control: public, max-age=31536000, immutable` and an `ETag`. The body was a GeoJSON FeatureCollection of 3,144 features. Each feature carried `fips` and a polygon. `36061` and `11001` were in the collection. That count is a national display inventory. These guides still use the lower 48 states and the District of Columbia. The operation is [Get county display geometry](/docs/api-reference/atlas#geometry_v1_atlas_geometry_get).
+On 18 October 2026 that request returned HTTP 200 `application/geo+json`. The response used `Cache-Control: public, max-age=31536000, immutable` and an `ETag`. The body was a GeoJSON FeatureCollection of 3,144 features. Each feature carried `fips` and a polygon. `36061` and `11001` were in the collection. That count is a national display inventory. These guides still use the lower 48 states and the District of Columbia. The operation is [Get county display geometry](/docs/api-reference/atlas#getAtlasGeometry).
 
 The contract describes that response as display GeoJSON, EPSG:4326, with an immutable cache and an `ETag`. It is a generalized display boundary for maps. It is not the FIPS join key and it is not the analysis geometry used to build measures. `environmental_context.geometry_version`, when that object is present, names analysis geometry and still contains no polygons.
 

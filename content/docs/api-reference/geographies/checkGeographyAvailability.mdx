@@ -1,0 +1,85 @@
+---
+title: Check county geography availability
+description: Check county geography availability
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings:
+      - content: When to use it
+        id: when-to-use-it
+      - content: Common problems
+        id: common-problems
+    contents:
+      - content: GET /v1/geographies/{geography_type}/{geography_id}/availability
+      - content: checkGeographyAvailability
+      - content: Check county geography availability
+      - content: 'geography_type path required Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'
+      - content: '#/components/schemas/GeographyType'
+      - content: 'Kind of place: `county` or `state`. Any other value returns 400 `INVALID_REQUEST`.'
+      - content: '"county"'
+      - content: 'geography_id path required FIPS code of the place, sent as a string with leading zeros kept: five digits for a county, two for a state. A code of the wrong length or with non-digits returns 400 `INVALID_REQUEST`. Connecticut counties use planning-region codes such as `09110`.'
+      - content: 'FIPS code of the place, sent as a string with leading zeros kept: five digits for a county, two for a state. A code of the wrong length or with non-digits returns 400 `INVALID_REQUEST`. Connecticut counties use planning-region codes such as `09110`.'
+      - content: Geography Id
+      - content: '"08001"'
+      - content: 200 Confirmed current county identity; canonical publication is pending. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `no-store`.'
+      - content: '"no-store"'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/CanonicalGeographyAvailability'
+      - content: Confirmed county; canonical geography publication pending
+      - content: '{"availability":"UNAVAILABLE","reason":"CANONICAL_GEOGRAPHY_UNPUBLISHED","data":null,"release_id":"governed-2026-10-15-january-climate-prod","limitations":["Canonical geography identity delivery is not published by this API capability.","County membership is confirmed from the governed county directory release. No canonical, display, or analysis geometry is returned or inferred."]}'
+      - content: 400 The request is invalid or unsupported. The `code` is `INVALID_REQUEST` for a missing, malformed, or inconsistent parameter, `UNSUPPORTED_FILTER` for a parameter V1 does not accept, `UNSUPPORTED_STRATIFICATION` for a stratification (observation queries only), or `QUERY_TOO_BROAD` when a query selects more than the result limit. Read `detail` and `errors`, change the request, then retry. The same request fails again.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Missing required parameter
+      - content: Shows `INVALID_REQUEST` when a required query parameter is absent.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":400,"detail":"One or more request values are invalid.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"missing","loc":["query","measure_id"],"msg":"Field required"}],"code":"INVALID_REQUEST"}'
+      - content: Query parameter V1 does not accept
+      - content: Shows `UNSUPPORTED_FILTER` when a request includes a parameter outside V1.
+      - content: '{"type":"https://onehealthatlas.org/problems/unsupported-filter","title":"Invalid public query","status":400,"detail":"This query filter is not supported in V1.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"UNSUPPORTED_FILTER"}'
+      - content: 404 The resource ID, or the selection you asked for, is not in the current release. The `code` is `RESOURCE_NOT_FOUND` and `detail` names what is missing. Check the ID against the list operation for that resource. Retrying the same request returns the same response.
+      - content: Unknown resource ID
+      - content: Shows `RESOURCE_NOT_FOUND` for a selection that is not in the current release.
+      - content: '{"type":"https://onehealthatlas.org/problems/resource-not-found","title":"Invalid public query","status":404,"detail":"County is not in the current geography release.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RESOURCE_NOT_FOUND"}'
+      - content: 413 The request is a GET with a body. The `code` is `INVALID_REQUEST`. Send the request again without a body and put every value in the query string.
+      - content: GET request with a body
+      - content: Shows `INVALID_REQUEST` when a GET request carries a body.
+      - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"Payload too large","status":413,"detail":"GET request bodies are unsupported.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
+      - content: 414 The query string is longer than the API accepts. The `code` is `INVALID_REQUEST`. Send fewer or shorter parameter values, then retry.
+      - content: Query string over the length limit
+      - content: Shows `INVALID_REQUEST` when the query string is too long.
+      - content: '{"type":"https://onehealthatlas.org/problems/invalid-request","title":"URI too long","status":414,"detail":"Query string is too long.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"INVALID_REQUEST"}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: Request limit reached
+      - content: Shows `RATE_LIMITED`. The response also sets `Retry-After`.
+      - content: '{"type":"https://onehealthatlas.org/problems/rate-limited","title":"Too many requests","status":429,"detail":"Public request limit reached.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"RATE_LIMITED"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/geographies/{geography_type}/{geography_id}/availability","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [CanonicalGeographyAvailability](/docs/api-reference/schemas#schema-canonicalgeographyavailability), [GeographyType](/docs/api-reference/schemas#schema-geographytype), [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails).
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/geographies/{geography_type}/{geography_id}/availability","method":"get"}]} showDescription />
+    </>
+  );
+}

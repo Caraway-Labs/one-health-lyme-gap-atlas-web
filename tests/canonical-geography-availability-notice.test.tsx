@@ -33,7 +33,7 @@ describe("canonical geography availability query", () => {
   it("shows a 429 without an early retry", async () => {
     vi.useFakeTimers();
     const availability = vi
-      .spyOn(atlasClient, "canonicalGeographyAvailability")
+      .spyOn(atlasClient, "checkGeographyAvailability")
       .mockRejectedValue(
         new AtlasApiError(
           "rate limited",
@@ -61,7 +61,7 @@ describe("canonical geography availability query", () => {
   it("does not retry a missing county", async () => {
     vi.useFakeTimers();
     const availability = vi
-      .spyOn(atlasClient, "canonicalGeographyAvailability")
+      .spyOn(atlasClient, "checkGeographyAvailability")
       .mockRejectedValue(
         new AtlasApiError(
           "missing",
@@ -86,7 +86,7 @@ describe("canonical geography availability query", () => {
   it("does not retry a response that fails the contract", async () => {
     vi.useFakeTimers();
     const availability = vi
-      .spyOn(atlasClient, "canonicalGeographyAvailability")
+      .spyOn(atlasClient, "checkGeographyAvailability")
       .mockResolvedValue({
         data: {
           availability: "UNAVAILABLE",

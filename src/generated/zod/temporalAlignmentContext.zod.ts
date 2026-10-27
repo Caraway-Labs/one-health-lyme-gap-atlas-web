@@ -8,49 +8,49 @@
 import * as zod from 'zod';
 
 export const TemporalAlignmentContext = zod.object({
-  "contract_version": zod.literal("atlas-temporal-alignment-v1"),
-  "method_id": zod.string(),
-  "method_version": zod.string(),
-  "source_id": zod.string(),
-  "measure_id": zod.string(),
-  "aggregation_rule": zod.string(),
-  "coverage_denominator": zod.string(),
-  "decision_cutoff": zod.iso.datetime({"offset":true}),
-  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']),
-  "reason_codes": zod.array(zod.string()),
-  "limitations": zod.array(zod.string()),
+  "contract_version": zod.literal("atlas-temporal-alignment-v1").describe('Version of the contract that defines this object.'),
+  "method_id": zod.string().describe('Identifies the alignment method.'),
+  "method_version": zod.string().describe('Version of the alignment method.'),
+  "source_id": zod.string().describe('Identifies the source of the aligned observation.'),
+  "measure_id": zod.string().describe('Identifies the measure that was aligned.'),
+  "aggregation_rule": zod.string().describe('Rule used to combine values inside the observation window.'),
+  "coverage_denominator": zod.string().describe('What the coverage is counted against, such as days in the window.'),
+  "decision_cutoff": zod.iso.datetime({"offset":true}).describe('Time after which new data is not used for the alignment. Includes a UTC offset.'),
+  "disposition": zod.enum(['ELIGIBLE', 'INELIGIBLE', 'RETROSPECTIVE_ONLY', 'UNKNOWN_AVAILABILITY']).describe('Whether the observation can be used for the target window.'),
+  "reason_codes": zod.array(zod.string()).describe('Codes that explain the disposition.'),
+  "limitations": zod.array(zod.string()).describe('Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it.'),
   "observation_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span the observation covers.'),
   "target_window": zod.object({
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "calendar": zod.literal("GREGORIAN"),
-  "timezone": zod.literal("UTC")
-}),
+  "start": zod.iso.date().describe('First date in the window.'),
+  "end_exclusive": zod.iso.date().describe('First date after the window. It is not in the window.'),
+  "calendar": zod.literal("GREGORIAN").describe('Calendar the dates use.'),
+  "timezone": zod.literal("UTC").describe('Time zone the dates use.')
+}).describe('Time span being compared against.'),
   "lag": zod.object({
-  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']),
-  "anchor": zod.enum(['START', 'END_EXCLUSIVE']),
-  "offset_days": zod.int(),
-  "window_days": zod.int().nullish(),
-  "season_id": zod.string().nullish()
-}),
+  "kind": zod.enum(['ZERO', 'FIXED', 'ROLLING', 'SEASONAL']).describe('Type of lag rule that applies.'),
+  "anchor": zod.enum(['START', 'END_EXCLUSIVE']).describe('Edge of the target window that the lag is measured from.'),
+  "offset_days": zod.int().describe('Number of days between the anchor and the window.'),
+  "window_days": zod.int().nullish().describe('Length of a rolling window in days. `null` for other kinds.'),
+  "season_id": zod.string().nullish().describe('Identifies the season for a seasonal lag. `null` otherwise.')
+}).describe('Lag between the two windows.'),
   "coverage": zod.object({
-  "expected": zod.union([zod.int(),zod.number()]),
-  "observed": zod.union([zod.int(),zod.number()]),
-  "unit": zod.string(),
-  "partial_allowed": zod.boolean()
-}),
+  "expected": zod.union([zod.int(),zod.number()]).describe('Amount of coverage expected, in `unit`.'),
+  "observed": zod.union([zod.int(),zod.number()]).describe('Amount of coverage present, in `unit`.'),
+  "unit": zod.string().describe('Unit of `expected` and `observed`, such as `day`.'),
+  "partial_allowed": zod.boolean().describe('Whether the method accepts less than the expected coverage.')
+}).describe('Expected and observed coverage of the observation window.'),
   "reference_period": zod.union([zod.object({
-  "id": zod.string(),
-  "start": zod.iso.date(),
-  "end_exclusive": zod.iso.date(),
-  "source_vintage": zod.string()
-}),zod.null()]).optional()
-})
+  "id": zod.string().describe('Identifies the reference period.'),
+  "start": zod.iso.date().describe('First date in the reference period.'),
+  "end_exclusive": zod.iso.date().describe('First date after the reference period. It is not in the period.'),
+  "source_vintage": zod.string().describe('Reference year or period of the source dataset. It is not an annual value.')
+}).describe('The reference period of a source dataset.'),zod.null()]).optional().describe('Reference period of the source dataset. `null` when none applies.')
+}).describe('Describes how an observation\'s time span lines up with a target time span.\n\nThe alignment is descriptive. It does not show cause.')
 
 export type TemporalAlignmentContext = zod.input<typeof TemporalAlignmentContext>;
 export type TemporalAlignmentContextOutput = zod.output<typeof TemporalAlignmentContext>;

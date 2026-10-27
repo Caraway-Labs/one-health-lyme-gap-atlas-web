@@ -27,7 +27,7 @@ Authoritative operation text is the live OpenAPI above (`openapi` 3.1.0, title `
 
 ### `GET /v1/observations`
 
-Operation id: `observations_v1_observations_get`.
+Operation id: `listObservations`.
 
 Live description, abbreviated to the CDC sentence and the shared rules around it: surveillance context is optional and requires an admitted Data delivery; `normalized_state` preserves Data semantics and the publisher value remains `value`. Separately enabled CDC status uses `start_date=end_date=2025-12-31` and `CUMULATIVE` grain; `scapularis_status` and `burgdorferi_status` require exact Data record admission. Annual `year` and other date ranges return HTTP 400 `UNSUPPORTED_FILTER` before data access. Missing context carries no absence or temporal-comparability claim. A measure and a bounded county/time selection are required. The API does not offer user sorting or aggregation. Results are ordered by measure id, county FIPS, period start, and observation id. Opaque page tokens bind to filters and release.
 

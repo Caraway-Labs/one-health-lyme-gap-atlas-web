@@ -136,7 +136,7 @@ describe("default E2E and Storybook phone viewport sweep", () => {
         !desktopRetainedNarrowWidths.some((width) => width === call.width)
     );
     const unguarded = phone
-      .filter((call) => !call.guarded)
+      .filter((call) => !(call.guarded || call.desktopRequired))
       .map((call) => `${call.file}:${call.line} ${call.width}`);
     const phoneFiles = [...new Set(phone.map((call) => call.file))].sort();
     expect(phoneFiles).toStrictEqual([
@@ -192,5 +192,14 @@ describe("default E2E and Storybook phone viewport sweep", () => {
         (call) => releaseViewportRuns("desktop", call.width) === false
       )
     ).toBeTruthy();
+  });
+
+  it("allows the evidence-flow diagram check at 375px on desktop", () => {
+    const required = scanPhoneViewportCalls()
+      .filter((call) => call.desktopRequired)
+      .map((call) => `${call.file} ${call.width}`);
+    expect(required).toStrictEqual([
+      "tests/e2e/provenance-evidence-docs.spec.ts 375",
+    ]);
   });
 });

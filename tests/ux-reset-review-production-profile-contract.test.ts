@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { loadInvestigateCountyRecord } from "@/features/ux-reset/investigate/load-county-evidence";
-import { CountyV1CountiesFipsGetResponse } from "@/generated/zod/atlas";
+import { GetCountyResponse } from "@/generated/zod/atlas";
 
 import legacyCapture from "./fixtures/review-al-01001.json";
 import autauga from "./fixtures/review-al-v11-01001.json";
@@ -33,9 +33,7 @@ describe("Source-backed v1.1 regression projections through the existing loader"
         releaseId: detail.release.release_id,
         signal: new AbortController().signal,
       });
-      expect(loaded).toStrictEqual(
-        CountyV1CountiesFipsGetResponse.parse(detail)
-      );
+      expect(loaded).toStrictEqual(GetCountyResponse.parse(detail));
     }
   );
 

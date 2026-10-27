@@ -5,10 +5,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { InvestigateWorkspace } from "@/features/ux-reset/investigate/use-investigate-workspace";
 import { ExplorerCountyEvidence } from "@/features/ux-reset/review/explorer-county-evidence";
-import type { ObservationsV1ObservationsGetParams } from "@/generated/models";
+import type { ListObservationsParams } from "@/generated/models";
 
 const observationsGet = vi.hoisted(() =>
-  vi.fn<typeof import("@/generated/atlas").observationsV1ObservationsGet>()
+  vi.fn<typeof import("@/generated/atlas").listObservations>()
 );
 const workspace = vi.hoisted(() => ({
   current: null as InvestigateWorkspace | null,
@@ -21,7 +21,7 @@ vi.mock(import("@/generated/atlas"), async () => {
     );
   return {
     ...actual,
-    observationsV1ObservationsGet: observationsGet,
+    listObservations: observationsGet,
   };
 });
 
@@ -110,12 +110,11 @@ function renderCard(overrides: Partial<InvestigateWorkspace>) {
   );
 }
 
-function vintageCalls(): ObservationsV1ObservationsGetParams[] {
+function vintageCalls(): ListObservationsParams[] {
   return observationsGet.mock.calls
     .map((call) => call[0])
     .filter(
-      (params): params is ObservationsV1ObservationsGetParams =>
-        params?.vintage_year != null
+      (params): params is ListObservationsParams => params?.vintage_year != null
     );
 }
 

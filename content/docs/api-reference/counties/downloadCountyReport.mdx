@@ -1,0 +1,118 @@
+---
+title: Download a county report
+description: Download a county report
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings:
+      - content: Templates
+        id: templates
+      - content: Key parameters
+        id: key-parameters
+      - content: Caching
+        id: caching
+      - content: Common problems
+        id: common-problems
+    contents:
+      - content: GET /v1/counties/{fips}/report.pdf
+      - content: downloadCountyReport
+      - content: Download a county report
+      - content: 'fips path required County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
+      - content: 'County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
+      - content: Fips
+      - content: '"08001"'
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: period_start query optional Exact inclusive observation start for county-v2.
+      - content: Exact inclusive observation start for county-v2.
+      - content: Period Start
+      - content: period_end query optional Exact inclusive observation end for county-v2.
+      - content: Exact inclusive observation end for county-v2.
+      - content: Period End
+      - content: measure_id query optional 1–20 measure IDs; repeated or comma-separated for county-v2.
+      - content: 1–20 measure IDs; repeated or comma-separated for county-v2.
+      - content: Measure Id
+      - content: template query optional County report template. Accepted values are `county-v3` (default; the two-page County Data Brief, which ignores score settings), `county-v1`, and `county-v2` (requires `dataset_version`, `period_start`, `period_end`, and `measure_id`). A well-formed value that is not accepted returns 422.
+      - content: County report template. Accepted values are `county-v3` (default; the two-page County Data Brief, which ignores score settings), `county-v1`, and `county-v2` (requires `dataset_version`, `period_start`, `period_end`, and `measure_id`). A well-formed value that is not accepted returns 422.
+      - content: Template
+      - content: '"county-v3"'
+      - content: ecological_share query optional Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Ecological Share
+      - content: '65'
+      - content: 'smooth_k query optional Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: 'Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: Smooth K
+      - content: '50'
+      - content: missing_human_weakness query optional Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Missing Human Weakness
+      - content: '75'
+      - content: low_incidence_breakpoint query optional Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: low_incidence_breakpoint deprecated
+      - content: Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: Low Incidence Breakpoint
+      - content: 200 PDF attachment.
+      - content: 'Content-Type Media type of the body: `application/pdf`.'
+      - content: '"application/pdf"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=300, must-revalidate`. The `county-v1` and `county-v3` templates send this value. The `county-v2` template sends `no-store`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=300, must-revalidate"'
+      - content: ETag Opaque validator for this representation. Send it as `If-None-Match` to get an empty 304 when nothing changed. Send the value back exactly as you received it.
+      - content: Content-Disposition Marks the body as a download and suggests the file name.
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/pdf
+      - content: PDF report (first bytes only)
+      - content: 'Response headers: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="New_York_NY_AtlasBrief.pdf"`, a weak `ETag`, and `Cache-Control: public, max-age=300, must-revalidate`. The body is a binary PDF; only its first bytes are shown.'
+      - content: '"%PDF-1.7"'
+      - content: 304 Not modified. Your `If-None-Match` value matches the current `ETag`. The response has no body.
+      - content: ETag The matching validator.
+      - content: Cache-Control The same cache rule as the `200` response.
+      - content: 400 The report's observation context selects more than the result limit. The `code` is `QUERY_TOO_BROAD`. Shorten the period or request fewer measures, then retry.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Selection above the result limit
+      - content: Shows `QUERY_TOO_BROAD` when counties and period exceed the result limit.
+      - content: '{"type":"https://onehealthatlas.org/problems/query-too-broad","title":"Invalid public query","status":400,"detail":"Narrow measure, geography, time, or stratification selection.","instance":"/v1/counties/{fips}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"QUERY_TOO_BROAD"}'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"County or dataset release not found","instance":"/v1/counties/{fips}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 413 The report is larger than the API can render. Request a shorter period or fewer measures, then retry.
+      - content: Error response
+      - content: Shows the body the API returns for this status.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-413","title":"Request failed","status":413,"detail":"The report exceeds configured resource limits.","instance":"/v1/counties/{fips}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/counties/{fips}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The report renderer is busy or timed out. Wait the number of seconds in `Retry-After`, then retry. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"Report rendering timed out. Please try again later.","instance":"/v1/counties/{fips}/report.pdf","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails).
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}/report.pdf","method":"get"}]} showDescription />
+    </>
+  );
+}

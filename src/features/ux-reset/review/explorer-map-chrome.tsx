@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 import { EXPLORER_MAP_SECTION_HEADING } from "@/features/ux-reset/page-introduction-copy";
 import { ContiguousUsSilhouette } from "@/features/ux-reset/review/contiguous-us-silhouette";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 
 export const EXPLORER_US_VIEW_LABEL = "US view";
 export const EXPLORER_US_VIEW_TOOLTIP = "Return to the full US map";
@@ -48,6 +49,7 @@ export function ExplorerMapSectionHeader({
             <TooltipTrigger
               render={
                 <Button
+                  {...analyticsControlAttributes("explorer_us_view")}
                   aria-label={EXPLORER_US_VIEW_LABEL}
                   data-testid={usViewTestId}
                   size="sm"
@@ -64,6 +66,7 @@ export function ExplorerMapSectionHeader({
           </Tooltip>
         </TooltipProvider>
         <Button
+          {...analyticsControlAttributes("explorer_fit_map")}
           aria-label={explorerFitAccessibleName(fitLabel, fitPlaceName)}
           data-testid={fitTestId}
           size="sm"

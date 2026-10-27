@@ -32,21 +32,19 @@ vi.mock(
 );
 
 vi.mock(import("@/generated/atlas"), () => ({
-  confirmPrivacyRequestV1MePrivacyRequestsRequestIdConfirmPost:
-    vi.fn<() => Promise<never>>(),
-  createPrivacyRequestV1MePrivacyRequestsPost: vi.fn<() => Promise<never>>(),
-  downloadPrivacyExportV1MePrivacyRequestsRequestIdExportGet:
-    vi.fn<() => Promise<never>>(),
-  getProfileV1MeProfileGet: getProfile,
-  metadataV1AtlasMetadataGet: vi.fn<() => Promise<never>>(),
-  saveProfileV1MeProfilePut: saveProfile,
+  confirmPrivacyRequest: vi.fn<() => Promise<never>>(),
+  createPrivacyRequest: vi.fn<() => Promise<never>>(),
+  downloadPrivacyExport: vi.fn<() => Promise<never>>(),
+  getProfile,
+  getAtlasMetadata: vi.fn<() => Promise<never>>(),
+  updateProfile: saveProfile,
 }));
 
 import { AnalyticsClient } from "@/components/analytics-client";
 import { PrivacyPreferences } from "@/components/privacy-preferences";
 import { PublicLayout } from "@/components/public-layout";
 import { ResetSettingsExperience } from "@/features/ux-reset/settings/reset-settings-experience";
-import { metadataV1AtlasMetadataGet } from "@/generated/atlas";
+import { getAtlasMetadata } from "@/generated/atlas";
 import { atlasAnalytics } from "@/lib/atlas-analytics";
 
 const STORAGE_UNAVAILABLE =
@@ -93,7 +91,7 @@ describe("denied localStorage", () => {
     vi.clearAllMocks();
     getProfile.mockReset();
     saveProfile.mockReset();
-    vi.mocked(metadataV1AtlasMetadataGet).mockResolvedValue(
+    vi.mocked(getAtlasMetadata).mockResolvedValue(
       asResponse({ data: reviewScopeMetadataFixture, status: 200 })
     );
     getProfile.mockResolvedValue(

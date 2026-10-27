@@ -1,844 +1,1547 @@
 ---
 title: "Schemas"
-description: "Component schema names and descriptions from the pinned public Atlas OpenAPI contract."
+description: "Component schemas from the pinned public Atlas OpenAPI contract, with field types, required flags, descriptions, examples, and the operations that use them."
 ---
-These component schema descriptions are indexed from the public OpenAPI contract. Operation pages render the schema with the native OpenAPI reference.
+Read each field before writing a parser. A field row lists the name, the type, whether the field is required, the contract description, and an example when the contract includes one. `null` stays in the type when a value can be null. A linked type names another schema in the reference. Enum values are listed with the meaning stated in the contract. The operations under a schema return or accept that schema.
+
+## Schema index
+
+### Atlas evidence (V1 resources)
+
+- [CanonicalGeographyAvailability](#schema-canonicalgeographyavailability)
+- [CollectionEnvelope_CountyContextObservation_](#schema-collectionenvelope-countycontextobservation)
+- [CollectionEnvelope_Indicator_](#schema-collectionenvelope-indicator)
+- [CollectionEnvelope_Measure_](#schema-collectionenvelope-measure)
+- [CollectionEnvelope_Observation_](#schema-collectionenvelope-observation)
+- [CollectionEnvelope_Source_](#schema-collectionenvelope-source)
+- [CollectionLinks](#schema-collectionlinks)
+- [CollectionMeta](#schema-collectionmeta)
+- [CountyContext](#schema-countycontext)
+- [CountyContextObservation](#schema-countycontextobservation)
+- [EnvironmentalContext](#schema-environmentalcontext)
+- [EvidenceReference](#schema-evidencereference)
+- [Geography](#schema-geography)
+- [GeographyIdentity](#schema-geographyidentity)
+- [GeographyType](#schema-geographytype)
+- [GeographyUnavailable](#schema-geographyunavailable)
+- [Indicator](#schema-indicator)
+- [Measure](#schema-measure)
+- [Methodology](#schema-methodology)
+- [MethodologyComparisonContext](#schema-methodologycomparisoncontext)
+- [Observation](#schema-observation)
+- [ProblemDetails](#schema-problemdetails)
+- [ResourceEnvelope_Geography_](#schema-resourceenvelope-geography)
+- [ResourceEnvelope_Indicator_](#schema-resourceenvelope-indicator)
+- [ResourceEnvelope_Measure_](#schema-resourceenvelope-measure)
+- [ResourceEnvelope_Methodology_](#schema-resourceenvelope-methodology)
+- [ResourceEnvelope_Source_](#schema-resourceenvelope-source)
+- [Source](#schema-source)
+- [StandardsMapping](#schema-standardsmapping)
+- [SurveillanceContext](#schema-surveillancecontext)
+- [SurveillanceEvidenceContext](#schema-surveillanceevidencecontext)
+- [TemporalAlignmentContext](#schema-temporalalignmentcontext)
+- [TemporalCoverageContext](#schema-temporalcoveragecontext)
+- [TemporalLagContext](#schema-temporallagcontext)
+- [TemporalReferencePeriodContext](#schema-temporalreferenceperiodcontext)
+- [TemporalWindowContext](#schema-temporalwindowcontext)
+- [ValueState](#schema-valuestate)
+
+### Atlas analytics and reports
+
+- [AtlasMetadata](#schema-atlasmetadata)
+- [Candidate](#schema-candidate)
+- [CountyDetail](#schema-countydetail)
+- [CountyMapValues](#schema-countymapvalues)
+- [CountyScoreSummary](#schema-countyscoresummary)
+- [CountySurveillanceSituations](#schema-countysurveillancesituations)
+- [DataGap](#schema-datagap)
+- [MapValuesCollection](#schema-mapvaluescollection)
+- [MembershipProbability](#schema-membershipprobability)
+- [PriorityReason](#schema-priorityreason)
+- [ProblemDetails](#schema-problemdetails)
+- [PublicReviewEvidenceReference](#schema-publicreviewevidencereference)
+- [ReviewCoverage](#schema-reviewcoverage)
+- [Score](#schema-score)
+- [ScoreCollection](#schema-scorecollection)
+- [SituationClassification](#schema-situationclassification)
+- [SituationVariant](#schema-situationvariant)
+- [SourceMetadata](#schema-sourcemetadata)
+- [StateReview](#schema-statereview)
+- [Tier1CountyPriority](#schema-tier1countypriority)
+- [Tier1CountyPriorityAvailability](#schema-tier1countypriorityavailability)
+
+
+## CanonicalGeographyAvailability [#schema-canonicalgeographyavailability]
+
+The county exists, but its canonical geography data is not published yet.
+
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/checkGeographyAvailability) — Check county geography availability
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `availability` | `UNAVAILABLE` | required | Always `UNAVAILABLE`: the county's geography data is not published. |
+| `reason` | `CANONICAL_GEOGRAPHY_UNPUBLISHED` | required | Why the data is unavailable. The geography data has not been published. |
+| `data` | `null` | required | Always `null`. The API returns no geography data or geometry. |
+| `release_id` | `string` | required | Identifies the county directory release used to confirm the county. |
+| `limitations` | array of `string` | required | Publication and representation boundaries, not scientific absence. |
+
+
+## CollectionEnvelope_CountyContextObservation_ [#schema-collectionenvelope-countycontextobservation]
+
+A page of county population or rurality observations, with paging details and links. Read `meta.availability` and `meta.next_page_token` before you use `data`.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | array of [CountyContextObservation](#schema-countycontextobservation) | required | The items on this page. Empty when there are none. |
+| `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
+| `links` | [CollectionLinks](#schema-collectionlinks) | required | Links related to this response. |
+
+
+## CollectionEnvelope_Indicator_ [#schema-collectionenvelope-indicator]
+
+A page of indicators, with paging details and links. Read `meta.next_page_token` to get the next page.
+
+### Operations
+
+- [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators) — List indicators
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | array of [Indicator](#schema-indicator) | required | The items on this page. Empty when there are none. |
+| `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
+| `links` | [CollectionLinks](#schema-collectionlinks) | required | Links related to this response. |
+
+
+## CollectionEnvelope_Measure_ [#schema-collectionenvelope-measure]
+
+A page of measures, with paging details and links. Read `meta.next_page_token` to get the next page.
+
+### Operations
+
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | array of [Measure](#schema-measure) | required | The items on this page. Empty when there are none. |
+| `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
+| `links` | [CollectionLinks](#schema-collectionlinks) | required | Links related to this response. |
+
+
+## CollectionEnvelope_Observation_ [#schema-collectionenvelope-observation]
+
+A page of observations, with paging details and links. Read `meta.availability` and `meta.next_page_token` before you use `data`.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | array of [Observation](#schema-observation) | required | The items on this page. Empty when there are none. |
+| `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
+| `links` | [CollectionLinks](#schema-collectionlinks) | required | Links related to this response. |
+
+
+## CollectionEnvelope_Source_ [#schema-collectionenvelope-source]
+
+A page of sources, with paging details and links. Read `meta.next_page_token` to get the next page.
+
+### Operations
+
+- [`GET /v1/sources`](/docs/api-reference/provenance/listSources) — List sources
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | array of [Source](#schema-source) | required | The items on this page. Empty when there are none. |
+| `meta` | [CollectionMeta](#schema-collectionmeta) | required | Paging, release, and availability details. |
+| `links` | [CollectionLinks](#schema-collectionlinks) | required | Links related to this response. |
+
+
+## CollectionLinks [#schema-collectionlinks]
+
+Links related to a list response.
+
+### Operations
+
+- [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators) — List indicators
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+- [`GET /v1/sources`](/docs/api-reference/provenance/listSources) — List sources
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `self` | `string \| null` | optional | Link to this page of results. `null` when the API supplies none. |
+
+
+## CollectionMeta [#schema-collectionmeta]
+
+Paging, release, and availability details for a list response.
+
+### Operations
+
+- [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators) — List indicators
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+- [`GET /v1/sources`](/docs/api-reference/provenance/listSources) — List sources
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `next_page_token` | `string \| null` | optional | Send this value as `page_token` to get the next page, with the same filters. Do not parse it. `null` means there are no more pages. A token can stop working after a service restart. |
+| `response_at` | `string (date-time)` | optional | When Atlas built this response, in UTC. It is not when the publisher last updated the data and not when the observation was made. |
+| `availability` | `AVAILABLE \| UNAVAILABLE \| null` | optional | Whether Atlas has published results for the selection. It does not describe biological presence. Returned for observations and omitted on other collections. A later page that runs out of items stays `AVAILABLE`. |
+| `reason` | `NO_PUBLISHED_RESULTS \| null` | optional | Why `availability` is `UNAVAILABLE`. `NO_PUBLISHED_RESULTS` means the first query found no published results. Omitted otherwise. |
+| `release_id` | `string \| null` | optional | Identifies the published data release this query read. Results from different releases are not directly comparable. |
+| `limitations` | array of `string` \| `null` | optional | Notes on what the availability result does and does not show. Returned with `availability` on observation collections and omitted elsewhere. |
+
+### `availability` values
+
+| Value | Meaning |
+| --- | --- |
+| `AVAILABLE` | No description yet |
+| `UNAVAILABLE` | No description yet |
+
+### `reason` values
+
+| Value | Meaning |
+| --- | --- |
+| `NO_PUBLISHED_RESULTS` | the first query found no published results |
+
+
+## CountyContext [#schema-countycontext]
+
+Describes the county context field that a population or rurality value came from.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `contract_version` | `atlas-county-context-consumer/1` | required | Version of the contract that defines this object. | — |
+| `vintage_year` | `integer` | required | Year of the source product or classification. It is not an annual date. | `2023` |
+| `source_field` | `string` | required | Name of the field in the source product. | — |
+| `value_type` | `integer \| number` | required | Whether `value` is an integer or a decimal number. | — |
+| `category_label` | `string \| null` | required | Official label of the category. `null` for quantities. | — |
+| `definition` | `string` | required | Plain-language definition of the field. | — |
+| `allowed_value_states` | array of [ValueState](#schema-valuestate) | required | The `value_state` values this field can return. | — |
+| `metadata_methodology_version` | `string` | required | Version of the methodology metadata that describes this field. | — |
+
+### `value_type` values
+
+| Value | Meaning |
+| --- | --- |
+| `integer` | No description yet |
+| `number` | No description yet |
+
+
+## CountyContextObservation [#schema-countycontextobservation]
+
+A county population or rurality value, reported for a reference period or a vintage.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `metadata_revision_id` | `string \| null` | optional | Identifies the reviewed metadata revision that describes this observation. `null` when none applies. |
+| `observation_id` | `string` | required | Stable identifier of the observation. It also serves as the provenance reference. |
+| `measure_id` | `string` | required | Identifier of the measure. See `/v1/measures/{measure_id}`. |
+| `geography` | [GeographyIdentity](#schema-geographyidentity) | required | The place the value describes. |
+| `temporal_grain` | `PERIOD \| VINTAGE_YEAR` | required | `PERIOD` for a dated reference period. `VINTAGE_YEAR` for a classification that has no dates. |
+| `value` | `integer \| string \| null` | required | An integer for a population or category, or exact decimal text. `ZERO` is the integer 0. Read it with `value_state`. |
+| `value_state` | [ValueState](#schema-valuestate) | required | How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero. |
+| `unit` | `string` | required | Unit of `value`, such as `count` or `mm`. |
+| `denominator` | `string \| null` | required | What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one. |
+| `strata` | object of `string` | optional | Breakdown the value applies to, such as an age group. Empty when the release has no strata. |
+| `source_id` | `string` | required | Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. |
+| `lineage_source_id` | `string \| null` | optional | Identifies the source in Atlas lineage records. It differs from `source_id`. |
+| `dataset_id` | `string \| null` | optional | Identifies the publisher's dataset. It differs from `source_id`. |
+| `methodology_id` | `string \| null` | required | Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies. |
+| `methodology` | `string \| null` | optional | Short name of the method that produced the value. |
+| `release_methodology_version` | `string \| null` | optional | Version of the methodology as published in this release. `null` when none. |
+| `methodology_version` | `string` | required | Version of the transformation applied to this observation. It is separate from the version of the methodology resource. |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. |
+| `release_id` | `string` | required | Identifies the published data release the result came from. Results from different releases are not directly comparable. |
+| `provenance_ref` | `string` | required | Identifies the provenance record for this observation. It is not a literature citation. |
+| `source_label` | `string \| null` | optional | Display name of the source. `null` when none is published. |
+| `source_vintage` | `string \| null` | optional | Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value. |
+| `source_url` | `string \| null` | optional | Web address of the source. `null` when none is published. |
+| `source_published_at` | `string (date-time) \| null` | optional | When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh. |
+| `atlas_acquired_at` | `string (date-time) \| null` | optional | When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded. |
+| `atlas_processed_at` | `string (date-time) \| null` | optional | When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded. |
+| `limitations` | array of `string` | required | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `evidence` | [EvidenceReference](#schema-evidencereference) | required | Compact pointer to the Atlas resource that backs this observation. |
+| `environmental_context` | [EnvironmentalContext](#schema-environmentalcontext) \| `null` | optional | Coverage details. Present only for environmental measures. Exact decimal quantities may be strings. |
+| `surveillance_context` | [SurveillanceContext](#schema-surveillancecontext) \| `null` | optional | Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag. |
+| `period_start` | `string (date) \| null` | required | First date of the reference period. `null` for a classification vintage. |
+| `period_end` | `string (date) \| null` | required | Last date of the reference period. `null` for a classification vintage. |
+| `county_context` | [CountyContext](#schema-countycontext) | required | Describes the field the value came from. |
+
+### `temporal_grain` values
+
+| Value | Meaning |
+| --- | --- |
+| `PERIOD` | for a dated reference period |
+| `VINTAGE_YEAR` | for a classification that has no dates |
+
+
+## EnvironmentalContext [#schema-environmentalcontext]
+
+How completely the source covers a county and day. It is separate from `value_state`.
+
+Area values are square meters. Exact decimal quantities may be strings.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `coverage_status` | `COMPLETE \| PARTIAL_COVERAGE \| SOURCE_MISSING \| OUT_OF_SOURCE_COVERAGE` | required | How much of the county the source covers for this day. |
+| `source_time_present` | `boolean` | required | Whether the source supplied a time for this observation. |
+| `day_convention` | `string` | required | How the publisher defines a day. It is a labeled 24-hour period, not necessarily a midnight-to-midnight calendar day. |
+| `expected_area_m2` | `number \| string \| null` | required | County area expected to be covered, in square meters. `null` when unknown. |
+| `intersected_area_m2` | `number \| string \| null` | required | County area that overlaps the source grid, in square meters. `null` when unknown. |
+| `source_supported_area_m2` | `number \| string \| null` | required | County area the source supports, in square meters. `null` when unknown. |
+| `valid_area_m2` | `number \| string \| null` | required | County area with a valid source value for this day, in square meters. `null` when unknown. |
+| `source_coverage_fraction` | `number \| string \| null` | required | Monthly share of the county area that the source supports. It is separate from daily completeness. |
+| `valid_fraction_of_supported_area` | `number \| string \| null` | required | Daily share of the supported area that has a valid value. Atlas treats 0.95 as the completeness threshold. |
+| `upstream_date_modified` | `string \| null` | required | Modification date the source reports. It is not the original publication date or the date the data first became available. |
+| `weight_version` | `string` | required | Version of the area weights used to combine grid cells into a county value. |
+| `geometry_version` | `string` | required | Version of the county boundaries used for the calculation. The API returns no boundary geometry. |
+| `metadata_revision_id` | `string` | required | Identifies the reviewed metadata revision that describes this context. |
+
+### `coverage_status` values
+
+| Value | Meaning |
+| --- | --- |
+| `COMPLETE` | No description yet |
+| `PARTIAL_COVERAGE` | No description yet |
+| `SOURCE_MISSING` | No description yet |
+| `OUT_OF_SOURCE_COVERAGE` | No description yet |
+
+
+## EvidenceReference [#schema-evidencereference]
+
+Compact pointer to the Atlas resource that backs a result.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `resource_type` | `string` | required | Kind of Atlas resource the reference points to, such as `observation`. |
+| `resource_id` | `string` | required | Identifier of that resource. |
+| `source_id` | `string \| null` | optional | Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. |
+| `provenance_ref` | `string \| null` | optional | Identifies the provenance record for the observation. It is not a literature citation. |
+| `semantic_version` | `string \| null` | optional | Version of the data contract the value follows. It is separate from the API version and the application version. |
+| `methodology_version` | `string \| null` | optional | Version of the transformation applied to this observation. It is separate from the version of the methodology resource. |
+| `release_id` | `string \| null` | optional | Identifies the published data release the result came from. Results from different releases are not directly comparable. |
+| `uri` | `string \| null` | optional | Web address of the referenced resource, when one exists. |
+
+
+## Geography [#schema-geography]
+
+Identity and display name of a county or state. It carries no geometry.
+
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography) — Get geography identity
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `geography` | [GeographyIdentity](#schema-geographyidentity) | required | Type and FIPS code of the place. |
+| `label` | `string` | required | Display name of the place. |
+| `parent` | [GeographyIdentity](#schema-geographyidentity) \| `null` | optional | The state that contains a county. `null` for a state. |
+
+
+## GeographyIdentity [#schema-geographyidentity]
+
+Identifies one place by type and FIPS code. It carries no geometry.
+
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography) — Get geography identity
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `geography_type` | [GeographyType](#schema-geographytype) | required | Kind of place: `county` or `state`. It sets how long `geography_id` is. |
+| `geography_id` | `string` | required | FIPS code with leading zeros: five digits for a county, two for a state. Example: `08001`. |
+
+
+## GeographyType [#schema-geographytype]
+
+Kind of place. `county` uses five-digit FIPS and `state` uses two-digit FIPS.
+
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/checkGeographyAvailability) — Check county geography availability
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography) — Get geography identity
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure) — Get a measure
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `county \| state`
+
+### Values
+
+| Value | Meaning |
+| --- | --- |
+| `county` | uses five-digit FIPS |
+| `state` | uses two-digit FIPS |
+
+
+## GeographyUnavailable [#schema-geographyunavailable]
+
+HTTP 200 answer that canonical geography data is not published yet.
+
+The API checks the shape of the requested identity only. It does not confirm that the place
+exists. Use the availability route for a county to confirm that.
+
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography) — Get geography identity
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `availability` | `UNAVAILABLE` | required | Always `UNAVAILABLE`: the geography data is not published. |
+| `reason` | `CANONICAL_GEOGRAPHY_UNPUBLISHED` | required | Why the data is unavailable. The geography data has not been published. |
+| `data` | `null` | required | Always `null`. The API returns no geography data or geometry. |
+| `geography` | [GeographyIdentity](#schema-geographyidentity) | required | The identity you requested, returned unchanged after a format check. |
+| `limitations` | array of `string` | required | Publication and representation boundaries, not scientific absence. |
+
+
+## Indicator [#schema-indicator]
+
+A public-health concept that groups related measures.
+
+### Operations
+
+- [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator) — Get an indicator
+- [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators) — List indicators
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `indicator_id` | `string` | required | Stable identifier of the indicator. Use it with `/v1/indicators/{indicator_id}`. |
+| `label` | `string` | required | Short display name of the indicator. |
+| `definition` | `string \| null` | required | Plain-language definition of the indicator. `null` when none is published. |
+| `measure_ids` | array of `string` | required | Identifiers of the measures that belong to this indicator, in sorted order. |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. |
+| `release_version` | `string \| null` | optional | Identifies the published data release this record belongs to. |
+| `domain` | `string \| null` | optional | Broad subject area the indicator belongs to, such as `climate`. `null` when none is published. |
+| `category` | `string \| null` | optional | Finer grouping inside the domain. `null` when none is published. |
+| `limitations` | array of `string` | optional | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `standards_mappings` | array of [StandardsMapping](#schema-standardsmapping) \| `null` | optional | Optional reviewed links to external standards. `null` when none exist. A mapping does not mean Atlas exchanges data with that standard. |
+
+
+## Measure [#schema-measure]
+
+One variable you can query, such as a case count. It belongs to one indicator.
+
+### Operations
+
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure) — Get a measure
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+
+Type: `object`
+
+| Name | Type | Required | Description | Example |
+| --- | --- | --- | --- | --- |
+| `measure_id` | `string` | required | Stable identifier of the measure. Pass it as `measure_id` to `/v1/observations`. | `case_count_floor_2023` |
+| `indicator_id` | `string` | required | Identifier of the indicator this measure belongs to. | — |
+| `label` | `string` | required | Short display name of the measure. | — |
+| `definition` | `string \| null` | required | Plain-language definition of the measure. `null` when none is published. | — |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. | — |
+| `release_version` | `string \| null` | optional | Identifies the published data release this record belongs to. | — |
+| `measure_type` | `string \| null` | optional | How the value is produced, such as `DERIVED`. `null` when none is published. | — |
+| `unit` | `string \| null` | optional | Unit of the value, such as `mm` or `degree_Celsius`. `null` when the measure has no unit. | — |
+| `denominator` | `string \| null` | optional | What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one. | — |
+| `geography_types` | array of [GeographyType](#schema-geographytype) \| `null` | optional | Kinds of place the measure covers. `null` when not listed. Listing a measure does not promise data for every county and period. | — |
+| `temporal_grains` | array of `string` \| `null` | optional | Time intervals the measure is reported in, such as `DAY`. `null` when not listed. | — |
+| `geography_semantics` | `string \| null` | optional | What the place dimension means for this measure. `null` when not published. | — |
+| `temporal_semantics` | `string \| null` | optional | What the time dimension means for this measure. `null` when not published. | — |
+| `allowed_value_states` | array of [ValueState](#schema-valuestate) \| `null` | optional | The `value_state` values this measure can return. `null` when not listed. | — |
+| `allowed_strata` | array of `string` \| `null` | optional | Breakdowns, such as age group, that the measure supports. `null` when it has none. | — |
+| `missingness_semantics` | `string \| null` | optional | How the measure reports missing, withheld, or unavailable values. Read it before you treat `null` as a finding. | — |
+| `methodology_id` | `string \| null` | optional | Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies. | — |
+| `methodology` | `string \| null` | optional | Short name of the method that produces the value. | — |
+| `source_ids` | array of `string` \| `null` | optional | Identifiers of the sources the measure draws on. `null` when not listed. | — |
+| `limitations` | array of `string` | optional | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. | — |
+| `standards_mappings` | array of [StandardsMapping](#schema-standardsmapping) \| `null` | optional | Optional reviewed links to external standards. `null` when none exist. | — |
+
+
+## Methodology [#schema-methodology]
+
+The method Atlas used to produce or interpret a measure's values.
+
+### Operations
+
+- [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/getMethodology) — Get a methodology
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `methodology_id` | `string` | required | Identifies the methodology. Use it with `/v1/methodologies/{methodology_id}`. |
+| `measure_id` | `string` | required | Identifier of the measure the methodology applies to. |
+| `version` | `string` | required | Version of this methodology resource. |
+| `description` | `string` | required | Plain-language description of the method. |
+| `limitations` | array of `string` | required | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. |
+| `release_version` | `string` | required | Identifies the published data release this record belongs to. |
+
+
+## MethodologyComparisonContext [#schema-methodologycomparisoncontext]
+
+Whether this observation can be compared with another across surveillance methods.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `contract_version` | `atlas-lyme-surveillance-methodology-v1` | required | Version of the contract that defines this object. |
+| `comparison_state` | `COMPARABLE \| CAUTION_REQUIRED \| NOT_COMPARABLE \| UNKNOWN` | required | Whether the case definitions allow a comparison. `UNKNOWN` is not `COMPARABLE`. |
+| `reason_codes` | array of `string` | required | Codes that explain the comparison state. |
+| `methodology_era_ids` | array of `string \| null` | required | Surveillance case-definition eras the compared values fall in. An entry is `null` when the era is unknown. |
+| `jurisdiction_class` | `string \| null` | required | Group of jurisdictions that share a reporting approach. `null` when unknown. |
+| `references` | array of `string` | required | Public references that support the comparison. |
+| `limitations` | array of `string` | required | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `left_observation_id` | `string` | required | Identifier of the observation on the left side of the comparison. |
+
+### `comparison_state` values
+
+| Value | Meaning |
+| --- | --- |
+| `COMPARABLE` | No description yet |
+| `CAUTION_REQUIRED` | No description yet |
+| `NOT_COMPARABLE` | No description yet |
+| `UNKNOWN` | No description yet |
+
+
+## Observation [#schema-observation]
+
+One value for a measure, a county, and a period, with its state and provenance.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `metadata_revision_id` | `string \| null` | optional | Identifies the reviewed metadata revision that describes this observation. `null` when none applies. |
+| `observation_id` | `string` | required | Stable identifier of the observation. It also serves as the provenance reference. |
+| `measure_id` | `string` | required | Identifier of the measure. See `/v1/measures/{measure_id}`. |
+| `geography` | [GeographyIdentity](#schema-geographyidentity) | required | The place the value describes. |
+| `temporal_grain` | `string` | required | Time interval the value covers, such as `YEAR` or `DAY`. |
+| `value` | `number \| string \| null` | required | The reported value. Read it with `value_state` and `unit`. `null` never means zero. |
+| `value_state` | [ValueState](#schema-valuestate) | required | How to read `value`. The `ValueState` schema explains each state and what a client should do. Never treat a `null` value as zero. |
+| `unit` | `string` | required | Unit of `value`, such as `count` or `mm`. |
+| `denominator` | `string \| null` | required | What the value is measured against, such as a population. `null` means Atlas supplies no denominator; do not infer one. |
+| `strata` | object of `string` | optional | Breakdown the value applies to, such as an age group. Empty when the release has no strata. |
+| `source_id` | `string` | required | Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. |
+| `lineage_source_id` | `string \| null` | optional | Identifies the source in Atlas lineage records. It differs from `source_id`. |
+| `dataset_id` | `string \| null` | optional | Identifies the publisher's dataset. It differs from `source_id`. |
+| `methodology_id` | `string \| null` | required | Identifies the methodology resource. Use it with `/v1/methodologies/{methodology_id}`. `null` when no methodology resource applies. |
+| `methodology` | `string \| null` | optional | Short name of the method that produced the value. |
+| `release_methodology_version` | `string \| null` | optional | Version of the methodology as published in this release. `null` when none. |
+| `methodology_version` | `string` | required | Version of the transformation applied to this observation. It is separate from the version of the methodology resource. |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. |
+| `release_id` | `string` | required | Identifies the published data release the result came from. Results from different releases are not directly comparable. |
+| `provenance_ref` | `string` | required | Identifies the provenance record for this observation. It is not a literature citation. |
+| `source_label` | `string \| null` | optional | Display name of the source. `null` when none is published. |
+| `source_vintage` | `string \| null` | optional | Reference year or period of the source dataset, such as `ACS 2018-2022`. It is not an annual value. |
+| `source_url` | `string \| null` | optional | Web address of the source. `null` when none is published. |
+| `source_published_at` | `string (date-time) \| null` | optional | When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh. |
+| `atlas_acquired_at` | `string (date-time) \| null` | optional | When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded. |
+| `atlas_processed_at` | `string (date-time) \| null` | optional | When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded. |
+| `limitations` | array of `string` | required | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `evidence` | [EvidenceReference](#schema-evidencereference) | required | Compact pointer to the Atlas resource that backs this observation. |
+| `environmental_context` | [EnvironmentalContext](#schema-environmentalcontext) \| `null` | optional | Coverage details. Present only for environmental measures. Exact decimal quantities may be strings. |
+| `surveillance_context` | [SurveillanceContext](#schema-surveillancecontext) \| `null` | optional | Optional surveillance evidence. Omitted or `null` supports no claim about evidence state, comparability, or lag. |
+| `period_start` | `string (date)` | required | First date the observation covers (inclusive). |
+| `period_end` | `string (date)` | required | Last date the observation covers (inclusive). |
+
 
 ## ProblemDetails [#schema-problemdetails]
 
-RFC 9457 error. Stable codes are included when the response contract defines one.
+RFC 9457 error body (`application/problem+json`). Some errors add a stable `code`.
 
-- `type`
-- `title`
-- `status`
-- `detail`
-- `instance`
-- `request_id`
-- `code`
-- `errors`
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}/availability`](/docs/api-reference/geographies/checkGeographyAvailability) — Check county geography availability
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography) — Get geography identity
+- [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator) — Get an indicator
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure) — Get a measure
+- [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/getMethodology) — Get a methodology
+- [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/getSource) — Get a source
+- [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators) — List indicators
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+- [`GET /v1/sources`](/docs/api-reference/provenance/listSources) — List sources
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability) — Check surveillance priority availability
+- [`GET /v1/atlas/ranking.csv`](/docs/api-reference/atlas/downloadAtlasRanking) — Download county rankings as CSV
+- [`GET /v1/counties/{fips}/report.pdf`](/docs/api-reference/counties/downloadCountyReport) — Download a county report
+- [`GET /v1/states/{state}/report.pdf`](/docs/api-reference/states/downloadStateReport) — Download a state report
+- [`GET /v1/atlas/geometry`](/docs/api-reference/atlas/getAtlasGeometry) — Get county map geometry
+- [`GET /v1/atlas/map-values`](/docs/api-reference/atlas/getAtlasMapValues) — Get map values by county
+- [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/getAtlasMetadata) — Get release metadata
+- [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores) — Get county gap scores
+- [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty) — Get county detail and provenance
+- [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations) — Get county surveillance situations
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/getCountyTier1Priority) — Get county surveillance review priority
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview) — Review a state's county evidence
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | `string` | required | URI that names the kind of problem, such as `.../problems/validation`. Branch on `code` when it is present. |
+| `title` | `string` | required | Short summary of the kind of problem. Read `detail` for this occurrence. |
+| `status` | `integer` | required | HTTP status code of the response, repeated in the body. |
+| `detail` | `string` | required | Explanation of this occurrence of the problem, in English. Show it to a developer; do not match on its wording. |
+| `instance` | `string` | required | Path of the request that failed, for example `/v1/observations`. |
+| `request_id` | `string` | required | Identifies this request. Include it when you contact support. It matches the `X-Request-ID` response header. |
+| `code` | `string \| null` | optional | Stable machine-readable error code: `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, `UNSUPPORTED_STRATIFICATION`, `QUERY_TOO_BROAD`, `RESOURCE_NOT_FOUND`, `RATE_LIMITED`, or `SERVICE_UNAVAILABLE`. Branch on this field. It is absent on some errors, such as HTTP 422 validation errors. |
+| `errors` | array of `object` \| `null` | optional | One entry for each invalid input when a request fails validation. Each entry has `loc` (where the value was sent), `msg`, and `type`. `null` or absent when the error is not about specific inputs. |
+
+
+## ResourceEnvelope_Geography_ [#schema-resourceenvelope-geography]
+
+One county or state identity, wrapped in `data`. The identity carries no geometry.
+
+### Operations
+
+- [`GET /v1/geographies/{geography_type}/{geography_id}`](/docs/api-reference/geographies/getGeography) — Get geography identity
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | [Geography](#schema-geography) | required | The requested resource. |
+
+
+## ResourceEnvelope_Indicator_ [#schema-resourceenvelope-indicator]
+
+One indicator, wrapped in `data`.
+
+### Operations
+
+- [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator) — Get an indicator
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | [Indicator](#schema-indicator) | required | The requested resource. |
+
+
+## ResourceEnvelope_Measure_ [#schema-resourceenvelope-measure]
+
+One measure, wrapped in `data`.
+
+### Operations
+
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure) — Get a measure
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | [Measure](#schema-measure) | required | The requested resource. |
+
+
+## ResourceEnvelope_Methodology_ [#schema-resourceenvelope-methodology]
+
+One methodology, wrapped in `data`.
+
+### Operations
+
+- [`GET /v1/methodologies/{methodology_id}`](/docs/api-reference/provenance/getMethodology) — Get a methodology
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | [Methodology](#schema-methodology) | required | The requested resource. |
+
+
+## ResourceEnvelope_Source_ [#schema-resourceenvelope-source]
+
+One source, wrapped in `data`.
+
+### Operations
+
+- [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/getSource) — Get a source
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `data` | [Source](#schema-source) | required | The requested resource. |
+
+
+## Source [#schema-source]
+
+The organization and dataset a value came from.
+
+### Operations
+
+- [`GET /v1/sources/{source_id}`](/docs/api-reference/provenance/getSource) — Get a source
+- [`GET /v1/sources`](/docs/api-reference/provenance/listSources) — List sources
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `source_id` | `string` | required | Public key of the source resource. Use it with `/v1/sources/{source_id}`. It differs from `lineage_source_id` and `dataset_id`. |
+| `label` | `string` | required | Display name of the source. |
+| `publisher` | `string \| null` | required | Organization that publishes the data. `null` when none is recorded. |
+| `lineage_source_id` | `string` | required | Identifies the source in Atlas lineage records. It differs from `source_id`. |
+| `dataset_id` | `string` | required | Identifies the publisher's dataset. It differs from `source_id`. |
+| `semantic_version` | `string` | required | Version of the data contract the value follows. It is separate from the API version and the application version. |
+| `release_version` | `string` | required | Identifies the published data release this record belongs to. |
+| `source_url` | `string \| null` | optional | Web address of the source. `null` when none is published. |
+| `source_vintage` | `string \| null` | optional | Reference year or period of the source dataset. It is not an annual value. |
+| `source_version` | `string \| null` | optional | Version label the publisher gives the dataset, when it has one. |
+| `published_at` | `string (date-time) \| null` | optional | Deprecated. Use `upstream_updated_at`. When the publisher published the data. |
+| `atlas_acquired_at` | `string (date-time) \| null` | optional | Deprecated. Use `source_retrieved_at`. When Atlas retrieved the data. |
+| `upstream_updated_at` | `string (date-time) \| null` | optional | When the publisher last updated the data. `null` when unavailable. Do not use the response time in its place. |
+| `source_retrieved_at` | `string (date-time) \| null` | optional | When Atlas last retrieved the data from the publisher. `null` when unavailable. |
+| `limitations` | array of `string` | optional | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+
+
+## StandardsMapping [#schema-standardsmapping]
+
+Optional reviewed link from a public-health concept to an external standard.
+
+### Operations
+
+- [`GET /v1/indicators/{indicator_id}`](/docs/api-reference/discovery/getIndicator) — Get an indicator
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure) — Get a measure
+- [`GET /v1/indicators`](/docs/api-reference/discovery/listIndicators) — List indicators
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `standard` | `string` | required | Name of the external standard, such as `LOINC`. |
+| `version` | `string` | required | Version of the external standard that the mapping targets. |
+| `target` | `string` | required | Code or element in the external standard. |
+| `relationship` | `string` | required | How the Atlas concept relates to the target, such as `exact` or `broader`. |
+| `mapping_reference` | `string \| null` | optional | Reference to the reviewed mapping record. `null` when none. |
+
+
+## SurveillanceContext [#schema-surveillancecontext]
+
+Optional surveillance evidence attached to an observation.
+
+A missing or `null` part supports no claim about evidence state, comparability, or lag.
+Comparison covers case definitions only. Alignment is descriptive, not causal.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `evidence` | [SurveillanceEvidenceContext](#schema-surveillanceevidencecontext) \| `null` | optional | County evidence state. `null` when none is supplied. |
+| `methodology_comparison` | [MethodologyComparisonContext](#schema-methodologycomparisoncontext) \| `null` | optional | Comparability of case definitions. `null` when none is supplied. |
+| `temporal_alignment` | [TemporalAlignmentContext](#schema-temporalalignmentcontext) \| `null` | optional | Time alignment details. `null` when none is supplied. |
+
+
+## SurveillanceEvidenceContext [#schema-surveillanceevidencecontext]
+
+Evidence state for a county as supplied with the data. Atlas adds no classification.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `contract_version` | `atlas-surveillance-evidence-v3` | required | Version of the contract that defines this object. |
+| `normalized_state` | `established \| detected \| unknown \| null` | optional | County evidence state supplied with the data, without extra classification. `unknown` supports no conclusion about biological absence. `null` means no normalized state was supplied. The publisher's original value stays in the observation `value`. |
+| `state` | `established \| detected_below_establishment \| sampled_not_detected \| no_qualifying_record \| unknown` | required | Evidence state for the county. None of these values proves absence. |
+| `reason_codes` | array of `string` | required | Codes that explain why the state applies. |
+| `evidence_tier` | `GOVERNED_MAPPING` | required | How the state was derived. `GOVERNED_MAPPING` means a reviewed mapping. |
+| `observation_key` | `string` | required | Identifies the observation this state describes. |
+| `revision_id` | `string` | required | Identifies the revision of the evidence record. |
+| `value_state` | `string` | required | The `value_state` of the observation this state describes. |
+| `source_rule_id` | `string` | required | Identifies the rule that mapped the source value. |
+| `limitations` | array of `string` | required | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `evidence_revision_id` | `string` | required | Identifies the revision of the evidence set. |
+
+### `normalized_state` values
+
+| Value | Meaning |
+| --- | --- |
+| `established` | No description yet |
+| `detected` | No description yet |
+| `unknown` | supports no conclusion about biological absence |
+
+### `state` values
+
+| Value | Meaning |
+| --- | --- |
+| `established` | No description yet |
+| `detected_below_establishment` | No description yet |
+| `sampled_not_detected` | No description yet |
+| `no_qualifying_record` | No description yet |
+| `unknown` | No description yet |
+
+
+## TemporalAlignmentContext [#schema-temporalalignmentcontext]
+
+Describes how an observation's time span lines up with a target time span.
+
+The alignment is descriptive. It does not show cause.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `contract_version` | `atlas-temporal-alignment-v1` | required | Version of the contract that defines this object. |
+| `method_id` | `string` | required | Identifies the alignment method. |
+| `method_version` | `string` | required | Version of the alignment method. |
+| `source_id` | `string` | required | Identifies the source of the aligned observation. |
+| `measure_id` | `string` | required | Identifies the measure that was aligned. |
+| `aggregation_rule` | `string` | required | Rule used to combine values inside the observation window. |
+| `coverage_denominator` | `string` | required | What the coverage is counted against, such as days in the window. |
+| `decision_cutoff` | `string (date-time)` | required | Time after which new data is not used for the alignment. Includes a UTC offset. |
+| `disposition` | `ELIGIBLE \| INELIGIBLE \| RETROSPECTIVE_ONLY \| UNKNOWN_AVAILABILITY` | required | Whether the observation can be used for the target window. |
+| `reason_codes` | array of `string` | required | Codes that explain the disposition. |
+| `limitations` | array of `string` | required | Factual notes on what the result does not show or where its evidence is bounded. Keep them with the value when you display or store it. |
+| `observation_window` | [TemporalWindowContext](#schema-temporalwindowcontext) | required | Time span the observation covers. |
+| `target_window` | [TemporalWindowContext](#schema-temporalwindowcontext) | required | Time span being compared against. |
+| `lag` | [TemporalLagContext](#schema-temporallagcontext) | required | Lag between the two windows. |
+| `coverage` | [TemporalCoverageContext](#schema-temporalcoveragecontext) | required | Expected and observed coverage of the observation window. |
+| `reference_period` | [TemporalReferencePeriodContext](#schema-temporalreferenceperiodcontext) \| `null` | optional | Reference period of the source dataset. `null` when none applies. |
+
+### `disposition` values
+
+| Value | Meaning |
+| --- | --- |
+| `ELIGIBLE` | No description yet |
+| `INELIGIBLE` | No description yet |
+| `RETROSPECTIVE_ONLY` | No description yet |
+| `UNKNOWN_AVAILABILITY` | No description yet |
+
+
+## TemporalCoverageContext [#schema-temporalcoveragecontext]
+
+How much of the expected time span the observation covers.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `expected` | `integer` \| `number` | required | Amount of coverage expected, in `unit`. |
+| `observed` | `integer` \| `number` | required | Amount of coverage present, in `unit`. |
+| `unit` | `string` | required | Unit of `expected` and `observed`, such as `day`. |
+| `partial_allowed` | `boolean` | required | Whether the method accepts less than the expected coverage. |
+
+
+## TemporalLagContext [#schema-temporallagcontext]
+
+How far an observation window sits before its target window.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `kind` | `ZERO \| FIXED \| ROLLING \| SEASONAL` | required | Type of lag rule that applies. |
+| `anchor` | `START \| END_EXCLUSIVE` | required | Edge of the target window that the lag is measured from. |
+| `offset_days` | `integer` | required | Number of days between the anchor and the window. |
+| `window_days` | `integer \| null` | optional | Length of a rolling window in days. `null` for other kinds. |
+| `season_id` | `string \| null` | optional | Identifies the season for a seasonal lag. `null` otherwise. |
+
+### `kind` values
+
+| Value | Meaning |
+| --- | --- |
+| `ZERO` | No description yet |
+| `FIXED` | No description yet |
+| `ROLLING` | No description yet |
+| `SEASONAL` | No description yet |
+
+### `anchor` values
+
+| Value | Meaning |
+| --- | --- |
+| `START` | No description yet |
+| `END_EXCLUSIVE` | No description yet |
+
+
+## TemporalReferencePeriodContext [#schema-temporalreferenceperiodcontext]
+
+The reference period of a source dataset.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | required | Identifies the reference period. |
+| `start` | `string (date)` | required | First date in the reference period. |
+| `end_exclusive` | `string (date)` | required | First date after the reference period. It is not in the period. |
+| `source_vintage` | `string` | required | Reference year or period of the source dataset. It is not an annual value. |
+
+
+## TemporalWindowContext [#schema-temporalwindowcontext]
+
+A span of time with an inclusive start and an exclusive end.
+
+### Operations
+
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `start` | `string (date)` | required | First date in the window. |
+| `end_exclusive` | `string (date)` | required | First date after the window. It is not in the window. |
+| `calendar` | `GREGORIAN` | required | Calendar the dates use. |
+| `timezone` | `UTC` | required | Time zone the dates use. |
+
+
+## ValueState [#schema-valuestate]
+
+How to read an observation's `value`. Check it before you use the value.
+
+- `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.
+- `ZERO`: a reported numeric zero. It is different from a missing value.
+- `MISSING`: no value was reported and `value` is `null`. It is not zero.
+- `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.
+- `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.
+- `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.
+- `NO_RECORDS`: the publisher's literal "No records" result. `value` is the text `No records`. It does not establish biological absence.
+
+Show these states differently from each other. Never turn `null` into zero.
+
+### Operations
+
+- [`GET /v1/measures/{measure_id}`](/docs/api-reference/discovery/getMeasure) — Get a measure
+- [`GET /v1/measures`](/docs/api-reference/discovery/listMeasures) — List measures
+- [`GET /v1/observations`](/docs/api-reference/observations/listObservations) — Query county observations
+
+Type: `OBSERVED \| ZERO \| MISSING \| SUPPRESSED \| UNAVAILABLE \| NO_COUNTY_LINKED_RECORD \| NO_RECORDS`
+
+### Values
+
+| Value | Meaning |
+| --- | --- |
+| `OBSERVED` | a nonzero value the publisher reported. Use `value` as given. |
+| `ZERO` | a reported numeric zero. It is different from a missing value. |
+| `MISSING` | no value was reported and `value` is `null`. It is not zero. |
+| `SUPPRESSED` | the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it. |
+| `UNAVAILABLE` | Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence. |
+| `NO_COUNTY_LINKED_RECORD` | a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero. |
+| `NO_RECORDS` | the publisher's literal "No records" result. `value` is the text `No records`. It does not establish biological absence. |
+
 
 ## AtlasMetadata [#schema-atlasmetadata]
 
-- `scoring_methodology_version`
-- `release_id`
-- `schema_version`
-- `generated_at`
-- `loaded_at`
-- `scope`
-- `bundle_sha256`
-- `score_defaults`
-- `methodology_version`
-- `limitations`
-- `sources`
-- `states`
+Describes the published data release behind the scores and county records.
 
-## SourceMetadata [#schema-sourcemetadata]
+### Operations
 
-- `key`
-- `label`
-- `vintage`
-- `url`
-- `note`
+- [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/getAtlasMetadata) — Get release metadata
+- [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty) — Get county detail and provenance
 
-## ScoreCollection [#schema-scorecollection]
+Type: `object`
 
-- `scoring_methodology_version`
-- `release_id`
-- `methodology_version`
-- `settings`
-- `counties`
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
+| `release_id` | `string` | required | Identifies the published data release. Results from different releases are not directly comparable. |
+| `schema_version` | `string` | required | Version of the release data layout. |
+| `generated_at` | `string (date-time)` | required | When the release was built, with a UTC offset. It is not when the publishers last updated their data. |
+| `loaded_at` | `string (date-time)` | required | When Atlas loaded the release for serving, with a UTC offset. It is not when the publishers last updated their data. |
+| `scope` | `string` | required | Geographic and time coverage of the release. |
+| `bundle_sha256` | `string` | required | SHA-256 checksum of the release contents. Use it to confirm you are looking at the same release. |
+| `score_defaults` | `object` | required | Default settings the score uses when a request supplies none. |
+| `methodology_version` | `string` | required | Version of the release methodology that the scores follow. |
+| `limitations` | `string` | required | What the release does not show. Read it before you use a score. |
+| `sources` | array of [SourceMetadata](#schema-sourcemetadata) | required | Source datasets used in the release. |
+| `states` | array of object of `string` | required | States and the District of Columbia in the release. Each entry has a `code` and a `name`. |
 
-## CountyScoreSummary [#schema-countyscoresummary]
 
-Published 2023 minimum reported incidence per 100,000; null is not zero.
+## Candidate [#schema-candidate]
 
-- `scoring_methodology_version`
-- `incidence_floor_2023`
-- `svi_percentile`
-- `uninsured_percentile`
-- `rucc_2023`
-- `fips`
-- `county`
-- `state`
-- `state_name`
-- `in_contiguous_tick_scope`
-- `human_status`
-- `tick_status`
-- `burgdorferi_status`
-- `evidence_completeness`
-- `score`
-- `priority`
-- `color`
+A county that merits a closer look. It is a prompt to review records, not a finding.
 
-## Score [#schema-score]
+### Operations
 
-- `score`
-- `human_weakness`
-- `ecological`
-- `community`
-- `tick_signal`
-- `pathogen_signal`
-- `svi_signal`
-- `access_signal`
-- `rural_signal`
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview) — Review a state's county evidence
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `county_fips` | `string` | required | Five-digit FIPS code of the county, with leading zeros. |
+| `county_name` | `string` | required | County name. |
+| `county_url` | `string` | required | Path of the county resource in this API. |
+| `reason_codes` | array of `string` | required | Codes that explain why the county is listed. |
+| `reason_text` | `string` | required | Plain-language explanation of why the county is listed. |
+| `evidence_families` | array of `string` | required | Kinds of evidence the reason draws on, such as `county_vector_status`. |
+| `evidence_references` | array of [PublicReviewEvidenceReference](#schema-publicreviewevidencereference) | required | Source records that support the reason. |
+| `completeness` | `limited` | optional | How complete the supporting evidence is. It is always `limited`. |
+| `limitations` | array of `string` | required | Factual notes on what the candidate does not show. Keep them with it. |
+| `freshness_comparability` | `string` | required | What is known about how current and comparable the evidence is. |
+| `suggested_next_check` | `string` | required | A step a reviewer can take to check the evidence further. |
+
 
 ## CountyDetail [#schema-countydetail]
 
-- `scoring_methodology_version`
-- `incidence_floor_2023`
-- `svi_percentile`
-- `uninsured_percentile`
-- `rucc_2023`
-- `fips`
-- `county`
-- `state`
-- `state_name`
-- `in_contiguous_tick_scope`
-- `human_status`
-- `tick_status`
-- `burgdorferi_status`
-- `evidence_completeness`
-- `score`
-- `priority`
-- `color`
-- `population`
-- `case_count_floor_2023`
-- `state_unallocated_records_2023`
-- `scapularis_status`
-- `pacificus_status`
-- `uninsured_percent`
-- `release`
+A county's score plus the release facts behind it.
+
+### Operations
+
+- [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty) — Get county detail and provenance
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
+| `incidence_floor_2023` | `number \| null` | required | Published 2023 minimum reported incidence per 100,000 people. `null` is not zero. |
+| `svi_percentile` | `number \| null` | required | Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero. |
+| `uninsured_percentile` | `number \| null` | required | Percentile of the county's uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero. |
+| `rucc_2023` | `integer \| null` | required | 2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published. |
+| `fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
+| `county` | `string` | required | County name. |
+| `state` | `string` | required | Two-letter state or District of Columbia code. |
+| `state_name` | `string` | required | Full state name. |
+| `in_contiguous_tick_scope` | `boolean` | required | Whether the county is inside the contiguous area the tick data covers. |
+| `human_status` | `string` | required | State of the human-case data for the county. `published_count_floor` means a published case-count floor exists. `no_county_linked_record` means no record is linked to the county; it is neither null nor zero. |
+| `tick_status` | `string` | required | Tick evidence status the publisher reports: `Established`, `Reported`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence. |
+| `burgdorferi_status` | `string` | required | Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence. |
+| `evidence_completeness` | `integer` | required | Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality. |
+| `score` | [Score](#schema-score) | required | The score and the signals it combines. |
+| `priority` | `string` | required | Review-priority label for the score band. A lower label is not a safety finding. |
+| `color` | `string` | required | Hex color for the score band, for use in a map or legend. |
+| `population` | `integer \| null` | required | County population. `null` when none is published. |
+| `case_count_floor_2023` | `integer \| null` | required | Published 2023 minimum count of reported human cases. A floor is a minimum, not a complete count. `null` is not zero. |
+| `state_unallocated_records_2023` | `integer \| null` | required | 2023 state-level records the publisher did not assign to a county. The count belongs to the state, not this county. `null` when none is published. |
+| `scapularis_status` | `string \| null` | required | Publisher status for the tick Ixodes scapularis. `null` when none is published. |
+| `pacificus_status` | `string \| null` | required | Publisher status for the tick Ixodes pacificus. `null` when none is published. |
+| `uninsured_percent` | `number \| null` | required | Share of the county population without health insurance, as a percent. `null` when none is published. |
+| `release` | [AtlasMetadata](#schema-atlasmetadata) | required | The data release this record came from. |
+
+
+## CountyMapValues [#schema-countymapvalues]
+
+The county values a map needs to color its shapes, without the full score record.
+
+### Operations
+
+- [`GET /v1/atlas/map-values`](/docs/api-reference/atlas/getAtlasMapValues) — Get map values by county
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
+| `incidence_floor_2023` | `number \| null` | optional | Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero. |
+| `svi_percentile` | `number \| null` | optional | Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero. |
+| `uninsured_percent` | `number \| null` | optional | Share of the county population without health insurance, as a percent. `null` when none is published. |
+| `rucc_2023` | `integer \| null` | optional | 2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published. |
+
+
+## CountyScoreSummary [#schema-countyscoresummary]
+
+A county's Surveillance Gap Score with the evidence signals behind it.
+
+The score is a review aid. Atlas results are not a diagnosis. Atlas results are not an
+estimate of an individual's risk.
+
+### Operations
+
+- [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores) — Get county gap scores
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
+| `incidence_floor_2023` | `number \| null` | optional | Published 2023 minimum reported incidence per 100,000 people. A floor is a minimum, not a complete count. `null` is not zero. |
+| `svi_percentile` | `number \| null` | optional | Social Vulnerability Index percentile of the county. Value from 0 to 1. `null` when none is published; `null` is not zero. |
+| `uninsured_percentile` | `number \| null` | optional | Percentile of the county's uninsured share among counties. Value from 0 to 1. `null` when none is published; `null` is not zero. |
+| `rucc_2023` | `integer \| null` | optional | 2023 Rural-Urban Continuum Code, from 1 (most urban) to 9 (most rural). `null` when none is published. |
+| `fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
+| `county` | `string` | required | County name. |
+| `state` | `string` | required | Two-letter state or District of Columbia code. |
+| `state_name` | `string` | required | Full state name. |
+| `in_contiguous_tick_scope` | `boolean` | required | Whether the county is inside the contiguous area the tick data covers. |
+| `human_status` | `string` | required | State of the human-case data for the county. `published_count_floor` means a published case-count floor exists. `no_county_linked_record` means no record is linked to the county; it is neither null nor zero. |
+| `tick_status` | `string` | required | Tick evidence status the publisher reports: `Established`, `Reported`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence. |
+| `burgdorferi_status` | `string` | required | Evidence status for the Lyme disease bacterium Borrelia burgdorferi: `Present`, `No records`, or `Unknown`. `No records` and `Unknown` do not establish absence. |
+| `evidence_completeness` | `integer` | required | Whole-number measure of how much supporting evidence the county has. A higher number means more evidence is present. It does not rate evidence quality. |
+| `score` | [Score](#schema-score) | required | The score and the signals it combines. |
+| `priority` | `string` | required | Review-priority label for the score band. A lower label is not a safety finding. |
+| `color` | `string` | required | Hex color for the score band, for use in a map or legend. |
+
 
 ## CountySurveillanceSituations [#schema-countysurveillancesituations]
 
 Two distinct model outputs; Unknown is a valid available classification.
 
-Active governed presentation release.
+### Operations
 
-Primary model, including human surveillance.
+- [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations) — Get county surveillance situations
 
-Secondary model, excluding human surveillance.
+Type: `object`
 
-- `county_fips`
-- `release_id`
-- `bundle_sha256`
-- `four_state`
-- `tick_pathogen`
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `county_fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
+| `release_id` | `string` | required | Identifies the current data release. |
+| `bundle_sha256` | `string` | required | SHA-256 checksum of the current data release. |
+| `four_state` | [SituationVariant](#schema-situationvariant) | required | Primary model, including human surveillance. |
+| `tick_pathogen` | [SituationVariant](#schema-situationvariant) | required | Secondary model, excluding human surveillance. |
 
-## SituationVariant [#schema-situationvariant]
-
-- `model_id`
-- `availability`
-- `unavailable_reason`
-- `compatibility`
-- `batch_id`
-- `batch_version`
-- `input_release_id`
-- `data`
-
-## SituationClassification [#schema-situationclassification]
-
-Reviewed persisted display label, verbatim.
-
-Reviewed persisted explanation, verbatim.
-
-Persisted must_not_be_read_as list: prohibited interpretations, not outcomes.
-
-Persisted feature/config contract.
-
-Persisted sources and source vintages.
-
-Data activation time, not source vintage or request time.
-
-- `model_id`
-- `model_version`
-- `class_id`
-- `class_name`
-- `class_description`
-- `probabilities`
-- `limitations`
-- `batch_id`
-- `batch_version`
-- `county_sha256`
-- `dictionary_sha256`
-- `input_release_id`
-- `input_bundle_sha256`
-- `fit_git_sha`
-- `feature_contract`
-- `model_provenance`
-- `source_provenance`
-- `handoff_approval`
-- `data_publication_authorization`
-- `data_authorization_id`
-- `staging_attempt`
-- `activated_at`
-
-## MembershipProbability [#schema-membershipprobability]
-
-Version-scoped persisted class identity.
-
-Latent-class membership on 0–1 scale; never disease risk.
-
-- `class_id`
-- `probability`
-
-## Tier1CountyPriority [#schema-tier1countypriority]
-
-Model-assisted surveillance review priority; never disease or clinical risk.
-
-Five-digit county FIPS for this persisted result.
-
-HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE.
-
-Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE.
-
-Model-native anomaly score; not a probability, incidence estimate, or clinical/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE.
-
-Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score.
-
-Version of the model that generated this result.
-
-Governed source release for this batch.
-
-ML source commit for reproducibility.
-
-Inference batch identity defining the percentile comparison population.
-
-Version of the policy assigning review tiers from scored results.
-
-UTC batch generation time, not the request time or source observation date.
-
-- `county_fips`
-- `priority_tier`
-- `priority_percentile`
-- `raw_model_score`
-- `evidence_sufficiency`
-- `model_version`
-- `release_id`
-- `source_commit`
-- `prediction_batch_version`
-- `tier_policy_version`
-- `generated_at_utc`
-- `reasons`
-- `limitation_ref`
-
-## PriorityReason [#schema-priorityreason]
-
-- `code`
-- `text`
-
-## Tier1CountyPriorityAvailability [#schema-tier1countypriorityavailability]
-
-Availability lookup that separates confirmed absence from request failure.
-
-Whether a persisted Tier 1 result exists for this supported current geography.
-
-Current governed geography release used to validate the requested FIPS.
-
-Stable reason when no persisted result is published; null when data is available.
-
-The exact persisted Tier 1 result, or null when none is published.
-
-- `availability`
-- `geography_release_id`
-- `reason`
-- `data`
-
-## GeographyType [#schema-geographytype]
-
-This schema does not declare a description.
-
-## ResourceEnvelope_Geography_ [#schema-resourceenvelope-geography]
-
-- `data`
-
-## Geography [#schema-geography]
-
-County/state identity metadata; geometry is a separate display resource.
-
-- `geography`
-- `label`
-- `parent`
-
-## GeographyIdentity [#schema-geographyidentity]
-
-Stable FIPS join identity, independent of display or analysis polygons.
-
-FIPS string with leading zeros: five digits for counties, two for states.
-
-- `geography_type`
-- `geography_id`
-
-## GeographyUnavailable [#schema-geographyunavailable]
-
-Typed, successful answer that canonical geography identity is not published yet.
-
-Returned with HTTP 200 by the legacy identity route (ADR 0021). It carries no release
-because answering must stay instant and independent of the governed directory.
-
-No canonical geography resource or geometry is fabricated.
-
-The validated identity that was requested, echoed back.
-
-Publication and representation boundaries, not scientific absence.
-
-- `availability`
-- `reason`
-- `data`
-- `geography`
-- `limitations`
-
-## CanonicalGeographyAvailability [#schema-canonicalgeographyavailability]
-
-No canonical geography resource or geometry is fabricated.
-
-Governed county directory release used to confirm identity.
-
-Publication and representation boundaries, not scientific absence.
-
-- `availability`
-- `reason`
-- `data`
-- `release_id`
-- `limitations`
-
-## CollectionEnvelope_Indicator_ [#schema-collectionenvelope-indicator]
-
-- `data`
-- `meta`
-- `links`
-
-## Indicator [#schema-indicator]
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Governed current-release relationship version.
-
-Governed interpretation limitations; preserve alongside values and versions.
-
-- `indicator_id`
-- `label`
-- `definition`
-- `measure_ids`
-- `semantic_version`
-- `release_version`
-- `domain`
-- `category`
-- `limitations`
-- `standards_mappings`
-
-## StandardsMapping [#schema-standardsmapping]
-
-- `standard`
-- `version`
-- `target`
-- `relationship`
-- `mapping_reference`
-
-## CollectionMeta [#schema-collectionmeta]
-
-Opaque query/release-bound continuation. Null means exhaustion; tokens may expire on restart.
-
-UTC response construction time; not source freshness or observation time.
-
-Observation selection availability, not biological presence. Omitted on other collections. An exhausted continuation remains AVAILABLE.
-
-No published rows after a successful initial non-CDC query; otherwise omitted.
-
-Current governed release actually read for this query.
-
-Selection availability caveats; observations only.
-
-- `next_page_token`
-- `response_at`
-- `availability`
-- `reason`
-- `release_id`
-- `limitations`
-
-## CollectionLinks [#schema-collectionlinks]
-
-- `self`
-
-## ResourceEnvelope_Indicator_ [#schema-resourceenvelope-indicator]
-
-- `data`
-
-## CollectionEnvelope_Measure_ [#schema-collectionenvelope-measure]
-
-- `data`
-- `meta`
-- `links`
-
-## Measure [#schema-measure]
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Governed current-release relationship version.
-
-Governed denominator; null means it is not supplied and must not be inferred.
-
-Exact governed methodology resource ID; null when not governed.
-
-Governed interpretation limitations; preserve alongside values and versions.
-
-- `measure_id`
-- `indicator_id`
-- `label`
-- `definition`
-- `semantic_version`
-- `release_version`
-- `measure_type`
-- `unit`
-- `denominator`
-- `geography_types`
-- `temporal_grains`
-- `geography_semantics`
-- `temporal_semantics`
-- `allowed_value_states`
-- `allowed_strata`
-- `missingness_semantics`
-- `methodology_id`
-- `methodology`
-- `source_ids`
-- `limitations`
-- `standards_mappings`
-
-## ValueState [#schema-valuestate]
-
-Public V1 states, including the governed county status added by API #54.
-
-
-## ResourceEnvelope_Measure_ [#schema-resourceenvelope-measure]
-
-- `data`
-
-## ResourceEnvelope_Methodology_ [#schema-resourceenvelope-methodology]
-
-- `data`
-
-## Methodology [#schema-methodology]
-
-Exact governed methodology resource ID; null when not governed.
-
-Governed interpretation limitations; preserve alongside values and versions.
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Governed current-release relationship version.
-
-- `methodology_id`
-- `measure_id`
-- `version`
-- `description`
-- `limitations`
-- `semantic_version`
-- `release_version`
-
-## CollectionEnvelope_CountyContextObservation_ [#schema-collectionenvelope-countycontextobservation]
-
-- `data`
-- `meta`
-- `links`
-
-## CountyContextObservation [#schema-countycontextobservation]
-
-Reviewed consumer-safe metadata revision; not private lineage.
-
-Stable observation identity and compact provenance reference.
-
-Integer population/category or exact nonzero decimal text; ZERO is integer 0.
-
-OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC's No records. Neither establishes biological absence.
-
-Governed denominator; null means it is not supplied and must not be inferred.
-
-Public source resource key; distinct from lineage_source_id and dataset_id.
-
-Exact governed methodology resource ID; null when not governed.
-
-Transformation version, distinct from methodology resource version.
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Governed release identity for reproducibility.
-
-Structured observation provenance identity; not a literature citation.
-
-Publisher timestamp when governed; null is not inferred freshness.
-
-Atlas acquisition time when governed; distinct from source publication and processing.
-
-Atlas processing time when governed; distinct from response time.
-
-Governed interpretation limitations; preserve alongside values and versions.
-
-Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.
-
-Only supplied through an admitted Data release/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.
-
-ACS reference-period start; null for RUCC vintage.
-
-ACS reference-period end; null for RUCC vintage.
-
-- `metadata_revision_id`
-- `observation_id`
-- `measure_id`
-- `geography`
-- `temporal_grain`
-- `value`
-- `value_state`
-- `unit`
-- `denominator`
-- `strata`
-- `source_id`
-- `lineage_source_id`
-- `dataset_id`
-- `methodology_id`
-- `methodology`
-- `release_methodology_version`
-- `methodology_version`
-- `semantic_version`
-- `release_id`
-- `provenance_ref`
-- `source_label`
-- `source_vintage`
-- `source_url`
-- `source_published_at`
-- `atlas_acquired_at`
-- `atlas_processed_at`
-- `limitations`
-- `evidence`
-- `environmental_context`
-- `surveillance_context`
-- `period_start`
-- `period_end`
-- `county_context`
-
-## EvidenceReference [#schema-evidencereference]
-
-Public source resource key; distinct from lineage_source_id and dataset_id.
-
-Structured observation provenance identity; not a literature citation.
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Transformation version, distinct from methodology resource version.
-
-Governed release identity for reproducibility.
-
-- `resource_type`
-- `resource_id`
-- `source_id`
-- `provenance_ref`
-- `semantic_version`
-- `methodology_version`
-- `release_id`
-- `uri`
-
-## EnvironmentalContext [#schema-environmentalcontext]
-
-Coverage independent of value state; numeric strings preserve exact DECIMAL.
-
-Publisher labeled 24-hour period, not a midnight calendar day.
-
-Monthly source-supported/legal county area; separate from daily completeness.
-
-Daily valid/source-supported area; completeness threshold 0.95.
-
-Upstream modification metadata; never original publication or first availability.
-
-Analysis geometry identity only; no polygons.
-
-- `coverage_status`
-- `source_time_present`
-- `day_convention`
-- `expected_area_m2`
-- `intersected_area_m2`
-- `source_supported_area_m2`
-- `valid_area_m2`
-- `source_coverage_fraction`
-- `valid_fraction_of_supported_area`
-- `upstream_date_modified`
-- `weight_version`
-- `geometry_version`
-- `metadata_revision_id`
-
-## SurveillanceContext [#schema-surveillancecontext]
-
-- `evidence`
-- `methodology_comparison`
-- `temporal_alignment`
-
-## SurveillanceEvidenceContext [#schema-surveillanceevidencecontext]
-
-Data-projector evidence, never an API classification.
-
-Data-owned county evidence state, projected without classification. Null means the older companion did not supply normalization; unknown supports no biological absence conclusion. Original publisher value remains Observation.value.
-
-- `contract_version`
-- `normalized_state`
-- `state`
-- `reason_codes`
-- `evidence_tier`
-- `observation_key`
-- `revision_id`
-- `value_state`
-- `source_rule_id`
-- `limitations`
-- `evidence_revision_id`
-
-## MethodologyComparisonContext [#schema-methodologycomparisoncontext]
-
-Public ID of the comparison's left input.
-
-- `contract_version`
-- `comparison_state`
-- `reason_codes`
-- `methodology_era_ids`
-- `jurisdiction_class`
-- `references`
-- `limitations`
-- `left_observation_id`
-
-## TemporalAlignmentContext [#schema-temporalalignmentcontext]
-
-- `contract_version`
-- `method_id`
-- `method_version`
-- `source_id`
-- `measure_id`
-- `aggregation_rule`
-- `coverage_denominator`
-- `decision_cutoff`
-- `disposition`
-- `reason_codes`
-- `limitations`
-- `observation_window`
-- `target_window`
-- `lag`
-- `coverage`
-- `reference_period`
-
-## TemporalWindowContext [#schema-temporalwindowcontext]
-
-- `start`
-- `end_exclusive`
-- `calendar`
-- `timezone`
-
-## TemporalLagContext [#schema-temporallagcontext]
-
-- `kind`
-- `anchor`
-- `offset_days`
-- `window_days`
-- `season_id`
-
-## TemporalCoverageContext [#schema-temporalcoveragecontext]
-
-- `expected`
-- `observed`
-- `unit`
-- `partial_allowed`
-
-## TemporalReferencePeriodContext [#schema-temporalreferenceperiodcontext]
-
-- `id`
-- `start`
-- `end_exclusive`
-- `source_vintage`
-
-## CountyContext [#schema-countycontext]
-
-Source product/classification vintage, not an annual date.
-
-Authoritative category label; null for quantities.
-
-- `contract_version`
-- `vintage_year`
-- `source_field`
-- `value_type`
-- `category_label`
-- `definition`
-- `allowed_value_states`
-- `metadata_methodology_version`
-
-## CollectionEnvelope_Observation_ [#schema-collectionenvelope-observation]
-
-- `data`
-- `meta`
-- `links`
-
-## Observation [#schema-observation]
-
-Reviewed consumer-safe metadata revision; not private lineage.
-
-Stable observation identity and compact provenance reference.
-
-Read with value_state and unit; null never means zero.
-
-OBSERVED is nonzero; ZERO is numeric zero; MISSING/SUPPRESSED/UNAVAILABLE require null; NO_COUNTY_LINKED_RECORD retains the literal no_county_linked_record; NO_RECORDS retains CDC's No records. Neither establishes biological absence.
-
-Governed denominator; null means it is not supplied and must not be inferred.
-
-Public source resource key; distinct from lineage_source_id and dataset_id.
-
-Exact governed methodology resource ID; null when not governed.
-
-Transformation version, distinct from methodology resource version.
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Governed release identity for reproducibility.
-
-Structured observation provenance identity; not a literature citation.
-
-Publisher timestamp when governed; null is not inferred freshness.
-
-Atlas acquisition time when governed; distinct from source publication and processing.
-
-Atlas processing time when governed; distinct from response time.
-
-Governed interpretation limitations; preserve alongside values and versions.
-
-Present only for reviewed environmental context. DECIMAL quantities may use exact numeric strings; native DOUBLE remains a JSON number.
-
-Only supplied through an admitted Data release/bundle and supported slice. Omitted or null carries no evidence-state, comparability or lag claim. Comparison is case-definition scope only; alignment is descriptive, not causal.
-
-Inclusive start of the governed observation period.
-
-Inclusive end of the governed observation period.
-
-- `metadata_revision_id`
-- `observation_id`
-- `measure_id`
-- `geography`
-- `temporal_grain`
-- `value`
-- `value_state`
-- `unit`
-- `denominator`
-- `strata`
-- `source_id`
-- `lineage_source_id`
-- `dataset_id`
-- `methodology_id`
-- `methodology`
-- `release_methodology_version`
-- `methodology_version`
-- `semantic_version`
-- `release_id`
-- `provenance_ref`
-- `source_label`
-- `source_vintage`
-- `source_url`
-- `source_published_at`
-- `atlas_acquired_at`
-- `atlas_processed_at`
-- `limitations`
-- `evidence`
-- `environmental_context`
-- `surveillance_context`
-- `period_start`
-- `period_end`
-
-## CollectionEnvelope_Source_ [#schema-collectionenvelope-source]
-
-- `data`
-- `meta`
-- `links`
-
-## Source [#schema-source]
-
-Public source resource key; distinct from lineage_source_id and dataset_id.
-
-Governed semantic contract version, separate from HTTP V1 and application version.
-
-Governed current-release relationship version.
-
-Atlas acquisition time when governed; distinct from source publication and processing.
-
-Governed publisher update time; null when unavailable.
-
-Governed source retrieval time; null when unavailable.
-
-Governed interpretation limitations; preserve alongside values and versions.
-
-- `source_id`
-- `label`
-- `publisher`
-- `lineage_source_id`
-- `dataset_id`
-- `semantic_version`
-- `release_version`
-- `source_url`
-- `source_vintage`
-- `source_version`
-- `published_at`
-- `atlas_acquired_at`
-- `upstream_updated_at`
-- `source_retrieved_at`
-- `limitations`
-
-## ResourceEnvelope_Source_ [#schema-resourceenvelope-source]
-
-- `data`
-
-## StateReview [#schema-statereview]
-
-- `requested_state`
-- `methodology_id`
-- `methodology_version`
-- `configuration_sha256`
-- `data_release_version`
-- `evaluated_at`
-- `requested_observation_context`
-- `effective_observation_context`
-- `result_state`
-- `review_candidates`
-- `data_gaps`
-- `coverage`
-- `limitations`
-
-## Candidate [#schema-candidate]
-
-- `county_fips`
-- `county_name`
-- `county_url`
-- `reason_codes`
-- `reason_text`
-- `evidence_families`
-- `evidence_references`
-- `completeness`
-- `limitations`
-- `freshness_comparability`
-- `suggested_next_check`
-
-## PublicReviewEvidenceReference [#schema-publicreviewevidencereference]
-
-- `family`
-- `source_product`
-- `source_version`
-- `public_record_ref`
-- `county_fips`
-- `release_id`
-- `source_as_of`
-- `retrieved_at`
-- `target`
-- `status`
-- `limitations`
 
 ## DataGap [#schema-datagap]
 
-- `county_fips`
-- `code`
-- `detail`
+A reason Atlas could not evaluate a county. A gap is not evidence of absence.
+
+### Operations
+
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview) — Review a state's county evidence
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `county_fips` | `string` | required | Five-digit FIPS code of the county, with leading zeros. |
+| `code` | `string` | required | Stable code for the kind of gap, such as `OUT_OF_SCOPE`. |
+| `detail` | `string` | required | Plain-language explanation of the gap. |
+
+
+## MapValuesCollection [#schema-mapvaluescollection]
+
+County values for drawing a map. Show the same values in a table for non-map users.
+
+### Operations
+
+- [`GET /v1/atlas/map-values`](/docs/api-reference/atlas/getAtlasMapValues) — Get map values by county
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `release_id` | `string` | required | Identifies the published data release. Results from different releases are not directly comparable. |
+| `counties` | array of [CountyMapValues](#schema-countymapvalues) | required | One entry for each county. |
+
+
+## MembershipProbability [#schema-membershipprobability]
+
+The model's membership probability for one situation class.
+
+### Operations
+
+- [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations) — Get county surveillance situations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `class_id` | `string` | required | Identifies the class. It is specific to a model version. |
+| `probability` | `number` | required | Probability of membership in the class, from 0 to 1. The four values sum to 1. It is not a disease risk. |
+
+
+## PriorityReason [#schema-priorityreason]
+
+One reason a county received its review priority.
+
+### Operations
+
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability) — Check surveillance priority availability
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/getCountyTier1Priority) — Get county surveillance review priority
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `code` | `string` | required | Stable code for the reason. |
+| `text` | `string` | required | Plain-language statement of the reason. |
+
+
+## PublicReviewEvidenceReference [#schema-publicreviewevidencereference]
+
+A source record that supports a review candidate.
+
+### Operations
+
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview) — Review a state's county evidence
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `family` | `string` | required | Kind of evidence, such as `county_pathogen_status`. |
+| `source_product` | `string` | required | Source product the record comes from. |
+| `source_version` | `string` | required | Version of the source product. |
+| `public_record_ref` | `string` | required | Public reference to the source record, for finding it at the publisher. |
+| `county_fips` | `string` | required | Five-digit FIPS code of the county, with leading zeros. |
+| `release_id` | `string` | required | Identifies the published data release the record came from. |
+| `source_as_of` | `string` | required | Date the source says its data was current, for example `2025-12-31`. |
+| `retrieved_at` | `string (date-time)` | required | When Atlas retrieved the record from the publisher, with a UTC offset. |
+| `target` | `string` | required | Organism or taxon the record is about, such as a tick species or a pathogen. |
+| `status` | `string` | required | Status the publisher reports, such as `Present`, `Reported`, or `No records`. `No records` does not establish absence. |
+| `limitations` | array of `string` | required | Factual notes on what this record does not show. |
+
 
 ## ReviewCoverage [#schema-reviewcoverage]
 
-- `assessed_counties`
-- `eligible_counties`
-- `abstained_counties`
-- `evaluated_counties`
-- `rule_coverage`
+How many counties the review looked at and what happened to each.
+
+### Operations
+
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview) — Review a state's county evidence
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `assessed_counties` | `integer` | required | Counties in the requested state that were checked. |
+| `eligible_counties` | `integer` | required | Counties that met the rule's eligibility checks. |
+| `abstained_counties` | `integer` | required | Counties where the evidence could not be safely evaluated. |
+| `evaluated_counties` | `integer` | required | Counties that were fully evaluated. |
+| `rule_coverage` | object of `string` | required | Each review rule by name, marked `enabled` or `disabled`. |
+
+
+## Score [#schema-score]
+
+The Surveillance Gap Score and the signals it combines. Every value runs from 0 to 100. Atlas results are not a diagnosis.
+
+### Operations
+
+- [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores) — Get county gap scores
+- [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty) — Get county detail and provenance
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `score` | `number` | required | Overall Surveillance Gap Score. A higher value means a higher review priority. |
+| `human_weakness` | `number` | required | How little human-case surveillance evidence the county has. A higher value means weaker human-case evidence. A county with no published count gets the configured default weakness. |
+| `ecological` | `number` | required | Combined tick and pathogen signal: 60 percent `tick_signal` and 40 percent `pathogen_signal`. |
+| `community` | `number` | required | Combined community signal: 50 percent `svi_signal`, 30 percent `access_signal`, and 20 percent `rural_signal`. |
+| `tick_signal` | `number` | required | Signal from the publisher's tick status: 100 for `Established`, 55 for `Reported`, and 0 for `No records` or `Unknown`. Neither 0 case establishes absence. |
+| `pathogen_signal` | `number` | required | 100 when the publisher reports the Lyme disease bacterium as `Present`, otherwise 0. A 0 does not establish absence. |
+| `svi_signal` | `number` | required | Social Vulnerability Index percentile of the county, scaled to 0 to 100. |
+| `access_signal` | `number` | required | Percentile of the county's uninsured share among counties, scaled to 0 to 100. |
+| `rural_signal` | `number` | required | Rural-Urban Continuum Code of the county, scaled so the most urban code is 0 and the most rural code is 100. |
+
+
+## ScoreCollection [#schema-scorecollection]
+
+Surveillance Gap Scores for every county in the release, for one set of settings.
+
+### Operations
+
+- [`GET /v1/atlas/scores`](/docs/api-reference/atlas/getAtlasScores) — Get county gap scores
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `scoring_methodology_version` | `surveillance-gap-score-v1.1` | optional | Version of the Surveillance Gap Score method that produced the score. Scores from different versions are not comparable. |
+| `release_id` | `string` | required | Identifies the published data release. Results from different releases are not directly comparable. |
+| `methodology_version` | `string` | required | Version of the release methodology that the scores follow. |
+| `settings` | object of `integer` | required | Score settings used for this response, such as `ecological_share`, `smooth_k`, and `missing_human_weakness`. |
+| `counties` | array of [CountyScoreSummary](#schema-countyscoresummary) | required | One entry for each county. |
+
+
+## SituationClassification [#schema-situationclassification]
+
+The surveillance situation class assigned to a county, with how it was produced.
+
+A class describes the pattern of surveillance evidence. It is not a diagnosis and not an
+estimate of an individual's risk.
+
+### Operations
+
+- [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations) — Get county surveillance situations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `model_id` | `string` | required | Identifies the model that assigned the class. |
+| `model_version` | `string` | required | Version of the model. |
+| `class_id` | `string` | required | Identifies the assigned class. |
+| `class_name` | `string` | required | Display label of the class, exactly as reviewed. |
+| `class_description` | `string` | required | Explanation of the class, exactly as reviewed. |
+| `probabilities` | array of [MembershipProbability](#schema-membershipprobability) | required | Membership probability for each of the four classes. |
+| `limitations` | array of `string` | required | Readings of the class that are not supported. They list what not to conclude, not outcomes. |
+| `batch_id` | `string` | required | Identifies the batch of results. |
+| `batch_version` | `string` | required | Version of the batch. |
+| `county_sha256` | `string` | required | SHA-256 checksum of this county's input record. |
+| `dictionary_sha256` | `string` | required | SHA-256 checksum of the class dictionary the model used. |
+| `input_release_id` | `string` | required | Identifies the data release the model read. |
+| `input_bundle_sha256` | `string` | required | SHA-256 checksum of the data release the model read. |
+| `fit_git_sha` | `string` | required | Commit of the code that fitted the model, for reproducibility. |
+| `feature_contract` | `object` | required | The input features and settings the model used. |
+| `model_provenance` | `object` | required | Records of how the model was fitted and reviewed. |
+| `source_provenance` | `object` | required | Sources and source vintages the model used. |
+| `handoff_approval` | `object` | required | Record of the review that approved the model output for use. |
+| `data_publication_authorization` | `object` | required | Record of the approval to publish the batch. |
+| `data_authorization_id` | `string` | required | Identifies the approval to publish the batch. |
+| `staging_attempt` | `string` | required | Identifies the staging run that prepared the batch. |
+| `activated_at` | `string (date-time)` | required | When the batch became active. It is not the source vintage or the request time. |
+
+
+## SituationVariant [#schema-situationvariant]
+
+The result of one situation model for a county, or the reason there is none.
+
+### Operations
+
+- [`GET /v1/counties/{fips}/surveillance-situations`](/docs/api-reference/counties/getCountySurveillanceSituations) — Get county surveillance situations
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `model_id` | `string` | required | Identifies the situation model. |
+| `availability` | `AVAILABLE \| UNAVAILABLE` | required | Whether a published classification exists. `UNAVAILABLE` is not a finding about the county. |
+| `unavailable_reason` | `DEACTIVATED \| NOT_PUBLISHED \| UNAPPROVED_BATCH \| INCOMPATIBLE_RELEASE \| MISSING_ASSIGNMENT \| null` | required | Why no classification is published: `NOT_PUBLISHED`, `DEACTIVATED`, `UNAPPROVED_BATCH`, `INCOMPATIBLE_RELEASE`, or `MISSING_ASSIGNMENT`. `null` when `availability` is `AVAILABLE`. |
+| `compatibility` | `EXACT_INPUT \| ADMITTED_CARRY_FORWARD \| UNAVAILABLE` | required | How the classification relates to the current data release. `EXACT_INPUT` means the model read the current release. `ADMITTED_CARRY_FORWARD` means a reviewed result computed from an earlier release is published for the current one. `UNAVAILABLE` means there is no classification. |
+| `batch_id` | `string \| null` | required | Identifies the batch of results. `null` when unavailable. |
+| `batch_version` | `string \| null` | required | Version of the batch. `null` when unavailable. |
+| `input_release_id` | `string \| null` | required | Identifies the data release the model read. `null` when unavailable. |
+| `data` | [SituationClassification](#schema-situationclassification) \| `null` | required | The classification. `null` when unavailable. |
+
+### `availability` values
+
+| Value | Meaning |
+| --- | --- |
+| `AVAILABLE` | No description yet |
+| `UNAVAILABLE` | not a finding about the county |
+
+### `unavailable_reason` values
+
+| Value | Meaning |
+| --- | --- |
+| `DEACTIVATED` | No description yet |
+| `NOT_PUBLISHED` | No description yet |
+| `UNAPPROVED_BATCH` | No description yet |
+| `INCOMPATIBLE_RELEASE` | No description yet |
+| `MISSING_ASSIGNMENT` | No description yet |
+
+### `compatibility` values
+
+| Value | Meaning |
+| --- | --- |
+| `EXACT_INPUT` | the model read the current release |
+| `ADMITTED_CARRY_FORWARD` | a reviewed result computed from an earlier release is published for the current one |
+| `UNAVAILABLE` | there is no classification |
+
+
+## SourceMetadata [#schema-sourcemetadata]
+
+A source dataset listed in the release metadata.
+
+### Operations
+
+- [`GET /v1/atlas/metadata`](/docs/api-reference/atlas/getAtlasMetadata) — Get release metadata
+- [`GET /v1/counties/{fips}`](/docs/api-reference/counties/getCounty) — Get county detail and provenance
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `key` | `string` | required | Stable key of the source within this release. |
+| `label` | `string` | required | Display name of the source. |
+| `vintage` | `string` | required | Reference year or period of the source dataset. |
+| `url` | `string` | required | Web address of the source. |
+| `note` | `string` | required | How Atlas uses the source and any limit on that use. |
+
+
+## StateReview [#schema-statereview]
+
+Counties in a state that merit a closer look, with gaps and coverage.
+
+A review is not a diagnosis and not a disease-risk estimate. An empty result does not
+show that no county needs attention.
+
+### Operations
+
+- [`GET /v1/states/{state}/review`](/docs/api-reference/states/getStateReview) — Review a state's county evidence
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `requested_state` | `string` | required | Two-letter state or District of Columbia code. |
+| `methodology_id` | `string` | required | Identifies the review methodology. |
+| `methodology_version` | `string` | required | Version of the review methodology. |
+| `configuration_sha256` | `string` | required | SHA-256 checksum of the review configuration. Use it to confirm which rules ran. |
+| `data_release_version` | `string` | required | Identifies the published data release the review read. |
+| `evaluated_at` | `string (date-time)` | required | When Atlas ran the review, with a UTC offset. It is not when the publishers last updated their data. |
+| `requested_observation_context` | `string \| null` | required | Observation context the request asked for. `null` when none was asked for. |
+| `effective_observation_context` | `string` | required | Observation context the review used. |
+| `result_state` | `candidates_found \| insufficient_evidence \| unsupported \| none_stand_out` | required | Overall outcome. `candidates_found` lists counties to review. `insufficient_evidence` means the evidence could not be evaluated. `unsupported` means no review rule is approved. `none_stand_out` means no evaluated county stood out; it does not show that nothing needs attention. |
+| `review_candidates` | array of [Candidate](#schema-candidate) | required | Counties that merit a closer look. |
+| `data_gaps` | array of [DataGap](#schema-datagap) | required | Counties Atlas could not evaluate, with the reason. |
+| `coverage` | [ReviewCoverage](#schema-reviewcoverage) | required | How many counties were assessed. |
+| `limitations` | array of `string` | required | Factual notes on what the review does not show. |
+
+### `result_state` values
+
+| Value | Meaning |
+| --- | --- |
+| `candidates_found` | lists counties to review |
+| `insufficient_evidence` | the evidence could not be evaluated |
+| `unsupported` | no review rule is approved |
+| `none_stand_out` | no evaluated county stood out; it does not show that nothing needs attention |
+
+
+## Tier1CountyPriority [#schema-tier1countypriority]
+
+Model-assisted surveillance review priority for one county.
+
+The priority helps decide where to look first. It is not a measure of disease or clinical
+risk, and it is not a diagnosis.
+
+### Operations
+
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability) — Check surveillance priority availability
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority`](/docs/api-reference/counties/getCountyTier1Priority) — Get county surveillance review priority
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `county_fips` | `string` | required | Five-digit county FIPS code, with leading zeros. |
+| `priority_tier` | `HIGH \| MEDIUM \| LOW \| null` | required | HIGH, MEDIUM, or LOW model-assisted surveillance review priority under the named tier policy; not disease risk. Null for NOT_ESTIMABLE. |
+| `priority_percentile` | `number \| null` | required | Within-batch relative position among scored counties for this model and inference batch (0-100). Not a probability or comparable across batches, model versions, populations, or tier policies without a separate validation. Null for NOT_ESTIMABLE. |
+| `raw_model_score` | `number \| null` | required | Model-native anomaly score; not a probability, incidence estimate, or clinical/disease risk. Its scale is model-specific and is not comparable across versions without validation. Null for NOT_ESTIMABLE. |
+| `evidence_sufficiency` | `SUFFICIENT \| INSUFFICIENT \| NOT_ESTIMABLE` | required | Input-data sufficiency state, not calibrated model confidence. NOT_ESTIMABLE is an abstention with null tier, percentile, and score; SUFFICIENT and INSUFFICIENT both require tier, percentile, and score. |
+| `model_version` | `string` | required | Version of the model that generated this result. |
+| `release_id` | `string` | required | Identifies the published data release the batch used. |
+| `source_commit` | `string` | required | Commit of the model code that produced the result, for reproducibility. |
+| `prediction_batch_version` | `string` | required | Inference batch identity defining the percentile comparison population. |
+| `tier_policy_version` | `string` | required | Version of the policy assigning review tiers from scored results. |
+| `generated_at_utc` | `string (date-time)` | required | UTC batch generation time, not the request time or source observation date. |
+| `reasons` | array of [PriorityReason](#schema-priorityreason) | required | Up to three reasons for the priority. Empty when none apply. |
+| `limitation_ref` | `string` | required | Reference to the document that lists what this result does not show. |
+
+### `priority_tier` values
+
+| Value | Meaning |
+| --- | --- |
+| `HIGH` | No description yet |
+| `MEDIUM` | No description yet |
+| `LOW` | No description yet |
+
+### `evidence_sufficiency` values
+
+| Value | Meaning |
+| --- | --- |
+| `SUFFICIENT` | No description yet |
+| `INSUFFICIENT` | No description yet |
+| `NOT_ESTIMABLE` | No description yet |
+
+
+## Tier1CountyPriorityAvailability [#schema-tier1countypriorityavailability]
+
+Whether a Tier 1 result is published for a county, with the result when it is.
+
+`UNAVAILABLE` means no result is published. It is not a finding about the county.
+
+### Operations
+
+- [`GET /v1/counties/{fips}/tier1-surveillance-priority/availability`](/docs/api-reference/counties/checkCountyTier1Availability) — Check surveillance priority availability
+
+Type: `object`
+
+| Name | Type | Required | Description |
+| --- | --- | --- | --- |
+| `availability` | `AVAILABLE \| UNAVAILABLE` | required | Whether a published Tier 1 result exists for this county. |
+| `geography_release_id` | `string` | required | Identifies the geography release used to confirm the county exists. |
+| `reason` | `NO_PUBLISHED_MODEL \| null` | required | Why no result is published. `NO_PUBLISHED_MODEL` means no model result is published for the county. `null` when a result is available. |
+| `data` | [Tier1CountyPriority](#schema-tier1countypriority) \| `null` | required | The published Tier 1 result, or `null` when none is published. |
+
+### `availability` values
+
+| Value | Meaning |
+| --- | --- |
+| `AVAILABLE` | No description yet |
+| `UNAVAILABLE` | No description yet |
+
+### `reason` values
+
+| Value | Meaning |
+| --- | --- |
+| `NO_PUBLISHED_MODEL` | no model result is published for the county |

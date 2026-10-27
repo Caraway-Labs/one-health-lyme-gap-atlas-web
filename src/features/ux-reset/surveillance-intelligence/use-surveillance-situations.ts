@@ -7,9 +7,9 @@ import {
   type UseQueryOptions,
 } from "@tanstack/react-query";
 
-import { countySurveillanceSituationsGet } from "@/generated/atlas";
+import { getCountySurveillanceSituations } from "@/generated/atlas";
 import type { CountySurveillanceSituations } from "@/generated/models/countySurveillanceSituations";
-import { CountySurveillanceSituationsGetResponse } from "@/generated/zod/atlas";
+import { GetCountySurveillanceSituationsResponse } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
   ApiResponseValidationError,
@@ -64,7 +64,7 @@ export function surveillanceSituationsQueryOptions(
     }: {
       signal: AbortSignal;
     }): Promise<CountySurveillanceSituations> => {
-      const response = await countySurveillanceSituationsGet(fips, { signal });
+      const response = await getCountySurveillanceSituations(fips, { signal });
       if (response.status !== 200) {
         throw new AtlasApiError(
           "County surveillance situations could not be loaded.",
@@ -76,7 +76,7 @@ export function surveillanceSituationsQueryOptions(
       try {
         return validateApiResponse(
           "County surveillance situations",
-          CountySurveillanceSituationsGetResponse,
+          GetCountySurveillanceSituationsResponse,
           response.data
         );
       } catch (error) {

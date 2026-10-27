@@ -4,6 +4,8 @@ import path from "node:path";
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
 const HEX_ALLOWED = new Set([
   "src/app/globals.css",
+  // Social cards cannot read CSS variables. These values repeat --navy, --mint, and --teal.
+  "src/lib/docs-open-graph-card.tsx",
   "src/components/atlas-map.tsx",
   "src/features/ux-reset/review/county-boundaries-palette.ts",
   "src/features/geographic-explorer/explorer.css",

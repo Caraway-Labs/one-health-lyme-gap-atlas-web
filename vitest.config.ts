@@ -1,11 +1,16 @@
 import { fileURLToPath } from "node:url";
 
+import { fumadocsMdx } from "fumadocs-mdx/vite";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [fumadocsMdx()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("src", import.meta.url)),
+      "collections/server": fileURLToPath(
+        new URL(".source/server.ts", import.meta.url)
+      ),
     },
   },
   test: {

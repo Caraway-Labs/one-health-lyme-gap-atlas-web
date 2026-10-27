@@ -1,5 +1,7 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const docsRoot = path.join(repositoryRoot, "content", "docs");
@@ -32,13 +34,19 @@ function collectFiles(directory, predicate) {
 function routeExists(routePath) {
   const normalizedRoute = routePath === "/" ? "" : routePath.slice(1);
   const routeRoot = path.join(appRoot, normalizedRoute);
-  return [
-    path.join(routeRoot, "page.tsx"),
-    path.join(routeRoot, "page.ts"),
-    path.join(routeRoot, "page.mdx"),
-    path.join(routeRoot, "route.ts"),
-    path.join(routeRoot, "route.tsx"),
-  ].some((candidate) => fs.existsSync(candidate));
+  if (
+    [
+      path.join(routeRoot, "page.tsx"),
+      path.join(routeRoot, "page.ts"),
+      path.join(routeRoot, "page.mdx"),
+      path.join(routeRoot, "route.ts"),
+      path.join(routeRoot, "route.tsx"),
+    ].some((candidate) => fs.existsSync(candidate))
+  ) {
+    return true;
+  }
+  const publicFile = path.join(repositoryRoot, "public", normalizedRoute);
+  return fs.existsSync(publicFile) && fs.statSync(publicFile).isFile();
 }
 
 function docsSlugFromPath(pathPart) {
@@ -64,7 +72,7 @@ function checkInternalLink(sourceFile, href) {
   const [pathPart] = href.split(/[?#]/, 1);
   const docsSlug = docsSlugFromPath(pathPart);
   if (docsSlug !== null) {
-    if (!contentExists(docsRoot, docsSlug)) {
+    if (!contentExists(docsRoot, docsSlug) && !routeExists(pathPart)) {
       errors.push(`${sourceFile}: broken docs link ${href}`);
     }
     return;
@@ -148,12 +156,52 @@ for (const navigationFile of navigationFiles) {
   }
 }
 
-if (errors.length > 0) {
-  console.error("Documentation validation failed:");
-  for (const error of errors) console.error(`- ${error}`);
-  process.exitCode = 1;
-} else {
-  console.log(
-    `Documentation validation passed (${contentFiles.length} page${contentFiles.length === 1 ? "" : "s"}).`
+/**
+ * Run the API changelog pin check against `contentRoot`.
+ * A missing changelog source, or a pin commit that differs from
+ * contracts/public-openapi.manifest.json, fails docs:check.
+ */
+export function runApiChangelogPinCheck(contentRoot) {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--experimental-strip-types",
+      "--disable-warning=ExperimentalWarning",
+      "--import",
+      path.join(repositoryRoot, "scripts/register-ts-extension.mjs"),
+      path.join(repositoryRoot, "scripts/check-api-changelog.ts"),
+    ],
+    {
+      cwd: contentRoot,
+      encoding: "utf-8",
+      env: process.env,
+    }
   );
+  return {
+    output: `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim(),
+    status: result.status ?? 1,
+  };
+}
+
+const invokedDirectly =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (invokedDirectly) {
+  const changelogPin = runApiChangelogPinCheck(repositoryRoot);
+  if (changelogPin.status !== 0) {
+    errors.push(changelogPin.output || "API changelog pin check failed");
+  } else if (changelogPin.output.length > 0) {
+    console.log(changelogPin.output);
+  }
+
+  if (errors.length > 0) {
+    console.error("Documentation validation failed:");
+    for (const error of errors) console.error(`- ${error}`);
+    process.exitCode = 1;
+  } else {
+    console.log(
+      `Documentation validation passed (${contentFiles.length} page${contentFiles.length === 1 ? "" : "s"}).`
+    );
+  }
 }

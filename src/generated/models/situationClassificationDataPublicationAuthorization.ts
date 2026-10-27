@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Record of the approval to publish the batch.
+ */
 export type SituationClassificationDataPublicationAuthorization = { [key: string]: unknown };

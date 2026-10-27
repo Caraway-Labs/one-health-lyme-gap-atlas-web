@@ -53,7 +53,6 @@ describe("MCP client configuration documentation", () => {
       "prompts/list",
       "Unknown tool: server_status",
       "Unknown tool: atlas_smoke_test",
-      "2026-10-18",
     ];
     const missing = requiredPhrases.filter(
       (phrase) => !clientPage.includes(phrase)
@@ -139,9 +138,13 @@ describe("MCP client configuration documentation", () => {
       "develop/index.mdx",
       "develop/support.mdx",
     ];
-    const missing = linkedPages.filter(
-      (page) => !readDoc(page).includes("](/docs/develop/mcp-clients)")
-    );
+    const missing = linkedPages.filter((page) => {
+      const source = readDoc(page);
+      return !(
+        source.includes("](/docs/develop/mcp-clients)") ||
+        source.includes('href="/docs/develop/mcp-clients"')
+      );
+    });
 
     const accessPage = readDoc("api-mcp-and-access.mdx");
     const boundaryPhrases = absentPhrases(accessPage, [

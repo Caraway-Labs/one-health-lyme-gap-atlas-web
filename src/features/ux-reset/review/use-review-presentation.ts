@@ -5,13 +5,10 @@ import { useMemo } from "react";
 
 import { buildReviewScopePresentation } from "@/features/ux-reset/review/build-review-presentation";
 import type { ReviewScope } from "@/features/ux-reset/review/resolve-review-scope";
+import { getAtlasMetadata, getAtlasScores } from "@/generated/atlas";
 import {
-  metadataV1AtlasMetadataGet,
-  scoresV1AtlasScoresGet,
-} from "@/generated/atlas";
-import {
-  MetadataV1AtlasMetadataGetResponse,
-  ScoresV1AtlasScoresGetResponse,
+  GetAtlasMetadataResponse,
+  GetAtlasScoresResponse,
 } from "@/generated/zod/atlas";
 import { AtlasApiError } from "@/lib/api-mutator";
 import { validateApiResponse } from "@/lib/api-response-validation";
@@ -44,7 +41,7 @@ export function useReviewPresentation(
 ) {
   const metadataQuery = useQuery({
     queryFn: async ({ signal }) => {
-      const response = await metadataV1AtlasMetadataGet(
+      const response = await getAtlasMetadata(
         requestedDataset ? { dataset_version: requestedDataset } : undefined,
         { signal }
       );
@@ -60,7 +57,7 @@ export function useReviewPresentation(
       }
       const metadata = validateApiResponse(
         "Atlas metadata",
-        MetadataV1AtlasMetadataGetResponse,
+        GetAtlasMetadataResponse,
         response.data
       );
       if (requestedDataset && metadata.release_id !== requestedDataset) {
@@ -83,9 +80,9 @@ export function useReviewPresentation(
     queryFn: async ({ signal }) =>
       validateApiResponse(
         "Atlas scores",
-        ScoresV1AtlasScoresGetResponse,
+        GetAtlasScoresResponse,
         (
-          await scoresV1AtlasScoresGet(
+          await getAtlasScores(
             { dataset_version: releaseId, ...DEFAULT_SCORE_SETTINGS },
             { signal }
           )

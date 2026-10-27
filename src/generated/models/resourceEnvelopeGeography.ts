@@ -7,6 +7,10 @@
  */
 import type { Geography } from './geography';
 
+/**
+ * One county or state identity, wrapped in `data`. The identity carries no geometry.
+ */
 export interface ResourceEnvelopeGeography {
+  /** The requested resource. */
   data: Geography;
 }

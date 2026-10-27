@@ -8,11 +8,11 @@
 import * as zod from 'zod';
 
 export const TemporalCoverageContext = zod.object({
-  "expected": zod.union([zod.int(),zod.number()]),
-  "observed": zod.union([zod.int(),zod.number()]),
-  "unit": zod.string(),
-  "partial_allowed": zod.boolean()
-})
+  "expected": zod.union([zod.int(),zod.number()]).describe('Amount of coverage expected, in `unit`.'),
+  "observed": zod.union([zod.int(),zod.number()]).describe('Amount of coverage present, in `unit`.'),
+  "unit": zod.string().describe('Unit of `expected` and `observed`, such as `day`.'),
+  "partial_allowed": zod.boolean().describe('Whether the method accepts less than the expected coverage.')
+}).describe('How much of the expected time span the observation covers.')
 
 export type TemporalCoverageContext = zod.input<typeof TemporalCoverageContext>;
 export type TemporalCoverageContextOutput = zod.output<typeof TemporalCoverageContext>;

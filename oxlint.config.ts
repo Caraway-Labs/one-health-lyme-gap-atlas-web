@@ -16,6 +16,7 @@ export default defineConfig({
     "playwright-report/**",
     "src/generated/**",
     "content/docs/api-reference/**",
+    "public/downloads/**",
     "tests/e2e/**",
     "tests/storybook/**",
     "test-results/**",

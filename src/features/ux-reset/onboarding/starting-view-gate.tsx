@@ -7,6 +7,7 @@ import {
   WorkspaceConnectingScreen,
   WorkspaceReadinessRecovery,
 } from "@/features/ux-reset/workspace-connecting-screen";
+import { localPreviewRequested } from "@/lib/auth/local-preview";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 import { useSavedProfile } from "../profile/use-saved-profile";
@@ -20,17 +21,23 @@ import {
  * account. Workspace actions render only after that read proves completion.
  * An incomplete account is sent to setup. A failed read stays recoverable.
  * A rejected session gets sign-in rather than the workspace.
+ * Local preview skips that gate only in development with an explicit flag.
+ * It does not substitute a profile. Feed requests stay on the public API.
  */
 export function StartingViewGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const profile = useSavedProfile();
+  const preview = localPreviewRequested();
   const complete = isStartingViewComplete(profile.data);
   const search = searchParams.toString();
   const returnPath = search ? `${pathname}?${search}` : pathname;
 
   useEffect(() => {
+    if (preview) {
+      return;
+    }
     if (profile.identity?.kind === "signed-out") {
       router.replace(signInHrefForReturnPath(returnPath));
       return;
@@ -38,7 +45,11 @@ export function StartingViewGate({ children }: { children: ReactNode }) {
     if (profile.data && !complete) {
       router.replace(STARTING_VIEW_PATH);
     }
-  }, [complete, profile.data, profile.identity, returnPath, router]);
+  }, [complete, preview, profile.data, profile.identity, returnPath, router]);
+
+  if (preview) {
+    return children;
+  }
 
   if (profile.sessionRejected) {
     return (

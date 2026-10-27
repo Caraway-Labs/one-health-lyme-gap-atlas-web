@@ -52,7 +52,9 @@ import {
   workspaceSignOutPending,
   workspaceSignOutSuppressesExpiryRedirect,
 } from "@/features/ux-reset/workspace-sign-out";
+import { analyticsControlAttributes } from "@/lib/atlas-analytics";
 import { isProfessionalAppPath } from "@/lib/auth/app-route-guard";
+import { localPreviewRequested } from "@/lib/auth/local-preview";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -326,7 +328,11 @@ export function WorkspaceAccountMenu() {
   }, [identity, queryClient, returnPath]);
 
   useLayoutEffect(() => {
-    if (identity?.kind !== "signed-out" || signOutSuppressesExpiryRedirect) {
+    if (
+      localPreviewRequested() ||
+      identity?.kind !== "signed-out" ||
+      signOutSuppressesExpiryRedirect
+    ) {
       return;
     }
     const generation = beginWorkspaceShellCheck();
@@ -407,6 +413,7 @@ export function WorkspaceAccountMenu() {
     control = (
       <WithAccountTooltip label={SIGN_IN_LABEL} showTooltip={showTooltip}>
         <Link
+          {...analyticsControlAttributes("workspace_sign_in")}
           aria-label={SIGN_IN_LABEL}
           className={cn(
             buttonVariants({ variant: "ghost" }),
@@ -449,6 +456,7 @@ export function WorkspaceAccountMenu() {
           side="top"
         >
           <DropdownMenuItem
+            {...analyticsControlAttributes("workspace_sign_out")}
             disabled={pending}
             onClick={() => {
               void signOut();

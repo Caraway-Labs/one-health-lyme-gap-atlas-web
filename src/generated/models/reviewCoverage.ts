@@ -7,10 +7,18 @@
  */
 import type { ReviewCoverageRuleCoverage } from './reviewCoverageRuleCoverage';
 
+/**
+ * How many counties the review looked at and what happened to each.
+ */
 export interface ReviewCoverage {
+  /** Counties in the requested state that were checked. */
   assessed_counties: number;
+  /** Counties that met the rule's eligibility checks. */
   eligible_counties: number;
+  /** Counties where the evidence could not be safely evaluated. */
   abstained_counties: number;
+  /** Counties that were fully evaluated. */
   evaluated_counties: number;
+  /** Each review rule by name, marked `enabled` or `disabled`. */
   rule_coverage: ReviewCoverageRuleCoverage;
 }

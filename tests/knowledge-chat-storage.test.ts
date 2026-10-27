@@ -2,6 +2,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 
+import type { AskAtlasGovernedTurn } from "../src/lib/ask-atlas-assistant-payload";
 import type { LocalConversation } from "../src/lib/knowledge-chat-storage";
 import {
   CHAT_STORAGE_KEY,
@@ -11,6 +12,7 @@ import {
   removeConversation,
   saveConversations,
 } from "../src/lib/knowledge-chat-storage";
+import { mixedLiteratureOnly } from "./fixtures/ask-atlas-governed-responses";
 
 function citedAnswerTurn(
   createdAt: string,
@@ -395,5 +397,53 @@ describe("knowledge chat local storage", () => {
     expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
       "An answer with no citation."
     );
+  });
+
+  it("keeps a governed turn for 30 days and leaves it out of literature history", () => {
+    const updatedAt = "2026-08-26T00:00:00.000Z";
+    const stored = conversation(
+      "governed",
+      updatedAt,
+      "2026-09-25T00:00:00.000Z"
+    );
+    stored.turns = [
+      {
+        createdAt: updatedAt,
+        id: "user-1",
+        role: "user",
+        text: "What is the 2023 Lyme case count for county 36027?",
+      },
+      {
+        assistantPayload: {
+          kind: "mixed",
+          requestId: "request-1",
+          response: {
+            ...mixedLiteratureOnly,
+            literature: {
+              ...mixedLiteratureOnly.literature,
+              conversation_token: "secret-token",
+            },
+          },
+        } as unknown as AskAtlasGovernedTurn,
+        createdAt: updatedAt,
+        id: "assistant-1",
+        role: "assistant",
+        text: "ANSWERED",
+      },
+    ];
+    saveConversations([stored]);
+    expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
+      "secret-token"
+    );
+    const loaded = loadConversations(Date.parse(updatedAt));
+    expect(loaded[0]?.turns[1]?.assistantPayload).toMatchObject({
+      kind: "mixed",
+      requestId: "request-1",
+      response: { outcome: "ANSWERED" },
+    });
+    expect(conversationHistory(loaded[0])).toStrictEqual([]);
+    expect(
+      loadConversations(Date.parse("2026-09-25T00:00:00.000Z"))
+    ).toStrictEqual([]);
   });
 });

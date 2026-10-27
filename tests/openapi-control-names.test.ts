@@ -74,4 +74,19 @@ describe("OpenAPI control names", () => {
     expect(path.tabIndex).toBe(0);
     expect(path.getAttribute("aria-label")).toBe("Scrollable schema path");
   });
+
+  it("makes an overflowing description table keyboard reachable", () => {
+    document.body.innerHTML = `<div class="relative overflow-auto prose-no-margin my-6"><table><tr><td>Annual surveillance</td></tr></table></div>`;
+    const region = document.querySelector(".overflow-auto");
+    if (!(region instanceof HTMLElement)) {
+      throw new Error("Missing description table.");
+    }
+    Object.defineProperty(region, "clientWidth", { value: 80 });
+    Object.defineProperty(region, "scrollWidth", { value: 640 });
+
+    labelUnnamedOpenApiControls(document.body);
+
+    expect(region.tabIndex).toBe(0);
+    expect(region.getAttribute("aria-label")).toBe("Scrollable table");
+  });
 });

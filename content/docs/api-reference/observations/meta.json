@@ -1,7 +1,7 @@
 {
   "pages": [
     "index",
-    "observations_v1_observations_get"
+    "listObservations"
   ],
   "title": "Observations"
 }

@@ -5,6 +5,10 @@ import type {
   KnowledgeChatResponse,
 } from "@/generated/models";
 import { acceptAskAtlasPayload } from "@/lib/ask-atlas-answer-contract";
+import {
+  parseStoredGovernedTurn,
+  type AskAtlasGovernedTurn,
+} from "@/lib/ask-atlas-assistant-payload";
 
 export const CHAT_STORAGE_KEY = "one-health-lyme-gap-atlas:knowledge-chat:v1";
 export const CHAT_STORAGE_EVENT = "atlas-knowledge-chat-storage";
@@ -16,6 +20,7 @@ export interface LocalChatTurn {
   role: "user" | "assistant";
   text: string;
   response?: KnowledgeChatResponse;
+  assistantPayload?: AskAtlasGovernedTurn;
   createdAt: string;
 }
 
@@ -36,6 +41,7 @@ export interface ChatStore {
 const timestamp = z.iso.datetime({ offset: true });
 
 const localChatTurnSchema = z.object({
+  assistantPayload: z.unknown().optional(),
   createdAt: timestamp,
   id: z.string(),
   response: z.unknown().optional(),
@@ -60,14 +66,42 @@ const chatStoreSchema = z.object({
 type StoredTurn = z.infer<typeof localChatTurnSchema>;
 
 function restoreAssistantTurn(turn: StoredTurn): LocalChatTurn | null {
-  if (turn.role !== "assistant" || turn.response === undefined) {
+  if (turn.role !== "assistant") {
     return null;
+  }
+  const assistantPayload =
+    turn.assistantPayload === undefined
+      ? undefined
+      : (parseStoredGovernedTurn(turn.assistantPayload) ?? null);
+  if (assistantPayload === null) {
+    return null;
+  }
+  if (turn.response === undefined) {
+    if (!assistantPayload) {
+      return null;
+    }
+    return {
+      assistantPayload,
+      createdAt: turn.createdAt,
+      id: turn.id,
+      role: "assistant",
+      text: turn.text,
+    };
   }
   const accepted = acceptAskAtlasPayload(turn.response);
   if (!accepted.ok) {
-    return null;
+    return assistantPayload
+      ? {
+          assistantPayload,
+          createdAt: turn.createdAt,
+          id: turn.id,
+          role: "assistant",
+          text: turn.text,
+        }
+      : null;
   }
   return {
+    assistantPayload,
     createdAt: turn.createdAt,
     id: turn.id,
     response: accepted.response,
@@ -162,6 +196,9 @@ export function saveConversations(conversations: LocalConversation[]): void {
       ...item,
       turns: item.turns.map((turn) => ({
         ...turn,
+        assistantPayload: turn.assistantPayload
+          ? omitConversationToken(turn.assistantPayload)
+          : undefined,
         response: turn.response
           ? { ...turn.response, conversation_token: undefined }
           : undefined,
@@ -177,15 +214,40 @@ export function createConversation(
   response: KnowledgeChatResponse,
   question: string
 ): LocalConversation {
+  return createLocalConversation(response.conversation_id, question);
+}
+
+/** Local id for a mode that does not return a conversation id. */
+export function createLocalConversation(
+  id: string,
+  question: string
+): LocalConversation {
   const now = new Date();
   return {
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + RETENTION_MS).toISOString(),
-    id: response.conversation_id,
+    id,
     title: question.slice(0, 72),
     turns: [],
     updatedAt: now.toISOString(),
   };
+}
+
+function omitConversationToken<T>(value: T): T {
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => omitConversationToken(item)) as T;
+  }
+  const next: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (key === "conversation_token") {
+      continue;
+    }
+    next[key] = omitConversationToken(item);
+  }
+  return next as T;
 }
 
 function isOperationalFailure(turn: LocalChatTurn): boolean {

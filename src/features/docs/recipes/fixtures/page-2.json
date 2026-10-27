@@ -1,0 +1,144 @@
+{
+  "data": [
+    {
+      "metadata_revision_id": null,
+      "observation_id": "environmental-observation:7f81e51f63f9582ffc3b1a44d2fd2f4168fd84d06f54a199308baef7f735200d",
+      "measure_id": "nclimgrid_tavg_county_day",
+      "geography": {
+        "geography_type": "county",
+        "geography_id": "36061"
+      },
+      "temporal_grain": "DAY",
+      "value": "3.995322054093146",
+      "value_state": "OBSERVED",
+      "unit": "degree_Celsius",
+      "denominator": null,
+      "strata": {},
+      "source_id": "noaa_nclimgrid_daily_202501",
+      "lineage_source_id": "noaa_nclimgrid_daily",
+      "dataset_id": "nclimgrid-daily-v1.0.0-scaled",
+      "methodology_id": null,
+      "methodology": "Valid-area-weighted retained NOAA grid over TIGER 2025 analysis counties.",
+      "release_methodology_version": null,
+      "methodology_version": "atlas-nclimgrid-county-day/2",
+      "semantic_version": "2.0.0",
+      "release_id": "governed-2026-10-15-january-climate-prod",
+      "provenance_ref": "environmental-observation:7f81e51f63f9582ffc3b1a44d2fd2f4168fd84d06f54a199308baef7f735200d",
+      "source_label": "NOAA NCEI",
+      "source_vintage": "v1.0.0-scaled-202501",
+      "source_url": null,
+      "source_published_at": null,
+      "atlas_acquired_at": "2026-10-15T11:09:37.794000-07:00",
+      "atlas_processed_at": null,
+      "limitations": [
+        "January 2025 descriptive weather context only; no Lyme causal, risk or ML claim.",
+        "Existing 2022 canonical county identities with 2025 TIGER analysis geometry; NOAA supports CONUS only, AK/HI are unavailable.",
+        "Daily completeness uses valid/source-supported area >= 0.95; monthly spatial support is separate from daily missingness.",
+        "Labeled 24-hour period ending in the early morning, not a midnight calendar day or publication time. Historical first availability is unknown; upstream modification time is distinct."
+      ],
+      "evidence": {
+        "resource_type": "observation",
+        "resource_id": "environmental-observation:7f81e51f63f9582ffc3b1a44d2fd2f4168fd84d06f54a199308baef7f735200d",
+        "source_id": "noaa_nclimgrid_daily_202501",
+        "provenance_ref": "environmental-observation:7f81e51f63f9582ffc3b1a44d2fd2f4168fd84d06f54a199308baef7f735200d",
+        "semantic_version": "2.0.0",
+        "methodology_version": "atlas-nclimgrid-county-day/2",
+        "release_id": "governed-2026-10-15-january-climate-prod",
+        "uri": null
+      },
+      "environmental_context": {
+        "coverage_status": "COMPLETE",
+        "source_time_present": true,
+        "day_convention": "Labeled 24-hour period ending in the early morning; not a midnight calendar day",
+        "expected_area_m2": "87694319.08369978",
+        "intersected_area_m2": "87694319.08369985",
+        "source_supported_area_m2": "78772137.65428175",
+        "valid_area_m2": "78772137.65428175",
+        "source_coverage_fraction": "0.8982581594492768",
+        "valid_fraction_of_supported_area": 1.0,
+        "upstream_date_modified": "2025-04-04 22:45:24.335274",
+        "weight_version": "atlas-grid-county-area-weight/1",
+        "geometry_version": "atlas-county-analysis-geometry/1",
+        "metadata_revision_id": "metadata-revision:v1:beeecfda3127e87617b271de6fd186bf3a450ee6c597103009f905d952fe63f4"
+      },
+      "surveillance_context": null,
+      "period_start": "2025-01-03",
+      "period_end": "2025-01-03"
+    },
+    {
+      "metadata_revision_id": null,
+      "observation_id": "environmental-observation:4ebf2cd31119456c2dcc64c348a8a31434dbc16b595e225b31d8dd764b33ee95",
+      "measure_id": "nclimgrid_tavg_county_day",
+      "geography": {
+        "geography_type": "county",
+        "geography_id": "36061"
+      },
+      "temporal_grain": "DAY",
+      "value": "1.6377173882177052",
+      "value_state": "OBSERVED",
+      "unit": "degree_Celsius",
+      "denominator": null,
+      "strata": {},
+      "source_id": "noaa_nclimgrid_daily_202501",
+      "lineage_source_id": "noaa_nclimgrid_daily",
+      "dataset_id": "nclimgrid-daily-v1.0.0-scaled",
+      "methodology_id": null,
+      "methodology": "Valid-area-weighted retained NOAA grid over TIGER 2025 analysis counties.",
+      "release_methodology_version": null,
+      "methodology_version": "atlas-nclimgrid-county-day/2",
+      "semantic_version": "2.0.0",
+      "release_id": "governed-2026-10-15-january-climate-prod",
+      "provenance_ref": "environmental-observation:4ebf2cd31119456c2dcc64c348a8a31434dbc16b595e225b31d8dd764b33ee95",
+      "source_label": "NOAA NCEI",
+      "source_vintage": "v1.0.0-scaled-202501",
+      "source_url": null,
+      "source_published_at": null,
+      "atlas_acquired_at": "2026-10-15T11:09:37.794000-07:00",
+      "atlas_processed_at": null,
+      "limitations": [
+        "January 2025 descriptive weather context only; no Lyme causal, risk or ML claim.",
+        "Existing 2022 canonical county identities with 2025 TIGER analysis geometry; NOAA supports CONUS only, AK/HI are unavailable.",
+        "Daily completeness uses valid/source-supported area >= 0.95; monthly spatial support is separate from daily missingness.",
+        "Labeled 24-hour period ending in the early morning, not a midnight calendar day or publication time. Historical first availability is unknown; upstream modification time is distinct."
+      ],
+      "evidence": {
+        "resource_type": "observation",
+        "resource_id": "environmental-observation:4ebf2cd31119456c2dcc64c348a8a31434dbc16b595e225b31d8dd764b33ee95",
+        "source_id": "noaa_nclimgrid_daily_202501",
+        "provenance_ref": "environmental-observation:4ebf2cd31119456c2dcc64c348a8a31434dbc16b595e225b31d8dd764b33ee95",
+        "semantic_version": "2.0.0",
+        "methodology_version": "atlas-nclimgrid-county-day/2",
+        "release_id": "governed-2026-10-15-january-climate-prod",
+        "uri": null
+      },
+      "environmental_context": {
+        "coverage_status": "COMPLETE",
+        "source_time_present": true,
+        "day_convention": "Labeled 24-hour period ending in the early morning; not a midnight calendar day",
+        "expected_area_m2": "87694319.08369978",
+        "intersected_area_m2": "87694319.08369985",
+        "source_supported_area_m2": "78772137.65428175",
+        "valid_area_m2": "78772137.65428175",
+        "source_coverage_fraction": "0.8982581594492768",
+        "valid_fraction_of_supported_area": 1.0,
+        "upstream_date_modified": "2025-04-04 22:45:24.335274",
+        "weight_version": "atlas-grid-county-area-weight/1",
+        "geometry_version": "atlas-county-analysis-geometry/1",
+        "metadata_revision_id": "metadata-revision:v1:beeecfda3127e87617b271de6fd186bf3a450ee6c597103009f905d952fe63f4"
+      },
+      "surveillance_context": null,
+      "period_start": "2025-01-04",
+      "period_end": "2025-01-04"
+    }
+  ],
+  "meta": {
+    "next_page_token": null,
+    "response_at": "2026-10-26T06:42:43.066091Z",
+    "availability": "AVAILABLE",
+    "release_id": "governed-2026-10-15-january-climate-prod",
+    "limitations": []
+  },
+  "links": {
+    "self": null
+  }
+}

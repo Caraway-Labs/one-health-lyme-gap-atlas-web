@@ -144,9 +144,9 @@ export function ResourcesPage() {
             const Icon = TOPIC_ICONS[topic.id] ?? FileText;
             return (
               <article className="resources-card" key={topic.id}>
-                <h3>
+                <h3 className="resources-topic-card-heading">
                   <Icon aria-hidden="true" size={18} />
-                  {topic.title}
+                  <span>{topic.title}</span>
                 </h3>
                 <ul className="resources-link-list">
                   {topic.links.map((link) => (
@@ -304,19 +304,6 @@ export function ResourcesPage() {
   );
 }
 
-function CenterHeading({ name }: { name: string }) {
-  if (name === "Tropical Islands Training & Evaluation Center") {
-    return (
-      <h3>
-        Tropical Islands Training
-        <br />& Evaluation Center
-      </h3>
-    );
-  }
-
-  return <h3>{name}</h3>;
-}
-
 function CenterCard({ center }: { center: RegionalCenter }) {
   const logo = regionalCenterLogo(center.id);
 
@@ -327,7 +314,7 @@ function CenterCard({ center }: { center: RegionalCenter }) {
           {center.focus ? (
             <p className="resources-center-kicker">{center.focus}</p>
           ) : null}
-          <CenterHeading name={center.name} />
+          <h3>{center.name}</h3>
           <p className="resources-center-type">{center.type}</p>
           <p>{center.purpose}</p>
           <a

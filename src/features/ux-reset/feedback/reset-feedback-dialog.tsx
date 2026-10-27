@@ -48,7 +48,7 @@ import {
   type ResetFeedbackDrafts,
 } from "@/features/ux-reset/feedback/reset-feedback-model";
 import { RESET_FEEDBACK_ACTION } from "@/features/ux-reset/paths";
-import { submitFeedbackV1FeedbackPost } from "@/generated/atlas";
+import { submitFeedback } from "@/generated/atlas";
 import type { FeedbackSubmissionRequest } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
@@ -255,7 +255,7 @@ export function ResetFeedbackProvider({ children }: { children: ReactNode }) {
     setFailure(null);
 
     try {
-      const result = await submitFeedbackV1FeedbackPost(attempt.request);
+      const result = await submitFeedback(attempt.request);
       if (result.status !== 200) {
         if (shouldKeepRetrySnapshot(result.status)) keepAttempt(attempt);
         const nextFailure = classifyFeedbackHttpStatus(result.status, null);

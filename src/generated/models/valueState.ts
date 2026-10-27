@@ -7,7 +7,17 @@
  */
 
 /**
- * Public V1 states, including the governed county status added by API #54.
+ * How to read an observation's `value`. Check it before you use the value.
+ *
+ * - `OBSERVED`: a nonzero value the publisher reported. Use `value` as given.
+ * - `ZERO`: a reported numeric zero. It is different from a missing value.
+ * - `MISSING`: no value was reported and `value` is `null`. It is not zero.
+ * - `SUPPRESSED`: the value exists but is withheld, and `value` is `null`. It is not zero. Do not estimate it.
+ * - `UNAVAILABLE`: Atlas has no published result for this selection, and `value` is `null`. It does not mean zero or absence.
+ * - `NO_COUNTY_LINKED_RECORD`: a governed status meaning no record is linked to the county. `value` is the text `no_county_linked_record`. It is neither null nor zero.
+ * - `NO_RECORDS`: the publisher's literal "No records" result. `value` is the text `No records`. It does not establish biological absence.
+ *
+ * Show these states differently from each other. Never turn `null` into zero.
  */
 export type ValueState = typeof ValueState[keyof typeof ValueState];
 

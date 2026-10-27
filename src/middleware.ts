@@ -8,6 +8,7 @@ import {
   shouldRedirectUnauthenticatedAppRoute,
 } from "@/lib/auth/app-route-guard";
 import { frontPorchSessionHeaders } from "@/lib/auth/front-porch-session-header";
+import { localPreviewRequested } from "@/lib/auth/local-preview";
 import { signInHrefForReturnPath } from "@/lib/auth/sign-in-href";
 
 type PendingCookie = {
@@ -117,7 +118,8 @@ export async function middleware(request: NextRequest) {
       pathname,
       supabaseConfigured,
       userPresent,
-    })
+    }) &&
+    !localPreviewRequested()
   ) {
     const redirect = NextResponse.redirect(
       new URL(signInHrefForReturnPath(returnPath), request.url)

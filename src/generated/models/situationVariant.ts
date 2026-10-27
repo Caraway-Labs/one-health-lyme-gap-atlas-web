@@ -10,17 +10,36 @@ import type { SituationVariantAvailability } from './situationVariantAvailabilit
 import type { SituationVariantCompatibility } from './situationVariantCompatibility';
 import type { SituationVariantUnavailableReason } from './situationVariantUnavailableReason';
 
+/**
+ * The result of one situation model for a county, or the reason there is none.
+ */
 export interface SituationVariant {
+  /** Identifies the situation model. */
   model_id: string;
+  /** Whether a published classification exists. `UNAVAILABLE` is not a finding about the county. */
   availability: SituationVariantAvailability;
-  /** @nullable */
+  /**
+     * Why no classification is published: `NOT_PUBLISHED`, `DEACTIVATED`, `UNAPPROVED_BATCH`, `INCOMPATIBLE_RELEASE`, or `MISSING_ASSIGNMENT`. `null` when `availability` is `AVAILABLE`.
+     * @nullable
+     */
   unavailable_reason: SituationVariantUnavailableReason;
+  /** How the classification relates to the current data release. `EXACT_INPUT` means the model read the current release. `ADMITTED_CARRY_FORWARD` means a reviewed result computed from an earlier release is published for the current one. `UNAVAILABLE` means there is no classification. */
   compatibility: SituationVariantCompatibility;
-  /** @nullable */
+  /**
+     * Identifies the batch of results. `null` when unavailable.
+     * @nullable
+     */
   batch_id: string | null;
-  /** @nullable */
+  /**
+     * Version of the batch. `null` when unavailable.
+     * @nullable
+     */
   batch_version: string | null;
-  /** @nullable */
+  /**
+     * Identifies the data release the model read. `null` when unavailable.
+     * @nullable
+     */
   input_release_id: string | null;
+  /** The classification. `null` when unavailable. */
   data: SituationClassification | null;
 }

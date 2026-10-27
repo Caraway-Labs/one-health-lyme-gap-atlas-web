@@ -9,8 +9,14 @@ import type { CollectionLinks } from './collectionLinks';
 import type { CollectionMeta } from './collectionMeta';
 import type { Source } from './source';
 
+/**
+ * A page of sources, with paging details and links. Read `meta.next_page_token` to get the next page.
+ */
 export interface CollectionEnvelopeSource {
+  /** The items on this page. Empty when there are none. */
   data: Source[];
+  /** Paging, release, and availability details. */
   meta: CollectionMeta;
+  /** Links related to this response. */
   links: CollectionLinks;
 }

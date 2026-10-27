@@ -45,6 +45,7 @@ test("serves a stable llms.txt index and the current full docs export", async ({
   expect(index).toContain(
     "](https://onehealthatlas.org/docs/releases-and-methodology)"
   );
+  expect(index).toContain("](https://onehealthatlas.org/docs/develop/errors)");
   expect(index).toContain("](https://onehealthatlas.org/llms-full.txt)");
   expect(index).toContain("Append `.md`");
   expect(index).not.toContain("PRIVATE KEY");
@@ -109,7 +110,7 @@ test("serves processed Markdown and current MDX for one page", async ({
 });
 
 const observationsMarkdownPath =
-  "/docs/api-reference/observations/observations_v1_observations_get.md";
+  "/docs/api-reference/observations/listObservations.md";
 
 test("renders operation pages, guardrails, and client examples into Markdown", async ({
   request,
@@ -139,7 +140,7 @@ test("renders operation pages, guardrails, and client examples into Markdown", a
     "- Media type: `application/problem+json`"
   );
   expect(observationsText).toContain(
-    "- Header `Retry-After`: Seconds before retry when supplied by the service."
+    "- Header `Retry-After`: Seconds to wait before you retry. Wait that long when the header is present."
   );
   expect(observationsText).not.toContain("<OpenAPIPage");
 
@@ -171,7 +172,7 @@ test("renders operation pages, guardrails, and client examples into Markdown", a
   expect(full).toContain("- Media type: `application/json`");
   expect(full).toContain("- Media type: `application/problem+json`");
   expect(full).toContain(
-    "- Header `Retry-After`: Seconds before retry when supplied by the service."
+    "- Header `Retry-After`: Seconds to wait before you retry. Wait that long when the header is present."
   );
   expect(full).toContain("Missing is not zero.");
   expect(full).toContain("import httpx");
@@ -186,9 +187,7 @@ test("keeps schema constraints inside parsed table cells", async ({
   request,
 }) => {
   const ranking = await (
-    await request.get(
-      "/docs/api-reference/atlas/ranking_csv_v1_atlas_ranking_csv_get.md"
-    )
+    await request.get("/docs/api-reference/atlas/downloadAtlasRanking.md")
   ).text();
   const full = await (await request.get("/llms-full.txt")).text();
   for (const markdown of [ranking, full]) {
@@ -223,19 +222,13 @@ test("matches pinned FIPS and template patterns exactly", async ({
     "template"
   );
   const county = await (
-    await request.get(
-      "/docs/api-reference/counties/county_v1_counties__fips__get.md"
-    )
+    await request.get("/docs/api-reference/counties/getCounty.md")
   ).text();
   const pdf = await (
-    await request.get(
-      "/docs/api-reference/counties/county_report_pdf_v1_counties__fips__report_pdf_get.md"
-    )
+    await request.get("/docs/api-reference/counties/downloadCountyReport.md")
   ).text();
   const tier1 = await (
-    await request.get(
-      "/docs/api-reference/counties/county_tier1_surveillance_priority_get.md"
-    )
+    await request.get("/docs/api-reference/counties/getCountyTier1Priority.md")
   ).text();
   const full = await (await request.get("/llms-full.txt")).text();
   for (const markdown of [county, pdf, tier1, full]) {
@@ -262,7 +255,7 @@ test("keeps provenance union types inside parsed table cells", async ({
       "value",
       "number | string | null",
       "yes",
-      "Read with value_state and unit; null never means zero.",
+      "The reported value. Read it with `value_state` and `unit`. `null` never means zero.",
     ]);
     expect(fourTimestamps.map((row) => [row[0], row[1], row[2]])).toEqual([
       ["atlas_acquired_at", "date-time | null", "no"],
@@ -270,9 +263,9 @@ test("keeps provenance union types inside parsed table cells", async ({
       ["source_published_at", "date-time | null", "no"],
     ]);
     expect(fourTimestamps.map((row) => row[3])).toEqual([
-      "Atlas acquisition time when governed; distinct from source publication and processing.",
-      "Atlas processing time when governed; distinct from response time.",
-      "Publisher timestamp when governed; null is not inferred freshness.",
+      "When Atlas retrieved the data from the publisher. Includes a UTC offset. `null` when not recorded.",
+      "When Atlas processed the data. Includes a UTC offset. It is not the response time. `null` when not recorded.",
+      "When the publisher published the data. Includes a UTC offset. `null` when not recorded; do not assume the data is fresh.",
     ]);
     expect(fiveTimestamps.map((row) => [row[0], row[2], row.length])).toEqual([
       ["published_at", "date-time | null", 5],
@@ -281,7 +274,7 @@ test("keeps provenance union types inside parsed table cells", async ({
       ["source_retrieved_at", "date-time | null", 5],
     ]);
     expect(fiveTimestamps[0]?.[4]).toBe(
-      "Source field. Deprecated. The observation publisher timestamp is source_published_at."
+      "Deprecated. Use `upstream_updated_at`. When the publisher published the data. The observation publisher timestamp is source_published_at."
     );
   }
 });

@@ -1,0 +1,87 @@
+---
+title: Get county detail and provenance
+description: Get county detail and provenance
+full: true
+_openapi:
+  preload:
+    - atlas-public
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: GET /v1/counties/{fips}
+      - content: getCounty
+      - content: Get county detail and provenance
+      - content: 'fips path required County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
+      - content: 'County FIPS code: exactly five digits, sent as a string with leading zeros kept, for example `01001`, not `1001`. Connecticut uses planning-region codes such as `09110`. A malformed value returns 422. A county not in the current release returns 404.'
+      - content: Fips
+      - content: '"08001"'
+      - content: dataset_version query optional Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Data release to read, as a `release_id`. Omit it to use the current release. Copy a value from `release_id` in the metadata response. An unknown release returns 404.
+      - content: Dataset Version
+      - content: '"governed-2026-10-15-january-climate-prod"'
+      - content: ecological_share query optional Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Percent of the gap score weighted to ecological evidence (tick and pathogen signals). The rest goes to community vulnerability (social vulnerability, insurance access, and rurality). Use a multiple of 5 from 40 to 85. The default is 65. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Ecological Share
+      - content: '65'
+      - content: 'smooth_k query optional Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: 'Smoothing constant for the human-case signal. It sets the reported incidence at which the human weakness signal falls to 50: a larger value keeps the signal high for more counties. Use a whole number from 5 to 200. The default is 50. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.'
+      - content: Smooth K
+      - content: '50'
+      - content: missing_human_weakness query optional Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Human weakness signal (0-100) that Atlas assumes for a county with no published human case count or incidence. A missing count is not zero. Use a multiple of 5 from 40 to 90. The default is 75. The published score always uses the default. Another value gives a what-if scenario, not the published score. A value outside the accepted range returns 422.
+      - content: Missing Human Weakness
+      - content: '75'
+      - content: low_incidence_breakpoint query optional Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: low_incidence_breakpoint deprecated
+      - content: Deprecated. Do not send it. Any value returns 422. Use `smooth_k` to change how the human-case signal is smoothed.
+      - content: Low Incidence Breakpoint
+      - content: 200 Successful response. This operation ignores `If-None-Match` and always returns 200 with the full body.
+      - content: 'Content-Type Media type of the body: `application/json`.'
+      - content: '"application/json"'
+      - content: 'Cache-Control How long a client or shared cache can reuse the response: `public, max-age=300`. While the API serves a fallback copy of its data, it replaces a `public` value with `private, no-store`.'
+      - content: '"public, max-age=300"'
+      - content: 'ETag Opaque validator for this representation. It is informational here: the operation does not answer `If-None-Match`.'
+      - content: X-Request-ID Identifier for this request. Quote it when you ask for support. If you send a valid `X-Request-ID` request header, the API uses that value. Otherwise it generates one. A response that a shared cache replays can carry the identifier of the request that filled the cache.
+      - content: '"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"'
+      - content: application/json
+      - content: '#/components/schemas/CountyDetail'
+      - content: County detail for New York County (`36061`)
+      - content: '{"scoring_methodology_version":"surveillance-gap-score-v1.1","incidence_floor_2023":67.68,"svi_percentile":0.7283,"uninsured_percentile":0.118,"rucc_2023":1,"fips":"36061","county":"New York County","state":"NY","state_name":"New York","in_contiguous_tick_scope":true,"human_status":"published_count_floor","tick_status":"Established","burgdorferi_status":"No records","evidence_completeness":83,"score":{"score":22.5,"human_weakness":42.5,"ecological":60,"community":40,"tick_signal":100,"pathogen_signal":0,"svi_signal":72.8,"access_signal":11.8,"rural_signal":0},"priority":"Lower Atlas priority — Not a safety finding","color":"#55a8a3","population":1645867,"case_count_floor_2023":1114,"state_unallocated_records_2023":51,"scapularis_status":"Established","pacificus_status":"No records","uninsured_percent":4.6,"release":{"scoring_methodology_version":"surveillance-gap-score-v1.1","release_id":"governed-2026-10-15-january-climate-prod","schema_version":"2.0.0","generated_at":"2026-10-15T13:51:25.324973-07:00","loaded_at":"2026-10-15T14:08:33.953000-07:00","scope":"US_COUNTIES","bundle_sha256":"53e50aa37c701635e96c48cd4931c4c4a9e7e695c146263fb9bb335e541ae74d","score_defaults":{"ecological_share":65,"smooth_k":50,"missing_human_weakness":75},"methodology_version":"semantic-2.0.0","limitations":"This is a deterministic surveillance follow-up priority release, not a diagnosis, prediction, causal claim, exposure map, or individual risk estimate. Published human values are privacy-protected floors; no records is not absence. Human rows with explicitly unavailable state geography are retained in source provenance but are not allocated to county or state release values. Restricted pathogen source gaps are explicitly unknown source coverage. Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission.","sources":[{"key":"context_nlcd_2025","label":"MRLC Annual NLCD 2025 reviewed demo cohort","vintage":"C1V2-2025","url":"https://www.mrlc.gov/downloads/sciweb1/shared/mrlc/data-bundles/Annual_NLCD_LndCov_2025_CU_C1V2.zip","note":"Selected 2025 TIGER geographies 09110 and 51013 only; unselected counties are not zero. COMPLETE describes valid source-supported area; preserve source coverage fraction. 09110 is Capitol Planning Region, with no historical Connecticut county crosswalk. Official MRLC mosaic lineage, not USGS S3 tiles. Descriptive land-cover context only; no Lyme causal/risk estimate or automatic ML admission."},{"key":"context_rucc","label":"USDA ERS Rural-Urban Continuum Codes","vintage":"2023","url":"https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/","note":"RUCC is a contextual county classification; vintages are not automatically comparable and it is not a causal or individual risk measure."},{"key":"context_svi","label":"CDC/ATSDR Social Vulnerability Index","vintage":"2022 (2018-2022 ACS)","url":"https://www.atsdr.cdc.gov/placeandhealth/svi/data_documentation_download.html","note":"Contextual population and vulnerability measures are not causal drivers or individual risk factors. The same reviewed source supplies county identity and geometry."},{"key":"human","label":"CDC Lyme surveillance","vintage":"2023","url":"https://data.cdc.gov/resource/x5j9-wybp.json","note":"County-of-residence surveillance. County-linked values are published privacy-protected floors, not complete incidence estimates."},{"key":"pathogen","label":"CDC ArboNET tickborne pathogen status","vintage":"through 2025-12-31","url":"https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html","note":"This is a distinct restricted pathogen source. No records is not absence; 33 absent canonical counties are classified as unknown source coverage."},{"key":"tick","label":"CDC ArboNET county tick status","vintage":"through 2025-12-31","url":"https://www.cdc.gov/ticks/data-research/facts-stats/tick-surveillance-data-sets.html","note":"Tick status is cumulative surveillance evidence; no records is not absence and status is not abundance, pathogen prevalence, diagnosis, or individual risk."}],"states":[{"code":"AK","name":"Alaska"},{"code":"AL","name":"Alabama"},{"code":"AR","name":"Arkansas"},{"code":"AZ","name":"Arizona"},{"code":"CA","name":"California"},{"code":"CO","name":"Colorado"},{"code":"CT","name":"Connecticut"},{"code":"DC","name":"District of Columbia"},{"code":"DE","name":"Delaware"},{"code":"FL","name":"Florida"},{"code":"GA","name":"Georgia"},{"code":"HI","name":"Hawaii"},{"code":"IA","name":"Iowa"},{"code":"ID","name":"Idaho"},{"code":"IL","name":"Illinois"},{"code":"IN","name":"Indiana"},{"code":"KS","name":"Kansas"},{"code":"KY","name":"Kentucky"},{"code":"LA","name":"Louisiana"},{"code":"MA","name":"Massachusetts"},{"code":"MD","name":"Maryland"},{"code":"ME","name":"Maine"},{"code":"MI","name":"Michigan"},{"code":"MN","name":"Minnesota"},{"code":"MO","name":"Missouri"},{"code":"MS","name":"Mississippi"},{"code":"MT","name":"Montana"},{"code":"NC","name":"North Carolina"},{"code":"ND","name":"North Dakota"},{"code":"NE","name":"Nebraska"},{"code":"NH","name":"New Hampshire"},{"code":"NJ","name":"New Jersey"},{"code":"NM","name":"New Mexico"},{"code":"NV","name":"Nevada"},{"code":"NY","name":"New York"},{"code":"OH","name":"Ohio"},{"code":"OK","name":"Oklahoma"},{"code":"OR","name":"Oregon"},{"code":"PA","name":"Pennsylvania"},{"code":"RI","name":"Rhode Island"},{"code":"SC","name":"South Carolina"},{"code":"SD","name":"South Dakota"},{"code":"TN","name":"Tennessee"},{"code":"TX","name":"Texas"},{"code":"UT","name":"Utah"},{"code":"VA","name":"Virginia"},{"code":"VT","name":"Vermont"},{"code":"WA","name":"Washington"},{"code":"WI","name":"Wisconsin"},{"code":"WV","name":"West Virginia"},{"code":"WY","name":"Wyoming"}]}}'
+      - content: 404 The county, state, or dataset release you asked for is not in the current data. `detail` names what is missing. Check the ID or release, then retry with a value the API lists. Most of these responses have no `code`.
+      - content: application/problem+json
+      - content: '#/components/schemas/ProblemDetails'
+      - content: Release not found
+      - content: Shows HTTP 404 for a dataset release that is not current. It has no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-404","title":"Not found","status":404,"detail":"County or dataset release not found","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 422 A request value failed validation. The body is Problem Details with an `errors` list that names each invalid input and where it was sent. It has no `code`. Fix each listed value, then retry. The same request fails again.
+      - content: Path value has the wrong form
+      - content: Shows HTTP 422 with an `errors` entry and no `code`.
+      - content: '{"type":"https://onehealthatlas.org/problems/validation","title":"Invalid request","status":422,"detail":"One or more request values are invalid.","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","errors":[{"type":"string_pattern_mismatch","loc":["path","fips"],"msg":"String should match pattern ''^\\d{5}$''","input":"abc","ctx":{"pattern":"^\\d{5}$"}}]}'
+      - content: 429 You sent too many requests in a short time. Wait the number of seconds in the `Retry-After` header, then retry. Spread requests out or reuse cached responses to stay under the limit.
+      - content: Retry-After Seconds to wait before you retry. Wait that long when the header is present.
+      - content: '"30"'
+      - content: General request limit reached
+      - content: Shows HTTP 429 with no `code`. The response also sets `Retry-After`.
+      - content: '{"type":"about:blank","title":"Too Many Requests","status":429,"detail":"Request limit exceeded.","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93"}'
+      - content: 503 The Atlas data service cannot answer right now. The `code` is `SERVICE_UNAVAILABLE`. Retry later with a growing delay, and wait the number of seconds in `Retry-After` when the header is present. Check the `Content-Type` response header before you parse the body. Parse it as Problem Details only when it is `application/problem+json`.
+      - content: Data service unavailable
+      - content: Shows `SERVICE_UNAVAILABLE` when the data service cannot answer.
+      - content: '{"type":"https://onehealthatlas.org/problems/http-503","title":"Service unavailable","status":503,"detail":"The governed Atlas data service is temporarily unavailable.","instance":"/v1/counties/{fips}","request_id":"3f0a1c52-8d7e-4b6a-9c21-5e4d7a1b0f93","code":"SERVICE_UNAVAILABLE"}'
+---
+
+Error codes, retries, and value states are in [Errors and retries](/docs/develop/errors).
+
+Schemas: [AtlasMetadata](/docs/api-reference/schemas#schema-atlasmetadata), [CountyDetail](/docs/api-reference/schemas#schema-countydetail), [ProblemDetails](/docs/api-reference/schemas#schema-problemdetails), [Score](/docs/api-reference/schemas#schema-score), [SourceMetadata](/docs/api-reference/schemas#schema-sourcemetadata).
+
+export default function Layout(props) {
+  const { OpenAPIPage } = props.components ?? {};
+  return (
+    <>
+      {props.children}
+      <OpenAPIPage document="atlas-public" operations={[{"path":"/v1/counties/{fips}","method":"get"}]} showDescription />
+    </>
+  );
+}

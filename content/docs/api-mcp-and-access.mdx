@@ -3,38 +3,42 @@ title: API, MCP, and access
 description: Use the public Atlas REST API, and see the current status of MCP and API keys.
 ---
 
-Atlas publishes one public HTTP contract. Human guides on this site explain how to use it. They do not copy a second schema. The [API reference](/docs/api-reference) is generated from the pinned public OpenAPI contract and links the raw spec. Machine-readable definitions stay on the API service.
+Call the public HTTP contract with an anonymous GET. The [API reference](/docs/api-reference) is generated from the pinned OpenAPI contract and links the raw spec. Machine-readable definitions stay on the API service.
 
-## What is available
+<Callout title="Interpret with care" type="warn">
+  Atlas results are not a diagnosis. Atlas results are not an estimate of an
+  individual's risk. See [Evidence, provenance, and
+  uncertainty](/docs/evidence-and-uncertainty).
+</Callout>
+
+## See what is available
 
 | Surface | Status | Where it lives |
 | --- | --- | --- |
 | Public REST API, version 1 | Available now | Anonymous read-only JSON at `https://api.onehealthatlas.org` |
 | OpenAPI schema | Available now | [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) |
-| API reference | Available now | [Generated API reference](/docs/api-reference) from that same public contract |
+| API reference | Available now | [Generated API reference](/docs/api-reference) |
 | Interactive reference | Available now | [Swagger reference](https://api.onehealthatlas.org/docs) for approved public GET requests |
 | Read-only reference | Available now | [ReDoc reference](https://api.onehealthatlas.org/redoc) |
-| Bounded public MCP evidence tools | Available now | Anonymous read-only `atlas_discover_indicators`, `atlas_get_county_profile`, and `atlas_get_evidence_provenance` on the production MCP service. The [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md) owns arguments and limits. |
-| MCP county identity | Available now | `atlas_resolve_geographies` resolves a county identity. Identity is not evidence availability, evidence adequacy, or comparability. |
-| MCP client transport | Available now | Anonymous Streamable HTTP at `https://mcp.onehealthatlas.org/mcp`. No API key and no OAuth. Client recipes are in [MCP clients](/docs/develop/mcp-clients). |
-| Retired MCP smoke tools | Not supported | `server_status` and `atlas_smoke_test` are absent from the current production `tools/list`. |
-| User API keys in Settings | Not available | The public API does not use a key, and Settings does not create one |
+| Public MCP evidence tools | Available now | Anonymous read-only `atlas_discover_indicators`, `atlas_get_county_profile`, and `atlas_get_evidence_provenance`. Arguments: [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md) |
+| MCP county identity | Available now | `atlas_resolve_geographies` resolves a county. Identity is not evidence availability, adequacy, or comparability |
+| MCP transport | Available now | Anonymous Streamable HTTP at `https://mcp.onehealthatlas.org/mcp`. No API key and no OAuth. Recipes: [MCP clients](/docs/develop/mcp-clients) |
+| Retired MCP smoke tools | Not supported | `server_status` and `atlas_smoke_test` are absent from production `tools/list` |
+| User API keys in Settings | Not available | Public reads do not use a key, and Settings does not create one |
 
-The OpenAPI application version and the `/v1` contract are different identifiers. Use the response fields below when you need to cite a result.
+OpenAPI `info.version` and `/v1` are different identifiers. Cite the response fields below.
 
-## Public reads do not use an API key
+## Call public reads without an API key
 
-The canonical public API serves current-release metadata and county observations without an API key and without a signed-in session. A request is an HTTPS GET. Collections return `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json` with `code`, HTTP `status`, `detail`, and `request_id`.
+Current-release metadata and county observations need no API key and no signed-in session. Collections return `data`, `meta`, and `links`. A single resource returns `data`. Errors use `application/problem+json` with `code`, HTTP `status`, `detail`, and `request_id`.
 
-These routes do not select historical releases, aggregate arbitrary geographies, or return geometry. Account profile and privacy requests are separate account operations. Feedback submission accepts an optional account and still accepts a report when no account is present. Literature chat does not depend on an account session; `/assistant` and the legacy assistant drawer stay public and appear when that feature is enabled. The professional workspace at `/app` requires sign-in. Those operations sit outside this canonical public GET-read contract, so this page does not copy them as public examples.
+Reads return the current release only: no historical release, no arbitrary aggregation, and no geometry. Account, feedback, literature chat, and `/app` are outside this contract. Literature chat needs no account. `/assistant` and the legacy drawer stay public when enabled. `/app` requires sign-in. A saved jurisdiction is not a credential. See [the professional workspace](/docs/professional-workspace).
 
-Settings can save a default jurisdiction for a signed-in reviewer. That preference is not an API credential. See [the professional workspace](/docs/professional-workspace).
+Task requests are in the [developer guides](/docs/develop). Start with the [quickstart](/docs/develop/quickstart).
 
-Task-oriented requests, pagination, geography, and citation are in the [developer guides](/docs/develop). Start with the [quickstart](/docs/develop/quickstart).
+## Copy a public read
 
-## Examples from the public contract
-
-These requests use measure and county identifiers published for the current production release. County FIPS codes are five characters, with any leading zero preserved. `case_count_floor_2023` is a privacy-protected case floor in `cases`, not a complete incidence count and not a diagnosis.
+County FIPS codes are five characters. Keep leading zeros. `case_count_floor_2023` is a privacy-protected case floor in `cases`, not a complete incidence count.
 
 ```sh
 curl -fsS 'https://api.onehealthatlas.org/v1/indicators?page_size=10'
@@ -43,63 +47,55 @@ curl -fsS 'https://api.onehealthatlas.org/v1/measures/case_count_floor_2023'
 curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&year=2023'
 ```
 
-Compare two counties by repeating `geography_id`. Use `year` or a complete `start_date` and `end_date` pair. The published county observations for this release are the annual 2023 period.
+Repeat `geography_id` to compare counties. Use `year` or both `start_date` and `end_date`. Published county observations for this release use the annual 2023 period.
 
 ```sh
 curl -fsS 'https://api.onehealthatlas.org/v1/observations?measure_id=case_count_floor_2023&geography_type=county&geography_id=08001&geography_id=08003&year=2023&page_size=1'
 ```
 
-If `meta.next_page_token` is present, send it back as `page_token` with every other query parameter unchanged. Stop when the token is null. Tokens are opaque and bound to that query and release. A changed or rejected token means you start again at the first page. A page token is not a citation.
+Send `meta.next_page_token` back as `page_token` with the other parameters unchanged. Stop when the token is null. The token is opaque and bound to that query and release. A rejected token means you start again. A page token is not a citation.
 
-Follow `source_id` and `methodology_id` on an observation when you need publisher, vintage, and method limitations:
+Follow `source_id` and `methodology_id` for publisher, vintage, and method limitations:
 
 ```sh
 curl -fsS 'https://api.onehealthatlas.org/v1/sources/human'
 curl -fsS 'https://api.onehealthatlas.org/v1/methodologies/human_confirmed_probable_case_floor_v1'
 ```
 
-Read `value_state` with `value` and `unit`. The public states are `OBSERVED`, `ZERO`, `MISSING`, `SUPPRESSED`, `UNAVAILABLE`, `NO_COUNTY_LINKED_RECORD`, and `NO_RECORDS`. `MISSING`, `UNAVAILABLE`, and `NO_COUNTY_LINKED_RECORD` are gaps. `NO_RECORDS` retains CDC's `No records` and does not establish biological absence. `SUPPRESSED` is a privacy-protected observation: the value was withheld, and the workspace shows **Suppressed** rather than a number. Do not replace a gap or a suppressed observation with zero. A published `ZERO` stays a real zero. The same rule is explained for reviewers in [evidence, provenance, and uncertainty](/docs/evidence-and-uncertainty).
+Read `value` with `value_state` and `unit`. Meanings and what to keep: [Errors and retries](/docs/develop/errors#value-states). The workspace shows **Suppressed**.
 
-## Limits and errors
+## Handle limits and errors
 
-The observation query needs one measure, `geography_type=county`, one or more five-digit county FIPS codes, and either `year` or both dates. The service rejects unsupported filters, strata, sorting, and aggregation instead of ignoring them. Problem `code` values include `RESOURCE_NOT_FOUND`, `INVALID_REQUEST`, `UNSUPPORTED_FILTER`, and `UNSUPPORTED_STRATIFICATION`. Keep `request_id` if you need support.
+Send one measure, `geography_type=county`, five-digit FIPS codes, and `year` or both dates. Keep `request_id`. Codes, retries, and `value_state`: [Errors and retries](/docs/develop/errors).
 
-`429` and `503` responses include `Retry-After` when the service supplies it. The header is a number of seconds. The public OpenAPI document does not publish a numeric quota or concurrency cap, so this guide does not state one. Wait for `Retry-After`, then retry the same request. Discovery collections use a short public cache. Stable detail responses may include an `ETag`; send `If-None-Match` to receive `304` when the representation is unchanged. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) is the authority for parameters, status codes, and schema fields. The [REST API](/docs/develop/rest) guide explains pagination, problem codes, and version fields.
+Send `If-None-Match` for `304`. Paging and versions: [REST API](/docs/develop/rest).
 
 ## Reproduce a result
 
-Save the request URL, measure id, county FIPS codes, period, `release_id`, `semantic_version`, methodology id and version, source id, lineage source id, dataset id, source vintage, and limitations. These routes read the current release. The same URL can change after a later release. A saved response, or a checksum of that response, is the record of what you retrieved.
+Save the URL, measure, FIPS codes, period, `release_id`, `semantic_version`, methodology id and version, source id, lineage source id, dataset id, source vintage, and limitations. The URL can change after a later release. The saved body, or a checksum, is the record. Name Atlas, V1, those ids, the retrieval date, and the publisher you received.
 
-A practical attribution names Atlas, the public API V1, the measure id, county FIPS, period, release id, semantic version, retrieval date, and the upstream publisher and dataset from the source resource you received. Replace every example identifier with the values in your response.
+## Read canonical evidence
 
-## Canonical evidence for API and MCP consumers
+Indicators, measures, observations, sources, and methodologies are the current-release contract. Prefer them to a schema that changes with each upstream source. HTTP fields: [OpenAPI schema](https://api.onehealthatlas.org/openapi.json).
 
-Public REST reads return governed Atlas resources. Indicators, measures, observations, sources, and methodologies are that contract for current-release evidence. Clients are intended to use those resources rather than a schema that changes with each upstream source. The [OpenAPI schema](https://api.onehealthatlas.org/openapi.json) remains authoritative for HTTP fields. The generated [API reference](/docs/api-reference) is rendered from the pinned public contract.
+Tool definitions stay in the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). Released tools return the same evidence, source identity, and value state. Design and unreleased clinical connections: [Sources and canonical evidence](/docs/sources-and-canonical-evidence). Fields: [Provenance and evidence](/docs/develop/provenance).
 
-MCP tool definitions stay in the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp) and its tests. The released evidence tools return the same canonical evidence and provenance, including source identity and value state, rather than a schema that changes with each source. [Sources and canonical evidence](/docs/sources-and-canonical-evidence) describes that design, the open-data boundary, and the clinical connections that are not released. [Provenance and evidence](/docs/develop/provenance) lists the fields to keep with a value.
+## Use the MCP tools
 
-## MCP
+Server: [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). [ADR 0003](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/adr/0003-public-evidence-tools.md) accepts three anonymous read-only evidence tools. The [production receipt](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/pull/21#issuecomment-6116902766) records SHA `d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9` and exactly six tools; that receipt is historical. Production `tools/list` returned exactly four tools. Setup: [MCP clients](/docs/develop/mcp-clients).
 
-The MCP server is owned by the [Atlas MCP repository](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp). [ADR 0003](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/adr/0003-public-evidence-tools.md) accepts three anonymous read-only evidence tools and supersedes the historical smoke-only exposure constraint for that bounded surface. The [production receipt](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/pull/21#issuecomment-6116902766) records deployment of SHA `d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9` and official-SDK discovery of exactly six tools; that receipt is historical. On 2026-10-18, `tools/list` at `https://mcp.onehealthatlas.org/mcp` returned exactly four tools. Client setup for that endpoint is in [MCP clients](/docs/develop/mcp-clients). This guide does not copy tool schemas.
-
-| Tool | What the contract allows |
+| Tool | What you can request |
 | --- | --- |
-| `atlas_discover_indicators` | Published indicators and their associated measures. Discovery states published definitions. It is not county availability. |
-| `atlas_get_county_profile` | Published observations for one exact five-digit county FIPS and one to three explicit measure-period selections. An empty selection is not a missing row, a zero, biological absence, or proof of county identity. |
-| `atlas_get_evidence_provenance` | A published source or methodology for the expected current release. It does not resolve an arbitrary observation ID or a historical release. |
-| `atlas_resolve_geographies` | County identity only, from the CDC/ATSDR SVI 2022 county source. Identity does not establish observations, evidence adequacy, or comparability, and it is not a current legal-boundary file. |
-| `server_status`, `atlas_smoke_test` | Not in the current production tool list. A call is an unknown-tool error. `GET /healthz` reports process health and does not read evidence. |
+| `atlas_discover_indicators` | Published indicators and measures. Not county availability |
+| `atlas_get_county_profile` | One five-digit FIPS and one to three measure-period selections. Empty is not a missing row, zero, biological absence, or proof of identity |
+| `atlas_get_evidence_provenance` | Current source or methodology. Not an arbitrary observation id or a historical release |
+| `atlas_resolve_geographies` | Identity from the CDC/ATSDR SVI 2022 county source. Not observations, adequacy, comparability, or a legal-boundary file |
+| `server_status`, `atlas_smoke_test` | Absent from production `tools/list`. Unknown-tool error. `GET /healthz` is process health, not evidence |
 
-The [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md) is authoritative for arguments, bounds, and error codes. This page does not copy those schemas. Evidence tools keep canonical API value states, units, denominators, source identity, and limitations. They do not score, diagnose, compare scientifically, write, or accept private data or a caller-supplied URL. They are not a live EHR, TEFCA, patient-level, PHI, or production clinical-laboratory connection.
+Arguments stay in the [public evidence tool contract](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/d26ef2b72a2f9203a26ff45a3ad13f0f2ac104c9/docs/public-evidence-tools.md). Tools keep value states, units, denominators, source identity, and limitations. They do not score, diagnose, compare scientifically, write, or accept private data or a caller-supplied URL. They are not a live EHR, TEFCA, patient-level, PHI, or clinical-laboratory connection.
 
-The [2026-09-26 development record](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/docs/operations/digitalocean-mcp.md) accepted `server_status` and `atlas_smoke_test` in [`server.py`](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/src/atlas_lyme_mcp/server.py). That smoke-only receipt is historical. It is not the current production tool list.
+The [2026-09-26 record](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/docs/operations/digitalocean-mcp.md) accepted those smoke tools in [`server.py`](https://github.com/Caraway-Labs/one-health-lyme-gap-atlas-mcp/blob/e897207640919a9d6464233ade885ed5d9df8227/src/atlas_lyme_mcp/server.py). That smoke-only receipt is historical. REST and OpenAPI stay authoritative. MCP does not replace them.
 
-REST remains the HTTP contract for the same canonical resources. OpenAPI remains authoritative for HTTP schemas. MCP does not replace that document.
+## Skip API keys on public reads
 
-## API keys
-
-Do not send an API key, bearer token, or Settings secret on the public read routes. They are not authenticated that way.
-
-The professional workspace Settings page does not generate, show, copy, revoke, or regenerate a user API key. Planned key-management controls, including any future one-time secret display, are outside this release. Do not store a guessed credential in the browser or in a docs example.
-
-Signed-in product features use the account session inside Atlas. That session is not a public API key and is not a substitute for the anonymous `/v1` reads above.
+Do not send an API key, bearer token, or Settings secret. Settings does not generate, show, copy, revoke, or regenerate one. Future key controls are outside this release. An account session is not a public API key and does not replace anonymous `/v1` reads.
