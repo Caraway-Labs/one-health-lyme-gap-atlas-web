@@ -323,9 +323,7 @@ describe("rendered documentation markdown", () => {
       pages[files.indexOf("content/docs/develop/geography.mdx")] ?? "";
     const identity =
       pages[
-        files.indexOf(
-          "content/docs/api-reference/geographies/geography_v1_geographies__geography_type___geography_id__get.mdx"
-        )
+        files.indexOf("content/docs/api-reference/geographies/getGeography.mdx")
       ] ?? "";
     expect({
       badge: full.includes(PENDING_DELIVERY_BADGE_LABEL),
