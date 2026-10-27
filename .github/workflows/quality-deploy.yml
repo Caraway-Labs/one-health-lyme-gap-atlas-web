@@ -313,6 +313,7 @@ jobs:
         if: steps.guard.outputs.decision == 'proceed'
         uses: digitalocean/app_action/deploy@v2
         env:
+          NEXT_PUBLIC_AMPLITUDE_API_KEY: ${{ secrets.NEXT_PUBLIC_AMPLITUDE_API_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         with: { token: "${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" }
