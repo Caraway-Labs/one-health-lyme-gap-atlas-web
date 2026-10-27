@@ -98,6 +98,16 @@ export class PublicOpenApiContractError extends Error {
   }
 }
 
+/**
+ * Failure text for `npm run docs:api:drift`.
+ * The pin, manifest, and generated pages stay as reviewed.
+ */
+export function formatPublicOpenApiDriftFailure(
+  error: PublicOpenApiContractError
+): string {
+  return `Public OpenAPI drift check failed (${error.code}): ${error.message} The pinned contract, manifest, and generated pages were not changed.`;
+}
+
 export type PublicOpenApiProvenance = {
   applicationVersion: string;
   httpContract: string;
@@ -1228,7 +1238,7 @@ function renderCountyReportTemplateGuide(
     "",
     "The same selector rules, with the requests checked against the published API, are in the [workflow guides](/docs/develop/workflows#download-a-county-report).",
     "",
-    `<Tabs items={${JSON.stringify(COUNTY_REPORT_TEMPLATE_TABS)}}>`,
+    `<Tabs groupId="atlas-county-report-template" items={${JSON.stringify(COUNTY_REPORT_TEMPLATE_TABS)}} persist>`,
     `  <Tab value="${scoringTab}">`,
     "",
     `\`county-v1\` is the scoring selector. \`dataset_version\` is optional. These score settings are optional and bind the scoring inputs:`,
@@ -2842,7 +2852,11 @@ async function runPublicOpenApiCli(): Promise<void> {
     );
   } catch (error) {
     if (error instanceof PublicOpenApiContractError) {
-      console.error(`Public OpenAPI reference ${error.code}: ${error.message}`);
+      console.error(
+        drift
+          ? formatPublicOpenApiDriftFailure(error)
+          : `Public OpenAPI reference ${error.code}: ${error.message}`
+      );
       process.exitCode = 1;
       return;
     }

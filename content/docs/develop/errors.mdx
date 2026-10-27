@@ -81,9 +81,9 @@ The request sends `stratification`. The current release has no governed strata. 
 
 ## QUERY_TOO_BROAD
 
-The selection is above the result limit. Narrow the measure, geography, time, or stratification, then request the first page again. The public overview states a default pre-execution logical-result ceiling of 10,000, and that ceiling is not truncation. The API does not return a partial page for the rejected selection.
+The selection is above the result limit. Narrow the measure, geography, time, or stratification, then request the first page again. The public overview states a default result limit of 10,000, and that limit is not truncation. The API does not return a partial page for the rejected selection.
 
-A daily weather query whose county and day selection exceeded that ceiling returned this body.
+A daily weather query whose county and day selection exceeded that limit returned this body.
 
 ```json
 {
