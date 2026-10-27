@@ -57,6 +57,10 @@ describe("public OpenAPI client downloads", () => {
       type: "string",
       value: "https://api.onehealthatlas.org",
     });
+    expect(countyReportPeriods(collection)).toStrictEqual({
+      period_end: "2011-11-18",
+      period_start: "1992-02-14",
+    });
     const again = await renderPublicClientDownloads({
       provenance: contract.provenance,
       specBytes,
@@ -106,6 +110,23 @@ type ObservationQueryParam = {
   value?: string;
 };
 
+function countyReportPeriods(collection: { item?: unknown }): {
+  period_end?: string;
+  period_start?: string;
+} {
+  const request = findNamedRequest(collection, "Download a county report");
+  if (!request) {
+    throw new Error("Download a county report is missing.");
+  }
+  const periods: { period_end?: string; period_start?: string } = {};
+  for (const param of requestQuery(request)) {
+    if (param.key === "period_start" || param.key === "period_end") {
+      periods[param.key] = param.value;
+    }
+  }
+  return periods;
+}
+
 function observationRequest(collection: { item?: unknown }): {
   url?: { query?: unknown };
 } {
@@ -119,13 +140,20 @@ function observationRequest(collection: { item?: unknown }): {
 function findObservationRequest(
   node: unknown
 ): { url?: { query?: unknown } } | undefined {
+  return findNamedRequest(node, "Query county observations");
+}
+
+function findNamedRequest(
+  node: unknown,
+  name: string
+): { url?: { query?: unknown } } | undefined {
   if (!isRecord(node)) return undefined;
-  if (node.name === "Query county observations" && isRecord(node.request)) {
+  if (node.name === name && isRecord(node.request)) {
     return node.request;
   }
   if (!Array.isArray(node.item)) return undefined;
   for (const child of node.item) {
-    const found = findObservationRequest(child);
+    const found = findNamedRequest(child, name);
     if (found) return found;
   }
   return undefined;
@@ -136,7 +164,7 @@ function requestQuery(request: {
 }): ObservationQueryParam[] {
   const query = request.url?.query;
   if (!Array.isArray(query)) {
-    throw new TypeError("Observation request has no query parameters.");
+    throw new TypeError("Request has no query parameters.");
   }
   return query.filter(isObservationQueryParam);
 }

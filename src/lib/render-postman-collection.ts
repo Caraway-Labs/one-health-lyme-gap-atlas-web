@@ -9,8 +9,20 @@ import path from "node:path";
  * through `Math.random` captured when its JSON Schema Faker copy loads.
  * A child process seeds that generator once so the committed collection
  * matches `docs:api:check`. Item ids from `crypto` are replaced here.
+ *
+ * Date and date-time examples are `new Date()` minus that seeded offset,
+ * then the UTC calendar date. The date changes when the wall clock crosses
+ * the offset's UTC midnight. For the pinned contract that happened on
+ * 27 October 2026 at 14:14 UTC, after main's Quality run and before the
+ * later pull-request run. The child process pins the example clock to an
+ * instant that reproduces the committed collection.
  */
 const CONVERT_FLAG = "--convert-postman";
+/**
+ * Wall clock inside the converter child. 2026-10-27T00:00:00.000Z reproduces
+ * the committed Postman collection for the pinned public contract.
+ */
+const POSTMAN_EXAMPLE_CLOCK_MS = Date.parse("2026-10-27T00:00:00.000Z");
 const POSTMAN_SCHEMA =
   "https://schema.getpostman.com/json/collection/v2.1.0/collection.json";
 
@@ -69,6 +81,7 @@ function convertPinnedSpec(specText: string): string {
     seed = (seed * 16_807) % 2_147_483_647;
     return (seed - 1) / 2_147_483_646;
   };
+  installStableExampleClock();
   const require = createRequire(import.meta.url);
   const converter = require("openapi-to-postmanv2") as {
     convert: (
@@ -240,6 +253,28 @@ function isQueryParam(value: unknown): value is QueryParam {
     (value.value === undefined || typeof value.value === "string") &&
     (value.disabled === undefined || typeof value.disabled === "boolean")
   );
+}
+
+function installStableExampleClock(): void {
+  const realDate = globalThis.Date;
+  const stableDate = new Proxy(realDate, {
+    apply() {
+      return new realDate(POSTMAN_EXAMPLE_CLOCK_MS).toString();
+    },
+    construct(target, args) {
+      if (args.length === 0) {
+        return new realDate(POSTMAN_EXAMPLE_CLOCK_MS);
+      }
+      return Reflect.construct(target, args);
+    },
+    get(target, property, receiver) {
+      if (property === "now") {
+        return () => POSTMAN_EXAMPLE_CLOCK_MS;
+      }
+      return Reflect.get(target, property, receiver);
+    },
+  });
+  globalThis.Date = stableDate;
 }
 
 function deterministicId(nodePath: string): string {
