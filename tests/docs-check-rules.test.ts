@@ -164,7 +164,7 @@ describe("warning callouts", () => {
     expect(findings).toHaveLength(1);
     expect(findings[0]?.rule).toBe("warning-callout");
     expect(findings[0]?.line).toBe(7);
-    expect(findings[0]?.fix).toContain("one warning Callout");
+    expect(findings[0]?.fix).toContain("Keep one warning");
   });
 
   it("passes one warning callout and extra info callouts", () => {

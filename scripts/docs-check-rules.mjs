@@ -7,6 +7,8 @@
  *
  * `RULE_ID` is one of: dated-test-log, word-budget, missing-description,
  * warning-callout, tab-group-id, banned-term.
+ * `warning-callout` counts a warning `Callout` and `InterpretationGuardrailCopy`.
+ * `scripts/check-docs-warning-callouts.ts` uses that same function.
  * An optional reason may follow the id: `<!-- docs-check-exception: banned-term: contract filename -->`.
  * A marker on a line, or on the line immediately above, skips that line for
  * that rule. A marker anywhere in the file skips the file-level rules
@@ -49,6 +51,7 @@ const EXCEPTION_COMMENT = new RegExp(
 
 const CALLOUT_TAG = /<Callout\b(?<attributes>[^>]*)>/g;
 const CALLOUT_TYPE = /type\s*=\s*["'](?<value>[^"']+)["']/;
+const GUARDRAIL_TAG = /<InterpretationGuardrailCopy\b/g;
 const TABS_TAG = /<Tabs\b(?<attributes>[^>]*)>/g;
 const GROUP_ID = /\bgroupId\s*=\s*(?:\{[^}\n]+\}|"[^"\n]+"|'[^'\n]+')/;
 
@@ -230,10 +233,17 @@ export function checkWarningCallouts(file, content) {
     if (lineSkipped(line, "warning-callout", exceptions)) continue;
     lines.push(line);
   }
+  for (const match of content.matchAll(GUARDRAIL_TAG)) {
+    if (match.index === undefined) continue;
+    const line = lineNumberAt(content, match.index);
+    if (lineSkipped(line, "warning-callout", exceptions)) continue;
+    lines.push(line);
+  }
+  lines.sort((left, right) => left - right);
   if (lines.length <= 1) return [];
   return lines.slice(1).map((line) => ({
     file,
-    fix: "Keep one warning Callout on the page. Change the extra Callout to type info, or merge it into the existing warning.",
+    fix: "Keep one warning on the page. InterpretationGuardrailCopy counts as that warning. Change the extra Callout to type info, or merge it into the existing warning. A <!-- docs-check-exception: warning-callout --> marker on the extra line, or the line above it, is the only skip.",
     line,
     rule: "warning-callout",
   }));
