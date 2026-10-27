@@ -11,12 +11,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { analyticsControlAttributes } from "@/lib/atlas-analytics";
+import {
+  analyticsControlAttributes,
+  trackMethodologyOpened,
+} from "@/lib/atlas-analytics";
 import { DATA_DICTIONARY } from "@/lib/data-dictionary";
 
 export function DataDictionaryDialog() {
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (open)
+          trackMethodologyOpened(window.location.pathname, "data_dictionary");
+      }}
+    >
       <DialogTrigger
         render={
           <Button

@@ -51,8 +51,6 @@ export const uiControlIds = [
   "county_summary_copy",
   "county_scoring_link",
   "pdf_export",
-  "footer_privacy",
-  "footer_back_to_atlas",
   "page_retry",
   "feed_sources_retry",
   "nav_data_dictionary_close",
@@ -191,6 +189,22 @@ export const feedbackOutcomes = [
 ] as const;
 
 export type FeedbackOutcome = (typeof feedbackOutcomes)[number];
+
+export const askSurfaces = ["ask_atlas", "evidence_chat"] as const;
+
+export type AskSurface = (typeof askSurfaces)[number];
+
+export const askOutcomes = [
+  "answered",
+  "no_evidence",
+  "refused",
+  "unavailable",
+  "rate_limited",
+  "timeout",
+  "failed",
+] as const;
+
+export type AskOutcome = (typeof askOutcomes)[number];
 
 export type UiControlId = (typeof uiControlIds)[number];
 
@@ -341,6 +355,14 @@ type AnalyticsEvent =
       properties: { outcome: FeedbackOutcome };
     }
   | {
+      eventType: "atlas_ask_submitted";
+      properties: { ask_surface: AskSurface };
+    }
+  | {
+      eventType: "atlas_ask_answered";
+      properties: { ask_surface: AskSurface; ask_outcome: AskOutcome };
+    }
+  | {
       eventType: "atlas_feed_item_detail_opened";
       properties: {
         route_id: "intelligence_feed";
@@ -399,6 +421,8 @@ function isAllowlistedValue(
 
 const analyticsEnumAllowlists = {
   action: ["activated"],
+  ask_outcome: askOutcomes,
+  ask_surface: askSurfaces,
   change_source: ["range_control"],
   clear_scope: ["single", "all"],
   content_surface: ["methods_navigation", "source_card", "data_dictionary"],
@@ -797,6 +821,26 @@ export function trackFeedbackOutcomeViewed(outcome: FeedbackOutcome): void {
   atlasAnalytics.track({
     eventType: "atlas_feedback_outcome_viewed",
     properties: { outcome },
+  });
+}
+
+export function trackAskSubmitted(askSurface: AskSurface): void {
+  if (!askSurfaces.includes(askSurface)) return;
+  atlasAnalytics.track({
+    eventType: "atlas_ask_submitted",
+    properties: { ask_surface: askSurface },
+  });
+}
+
+export function trackAskAnswered(
+  askSurface: AskSurface,
+  askOutcome: AskOutcome
+): void {
+  if (!askSurfaces.includes(askSurface)) return;
+  if (!askOutcomes.includes(askOutcome)) return;
+  atlasAnalytics.track({
+    eventType: "atlas_ask_answered",
+    properties: { ask_surface: askSurface, ask_outcome: askOutcome },
   });
 }
 
