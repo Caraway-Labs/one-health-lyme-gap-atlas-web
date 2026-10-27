@@ -136,6 +136,10 @@ export const FEED_ITEM_UNAVAILABLE_MESSAGE =
   "The feed is unavailable right now.";
 export const FEED_ABSTRACT_NOT_PROVIDED_MESSAGE =
   "No abstract in the PubMed record.";
+export const FEED_ABSTRACT_UNAVAILABLE_MESSAGE =
+  "The full abstract is unavailable right now.";
+/** Screen-reader completion for an inline abstract expand. Not shown visually. */
+export const FEED_ABSTRACT_SHOWN_MESSAGE = "Full abstract shown.";
 export const FEED_FOOTER_PUBLIC_DOMAIN =
   "CDC and NIH content is public domain unless noted. PubMed abstracts remain subject to their publishers' copyright; see each abstract's notice.";
 export const FEED_FOOTER_NON_ENDORSEMENT =
@@ -265,6 +269,52 @@ export function feedPanelAbstract(entry: FeedEntry): FeedPanelAbstract {
       return exhaustive;
     }
   }
+}
+
+/** By-id abstract text. A null text means that payload has no abstract to show. */
+export function feedExpandedAbstract(entry: FeedEntry): {
+  copyrightLine: string | null;
+  text: string | null;
+} {
+  const abstract = feedPanelAbstract(entry);
+  switch (abstract.kind) {
+    case "text": {
+      return {
+        copyrightLine: abstract.copyrightLine,
+        text: abstract.text,
+      };
+    }
+    case "none":
+    case "not_provided": {
+      return { copyrightLine: null, text: null };
+    }
+    default: {
+      const exhaustive: never = abstract;
+      return exhaustive;
+    }
+  }
+}
+
+/**
+ * The fetched by-id abstract stays in effect after collapse. The list preview
+ * returns only while that payload still has abstract text.
+ */
+export function feedCardAbstractDisplay({
+  expanded,
+  preview,
+  resolved,
+}: {
+  expanded: boolean;
+  preview: { copyrightLine: string | null; text: string | null };
+  resolved: { copyrightLine: string | null; text: string | null } | null;
+}): { copyrightLine: string | null; text: string | null } {
+  if (resolved !== null && resolved.text === null) {
+    return resolved;
+  }
+  if (expanded && resolved !== null) {
+    return resolved;
+  }
+  return preview;
 }
 
 export function feedPanelDescription(

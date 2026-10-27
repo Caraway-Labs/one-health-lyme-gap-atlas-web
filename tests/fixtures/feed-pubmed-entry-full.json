@@ -1,0 +1,423 @@
+{
+  "entries": {
+    "6974656d70726576696577000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d70726576696577000000000000000000000000000000000000000000",
+        "revision_id": "7265767072657669657700000000000000000000000000000000000000000000",
+        "title": "Fixture preview article",
+        "canonical_url": "https://example.org/preview",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-preview",
+          "artifact_id": "artifact-preview",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "present",
+          "text": "nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph tick fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture",
+          "copyright_line": "© 2026 Fixture Publisher."
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d73686f72740000000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d73686f72740000000000000000000000000000000000000000000000",
+        "revision_id": "72657673686f7274000000000000000000000000000000000000000000000000",
+        "title": "Fixture short abstract",
+        "canonical_url": "https://example.org/short",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-short",
+          "artifact_id": "artifact-short",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "present",
+          "text": "short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short short tick",
+          "copyright_line": null
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d656d7074792d70726576696577000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d656d7074792d70726576696577000000000000000000000000000000",
+        "revision_id": "726576656d7074792d7072657669657700000000000000000000000000000000",
+        "title": "Fixture empty preview",
+        "canonical_url": "https://example.org/empty-preview",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-empty-preview",
+          "artifact_id": "artifact-empty-preview",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "present",
+          "text": "Fixture full abstract after an empty preview.",
+          "copyright_line": "© 2026 Fixture Publisher."
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d6f746865720000000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d6f746865720000000000000000000000000000000000000000000000",
+        "revision_id": "7265766f74686572000000000000000000000000000000000000000000000000",
+        "title": "Fixture county surveillance",
+        "canonical_url": "https://example.org/other",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-other",
+          "artifact_id": "artifact-other",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "CDC",
+        "source": {
+          "source_id": "cdc-fixture",
+          "registry_version": 1,
+          "organization": "Centers for Disease Control and Prevention",
+          "reviewed_trust_classification": "official_public_health"
+        },
+        "source_family": "cdc_mmwr",
+        "source_family_label": "CDC MMWR",
+        "description": {
+          "state": "present",
+          "text": "County surveillance note for a non PubMed item."
+        },
+        "tags": [],
+        "authors": [],
+        "pmid": null,
+        "pubmed_url": null,
+        "attribution": "Source: CDC",
+        "abstract": null
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d656d7074790000000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d656d7074790000000000000000000000000000000000000000000000",
+        "revision_id": "726576656d707479000000000000000000000000000000000000000000000000",
+        "title": "Fixture blank abstract",
+        "canonical_url": "https://example.org/empty",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-empty",
+          "artifact_id": "artifact-empty",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "empty",
+          "text": "",
+          "copyright_line": null
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d6d697373696e672d6162737472616374000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d6d697373696e672d6162737472616374000000000000000000000000",
+        "revision_id": "7265766d697373696e672d616273747261637400000000000000000000000000",
+        "title": "Fixture record without abstract",
+        "canonical_url": "https://example.org/missing-abstract",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-missing-abstract",
+          "artifact_id": "artifact-missing-abstract",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "not_provided",
+          "text": null,
+          "copyright_line": null
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d68656c64000000000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d68656c64000000000000000000000000000000000000000000000000",
+        "revision_id": "72657668656c6400000000000000000000000000000000000000000000000000",
+        "title": "Fixture private abstract",
+        "canonical_url": "https://example.org/held",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-held",
+          "artifact_id": "artifact-held",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "withheld",
+          "text": null,
+          "copyright_line": null
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d71756965740000000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d71756965740000000000000000000000000000000000000000000000",
+        "revision_id": "7265767175696574000000000000000000000000000000000000000000000000",
+        "title": "Fixture quiet abstract",
+        "canonical_url": "https://example.org/quiet",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-quiet",
+          "artifact_id": "artifact-quiet",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "suppressed",
+          "text": null,
+          "copyright_line": null
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    },
+    "6974656d6c6f6e67000000000000000000000000000000000000000000000000": {
+      "data": {
+        "item_id": "6974656d6c6f6e67000000000000000000000000000000000000000000000000",
+        "revision_id": "7265766c6f6e6700000000000000000000000000000000000000000000000000",
+        "title": "Fixture long abstract",
+        "canonical_url": "https://example.org/long",
+        "published_at": "2026-03-02T15:04:00Z",
+        "fetched_at": "2026-03-03T12:00:00Z",
+        "provenance": {
+          "run_id": "run-long",
+          "artifact_id": "artifact-long",
+          "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "parser_version": "rss-atom-native-v2",
+          "fetch_version": "fetch-v2",
+          "normalization_version": "intelligence-identity-v2"
+        },
+        "limitations": [],
+        "contract_version": "2.0.0",
+        "publication_date_state": "present",
+        "publisher": "Fixture Journal",
+        "source": {
+          "source_id": "pubmed-fixture",
+          "registry_version": 1,
+          "organization": "National Library of Medicine",
+          "reviewed_trust_classification": "research_index"
+        },
+        "source_family": "pubmed",
+        "source_family_label": "PubMed",
+        "description": {
+          "state": "not_provided",
+          "text": null
+        },
+        "tags": ["Lyme disease"],
+        "authors": ["Doe J"],
+        "pmid": "12345678",
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/12345678/",
+        "attribution": "Courtesy of the U.S. National Library of Medicine",
+        "abstract": {
+          "state": "present",
+          "text": "nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph nymph tick fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture fixture",
+          "copyright_line": "© 2026 Fixture Publisher."
+        }
+      },
+      "meta": {
+        "projection_version": "intelligence-feed-read-v2"
+      }
+    }
+  }
+}

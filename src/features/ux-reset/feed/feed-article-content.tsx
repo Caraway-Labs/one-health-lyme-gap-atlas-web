@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
+import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,16 +12,25 @@ import {
 } from "@/lib/atlas-analytics";
 
 import {
+  FEED_ABSTRACT_SHOWN_MESSAGE,
+  FEED_ABSTRACT_UNAVAILABLE_MESSAGE,
   FEED_EXTERNAL_LINK_REL,
   FEED_EXTERNAL_LINK_TARGET,
+  FEED_ITEM_MISSING_MESSAGE,
+  feedCardAbstractDisplay,
   feedCardAuthorLine,
   feedCardSummary,
   feedCardTags,
+  feedExpandedAbstract,
+  feedItemLookupFailure,
   feedItemTitle,
   feedPublicationDate,
   feedPublisherHref,
   feedPublisherLabel,
+  type FeedCardSummary,
+  type FeedItemLookupFailure,
 } from "./feed-presentation";
+import { useIntelligenceFeedEntry } from "./use-intelligence-feed-entry";
 
 function FeedPublicationDateText({ entry }: { entry: FeedListEntry }) {
   const date = feedPublicationDate(entry);
@@ -70,6 +80,136 @@ function FeedArticleTitle({
   );
 }
 
+function FeedPubMedLink({ href }: { href: string }) {
+  return (
+    <a
+      className="ux-reset-feed-pubmed-link"
+      href={href}
+      rel={FEED_EXTERNAL_LINK_REL}
+      target={FEED_EXTERNAL_LINK_TARGET}
+    >
+      View on PubMed
+      <ExternalLink aria-hidden="true" />
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
+  );
+}
+
+function abstractStatus(
+  failure: FeedItemLookupFailure | null,
+  fullText: string | null
+): string {
+  switch (failure) {
+    case "missing": {
+      return FEED_ITEM_MISSING_MESSAGE;
+    }
+    case "unavailable": {
+      return FEED_ABSTRACT_UNAVAILABLE_MESSAGE;
+    }
+    case null: {
+      return fullText === null ? "" : FEED_ABSTRACT_SHOWN_MESSAGE;
+    }
+    default: {
+      const exhaustive: never = failure;
+      return exhaustive;
+    }
+  }
+}
+
+function FeedCardAbstract({
+  entry,
+  pubmedHref,
+  summary,
+}: {
+  entry: FeedListEntry;
+  pubmedHref: string | null;
+  summary: Extract<FeedCardSummary, { kind: "abstract" }>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const regionId = `feed-abstract-${entry.item_id}-${entry.revision_id}`;
+  const lookup = useIntelligenceFeedEntry(
+    entry.item_id,
+    expanded && summary.hasMore
+  );
+  const resolved = lookup.data ? feedExpandedAbstract(lookup.data) : null;
+  const previewText = summary.text.length > 0 ? summary.text : null;
+  const display = feedCardAbstractDisplay({
+    expanded,
+    preview: {
+      copyrightLine: summary.copyrightLine,
+      text: previewText,
+    },
+    resolved,
+  });
+  const busy = expanded && lookup.isFetching && lookup.data === undefined;
+  const showError = expanded && lookup.isError && !lookup.isFetching;
+  const failure = showError ? feedItemLookupFailure(lookup.error) : null;
+  const { copyrightLine, text } = display;
+  const status = abstractStatus(
+    failure,
+    expanded && resolved !== null ? resolved.text : null
+  );
+  return (
+    <div>
+      <div aria-busy={busy} data-testid="feed-abstract-region" id={regionId}>
+        {text === null ? null : (
+          <p className="ux-reset-feed-summary-text" data-testid="feed-abstract">
+            {text}
+          </p>
+        )}
+      </div>
+      {copyrightLine === null ? null : (
+        <p
+          className="type-small ux-reset-feed-copyright"
+          data-testid="feed-abstract-copyright"
+        >
+          {copyrightLine}
+        </p>
+      )}
+      {status.length === 0 ? null : (
+        <p
+          className={
+            status === FEED_ABSTRACT_SHOWN_MESSAGE
+              ? "sr-only"
+              : "ux-reset-feed-abstract-status"
+          }
+          data-testid="feed-abstract-status"
+          role="status"
+        >
+          {status}
+        </p>
+      )}
+      {summary.hasMore ? (
+        <div className="ux-reset-feed-abstract-actions">
+          <Button
+            aria-controls={regionId}
+            aria-expanded={expanded}
+            onClick={() => {
+              setExpanded((current) => !current);
+            }}
+            type="button"
+            variant="outline"
+          >
+            {expanded ? "Show less" : "Show full abstract"}
+          </Button>
+          {failure === "unavailable" ? (
+            <Button
+              onClick={() => {
+                void lookup.refetch();
+              }}
+              type="button"
+              variant="outline"
+            >
+              Retry
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      {pubmedHref ? <FeedPubMedLink href={pubmedHref} /> : null}
+    </div>
+  );
+}
+
 export function FeedArticleContent({
   entry,
   headingLevel,
@@ -88,6 +228,7 @@ export function FeedArticleContent({
   const summary = feedCardSummary(entry);
   const authorLine = feedCardAuthorLine(entry.authors);
   const tags = feedCardTags(entry.tags);
+  const pubmedHref = feedPublisherHref(entry.pubmed_url);
   return (
     <div className="ux-reset-feed-article-copy">
       <FeedArticleTitle
@@ -119,19 +260,14 @@ export function FeedArticleContent({
         </div>
       ) : null}
       {summary.kind === "abstract" ? (
-        <div>
-          <p className="ux-reset-feed-summary-text" data-testid="feed-abstract">
-            {summary.text}
-          </p>
-          {summary.copyrightLine === null ? null : (
-            <p
-              className="type-small ux-reset-feed-copyright"
-              data-testid="feed-abstract-copyright"
-            >
-              {summary.copyrightLine}
-            </p>
-          )}
-        </div>
+        <FeedCardAbstract
+          entry={entry}
+          pubmedHref={pubmedHref}
+          summary={summary}
+        />
+      ) : null}
+      {summary.kind !== "abstract" && pubmedHref !== null ? (
+        <FeedPubMedLink href={pubmedHref} />
       ) : null}
       {authorLine ? (
         <p className="type-small ux-reset-feed-attribution">{authorLine}</p>
@@ -172,6 +308,7 @@ export function FeedArticleContent({
       ) : null}
       <div className="ux-reset-feed-actions">
         {summary.kind === "abstract" && summary.hasMore ? (
+          // Read more keeps the detail-panel path and its feed_card_read_more event.
           <Button
             onClick={() => {
               onOpen(entry, "feed_card_read_more");
