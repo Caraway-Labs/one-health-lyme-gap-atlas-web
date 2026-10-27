@@ -6435,8 +6435,9 @@ html[data-workspace-restore="concealed"] .ux-reset-pro-app {
 .ux-reset-feed-select-menu[data-slot="select-content"] {
   width: max-content;
   min-width: max(var(--anchor-width), 18rem);
-  max-width: min(28rem, calc(100vw - 1.5rem));
+  max-width: min(42rem, calc(100vw - 1.5rem));
   overflow-x: visible;
+  background: var(--popover);
 }
 
 .ux-reset-feed-select-menu [data-slot="select-item"] {

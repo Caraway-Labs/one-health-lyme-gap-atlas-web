@@ -172,7 +172,7 @@ export function IntelligenceFeedFilters({
               <SelectContent
                 align="start"
                 alignItemWithTrigger={false}
-                className="ux-reset-feed-select-menu w-max max-w-[min(28rem,calc(100vw-1.5rem))] min-w-[max(var(--anchor-width),18rem)]"
+                className="ux-reset-feed-select-menu w-max max-w-[min(42rem,calc(100vw-1.5rem))] min-w-[max(var(--anchor-width),18rem)]"
               >
                 <SelectItem
                   className="ux-reset-feed-select-item"
@@ -236,7 +236,7 @@ export function IntelligenceFeedFilters({
               <SelectContent
                 align="start"
                 alignItemWithTrigger={false}
-                className="ux-reset-feed-select-menu w-max max-w-[min(28rem,calc(100vw-1.5rem))] min-w-[max(var(--anchor-width),18rem)]"
+                className="ux-reset-feed-select-menu w-max max-w-[min(42rem,calc(100vw-1.5rem))] min-w-[max(var(--anchor-width),18rem)]"
               >
                 {FEED_PUBLISHED_PRESETS.map((preset) => (
                   <SelectItem
