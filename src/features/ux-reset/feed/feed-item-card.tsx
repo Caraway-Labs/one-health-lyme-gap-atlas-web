@@ -5,7 +5,7 @@ import type { FeedDetailEntrySurface } from "@/lib/atlas-analytics";
 
 import { FeedArticleContent } from "./feed-article-content";
 import { FeedDecorImage } from "./feed-decor-image";
-import { feedCardIllustration } from "./feed-illustrations";
+import { feedIllustrationAt } from "./feed-illustrations";
 
 export function FeedItemCard({
   eagerImage = false,
@@ -20,7 +20,7 @@ export function FeedItemCard({
   itemCaveats: readonly string[];
   onOpen: (entry: FeedListEntry, surface: FeedDetailEntrySurface) => void;
 }) {
-  const image = feedCardIllustration(entry, imageSlot);
+  const image = feedIllustrationAt(imageSlot);
   return (
     <li className="ux-reset-feed-card">
       <div className="ux-reset-feed-thumb">
@@ -32,7 +32,7 @@ export function FeedItemCard({
       </div>
       <FeedArticleContent
         entry={entry}
-        headingLevel="h2"
+        headingLevel="h3"
         itemCaveats={itemCaveats}
         onOpen={onOpen}
       />

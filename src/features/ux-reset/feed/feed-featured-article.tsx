@@ -11,7 +11,7 @@ import {
 import { FeedArticleContent } from "./feed-article-content";
 import { FeedDecorImage } from "./feed-decor-image";
 import { featuredFeedKicker } from "./feed-feature";
-import { FEED_FEATURE_ILLUSTRATION } from "./feed-illustrations";
+import { feedIllustrationAt } from "./feed-illustrations";
 import {
   FEED_EXTERNAL_LINK_REL,
   FEED_EXTERNAL_LINK_TARGET,
@@ -50,7 +50,7 @@ export function FeedFeaturedArticle({
         <FeedDecorImage
           eager
           sizes="(min-width: 860px) 36rem, 100vw"
-          src={FEED_FEATURE_ILLUSTRATION.src}
+          src={feedIllustrationAt(0).src}
         />
         {href ? (
           <a

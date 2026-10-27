@@ -149,6 +149,7 @@ test("shows trusted-source items from workspace navigation", async ({
   ).toBeVisible();
 
   const cdc = page.getByRole("link", {
+    exact: true,
     name: "Lyme disease surveillance update (opens in a new tab)",
   });
   await expect(cdc).toHaveAttribute(

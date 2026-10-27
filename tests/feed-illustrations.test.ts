@@ -1,55 +1,42 @@
 import { describe, expect, it } from "vitest";
 
-import { feedCardIllustration } from "@/features/ux-reset/feed/feed-illustrations";
+import {
+  FEED_ILLUSTRATIONS,
+  feedIllustrationAt,
+} from "@/features/ux-reset/feed/feed-illustrations";
 
 describe("research news illustrations", () => {
-  it("maps explicit tags and ignores the title", () => {
-    expect(
-      feedCardIllustration({
-        item_id: "a",
-        tags: ["Borrelia burgdorferi"],
-      }).id
-    ).toBe("pathogen");
-    expect(
-      feedCardIllustration({
-        item_id: "a",
-        tags: ["White-tailed deer density"],
-      }).id
-    ).toBe("deer");
-    expect(
-      feedCardIllustration({
-        item_id: "a",
-        tags: ["Tick surveillance"],
-      }).id
-    ).toBe("sampling");
-    expect(
-      feedCardIllustration({
-        item_id: "a",
-        tags: ["Ixodes scapularis"],
-      }).id
-    ).toBe("tick");
-    expect(
-      feedCardIllustration({
-        item_id: "a",
-        tags: ["Laboratory assay"],
-      }).id
-    ).toBe("laboratory");
+  it("keeps one entry for each distinct picture", () => {
+    const ids = FEED_ILLUSTRATIONS.map((image) => image.id);
+    const sources = FEED_ILLUSTRATIONS.map((image) => image.src);
+    expect(new Set(ids).size).toBe(FEED_ILLUSTRATIONS.length);
+    expect(new Set(sources).size).toBe(FEED_ILLUSTRATIONS.length);
+    expect(FEED_ILLUSTRATIONS).toHaveLength(25);
+    expect(FEED_ILLUSTRATIONS[0]?.id).toBe("forest-lake");
   });
 
-  it("gives the first six untagged cards six different pictures", () => {
-    const ids = Array.from(
-      { length: 6 },
-      (_, slot) =>
-        feedCardIllustration(
-          { item_id: `item-${slot}`, tags: ["Weekly report"] },
-          slot
-        ).id
+  it("uses every picture once before repeating, including the feature", () => {
+    const firstCycle = Array.from(
+      { length: FEED_ILLUSTRATIONS.length },
+      (_, position) => feedIllustrationAt(position).src
     );
-    expect(new Set(ids).size).toBe(6);
-    expect(
-      feedCardIllustration({ item_id: "item-0", tags: [] }, 0)
-    ).toStrictEqual(
-      feedCardIllustration({ item_id: "item-0", tags: ["Weekly report"] }, 0)
+    expect(new Set(firstCycle).size).toBe(FEED_ILLUSTRATIONS.length);
+    expect(feedIllustrationAt(FEED_ILLUSTRATIONS.length).src).toBe(
+      feedIllustrationAt(0).src
     );
+    expect(feedIllustrationAt(1).src).not.toBe(feedIllustrationAt(0).src);
+  });
+
+  it("keeps the same picture for a position when later positions are added", () => {
+    const before = Array.from(
+      { length: 10 },
+      (_, position) => feedIllustrationAt(position).id
+    );
+    const after = Array.from(
+      { length: 30 },
+      (_, position) => feedIllustrationAt(position).id
+    );
+    expect(after.slice(0, 10)).toStrictEqual(before);
+    expect(feedIllustrationAt(4)).toStrictEqual(feedIllustrationAt(4));
   });
 });

@@ -17,6 +17,11 @@ import {
 } from "@/lib/atlas-analytics";
 
 import {
+  FEATURED_FEED_SUBSET_NOTE,
+  selectFeaturedFeedArticle,
+} from "./feed-feature";
+import { FeedFeaturedArticle } from "./feed-featured-article";
+import {
   activeFeedFilterCount,
   DEFAULT_FEED_PUBLISHED,
   FEED_PUBLISHED_LABELS,
@@ -99,6 +104,54 @@ function FeedFooter() {
       </p>
       <p>{FEED_FOOTER_NON_ENDORSEMENT}</p>
     </footer>
+  );
+}
+
+function ResearchNewsArticles({
+  items,
+  moreAvailable,
+  onOpen,
+  sharedCaveats,
+}: {
+  items: readonly FeedListEntry[];
+  moreAvailable: boolean;
+  onOpen: (entry: FeedListEntry, surface: FeedDetailEntrySurface) => void;
+  sharedCaveats: readonly string[];
+}) {
+  const articles = selectFeaturedFeedArticle(items);
+  return (
+    <>
+      {articles.featured ? (
+        <ul className="ux-reset-feed-feature-list">
+          <FeedFeaturedArticle
+            entry={articles.featured}
+            itemCaveats={itemFeedCaveats(articles.featured, sharedCaveats)}
+            moreAvailable={moreAvailable}
+            onOpen={onOpen}
+          />
+        </ul>
+      ) : null}
+      {articles.featured && moreAvailable ? (
+        <p className="ux-reset-feed-subset-note">{FEATURED_FEED_SUBSET_NOTE}</p>
+      ) : null}
+      {articles.rest.length > 0 ? (
+        <>
+          <h2 className="ux-reset-feed-latest-heading">Latest articles</h2>
+          <ul className="ux-reset-feed-list">
+            {articles.rest.map((entry, index) => (
+              <FeedItemCard
+                eagerImage={index < 6}
+                entry={entry}
+                imageSlot={articles.featured ? index + 1 : index}
+                itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
+                key={`${entry.item_id}:${entry.revision_id}:${index}`}
+                onOpen={onOpen}
+              />
+            ))}
+          </ul>
+        </>
+      ) : null}
+    </>
   );
 }
 
@@ -391,18 +444,12 @@ export function IntelligenceFeedExperience() {
           </AtlasStatusMessage>
         ) : null}
         {items.length > 0 ? (
-          <ul className="ux-reset-feed-list">
-            {items.map((entry, index) => (
-              <FeedItemCard
-                eagerImage={index < 6}
-                entry={entry}
-                imageSlot={index}
-                itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
-                key={`${entry.item_id}:${entry.revision_id}:${index}`}
-                onOpen={openDetail}
-              />
-            ))}
-          </ul>
+          <ResearchNewsArticles
+            items={items}
+            moreAvailable={Boolean(feed.hasNextPage)}
+            onOpen={openDetail}
+            sharedCaveats={sharedCaveats}
+          />
         ) : null}
         <p className="ux-reset-feed-imagery-note">
           {RESEARCH_NEWS_IMAGERY_NOTE}
