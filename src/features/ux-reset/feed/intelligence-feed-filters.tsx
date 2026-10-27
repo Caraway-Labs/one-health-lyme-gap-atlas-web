@@ -128,8 +128,6 @@ export function IntelligenceFeedFilters({
             type="search"
           />
         </div>
-      </div>
-      <div className="ux-reset-research-filter-row">
         <div
           aria-describedby={RESEARCH_NEWS_PENDING_NOTE_ID}
           aria-label="Topics"
@@ -148,6 +146,8 @@ export function IntelligenceFeedFilters({
             </button>
           ))}
         </div>
+      </div>
+      <div className="ux-reset-research-filter-row">
         <div className="ux-reset-feed-controls">
           <div className="ux-reset-feed-field">
             <label className="type-small" htmlFor="intelligence-feed-source">
@@ -169,9 +169,14 @@ export function IntelligenceFeedFilters({
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                align="start"
+                alignItemWithTrigger={false}
+                className="ux-reset-feed-select-menu w-max max-w-[min(28rem,calc(100vw-1.5rem))] min-w-[max(var(--anchor-width),18rem)]"
+              >
                 <SelectItem
                   className="ux-reset-feed-select-item"
+                  textWrap
                   value={ALL_FEED_SOURCES_VALUE}
                 >
                   All sources
@@ -180,6 +185,7 @@ export function IntelligenceFeedFilters({
                   <SelectItem
                     className="ux-reset-feed-select-item"
                     key={option.sourceId}
+                    textWrap
                     value={option.sourceId}
                   >
                     {option.label}
@@ -227,11 +233,16 @@ export function IntelligenceFeedFilters({
               >
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                align="start"
+                alignItemWithTrigger={false}
+                className="ux-reset-feed-select-menu w-max max-w-[min(28rem,calc(100vw-1.5rem))] min-w-[max(var(--anchor-width),18rem)]"
+              >
                 {FEED_PUBLISHED_PRESETS.map((preset) => (
                   <SelectItem
                     className="ux-reset-feed-select-item"
                     key={preset}
+                    textWrap
                     value={preset}
                   >
                     {FEED_PUBLISHED_LABELS[preset]}

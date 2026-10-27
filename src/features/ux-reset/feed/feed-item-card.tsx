@@ -32,7 +32,7 @@ export function FeedItemCard({
       </div>
       <FeedArticleContent
         entry={entry}
-        headingLevel="h2"
+        headingLevel="h3"
         itemCaveats={itemCaveats}
         onOpen={onOpen}
       />
