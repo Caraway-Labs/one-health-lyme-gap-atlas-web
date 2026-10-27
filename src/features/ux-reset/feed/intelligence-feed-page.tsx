@@ -142,7 +142,7 @@ function ResearchNewsArticles({
               <FeedItemCard
                 eagerImage={index < 6}
                 entry={entry}
-                imageSlot={index}
+                imageSlot={articles.featured ? index + 1 : index}
                 itemCaveats={itemFeedCaveats(entry, sharedCaveats)}
                 key={`${entry.item_id}:${entry.revision_id}:${index}`}
                 onOpen={onOpen}
