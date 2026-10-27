@@ -3,6 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+import {
+  checkDocsCopyStructure,
+  formatDocsCheckFinding,
+} from "./docs-check-rules.mjs";
+
 const repositoryRoot = path.resolve(import.meta.dirname, "..");
 const docsRoot = path.join(repositoryRoot, "content", "docs");
 const appRoot = path.join(repositoryRoot, "src", "app");
@@ -101,11 +106,12 @@ for (const file of contentFiles) {
     if (!/^title:\s*\S.+$/m.test(frontmatter.groups.frontmatter)) {
       errors.push(`${relativeFile}: frontmatter title is required`);
     }
-    if (!/^description:\s*\S.+$/m.test(frontmatter.groups.frontmatter)) {
-      errors.push(`${relativeFile}: frontmatter description is required`);
-    }
   } else {
     errors.push(`${relativeFile}: missing frontmatter`);
+  }
+
+  for (const finding of checkDocsCopyStructure(relativeFile, content)) {
+    errors.push(formatDocsCheckFinding(finding));
   }
 
   for (const match of content.matchAll(/\]\((?<href>[^)]+)\)/g)) {
