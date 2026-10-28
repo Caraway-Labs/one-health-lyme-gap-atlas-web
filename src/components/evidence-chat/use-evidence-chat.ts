@@ -15,6 +15,12 @@ import type {
 } from "@/generated/models";
 import { AtlasApiError } from "@/lib/api-mutator";
 import {
+  askOutcomeForFailure,
+  askOutcomeForGovernedTurn,
+  askOutcomeForLiteratureStatus,
+  askSurfaceForLayout,
+} from "@/lib/ask-atlas-analytics";
+import {
   acceptAskAtlasPayload,
   AskAtlasAnswerContractError,
 } from "@/lib/ask-atlas-answer-contract";
@@ -31,6 +37,7 @@ import {
   resolveConversationSelection,
   synchronizeAssistantConversationUrl,
 } from "@/lib/assistant-conversation-url";
+import { trackAskAnswered, trackAskSubmitted } from "@/lib/atlas-analytics";
 import type { LocalConversation } from "@/lib/knowledge-chat-storage";
 import {
   CHAT_STORAGE_EVENT,
@@ -115,6 +122,7 @@ export function useEvidenceChat({
   structuredContext?: StructuredContext;
 }): EvidenceChatConversationModel {
   const syncWorkspaceUrl = mode === "workspace";
+  const askSurface = askSurfaceForLayout(mode);
   const requestSerial = useRef(0);
   const ownerAlive = useRef(true);
   const requestAbort = useRef<Set<AbortController>>(new Set());
@@ -531,6 +539,7 @@ export function useEvidenceChat({
       controller.abort(timeoutError);
       setRetryQuestion(question);
       setFailure(clientFailure(timeoutError));
+      trackAskAnswered(askSurface, "timeout");
       focusQuestionOnSettle.current = true;
       setPendingStatusVisible(false);
       setPending(false);
@@ -548,6 +557,7 @@ export function useEvidenceChat({
     pendingStatusTimer.current = statusTimer;
     setPending(true);
     setFailure(null);
+    trackAskSubmitted(askSurface);
     try {
       const selectedMode = sourceModeSelection
         ? sourceModeRef.current
@@ -570,6 +580,10 @@ export function useEvidenceChat({
         return;
       }
       if (result.kind === "literature") {
+        trackAskAnswered(
+          askSurface,
+          askOutcomeForLiteratureStatus(result.response.status)
+        );
         settleAcceptedResponse(
           question,
           result.response,
@@ -577,6 +591,7 @@ export function useEvidenceChat({
         );
         return;
       }
+      trackAskAnswered(askSurface, askOutcomeForGovernedTurn(result));
       settleGovernedResponse(question, result, replaceOperationalTurn);
     } catch (error) {
       if (
@@ -590,6 +605,10 @@ export function useEvidenceChat({
         const accepted = acceptAskAtlasPayload(error.responseBody);
         if (accepted.ok) {
           // Legacy 502/503 responses can still carry the same typed body.
+          trackAskAnswered(
+            askSurface,
+            askOutcomeForLiteratureStatus(accepted.response.status)
+          );
           settleAcceptedResponse(
             question,
             accepted.response,
@@ -603,10 +622,12 @@ export function useEvidenceChat({
           );
           setRetryQuestion(question);
           setFailure(clientFailure(contractError));
+          trackAskAnswered(askSurface, "failed");
           return;
         }
       }
       const nextFailure = clientFailure(error);
+      trackAskAnswered(askSurface, askOutcomeForFailure(nextFailure.state));
       setRetryQuestion(nextFailure.retry ? question : "");
       setFailure(nextFailure);
     } finally {

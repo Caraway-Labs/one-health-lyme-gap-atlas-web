@@ -1106,7 +1106,24 @@ describe(EvidenceChat, () => {
       expect(localStorage.getItem(CHAT_STORAGE_KEY)).not.toContain(
         "browser-secret"
       );
-      expect(track.mock.calls).toStrictEqual([]);
+      // Only closed enums leave the page: no question text, answer, or ids.
+      expect(track.mock.calls).toStrictEqual([
+        [
+          {
+            eventType: "atlas_ask_submitted",
+            properties: { ask_surface: "ask_atlas" },
+          },
+        ],
+        [
+          {
+            eventType: "atlas_ask_answered",
+            properties: {
+              ask_outcome: "unavailable",
+              ask_surface: "ask_atlas",
+            },
+          },
+        ],
+      ]);
     } finally {
       track.mockRestore();
     }

@@ -9,9 +9,14 @@ import { Card } from "@/components/ui/card";
 import type { AtlasMetadata } from "@/generated/models";
 import {
   analyticsControlAttributes,
+  trackMethodologyOpened,
   trackProvenanceOpened,
 } from "@/lib/atlas-analytics";
 import { formatAtlasTimestamp } from "@/lib/atlas-evidence-metadata";
+
+function trackMethodsNavigation(): void {
+  trackMethodologyOpened(window.location.pathname, "methods_navigation");
+}
 
 export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
   return (
@@ -28,13 +33,14 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
         title="How to interpret the Atlas"
       />
       <p className="methods-education-links">
-        <a href="#release-education">
+        <a href="#release-education" onClick={trackMethodsNavigation}>
           What release labels and methodology versions mean
         </a>
         {" · "}
         <Link
           className="methods-docs-link"
           href="/docs/releases-and-methodology"
+          onClick={trackMethodsNavigation}
         >
           Read the release and methodology guide
         </Link>
@@ -42,6 +48,7 @@ export function MethodsSection({ metadata }: { metadata: AtlasMetadata }) {
         <Link
           className="methods-docs-link"
           href="/docs/evidence-and-uncertainty"
+          onClick={trackMethodsNavigation}
         >
           Interpreting evidence and uncertainty
         </Link>
