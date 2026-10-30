@@ -123,23 +123,24 @@ describe("Investigation Workspace county decision support", () => {
     expect(
       screen.getByRole("region", { name: "Conduct targeted follow-up" })
     ).toBeTruthy();
-    expect(
-      screen.getByTestId("follow-up-interpretation").textContent ?? ""
-    ).toContain(
-      "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation."
-    );
-    expect(
-      [
-        "Human disease surveillance",
-        "Vector and pathogen surveillance",
-        "Clinical and laboratory reporting",
-        "Community context and outreach",
-        "Coordination and documentation",
-      ].every((label) => screen.getByText(label))
-    ).toBeTruthy();
-    fireEvent.click(
-      screen.getByText("Questions, partner roles, and official resources")
-    );
+    expect({
+      interpretation: screen.getByTestId("follow-up-interpretation")
+        .textContent,
+      labels: [
+        "Review county case information",
+        "Review tick and pathogen records",
+        "Clarify reporting, if needed",
+        "Consider prevention needs",
+        "Record the question and next step",
+      ].every((label) => screen.getByText(label)),
+      partners: screen.getAllByText(/Potential partners:/).length,
+    }).toStrictEqual({
+      interpretation:
+        "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted.",
+      labels: true,
+      partners: 5,
+    });
+    fireEvent.click(screen.getByText("Related official resources"));
     expect(
       screen
         .getByRole("link", {
@@ -158,9 +159,7 @@ describe("Investigation Workspace county decision support", () => {
     render(<CountyActionPlan detail={{ ...detail, color: "#111111" }} />);
     const interpretation =
       screen.getByTestId("follow-up-interpretation").textContent ?? "";
-    expect(interpretation).toContain(
-      "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation."
-    );
+    expect(interpretation).toContain("No review level is assigned.");
     expect(
       screen.getByTestId("follow-up-verification-note").textContent ?? ""
     ).toContain("not a scored recommendation");

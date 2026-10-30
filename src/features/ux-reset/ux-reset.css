@@ -2750,23 +2750,6 @@
 
 .ux-reset-follow-up-questions {
   margin-top: 0.85rem;
-  padding-top: 0;
-  border-top: 1px solid var(--line);
-}
-
-.ux-reset-follow-up-questions summary,
-.ux-reset-follow-up-questions p {
-  margin: 0;
-}
-
-.ux-reset-follow-up-questions ol {
-  margin: 0.45rem 0 0;
-  padding-left: 1.2rem;
-  list-style: decimal;
-}
-
-.ux-reset-follow-up-questions li + li {
-  margin-top: 0.35rem;
 }
 
 .ux-reset-explorer-map-follow-up .action-plan {
@@ -2788,7 +2771,10 @@
 }
 
 .action-plan-explorer .action-divider-rows li {
-  display: block;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
   padding: 0.85rem 0;
   border: 0;
   border-radius: 0;

@@ -117,7 +117,7 @@ describe("County profile presentation", () => {
       screen.getByRole("region", { name: "Conduct targeted follow-up" })
         .textContent
     ).toContain(
-      "not individual risk measurement, proof of underreporting, or a mandate for investigation."
+      "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted."
     );
   });
 });

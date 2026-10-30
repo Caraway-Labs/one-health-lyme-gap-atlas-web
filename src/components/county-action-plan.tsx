@@ -1,15 +1,14 @@
 import Link from "next/link";
 
-import { explorerFollowUpRows } from "@/features/ux-reset/review/explorer-follow-up-display";
 import type { CountyDetail } from "@/generated/models";
 import {
-  FOLLOW_UP_QUESTIONS_INTRO,
   FOLLOW_UP_WHAT_IF_NOTE,
   FOLLOW_UP_WHAT_IF_TITLE,
 } from "@/lib/follow-up-response-content";
 import {
   buildCountyFollowUp,
   FOLLOW_UP_INTERPRETATION,
+  FOLLOW_UP_UNAVAILABLE_INTERPRETATION,
   type FollowUpReviewContext,
   type FollowUpWorkflowRow,
 } from "@/lib/follow-up-workflows";
@@ -34,14 +33,29 @@ export const PROGRAM_RESOURCES = [
   },
 ];
 
-function FollowUpRow({ row }: { row: FollowUpWorkflowRow }) {
+function FollowUpRow({
+  index,
+  row,
+}: {
+  index: number;
+  row: FollowUpWorkflowRow;
+}) {
   return (
     <li data-category={row.id} data-testid={`follow-up-${row.id}`}>
-      <strong>{row.label}</strong>
-      <span>
-        <span className="action-lead">{row.action}</span>
-        {row.detail ? <span className="action-fact">{row.detail}</span> : null}
+      <span aria-hidden="true" className="action-index">
+        {index}
       </span>
+      <div className="action-copy">
+        <strong>{row.label}</strong>
+        <p>
+          {row.action}
+          {row.detail ? ` ${row.detail}` : null}
+        </p>
+        <p className="action-partners">
+          <span>Potential partners: </span>
+          {row.partners}
+        </p>
+      </div>
     </li>
   );
 }
@@ -62,21 +76,19 @@ export function CountyActionPlan({
   omitDisclaimers?: boolean;
   reviewContext?: FollowUpReviewContext;
   showEyebrow?: boolean;
-  /** Explorer rows stay out of the county profile and other document views. */
+  /** Explorer keeps official resources in the adjacent card. */
   variant?: "document" | "explorer";
   whatIfActive?: boolean;
 }) {
   const workflow = buildCountyFollowUp(detail, reviewContext);
   const headingId = `${idPrefix}county-action-heading-${detail.fips}`;
-  const questions = workflow.rows.map((row) => ({
-    id: row.id,
-    question: row.verifyQuestion,
-  }));
-  const partners = workflow.rows.map((row) => ({
-    id: row.id,
-    label: row.label,
-    partners: row.partners,
-  }));
+  const questionsHeadingId = `${idPrefix}follow-up-questions-${detail.fips}`;
+  const QuestionsHeading = headingLevel === "h3" ? "h4" : "h5";
+  const explorer = variant === "explorer";
+  const interpretation =
+    workflow.level.status === "assigned"
+      ? FOLLOW_UP_INTERPRETATION
+      : FOLLOW_UP_UNAVAILABLE_INTERPRETATION;
   const resources = workflow.rows.flatMap((row) =>
     row.resources.map((resource) => resource)
   );
@@ -84,8 +96,6 @@ export function CountyActionPlan({
     (resource, index) =>
       resources.findIndex((entry) => entry.id === resource.id) === index
   );
-  const explorer = variant === "explorer";
-  const explorerRows = explorer ? explorerFollowUpRows(workflow, detail) : [];
 
   return (
     <section
@@ -111,13 +121,11 @@ export function CountyActionPlan({
           )}
         </div>
       </div>
-      {omitDisclaimers ? null : (
-        <p className="action-caution" data-testid="follow-up-interpretation">
-          {FOLLOW_UP_INTERPRETATION}
-        </p>
-      )}
       <p className="action-summary">{workflow.level.explanation}</p>
-      {workflow.level.colorResponseNote && !explorer ? (
+      <p className="action-note" data-testid="follow-up-interpretation">
+        {interpretation}
+      </p>
+      {workflow.level.colorResponseNote && !omitDisclaimers && !explorer ? (
         <p className="action-summary" data-testid="follow-up-color-note">
           {workflow.level.colorResponseNote}
         </p>
@@ -137,76 +145,34 @@ export function CountyActionPlan({
           <strong>{FOLLOW_UP_WHAT_IF_TITLE}</strong> {FOLLOW_UP_WHAT_IF_NOTE}
         </p>
       ) : null}
-      {explorer ? (
-        <ul className="action-list action-divider-rows">
-          {explorerRows.map((row) => (
-            <li data-testid={`follow-up-${row.id}`} key={row.id}>
-              <div>
-                <strong>{row.heading}</strong>
-                <p>{row.explanation}</p>
-                <p className="action-who">
-                  <span>Partners: </span>
-                  {row.whoCanHelp}
-                </p>
-              </div>
-            </li>
+      <ol
+        className={explorer ? "action-list action-divider-rows" : "action-list"}
+      >
+        {workflow.rows.map((row, index) => (
+          <FollowUpRow index={index + 1} key={row.id} row={row} />
+        ))}
+      </ol>
+      <section
+        aria-labelledby={questionsHeadingId}
+        className={
+          explorer
+            ? "action-questions-inset"
+            : "action-questions ux-reset-follow-up-questions"
+        }
+        data-testid="follow-up-questions"
+      >
+        <QuestionsHeading id={questionsHeadingId}>
+          Questions before acting
+        </QuestionsHeading>
+        <ul>
+          {workflow.questions.map((question) => (
+            <li key={question}>{question}</li>
           ))}
         </ul>
-      ) : (
-        <ol className="action-list">
-          {workflow.rows.map((row) => (
-            <FollowUpRow key={row.id} row={row} />
-          ))}
-        </ol>
-      )}
-      {explorer ? (
-        <section
-          className="action-questions-inset"
-          data-testid="follow-up-questions"
-        >
-          <h4>Questions before acting</h4>
-          <ul>
-            {workflow.questions.map((question) => (
-              <li key={question}>{question}</li>
-            ))}
-          </ul>
-        </section>
-      ) : (
-        <details
-          className="action-disclosure ux-reset-follow-up-questions"
-          data-testid="follow-up-questions"
-        >
-          <summary>Questions before acting</summary>
-          <p>{FOLLOW_UP_QUESTIONS_INTRO}</p>
-          <ol>
-            {workflow.questions.map((question) => (
-              <li key={question}>{question}</li>
-            ))}
-          </ol>
-        </details>
-      )}
+      </section>
       {explorer ? null : (
         <details className="action-resources">
-          <summary>Questions, partner roles, and official resources</summary>
-          <p>
-            Partner roles are suggestions for local judgment.
-            {omitDisclaimers ? null : " Atlas does not assign them."}
-          </p>
-          <p>Questions to verify locally</p>
-          <ul>
-            {questions.map((question) => (
-              <li key={question.id}>{question.question}</li>
-            ))}
-          </ul>
-          <p>Potential partner roles</p>
-          <ul>
-            {partners.map((partner) => (
-              <li key={partner.id}>
-                <strong>{partner.label}.</strong> {partner.partners}
-              </li>
-            ))}
-          </ul>
-          <p>Relevant official resources</p>
+          <summary>Related official resources</summary>
           <ul>
             {uniqueResources.map((resource) => (
               <li key={resource.id}>

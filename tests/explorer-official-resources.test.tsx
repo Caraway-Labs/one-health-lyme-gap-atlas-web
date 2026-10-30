@@ -21,6 +21,8 @@ describe("Explorer official resources card", () => {
   it("shows every resource group once, with publisher context", () => {
     render(<ExplorerOfficialResources />);
 
+    expect(screen.queryByText(/official resources & guidance/i)).toBeNull();
+    expect(screen.queryByText("Resources for follow-up")).toBeNull();
     const links = screen.getAllByRole("link");
     expect({
       groups: screen

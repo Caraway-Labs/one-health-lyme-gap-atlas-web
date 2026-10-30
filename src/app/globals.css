@@ -1608,44 +1608,83 @@ a {
   font-weight: 700;
   line-height: 1.45;
 }
+.action-note {
+  margin: 0.35rem 0 0.85rem;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
 .action-list {
   display: grid;
   margin: 0;
   padding: 0;
-  gap: 0.55rem;
   list-style: none;
 }
 .action-list li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 1.75rem minmax(0, 1fr);
   align-items: start;
-  gap: 0.25rem;
-  padding: 0.7rem 0.75rem;
-  border-radius: 0.5rem;
-  background: white;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--line);
 }
-.action-list strong {
-  min-width: 0;
+.action-index {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  background: white;
   color: var(--navy);
   font-size: 0.78rem;
-  line-height: 1.4;
+  font-weight: 650;
+  line-height: 1;
 }
-.action-list span {
+.action-copy {
   min-width: 0;
+}
+.action-copy strong {
+  display: block;
+  color: var(--navy);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+.action-copy p {
+  margin: 0.2rem 0 0;
   color: #405661;
   font-size: 0.78rem;
   line-height: 1.5;
 }
-.action-list .action-lead {
-  display: block;
-  color: var(--navy);
-  font-weight: 700;
-}
-.action-list .action-fact {
-  display: block;
-  margin-top: 0.2rem;
+.action-partners {
   color: var(--muted-foreground);
-  font-weight: 400;
+}
+.action-partners span {
+  font-weight: 650;
+}
+.action-questions {
+  margin-top: 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.65rem;
+  background: white;
+}
+.action-questions h4,
+.action-questions h5 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+.action-questions ul {
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+}
+.action-questions li {
+  color: #405661;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.action-questions li + li {
+  margin-top: 0.35rem;
 }
 .action-disclosure,
 .action-resources {
@@ -3233,7 +3272,7 @@ html[data-atlas-chat-launcher="enabled"] .app-content {
     align-self: start;
   }
   .action-list li {
-    gap: 0.25rem;
+    gap: 0.65rem;
   }
 }
 

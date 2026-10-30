@@ -16,27 +16,27 @@ import {
 /**
  * Five public-health workstreams for Suggested Follow-up.
  * They are not scoring dimensions and they are not the six Review Rationale
- * categories. Copy is chosen from published county evidence. This module does
- * not assign score cutoffs or treat a map color as a new review scale.
+ * categories. Visible headings are actions. Copy still follows the published
+ * category and the county’s data state. This module does not assign score
+ * cutoffs or treat a map color as a new review scale.
  */
 
 export const FOLLOW_UP_INTERPRETATION =
-  "Atlas supports professional review, not individual risk measurement, proof of underreporting, or a mandate for investigation.";
+  "This is a review recommendation, not a measure of individual risk or proof that Lyme disease is undercounted.";
 
-/** The same limitation applies when a review level is unassigned. */
-export const FOLLOW_UP_UNAVAILABLE_INTERPRETATION = FOLLOW_UP_INTERPRETATION;
-
-const UNASSIGNED_STANCE = "Without an assigned review level,";
+/** Shown when no published category is assigned. Not a score-based recommendation. */
+export const FOLLOW_UP_UNAVAILABLE_INTERPRETATION =
+  "No review level is assigned. This is not a measure of individual risk or proof that Lyme disease is undercounted.";
 
 export const FOLLOW_UP_VERIFICATION_NOTE =
-  "These rows are evidence-verification considerations, not a scored recommendation or an instruction to escalate surveillance.";
+  "These rows are data checks, not a scored recommendation or an instruction to escalate surveillance.";
 
 export const FOLLOW_UP_COLOR_RESPONSE_NOTE = FOLLOW_UP_PUBLISHED_SOURCE_LABEL;
 
 export const REVIEW_LEVEL_UNAVAILABLE = "Review level unavailable";
 
 export const INSUFFICIENT_REVIEW_LEVEL_EXPLANATION =
-  "Available evidence is insufficient to assign a review level.";
+  "Available data are not sufficient to assign a review level.";
 
 export const FOLLOW_UP_CATEGORY_ORDER = [
   "human-disease-surveillance",
@@ -100,22 +100,21 @@ export type CountyFollowUpWorkflow = {
 };
 
 const CATEGORY_LABELS: Record<FollowUpCategoryId, string> = {
-  "clinical-laboratory-reporting": "Clinical and laboratory reporting",
-  "community-context-outreach": "Community context and outreach",
-  "coordination-documentation": "Coordination and documentation",
-  "human-disease-surveillance": "Human disease surveillance",
-  "vector-pathogen-surveillance": "Vector and pathogen surveillance",
+  "clinical-laboratory-reporting": "Clarify reporting, if needed",
+  "community-context-outreach": "Consider prevention needs",
+  "coordination-documentation": "Record the question and next step",
+  "human-disease-surveillance": "Review county case information",
+  "vector-pathogen-surveillance": "Review tick and pathogen records",
 };
 
 const PARTNER_SUGGESTIONS: Record<FollowUpCategoryId, string> = {
-  "clinical-laboratory-reporting": "Clinical and laboratory reporting partners",
-  "community-context-outreach":
-    "Health educators or community partners, if local review finds an outreach need",
-  "coordination-documentation": "The program’s existing documentation workflow",
-  "human-disease-surveillance":
-    "State or local epidemiology and surveillance staff",
+  "clinical-laboratory-reporting":
+    "Surveillance staff, clinicians, and laboratories",
+  "community-context-outreach": "Health educators or community partners",
+  "coordination-documentation": "Staff coordinating the review",
+  "human-disease-surveillance": "State or local surveillance staff",
   "vector-pathogen-surveillance":
-    "State vector-borne disease program, entomology, or established tick-surveillance partners",
+    "Vector-borne disease program or tick-surveillance partners",
 };
 
 const LEVEL_EXPLANATIONS: Record<
@@ -123,17 +122,17 @@ const LEVEL_EXPLANATIONS: Record<
   string
 > = {
   "Conduct targeted follow-up":
-    "Consider a focused local check of the evidence questions below. Staffing and timing remain local program decisions.",
+    FOLLOW_UP_RESPONSE_CONTENT["Conduct targeted follow-up"].explanation,
   "Continue routine review":
-    "Maintain established surveillance review and revisit this county as new published data become available.",
+    FOLLOW_UP_RESPONSE_CONTENT["Continue routine review"].explanation,
   "Coordinate a local assessment":
-    "Consider whether local partners should compare notes on the questions below. This does not assign owners or a deadline.",
+    FOLLOW_UP_RESPONSE_CONTENT["Coordinate a local assessment"].explanation,
   "Monitor the pattern":
-    "Watch for changes in published findings and review additional information as it becomes available.",
+    FOLLOW_UP_RESPONSE_CONTENT["Monitor the pattern"].explanation,
   "Prioritize targeted follow-up":
-    "Consider coordinated follow-up if local findings justify it. This is not an instruction to launch an investigation.",
+    FOLLOW_UP_RESPONSE_CONTENT["Prioritize targeted follow-up"].explanation,
   "Verify with local information":
-    "Compare published observations with locally held records before deciding whether the pattern needs a closer look.",
+    FOLLOW_UP_RESPONSE_CONTENT["Verify with local information"].explanation,
 };
 
 const RESOURCES = {
@@ -455,12 +454,63 @@ type FollowUpCopy = {
   verifyQuestion: string;
 };
 
+type FollowUpIntensity =
+  | "coordinate"
+  | "monitor"
+  | "prioritize"
+  | "routine"
+  | "targeted"
+  | "unassigned"
+  | "verify";
+
 function joinDetail(parts: (string | null)[]): string | null {
   const text = parts.filter((part) => part && part.length > 0).join(" ");
   return text.length > 0 ? text : null;
 }
 
-function humanRecommendation(county: CountyDetail): FollowUpCopy {
+function intensityFor(level: FollowUpReviewLevel): FollowUpIntensity {
+  switch (level.title) {
+    case "Continue routine review": {
+      return "routine";
+    }
+    case "Monitor the pattern": {
+      return "monitor";
+    }
+    case "Verify with local information": {
+      return "verify";
+    }
+    case "Conduct targeted follow-up": {
+      return "targeted";
+    }
+    case "Coordinate a local assessment": {
+      return "coordinate";
+    }
+    case "Prioritize targeted follow-up": {
+      return "prioritize";
+    }
+    default: {
+      return "unassigned";
+    }
+  }
+}
+
+function byIntensity(
+  level: FollowUpReviewLevel,
+  copy: Record<FollowUpIntensity, string>
+): string {
+  return copy[intensityFor(level)];
+}
+
+function priorityLimit(level: FollowUpReviewLevel): string | null {
+  return intensityFor(level) === "unassigned"
+    ? "This is not a low or high review priority."
+    : null;
+}
+
+function humanRecommendation(
+  county: CountyDetail,
+  level: FollowUpReviewLevel
+): FollowUpCopy {
   const unallocated = unallocatedSentence(county);
   const reportedCases = publishedHumanFloorValue(
     county.human_status,
@@ -468,10 +518,24 @@ function humanRecommendation(county: CountyDetail): FollowUpCopy {
   );
   if (reportedCases === 0) {
     return {
-      action:
-        "Compare the published observed zero with local surveillance records.",
+      action: byIntensity(level, {
+        coordinate:
+          "Compare the published observed zero with the programs that hold case records.",
+        monitor:
+          "Check whether the published observed zero still matches local records.",
+        prioritize:
+          "Review the published observed zero before any broader response.",
+        routine:
+          "Check the published observed zero against local records during routine review.",
+        targeted:
+          "Check the published observed zero against local records, including residence and likely exposure.",
+        unassigned: "Check the published observed zero against local records.",
+        verify:
+          "Compare the published observed zero with local surveillance records.",
+      }),
       detail: joinDetail([
-        "An observed zero is not a missing record and does not establish that transmission is absent.",
+        "An observed zero is not a missing record and does not show that transmission is absent.",
+        priorityLimit(level),
         unallocated,
       ]),
       verifyQuestion:
@@ -480,21 +544,54 @@ function humanRecommendation(county: CountyDetail): FollowUpCopy {
   }
   if (reportedCases !== null) {
     return {
-      action:
-        "Compare the published minimum reported cases with state or local surveillance records.",
+      action: byIntensity(level, {
+        coordinate: "Compare case records across the programs that hold them.",
+        monitor:
+          "Check whether a change in the published count is supported by local records.",
+        prioritize:
+          "Review case information before any broader response, including missing or suppressed counts.",
+        routine:
+          "Check the published count against local records during routine review.",
+        targeted:
+          "Check whether local records clarify missing or suppressed counts.",
+        unassigned: "Check the published count against local records.",
+        verify:
+          "Compare the published minimum reported cases with local surveillance records.",
+      }),
       detail: joinDetail([
-        "Include reporting completeness and residence-versus-exposure differences where investigation notes already exist.",
+        intensityFor(level) === "targeted"
+          ? "Review residence and likely exposure location."
+          : "Include residence and likely exposure location.",
+        priorityLimit(level),
         unallocated,
       ]),
       verifyQuestion:
-        "Do local surveillance records, including exposure location where it was collected, agree with these minimum reported cases?",
+        "Do local records, including residence and likely exposure, agree with the published count?",
     };
   }
   return {
-    action:
-      "Check whether additional county case information is available through local surveillance records.",
+    action: byIntensity(level, {
+      coordinate:
+        "Ask the programs that hold case records whether missing or suppressed counts can be clarified.",
+      monitor:
+        "While watching for change, check whether local records clarify missing or suppressed counts.",
+      prioritize:
+        "Review missing or suppressed counts before any broader response.",
+      routine:
+        "At the next routine review, check whether local records clarify missing or suppressed counts.",
+      targeted:
+        "Check whether local records clarify missing or suppressed counts.",
+      unassigned:
+        "Check whether local records clarify missing or suppressed counts.",
+      verify:
+        "Check local surveillance records for a count that is not in the published data.",
+    }),
     detail: joinDetail([
-      "Include suppressed or unallocated reports. A missing published count is not a finding of zero cases.",
+      "A missing published count is not a finding of zero cases. Include suppressed or unallocated reports.",
+      intensityFor(level) === "targeted"
+        ? "Review residence and likely exposure location."
+        : null,
+      priorityLimit(level),
       unallocated,
     ]),
     verifyQuestion:
@@ -502,120 +599,152 @@ function humanRecommendation(county: CountyDetail): FollowUpCopy {
   };
 }
 
-function vectorRecommendation(county: CountyDetail): FollowUpCopy {
+function vectorAction(level: FollowUpReviewLevel): string {
+  return byIntensity(level, {
+    coordinate:
+      "Compare collection dates, locations, and testing methods across the programs that hold them.",
+    monitor:
+      "Check whether newer tick or pathogen records change the pattern you are watching.",
+    prioritize:
+      "Review collection dates, locations, testing methods, and whether newer local records should change the response.",
+    routine:
+      "Check whether newer local tick or pathogen records should be noted at the next routine review.",
+    targeted:
+      "Check collection dates, locations, and testing methods, and whether newer local records are available.",
+    unassigned:
+      "Check published tick and pathogen data against any local records.",
+    verify:
+      "Check collection dates, locations, and testing methods against local records.",
+  });
+}
+
+function vectorRecommendation(
+  county: CountyDetail,
+  level: FollowUpReviewLevel
+): FollowUpCopy {
   const tickDocumented = documentedTick(county);
   const tickMissing = tickRecordMissing(county);
   const pathogen = pathogenKind(county);
+  const action = vectorAction(level);
   if (tickDocumented && pathogen === "present") {
     return {
-      action:
-        "Examine the published tick presence and Borrelia burgdorferi detection with a vector-surveillance partner.",
+      action,
       detail:
-        "Include the time and geographic coverage of collections where local records include that detail. Detection is not a human transmission estimate.",
+        "Published records include tick presence and a Borrelia burgdorferi detection. That detection is not a human transmission estimate.",
       verifyQuestion:
-        "What time period and geography do the published tick and pathogen records cover, and are newer local records available?",
+        "How recent and local are these tick and pathogen records, and are newer local records available?",
     };
   }
   if (tickDocumented && pathogen === "negative") {
     return {
-      action:
-        "Confirm the test methods and coverage of this documented negative pathogen finding with a vector-surveillance partner.",
+      action,
       detail:
-        "A tick presence record is published. The pathogen record is a documented negative finding rather than a missing record. Do not treat that negative as countywide without confirming coverage.",
+        "A tick presence record is published. The pathogen result is a documented negative finding, not a missing record. Confirm what was tested before reading it as countywide.",
       verifyQuestion:
         "What ticks were tested, and does the documented negative finding cover the collections relevant to this county?",
     };
   }
   if (tickDocumented && pathogen === "missing") {
     return {
-      action: "Determine whether pathogen testing exists outside this source.",
+      action,
       detail:
-        "A tick presence record is published, and no county-level Borrelia burgdorferi detection record is published. Missing records are not documented negative findings.",
+        "A tick presence record is published, and no county-level pathogen result is published. Missing results are not documented negative findings.",
       verifyQuestion:
-        "Was pathogen testing done, and do unpublished results exist? Absence of a published record is not a negative test.",
+        "Was pathogen testing done, and do unpublished results exist? A missing result is not a negative test.",
     };
   }
   if (tickDocumented) {
     return {
-      action:
-        "Examine this published pathogen status with the tick record and local vector partners.",
-      detail: `The published Borrelia burgdorferi status is ${county.burgdorferi_status}. This status is not treated as absence.`,
+      action,
+      detail: `The published Borrelia burgdorferi status is ${county.burgdorferi_status}. Do not read that status as absence.`,
       verifyQuestion:
         "How should this published pathogen status be read alongside the tick record and any newer local collections?",
     };
   }
   if (tickMissing && pathogen === "present") {
     return {
-      action:
-        "Examine the published Borrelia burgdorferi detection with a vector-surveillance partner.",
+      action,
       detail:
-        "No documented tick-presence classification is in this record. Do not infer countywide tick distribution from that detection alone.",
+        "A pathogen detection is published without a tick-presence classification. Do not infer countywide tick distribution from that detection alone.",
       verifyQuestion:
         "Which collection does the pathogen detection come from, and is a tick-presence classification available locally?",
     };
   }
   if (tickMissing && pathogen === "negative") {
     return {
-      action:
-        "Confirm what was tested before treating this documented negative finding as countywide.",
+      action,
       detail:
-        "No published tick-presence classification is available. The pathogen record is a documented negative finding rather than a missing record.",
+        "No tick-presence classification is published. The pathogen result is a documented negative finding, not a missing record.",
       verifyQuestion:
         "What was tested, and do unpublished tick records exist outside this source?",
     };
   }
   if (tickMissing && pathogen === "other") {
     return {
-      action:
-        "Examine this pathogen status and any local tick surveillance with a vector-surveillance partner.",
-      detail: `No documented tick-presence classification is published. The Borrelia burgdorferi status is ${county.burgdorferi_status}, which is not treated as absence.`,
+      action,
+      detail: `No tick-presence classification is published. The Borrelia burgdorferi status is ${county.burgdorferi_status}, which is not absence.`,
       verifyQuestion:
         "Do local records explain this pathogen status and whether tick surveillance exists outside the published source?",
     };
   }
   if (tickMissing) {
     return {
-      action:
-        "Determine whether tick or pathogen records exist outside the current source.",
+      action,
       detail:
-        "No published tick or matching pathogen record is available for this county. Do not treat the gap as absence, and do not start field collection only because the published record is missing.",
+        "No published tick or pathogen record is available outside the current source. Do not treat the gap as absence, and do not start field collection only because the published record is missing.",
       verifyQuestion:
-        "Do tick or pathogen records exist outside the currently published source?",
+        "Do tick or pathogen records exist outside the current source?",
     };
   }
   return {
-    action:
-      "Check whether newer local records change how this published tick status should be read.",
+    action,
     detail: `The published tick status is ${county.tick_status}. This is not a finding of tick absence.`,
     verifyQuestion:
       "Do local vector records confirm or update this published tick status?",
   };
 }
 
-function clinicalRecommendation(county: CountyDetail): FollowUpCopy {
+function clinicalRecommendation(
+  county: CountyDetail,
+  level: FollowUpReviewLevel
+): FollowUpCopy {
+  const action = byIntensity(level, {
+    coordinate:
+      "If programs disagree about case identification or reporting, discuss that question together.",
+    monitor:
+      "If a change raises a question about case identification or reporting, discuss it with reporting partners.",
+    prioritize:
+      "If case review raises a reporting question that would change the response, take it to reporting partners first.",
+    routine:
+      "If routine review raises a reporting question, note it for the usual reporting contacts.",
+    targeted:
+      "If case review raises questions about case identification or reporting, discuss them with reporting partners.",
+    unassigned:
+      "If local records raise a reporting question, discuss it without treating the county as an assigned priority.",
+    verify:
+      "If local case records raise a question about identification or reporting, check it with reporting partners.",
+  });
   if (!humanPublished(county)) {
     return {
-      action:
-        "Check local laboratory and clinical reporting pathways only if surveillance records raise a case-ascertainment question.",
-      detail: "This is not a finding that laboratories failed to report.",
+      action,
+      detail:
+        "This is not a finding that laboratories failed to report. A missing case count is not proof of a reporting failure.",
       verifyQuestion:
-        "Can local clinical or laboratory reporting information clarify whether county case data are incomplete?",
+        "Can local clinical or laboratory reporting clarify whether county case data are incomplete?",
     };
   }
   if (pathogenKind(county) === "present") {
     return {
-      action:
-        "Check whether clinical and laboratory reporting pathways can be compared with the published human and pathogen records.",
+      action,
       detail:
-        "This county evidence does not indicate a test for any individual patient.",
+        "These records are not a test result for any individual patient, and they do not show that reporting failed.",
       verifyQuestion:
         "Do current reporting pathways account for the human and laboratory information this program already holds?",
     };
   }
   return {
-    action:
-      "Check whether current reporting pathways match the human surveillance information already available locally.",
-    detail: "This county record does not show that reporting failed.",
+    action,
+    detail: "This is not a finding that reporting failed.",
     verifyQuestion:
       "Is there a local reporting question to review, or do current pathways match the surveillance record?",
   };
@@ -634,38 +763,69 @@ function communityAvailability(county: CountyDetail): {
   };
 }
 
-function communityRecommendation(county: CountyDetail): FollowUpCopy {
+function communityRecommendation(
+  county: CountyDetail,
+  level: FollowUpReviewLevel
+): FollowUpCopy {
   const context = communityAvailability(county);
   const available = [
     context.vulnerability,
     context.insurance,
     context.rural,
   ].filter(Boolean).length;
-  if (available === 3) {
-    return {
-      action:
-        "Consider whether existing prevention education reaches the communities these measures describe before adding outreach.",
-      detail:
-        "Social vulnerability, health insurance coverage, and rural–urban classification are available as context. They are not evidence of transmission or underreporting.",
-      verifyQuestion:
-        "Does existing prevention education already reach the communities this context describes, or is more local information needed first?",
-    };
-  }
   if (available === 0) {
     return {
-      action:
-        "Identify that local information gap before deciding whether outreach is appropriate.",
+      action: byIntensity(level, {
+        coordinate:
+          "Ask programs what community context they already use before adding outreach.",
+        monitor:
+          "Note that published community context is unavailable while you watch for other changes.",
+        prioritize:
+          "Do not treat missing community context as a reason for closer prevention follow-up.",
+        routine:
+          "During routine review, note that published community context is unavailable.",
+        targeted:
+          "Use local knowledge where published community context is missing, before deciding on prevention outreach.",
+        unassigned:
+          "Check what local context exists. No review level is assigned.",
+        verify:
+          "Check whether community context exists outside the published data.",
+      }),
       detail:
         "No published social vulnerability, insurance coverage, or rural–urban classification is available.",
       verifyQuestion:
         "What local context is available before deciding whether any outreach is warranted?",
     };
   }
+  const action = byIntensity(level, {
+    coordinate:
+      "Compare local knowledge across programs before adding prevention outreach.",
+    monitor:
+      "Check whether a change in community context means current prevention information no longer fits.",
+    prioritize:
+      "Use community context to judge whether prevention information reaches the communities that need it, before adding outreach.",
+    routine:
+      "During usual prevention work, check whether current information already reaches the communities these measures describe.",
+    targeted:
+      "Use local knowledge and community context to assess whether prevention information reaches intended communities.",
+    unassigned:
+      "Use the available community context before deciding whether outreach fits.",
+    verify:
+      "Use the published community measures, plus local knowledge, to check whether prevention information reaches intended communities.",
+  });
+  if (available === 3) {
+    return {
+      action,
+      detail:
+        "Social vulnerability, insurance coverage, and rural–urban classification are available as context. These measures do not show transmission or underreporting.",
+      verifyQuestion:
+        "Does current prevention information already reach the communities this context describes?",
+    };
+  }
   return {
-    action:
-      "Check the community-context measures that are available, and the ones that are missing, before deciding whether outreach is appropriate.",
+    action,
     detail:
-      "Community context is incomplete in the published record. These measures are not evidence of transmission or underreporting.",
+      "Published community context is incomplete. These measures do not show transmission or underreporting.",
     verifyQuestion:
       "Which community-context measures are still missing, and do the available ones justify any change to outreach?",
   };
@@ -675,19 +835,35 @@ function coordinationRecommendation(level: FollowUpReviewLevel): FollowUpCopy {
   if (level.status === "unavailable") {
     return {
       action:
-        "Document which evidence is missing and which local or state partner might hold it.",
-      detail:
-        "These notes support local verification. Atlas does not assign an owner, a deadline, or an escalation.",
+        "Document what remains unclear, who might hold the missing data, and what information would change the next step.",
+      detail: "No owner, deadline, or review level is assigned.",
       verifyQuestion:
-        "Which missing evidence should be written down, and which local or state partner might hold it?",
+        "Which missing data should be written down, and who might hold them?",
     };
   }
   return {
-    action:
-      "Document the outstanding evidence questions and the surveillance or vector-program partners who might verify them.",
-    detail: "Atlas does not assign that work or a completion date.",
+    action: byIntensity(level, {
+      coordinate:
+        "Record the shared question, who holds the missing piece, and what finding would change the next step.",
+      monitor:
+        "Note what changed, who can clarify it, and what information would move this beyond monitoring.",
+      prioritize:
+        "Record the question that justifies closer attention, who can help, and what information would change the next step.",
+      routine:
+        "Note what remains unclear and what new information would justify a later look.",
+      targeted:
+        "Document what remains unclear, who can help, and what information would change the next step.",
+      unassigned: "Document what remains unclear and who might help.",
+      verify:
+        "Document what local records confirm, what is still unclear, and what finding would change the next step.",
+    }),
+    detail:
+      level.title === "Prioritize targeted follow-up" ||
+      level.title === "Coordinate a local assessment"
+        ? "No owner or deadline is assigned."
+        : null,
     verifyQuestion:
-      "What is the main surveillance question to record, and who might hold the records that would answer it?",
+      "What is still unclear, who can help, and what information would change the next step?",
   };
 }
 
@@ -816,29 +992,19 @@ function reviewLevel(
   };
 }
 
-function stanceFor(level: FollowUpReviewLevel): string {
-  return responseCopy(level)?.stance ?? UNASSIGNED_STANCE;
-}
-
-function withStance(level: FollowUpReviewLevel, action: string): string {
-  const body = action.charAt(0).toLowerCase() + action.slice(1);
-  return `${stanceFor(level)} ${body}`;
-}
-
 function row(
   id: FollowUpCategoryId,
   county: CountyDetail,
   level: FollowUpReviewLevel,
   copy: FollowUpCopy
 ): FollowUpWorkflowRow {
-  const action = withStance(level, copy.action);
   return {
-    action,
+    action: copy.action,
     detail: copy.detail,
     id,
     label: CATEGORY_LABELS[id],
     partners: PARTNER_SUGGESTIONS[id],
-    recommendation: [action, copy.detail].filter(Boolean).join(" "),
+    recommendation: [copy.action, copy.detail].filter(Boolean).join(" "),
     resources: resourcesFor(id, county),
     verifyQuestion: copy.verifyQuestion,
   };
@@ -846,9 +1012,9 @@ function row(
 
 const GOVERNANCE_UNAVAILABLE_QUESTIONS = [
   "Why is a follow-up category not assigned for this county?",
-  "Which published evidence is missing, limited, or outside the supported scope?",
-  "Are relevant state or local records available to clarify the evidence without assuming a particular response level?",
-  "Should these limitations be documented for routine review rather than treated as an assigned priority?",
+  "Which published data are missing, limited, or outside the supported scope?",
+  "Are state or local records available to clarify the data without assuming a response level?",
+  "Should these limits be documented for routine review rather than treated as an assigned priority?",
 ] as const satisfies FollowUpResponseCopy["questions"];
 
 function questionsFor(
@@ -862,10 +1028,10 @@ export function buildCountyFollowUp(
   context: FollowUpReviewContext = {}
 ): CountyFollowUpWorkflow {
   const level = reviewLevel(county, context);
-  const human = humanRecommendation(county);
-  const vector = vectorRecommendation(county);
-  const clinical = clinicalRecommendation(county);
-  const community = communityRecommendation(county);
+  const human = humanRecommendation(county, level);
+  const vector = vectorRecommendation(county, level);
+  const clinical = clinicalRecommendation(county, level);
+  const community = communityRecommendation(county, level);
   const coordination = coordinationRecommendation(level);
   const copy = responseCopy(level);
   return {

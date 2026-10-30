@@ -75,18 +75,18 @@ describe("explorer follow-up display", () => {
       duplicateSection: screen.queryByText(
         "Questions, partner roles, and official resources"
       ),
-      heading: screen.getByText("Human disease surveillance").textContent,
+      heading: screen.getByText("Review county case information").textContent,
       links: screen.queryByRole("link"),
       stateRecords: screen.getByText(/Colorado has 77 published 2023/)
         .textContent,
       partners: screen.getByText(/State or local surveillance staff/)
         .textContent,
-      who: screen.getAllByText(/Partners:/).length,
+      who: screen.getAllByText(/Potential partners:/).length,
     }).toStrictEqual({
       duplicateSection: null,
-      heading: "Human disease surveillance",
+      heading: "Review county case information",
       links: null,
-      partners: expect.stringContaining("Partners:"),
+      partners: expect.stringContaining("Potential partners:"),
       stateRecords: expect.stringContaining("are not Adams cases"),
       who: 5,
     });

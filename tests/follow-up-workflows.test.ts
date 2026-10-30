@@ -73,10 +73,10 @@ describe("five-category follow-up workflows", () => {
     const workflow = buildCountyFollowUp(county());
     expect({
       community: rowText(workflow, "community-context-outreach").includes(
-        "not evidence of transmission or underreporting"
+        "do not show transmission or underreporting"
       ),
       human: rowText(workflow, "human-disease-surveillance").includes(
-        "compare the published minimum reported cases"
+        "Compare the published minimum reported cases"
       ),
       labels: workflow.rows.map((entry) => entry.label),
       title: workflow.level.title,
@@ -88,11 +88,11 @@ describe("five-category follow-up workflows", () => {
       community: true,
       human: true,
       labels: [
-        "Human disease surveillance",
-        "Vector and pathogen surveillance",
-        "Clinical and laboratory reporting",
-        "Community context and outreach",
-        "Coordination and documentation",
+        "Review county case information",
+        "Review tick and pathogen records",
+        "Clarify reporting, if needed",
+        "Consider prevention needs",
+        "Record the question and next step",
       ],
       title: "Verify with local information",
       vector: true,
@@ -162,9 +162,7 @@ describe("five-category follow-up workflows", () => {
     );
     const community = rowText(workflow, "community-context-outreach");
     expect(community).toContain("incomplete");
-    expect(community).toContain(
-      "not evidence of transmission or underreporting"
-    );
+    expect(community).toContain("do not show transmission or underreporting");
     expect(community).not.toContain("Conduct outreach");
   });
 
@@ -237,7 +235,7 @@ describe("five-category follow-up workflows", () => {
     const joined = workflow.rows.map((entry) => entry.recommendation).join(" ");
     expect({
       gap: vector.includes("Do not treat the gap as absence"),
-      humanStart: human.startsWith("During routine review, check whether"),
+      humanStart: human.startsWith("At the next routine review, check whether"),
       missing: human.includes("not a finding of zero cases"),
       noEssay: joined.includes(
         "without assuming additional case investigation"
